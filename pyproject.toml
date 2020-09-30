@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "LightAutoML"
+version = "0.1.0"
+description = "Библиотека автоматического построения моделей"
+authors = ["Рыжков Александр <AMRyzhkov@sberbank.ru>",
+           "Вахрушев Антон <AGVakhrushev@sberbank.ru>",
+           "Дамдинов Ринчин <RGDamdinov@sberbank.ru>"]
+readme = "README.md"
+homepage = "https://sbtatlas.sigma.sbrf.ru/stash/scm/ailabautoml/lightautoml"
+repository = "https://sbtatlas.sigma.sbrf.ru/stash/scm/ailabautoml/lightautoml"
+classifiers = [
+    "Programming Language :: Python :: 3.7",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Natural Language :: Russian",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed"
+]
+
+[[tool.poetry.source]]
+name = "private-pypi"
+url = "http://mirror.sigma.sbrf.ru/pypi/simple/"
+default = true
+
+[tool.poetry.dependencies]
+python = "^3.6.1"
+numpy = "*"
+scipy = "*"
+pandas = "*"
+scikit-learn = "*"
+lightgbm = "2.*"
+optuna = "*"
+torch = "*"
+holidays = "*"
+networkx = "*"
+cmaes = {path = "cmaes-0.5.0-py3-none-any.whl"}
+log-calls = {path = "log_calls-0.3.2.tar.gz"}
+pyyaml = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
