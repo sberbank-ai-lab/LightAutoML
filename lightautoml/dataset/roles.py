@@ -127,10 +127,12 @@ class NumericRole(ColumnRole):
     def __init__(self, dtype: Dtype = np.float32, force_input: bool = False, prob: bool = False, discretization: bool = False):
         """
         Create numeric role with specific numeric dtype
+
         Args:
             dtype: variable type
             force_input: select a feature for training regardless of the selector results.
             prob: If input number is probability
+
         """
         self.dtype = dtype
         self.force_input = force_input
@@ -148,16 +150,18 @@ class CategoryRole(ColumnRole):
     def __init__(self, dtype: Dtype = object, encoding_type: str = 'auto', unknown: int = 5, force_input: bool = False,
                  label_encoded: bool = False, ordinal: bool = False):
         """
-        Create category role with specific dtype and attrs
+        Create category role with specific dtype and attrs.
+
         Args:
-            dtype: variable type
-            encoding_type: encoding type. Valid are
-                - auto - default processing
-                - int - encode with int
-                - oof - out-of-fold target encoding
-                - freq - frequency encoding
-                - ohe - one hot encoding
-            unknown: int cut-off freq to process rare categories as unseen
+            dtype: variable type.
+            encoding_type: encoding type. Valid are:
+
+                - auto - default processing.
+                - int - encode with int.
+                - oof - out-of-fold target encoding.
+                - freq - frequency encoding.
+                - ohe - one hot encoding.
+            unknown: int cut-off freq to process rare categories as unseen.
             force_input: select a feature for training regardless of the selector results.
 
         """
@@ -187,13 +191,11 @@ class TextRole(ColumnRole):
         Args:
             dtype: variable type
             encoding_type: encoding type. Valid are:
-
                 - auto.
                 - oof (tf-idf encoding / sgd .. like basic transformers).
                 - emb (embedding, path and pool should be defined).
             embedding_path: path for embedding. Default from config.
             pool: pooling method for embedded sequence. Valid are:
-
                 - auto
                 - avg
                 - rnn

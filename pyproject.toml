@@ -19,11 +19,6 @@ classifiers = [
     "Typing :: Typed"
 ]
 
-[[tool.poetry.source]]
-name = "private-pypi"
-url = "http://mirror.sigma.sbrf.ru/pypi/simple/"
-default = true
-
 [tool.poetry.dependencies]
 python = "^3.6.1"
 numpy = "*"
@@ -35,8 +30,8 @@ optuna = "*"
 torch = "*"
 holidays = "*"
 networkx = "*"
-cmaes = {path = "cmaes-0.5.0-py3-none-any.whl"}
-log-calls = {path = "log_calls-0.3.2.tar.gz"}
+cmaes = "*"
+log-calls = "*"
 pyyaml = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"

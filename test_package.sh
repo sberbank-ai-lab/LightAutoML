@@ -2,19 +2,12 @@
 
 set -e
 PACKAGE_NAME=LightAutoML_LAMA
-source ./venv/bin/activate
+source ./lama_venv/bin/activate
 
-#Build docs
-cd docs
-mkdir -p _static
-make clean html
-cd ..
+cd examples
 
-
-echo "===== Start check_docs.py ====="
-python check_docs.py
 echo "===== Start demo.py ====="
-python demo.py
+python demo0.py
 echo "===== Start demo1.py ====="
 python demo1.py
 echo "===== Start demo2.py ====="

@@ -15,20 +15,16 @@ from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
 from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
-from lightautoml.pipelines.selection.base import ComposedSelector
-from lightautoml.pipelines.selection.importance_based import ImportanceCutoffSelector, ModelBasedImportanceEstimator
 from lightautoml.pipelines.selection.permutation_importance_based import NpPermutationImportanceEstimator, \
     NpIterativeFeatureSelector
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
 from lightautoml.utils.profiler import Profiler
 
-# np.random.seed(42)
-
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 logging.debug('Load data...')
-data = pd.read_csv('example_data/test_data_files/sampled_app_train.csv')
+data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
 logging.debug('Data loaded')
 
 logging.debug('Features modification from user side...')
@@ -49,7 +45,7 @@ test_data.reset_index(drop=True, inplace=True)
 logging.debug('Data splitted. Parts sizes: train_data = {}, test_data = {}'
               .format(train_data.shape, test_data.shape))
 
-logging.debug('Create task..')
+logging.debug('Create task...')
 task = Task('binary')
 logging.debug('Task created')
 
@@ -59,20 +55,12 @@ logging.debug('Reader created')
 
 # selector parts
 logging.debug('Create feature selector')
-model01 = BoostLGBM(
-    default_params={'learning_rate': 0.05, 'num_leaves': 64, 'seed': 42, 'num_threads': 5}
-)
-model02 = BoostLGBM(
+model0 = BoostLGBM(
     default_params={'learning_rate': 0.05, 'num_leaves': 64, 'seed': 42, 'num_threads': 5}
 )
 pipe0 = LGBSimpleFeatures()
 pie = NpPermutationImportanceEstimator()
-pie1 = ModelBasedImportanceEstimator()
-sel1 = ImportanceCutoffSelector(pipe0, model01, pie1, cutoff=0)
-sel2 = NpIterativeFeatureSelector(pipe0, model02, pie, feature_group_size=1, max_features_cnt_in_result=15)
-selector = ComposedSelector([sel1,
-                             sel2
-                             ])
+selector = NpIterativeFeatureSelector(pipe0, model0, pie, feature_group_size=1, max_features_cnt_in_result=15)
 logging.debug('Feature selector created')
 
 # pipeline 1 level parts
@@ -80,13 +68,13 @@ logging.debug('Start creation pipeline_1...')
 pipe = LGBSimpleFeatures()
 
 logging.debug('\t ParamsTuner1 and Model1...')
-params_tuner1 = OptunaTuner(n_trials=100, timeout=100)
 model1 = BoostLGBM(
     default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': 5}
 )
 logging.debug('\t Tuner1 and model1 created')
 
 logging.debug('\t ParamsTuner2 and Model2...')
+params_tuner2 = OptunaTuner(n_trials=100, timeout=100)
 model2 = BoostLGBM(
     default_params={'learning_rate': 0.025, 'num_leaves': 64, 'seed': 2, 'num_threads': 5}
 )
@@ -94,11 +82,9 @@ logging.debug('\t Tuner2 and model2 created')
 
 logging.debug('\t Pipeline1...')
 pipeline_lvl1 = MLPipeline([
-    (model1, params_tuner1),
-    model2
-],
-    pre_selection=selector,
-    features_pipeline=pipe, post_selection=None)
+    model1,
+    (model2, params_tuner2)
+], pre_selection=selector, features_pipeline=pipe, post_selection=None)
 logging.debug('Pipeline1 created')
 
 # pipeline 2 level parts
@@ -107,7 +93,8 @@ pipe1 = LGBSimpleFeatures()
 
 logging.debug('\t ParamsTuner and Model...')
 model = BoostLGBM(
-    default_params={'learning_rate': 0.05, 'num_leaves': 64, 'max_bin': 1024, 'seed': 3, 'num_threads': 5}
+    default_params={'learning_rate': 0.05, 'num_leaves': 64, 'max_bin': 1024, 'seed': 3, 'num_threads': 5},
+    freeze_defaults=True
 )
 logging.debug('\t Tuner and model created')
 

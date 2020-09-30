@@ -135,6 +135,7 @@ class PandasToPandasReader(Reader):
                  drop_score_co: float = .01,
                  **kwargs: Any):
         """
+        PandasToPandasReader constructor
 
         Args:
             task: Task object
@@ -143,10 +144,12 @@ class PandasToPandasReader(Reader):
             max_constant_rate: float
             cv: float or callable
             random_state: int
-            roles_params: dict of params of features roles. Ex. {
-                    'numeric': {'dtype': np.float32},
-                    'datetime': {'date_format': '%Y-%m-%d'}
-                } It's optional and commonly comes from config
+            roles_params: dict of params of features roles. 
+                
+                Example:
+                    It's optional and commonly comes from config
+
+                    >>> roles_params = {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
             n_jobs: int number of processes
             advanced_roles:
             numeric_unqiue_rate:
@@ -157,6 +160,7 @@ class PandasToPandasReader(Reader):
             abs_score_val:
             drop_score_co:
             **kwargs:
+
         """
         super().__init__(task)
         self.samples = samples

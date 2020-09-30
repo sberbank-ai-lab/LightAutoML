@@ -21,7 +21,7 @@ logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=l
 
 # Read data from file
 logging.debug('Read data from file')
-data = pd.read_csv('example_data/test_data_files/sampled_app_train.csv',
+data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv',
                    usecols=['TARGET', 'NAME_CONTRACT_TYPE', 'AMT_CREDIT',
                             'NAME_TYPE_SUITE', 'AMT_GOODS_PRICE',
                             'DAYS_BIRTH', 'DAYS_EMPLOYED'])

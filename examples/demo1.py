@@ -15,8 +15,7 @@ from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
 from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
-from lightautoml.pipelines.selection.permutation_importance_based import NpPermutationImportanceEstimator, \
-    NpIterativeFeatureSelector
+from lightautoml.pipelines.selection.importance_based import ImportanceCutoffSelector, ModelBasedImportanceEstimator
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
 from lightautoml.utils.profiler import Profiler
@@ -24,7 +23,7 @@ from lightautoml.utils.profiler import Profiler
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 logging.debug('Load data...')
-data = pd.read_csv('example_data/test_data_files/sampled_app_train.csv')
+data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
 logging.debug('Data loaded')
 
 logging.debug('Features modification from user side...')
@@ -59,8 +58,8 @@ model0 = BoostLGBM(
     default_params={'learning_rate': 0.05, 'num_leaves': 64, 'seed': 42, 'num_threads': 5}
 )
 pipe0 = LGBSimpleFeatures()
-pie = NpPermutationImportanceEstimator()
-selector = NpIterativeFeatureSelector(pipe0, model0, pie, feature_group_size=1, max_features_cnt_in_result=15)
+mbie = ModelBasedImportanceEstimator()
+selector = ImportanceCutoffSelector(pipe0, model0, mbie, cutoff=10)
 logging.debug('Feature selector created')
 
 # pipeline 1 level parts
@@ -68,13 +67,13 @@ logging.debug('Start creation pipeline_1...')
 pipe = LGBSimpleFeatures()
 
 logging.debug('\t ParamsTuner1 and Model1...')
+params_tuner1 = OptunaTuner(n_trials=100, timeout=300)
 model1 = BoostLGBM(
     default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': 5}
 )
 logging.debug('\t Tuner1 and model1 created')
 
 logging.debug('\t ParamsTuner2 and Model2...')
-params_tuner2 = OptunaTuner(n_trials=100, timeout=100)
 model2 = BoostLGBM(
     default_params={'learning_rate': 0.025, 'num_leaves': 64, 'seed': 2, 'num_threads': 5}
 )
@@ -82,8 +81,8 @@ logging.debug('\t Tuner2 and model2 created')
 
 logging.debug('\t Pipeline1...')
 pipeline_lvl1 = MLPipeline([
-    model1,
-    (model2, params_tuner2)
+    (model1, params_tuner1),
+    model2
 ], pre_selection=selector, features_pipeline=pipe, post_selection=None)
 logging.debug('Pipeline1 created')
 
