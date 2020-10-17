@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-
+import pickle
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -16,7 +16,8 @@ from lightautoml.tasks import Task
 from lightautoml.utils.profiler import Profiler
 
 np.random.seed(42)
-
+p = Profiler()
+p.change_deco_settings({'enabled': True})
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 logging.debug('Load data...')
@@ -95,8 +96,19 @@ for task_params, target in zip([
     logging.debug('Check scores...')
     logging.debug('OOF score: {}'.format(task.metric_func(train_data[target].values, oof_pred.data[:, 0])))
     logging.debug('TEST score: {}'.format(task.metric_func(test_data[target].values, test_pred.data[:, 0])))
+    logging.debug('Pickle automl')
+    with open('automl.pickle', 'wb') as f:
+        pickle.dump(automl, f)
 
-    p = Profiler()
+    logging.debug('Load pickled automl')
+    with open('automl.pickle', 'rb') as f:
+        automl = pickle.load(f)
+
+    logging.debug('Predict loaded automl')
+    test_pred = automl.predict(test_data)
+    logging.debug('TEST score, loaded: {}'.format(roc_auc_score(test_data['TARGET'].values, test_pred.data[:, 0])))
+
+    os.remove('automl.pickle')
     p.profile('my_report_profile.html')
     assert os.path.exists('my_report_profile.html'), 'Profile report failed to build'
     os.remove('my_report_profile.html')

@@ -15,7 +15,7 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 
 # add checks here
 # check for same columns in dataset
-@record_history()
+@record_history(enabled=False)
 class TrainValidIterator:
     """
     Abstract class
@@ -110,7 +110,7 @@ class TrainValidIterator:
         raise NotImplementedError
 
 
-@record_history()
+@record_history(enabled=False)
 class DummyIterator(TrainValidIterator):
     """
     Use train data as validation.
@@ -163,7 +163,7 @@ class DummyIterator(TrainValidIterator):
         return HoldoutIterator(self.train, self.train)
 
 
-@record_history()
+@record_history(enabled=False)
 class HoldoutIterator(TrainValidIterator):
     """
     Iterator for classic holdout - just predifined train and valid samples.
@@ -254,7 +254,7 @@ class HoldoutIterator(TrainValidIterator):
         return self
 
 
-@record_history()
+@record_history(enabled=False)
 class CallableIterator(TrainValidIterator):
     """
     Iterator that uses function to create folds indexes.

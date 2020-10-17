@@ -10,7 +10,7 @@ from ..dataset.roles import NumericRole
 from ..pipelines.ml.base import MLPipeline
 
 
-@record_history()
+@record_history(enabled=False)
 class Blender:
     """
     Basic class for blending
@@ -18,6 +18,7 @@ class Blender:
     """
 
     _outp_dim = None
+    _bypass = False
 
     @property
     def outp_dim(self) -> int:
@@ -26,6 +27,7 @@ class Blender:
     def fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
                     ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
         if len(pipes) == 1 and len(pipes[0].ml_algos) == 1:
+            self._bypass = True
             return predictions[0], pipes
 
         return self._fit_predict(predictions, pipes)
@@ -36,7 +38,7 @@ class Blender:
 
     def predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
 
-        if len(predictions) == 1:
+        if self._bypass:
             return predictions[0]
 
         return self._predict(predictions)
@@ -81,7 +83,7 @@ class Blender:
         self._outp_prob = pred0.task.name in ['binary', 'multiclass']
 
 
-@record_history()
+@record_history(enabled=False)
 class BestModelSelector(Blender):
     """
     Select best single model from level
@@ -135,7 +137,7 @@ class BestModelSelector(Blender):
         return predictions[0]
 
 
-@record_history()
+@record_history(enabled=False)
 class MeanBlender(Blender):
     """
     Simple average level predictions
@@ -194,7 +196,7 @@ class MeanBlender(Blender):
         return outp
 
 
-@record_history()
+@record_history(enabled=False)
 class WeightedBlender(Blender):
     """
     Estimate weight to blend
@@ -227,14 +229,22 @@ class WeightedBlender(Blender):
 
         return outp
 
-    @staticmethod
-    def _get_candidate(wts: np.ndarray, idx: int, value: float):
+    def _get_candidate(self, wts: np.ndarray, idx: int, value: float):
 
         candidate = wts.copy()
         sl = np.arange(wts.shape[0]) != idx
         s = candidate[sl].sum()
         candidate[sl] = candidate[sl] / s * (1 - value)
         candidate[idx] = value
+
+        # this is the part for pipeline pruning
+        order = candidate.argsort()
+        for idx in order:
+            if candidate[idx] < self.max_nonzero_coef:
+                candidate[idx] = 0
+                candidate /= candidate.sum()
+            else:
+                break
 
         return candidate
 
@@ -262,6 +272,10 @@ class WeightedBlender(Blender):
         for _ in range(self.max_iters):
             flg_no_upd = True
             for i in range(len(splitted_preds)):
+
+                if candidate[i] == 1:
+                    continue
+
                 obj = self._get_scorer(score_func, splitted_preds, i, candidate)
                 opt_res = minimize_scalar(obj, method='Bounded', bounds=(0, 1),
                                           options={'disp': False, 'maxiter': self.max_inner_iters})
@@ -270,8 +284,8 @@ class WeightedBlender(Blender):
                 if score > best_score:
                     flg_no_upd = False
                     best_score = score
-                    if w < self.max_nonzero_coef:
-                        w = 0
+                    # if w < self.max_nonzero_coef:
+                    #     w = 0
                     candidate = self._get_candidate(candidate, i, w)
 
             print('Blending, iter {0}: score = {1}, weights = {2}'.format(_, score, candidate))

@@ -10,7 +10,7 @@ from ..dataset.np_pd_dataset import PandasDataset, CSRSparseDataset, NumpyDatase
 NpDataset = Union[PandasDataset, NumpyDataset, CSRSparseDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] = None,
                                n_folds: Optional[int] = None, cv_iter: Optional[Callable] = None) -> TrainValidIterator:
     """

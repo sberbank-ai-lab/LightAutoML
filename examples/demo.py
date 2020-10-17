@@ -4,7 +4,7 @@
 import logging
 import os
 import time
-
+import pickle
 from lightautoml.dataset.np_pd_dataset import *
 from lightautoml.dataset.roles import *
 from lightautoml.dataset.utils import roles_parser
@@ -17,6 +17,8 @@ from lightautoml.tasks import Task
 from lightautoml.utils.profiler import Profiler
 from lightautoml.validation.np_iterators import FoldsIterator
 
+p = Profiler()
+p.change_deco_settings({'enabled': True})
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 # Read data from file
@@ -133,6 +135,18 @@ logging.debug('Preds:')
 logging.debug('\n{}'.format(train_pred))
 logging.debug('Preds.shape = {}'.format(train_pred.shape))
 
+logging.debug('Pickle automl')
+with open('automl.pickle', 'wb') as f:
+    pickle.dump(total, f)
+
+logging.debug('Load pickled automl')
+with open('automl.pickle', 'rb') as f:
+    total = pickle.load(f)
+
+logging.debug('Predict loaded automl')
+train_pred = total.predict(pd_dataset)
+os.remove('automl.pickle')
+
 # # Check preds feature names
 logging.debug('Preds features: {}'.format(train_pred.features))
 
@@ -140,7 +154,6 @@ logging.debug('Preds features: {}'.format(train_pred.features))
 logging.debug('Feature scores for model_1:\n{}'.format(model1.get_features_score()))
 logging.debug('Feature scores for model_2:\n{}'.format(model2.get_features_score()))
 
-p = Profiler()
 p.profile('my_report_profile.html')
 assert os.path.exists('my_report_profile.html'), 'Profile report failed to build'
 os.remove('my_report_profile.html')

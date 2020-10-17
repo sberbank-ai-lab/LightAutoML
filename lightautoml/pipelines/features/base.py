@@ -1,4 +1,4 @@
-from copy import copy
+from copy import copy, deepcopy
 from typing import List, Any, Union, Optional, Tuple
 
 import numpy as np
@@ -19,7 +19,7 @@ from ...transformers.numeric import QuantileBinning
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 class FeaturesPipeline:
     """
     Abstract class.
@@ -45,7 +45,7 @@ class FeaturesPipeline:
         Returns:
 
         """
-        self._input_features = copy(val)
+        self._input_features = deepcopy(val)
 
     @property
     def output_features(self) -> List[str]:
@@ -103,7 +103,7 @@ class FeaturesPipeline:
         return self._pipeline.transform(test)
 
 
-@record_history()
+@record_history(enabled=False)
 class EmptyFeaturePipeline(FeaturesPipeline):
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
@@ -119,7 +119,7 @@ class EmptyFeaturePipeline(FeaturesPipeline):
         return LAMLTransformer()
 
 
-@record_history()
+@record_history(enabled=False)
 class TabularDataFeatures:
     """
     Class contains basic features transformations for tabular data

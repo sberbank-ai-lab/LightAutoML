@@ -5,7 +5,7 @@ from log_calls import record_history
 from lightautoml.dataset.base import LAMLDataset
 
 
-@record_history()
+@record_history(enabled=False)
 def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) -> List[Optional[str]]:
     """
     Pipelines create name in the way 'prefix__feature_name'.
@@ -40,7 +40,7 @@ def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) 
     return mapped
 
 
-@record_history()
+@record_history(enabled=False)
 def get_columns_by_role(dataset: LAMLDataset, role_name: str, **kwargs: Any) -> List[str]:
     """
     Search for columns with specific role and attributes when building pipeline.

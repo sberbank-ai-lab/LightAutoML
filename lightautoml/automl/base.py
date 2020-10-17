@@ -12,7 +12,7 @@ from ..utils.timer import PipelineTimer
 from ..validation.utils import create_validation_iterator
 
 
-@record_history()
+@record_history(enabled=False)
 class AutoML:
     """
     Class for compile full pipeline of AutoML task.

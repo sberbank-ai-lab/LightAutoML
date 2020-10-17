@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import Sequence, Callable, List, ClassVar, Union
 
 import numpy as np
@@ -13,7 +13,7 @@ from ..dataset.utils import concatenate
 Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
 
 
-@record_history()
+@record_history(enabled=False)
 class LAMLTransformer:
     """
     Base class for transformer method (like sklearn, but works with datasets).
@@ -48,7 +48,7 @@ class LAMLTransformer:
             val: sequence of input features names.
 
         """
-        self._features = copy(val)
+        self._features = deepcopy(val)
 
     def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
         """
@@ -102,7 +102,7 @@ class LAMLTransformer:
         return self.transform(dataset)
 
 
-@record_history()
+@record_history(enabled=False)
 class SequentialTransformer(LAMLTransformer):
     """
     Transformer that contains the list of transformers and apply one by one sequentially.
@@ -162,7 +162,7 @@ class SequentialTransformer(LAMLTransformer):
         return dataset
 
 
-@record_history()
+@record_history(enabled=False)
 class UnionTransformer(LAMLTransformer):
     """
     Transformer that apply the sequence on transformers in parallel on dataset and concatenate the result
@@ -338,7 +338,7 @@ class UnionTransformer(LAMLTransformer):
         return res
 
 
-@record_history()
+@record_history(enabled=False)
 class ColumnsSelector(LAMLTransformer):
     """
     Select columns to pass to another transformers (or feature selection).
@@ -383,7 +383,7 @@ class ColumnsSelector(LAMLTransformer):
         return dataset[:, self.keys]
 
 
-@record_history()
+@record_history(enabled=False)
 class ColumnwiseUnion(UnionTransformer):
     # TODO: Union is not ABC !! NotImplemented - means not done right now
     """
@@ -449,7 +449,7 @@ class ColumnwiseUnion(UnionTransformer):
         return super().fit_transform(dataset)
 
 
-@record_history()
+@record_history(enabled=False)
 class BestOfTransformers(LAMLTransformer):
     """
     Apply multiple transformers and select best.
@@ -494,7 +494,7 @@ class BestOfTransformers(LAMLTransformer):
             ds = trf.fit_transform(dataset)
             res.append(ds)
 
-        self.scores = np.array(list(map(lambda x: self.criterion(ds), res)))
+        self.scores = np.array([self.criterion(ds) for ds in res])
         idx = self.scores.argmax()
         self.best_transformer = self.transformer_list[idx]
         self.features = self.best_transformer.features
@@ -515,7 +515,7 @@ class BestOfTransformers(LAMLTransformer):
         return self.best_transformer.transform(dataset)
 
 
-@record_history()
+@record_history(enabled=False)
 class ConvertDataset(LAMLTransformer):
 
     def __init__(self, dataset_type: ClassVar[LAMLDataset]):
@@ -542,7 +542,7 @@ class ConvertDataset(LAMLTransformer):
         return self.dataset_type.from_dataset(dataset)
 
 
-@record_history()
+@record_history(enabled=False)
 class ChangeRoles(LAMLTransformer):
     """
     Change data roles (include dtypes etc).

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from lightautoml.ml_algo.base import MLAlgo
 
 
-@record_history()
+@record_history(enabled=False)
 class ParamsTuner(ABC):
     """
     Base class for hyperparameters tuners.
@@ -51,7 +51,7 @@ class ParamsTuner(ABC):
         """
 
 
-@record_history()
+@record_history(enabled=False)
 class DefaultTuner(ParamsTuner):
     """
     Default realization of ParamsTuner - just take algo's defaults.

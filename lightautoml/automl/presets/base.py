@@ -3,6 +3,7 @@ import shutil
 from typing import Optional, Any, Sequence
 
 import yaml
+from log_calls import record_history
 
 from ..base import AutoML
 from ...dataset.base import LAMLDataset
@@ -12,6 +13,7 @@ from ...utils.timer import PipelineTimer
 base_dir = os.path.dirname(__file__)
 
 
+@record_history(enabled=False)
 class AutoMLPreset(AutoML):
     """
     Basic class for automl preset

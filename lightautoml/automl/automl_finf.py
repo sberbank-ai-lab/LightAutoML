@@ -15,7 +15,7 @@
 # from ..validation.utils import create_validation_iterator
 #
 #
-# @record_history()
+# @record_history(enabled=False)
 # class AutoMLFoldsInFolds:
 #
 #     def __init__(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], skip_conn: bool = False,

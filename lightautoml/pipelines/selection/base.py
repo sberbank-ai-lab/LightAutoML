@@ -13,7 +13,7 @@ from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
 from ...ml_algo.utils import tune_and_fit_predict
 
 
-@record_history()
+@record_history(enabled=False)
 class ImportanceEstimator:
     """
     Abstract class.
@@ -37,7 +37,7 @@ class ImportanceEstimator:
         return self.raw_importances
 
 
-@record_history()
+@record_history(enabled=False)
 class SelectionPipeline:
     """
     Abstract class.
@@ -65,6 +65,19 @@ class SelectionPipeline:
         """
         assert self._selected_features is not None, 'Should be fitted first'
         return self._selected_features
+
+    @selected_features.setter
+    def selected_features(self, val: List[str]):
+        """
+        Setter of selected features
+
+        Args:
+            val:
+
+        Returns:
+
+        """
+        self._selected_features = deepcopy(val)
 
     @property
     def in_features(self) -> List[str]:
@@ -211,7 +224,7 @@ class SelectionPipeline:
         return self.mapped_importances
 
 
-@record_history()
+@record_history(enabled=False)
 class EmptySelector(SelectionPipeline):
     """
     Empty selector - perform no selection, just save input features names.
@@ -235,7 +248,7 @@ class EmptySelector(SelectionPipeline):
         self._selected_features = train_valid.features
 
 
-@record_history()
+@record_history(enabled=False)
 class PredefinedSelector(SelectionPipeline):
     """
     Empty selector - perform no selection, just save input features names.
@@ -264,7 +277,7 @@ class PredefinedSelector(SelectionPipeline):
         self._selected_features = list(self.columns_to_select)
 
 
-@record_history()
+@record_history(enabled=False)
 class ComposedSelector(SelectionPipeline):
     """
     Perform composition of selections.

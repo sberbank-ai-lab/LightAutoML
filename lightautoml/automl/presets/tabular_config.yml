@@ -10,7 +10,7 @@ reader_params:
   cv: 5
   random_state: 42
   roles_params:
-  n_jobs: 4
+  n_jobs: 1
   advanced_roles: True
   # advanced roles parsing params
   # defaults are ok in general case, don't touch it if you don't know it's meanings

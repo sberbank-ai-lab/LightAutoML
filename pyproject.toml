@@ -6,8 +6,8 @@ authors = ["Рыжков Александр <AMRyzhkov@sberbank.ru>",
            "Вахрушев Антон <AGVakhrushev@sberbank.ru>",
            "Дамдинов Ринчин <RGDamdinov@sberbank.ru>"]
 readme = "README.md"
-homepage = "https://sbtatlas.sigma.sbrf.ru/stash/scm/ailabautoml/lightautoml"
-repository = "https://sbtatlas.sigma.sbrf.ru/stash/scm/ailabautoml/lightautoml"
+homepage = "https://github.com/sberbank-ai-lab/LightAutoML"
+repository = "https://github.com/sberbank-ai-lab/LightAutoML"
 classifiers = [
     "Programming Language :: Python :: 3.7",
     "Operating System :: OS Independent",

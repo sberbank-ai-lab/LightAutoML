@@ -9,7 +9,7 @@ Dtype = Union[Callable, type, str]
 
 # valid_features_str_names = []
 
-@record_history()
+@record_history(enabled=False)
 class ColumnRole:
     """
     Abstract class for column role.
@@ -117,7 +117,7 @@ class ColumnRole:
         raise ValueError('Unknown string role')
 
 
-@record_history()
+@record_history(enabled=False)
 class NumericRole(ColumnRole):
     """
     Numeric role
@@ -127,12 +127,10 @@ class NumericRole(ColumnRole):
     def __init__(self, dtype: Dtype = np.float32, force_input: bool = False, prob: bool = False, discretization: bool = False):
         """
         Create numeric role with specific numeric dtype
-
         Args:
             dtype: variable type
             force_input: select a feature for training regardless of the selector results.
             prob: If input number is probability
-
         """
         self.dtype = dtype
         self.force_input = force_input
@@ -140,7 +138,7 @@ class NumericRole(ColumnRole):
         self.discretization = discretization
 
 
-@record_history()
+@record_history(enabled=False)
 class CategoryRole(ColumnRole):
     """
     Category role
@@ -156,13 +154,13 @@ class CategoryRole(ColumnRole):
             dtype: variable type.
             encoding_type: encoding type. Valid are:
 
-                - auto - default processing.
-                - int - encode with int.
-                - oof - out-of-fold target encoding.
-                - freq - frequency encoding.
-                - ohe - one hot encoding.
-            unknown: int cut-off freq to process rare categories as unseen.
-            force_input: select a feature for training regardless of the selector results.
+                - auto - default processing
+                - int - encode with int
+                - oof - out-of-fold target encoding
+                - freq - frequency encoding
+                - ohe - one hot encoding
+            unknown: int cut-off freq to process rare categories as unseen
+            force_input: select a feature for training regardless of the selector results
 
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
@@ -176,7 +174,7 @@ class CategoryRole(ColumnRole):
         self.ordinal = ordinal
 
 
-@record_history()
+@record_history(enabled=False)
 class TextRole(ColumnRole):
     """
     Text role
@@ -191,11 +189,13 @@ class TextRole(ColumnRole):
         Args:
             dtype: variable type
             encoding_type: encoding type. Valid are:
+
                 - auto.
                 - oof (tf-idf encoding / sgd .. like basic transformers).
                 - emb (embedding, path and pool should be defined).
             embedding_path: path for embedding. Default from config.
             pool: pooling method for embedded sequence. Valid are:
+
                 - auto
                 - avg
                 - rnn
@@ -213,7 +213,7 @@ class TextRole(ColumnRole):
         self.force_input = force_input
 
 
-@record_history()
+@record_history(enabled=False)
 class DatetimeRole(ColumnRole):
     """
     Datetime role
@@ -267,7 +267,7 @@ class DatetimeRole(ColumnRole):
 #     Mixed role. If exact role extraction is difficult, it goes into both pipelines
 #     """
 
-@record_history()
+@record_history(enabled=False)
 class TargetRole(ColumnRole):
     """
     Target role
@@ -285,7 +285,7 @@ class TargetRole(ColumnRole):
         self.dtype = dtype
 
 
-@record_history()
+@record_history(enabled=False)
 class GroupRole(ColumnRole):
     """
     Group role.
@@ -293,7 +293,7 @@ class GroupRole(ColumnRole):
     _name = 'Group'
 
 
-@record_history()
+@record_history(enabled=False)
 class DropRole(ColumnRole):
     """
     Drop role.
@@ -301,7 +301,7 @@ class DropRole(ColumnRole):
     _name = 'Drop'
 
 
-@record_history()
+@record_history(enabled=False)
 class WeightsRole(ColumnRole):
     """
     Weights role.
@@ -309,7 +309,7 @@ class WeightsRole(ColumnRole):
     _name = 'Weights'
 
 
-@record_history()
+@record_history(enabled=False)
 class FoldsRole(ColumnRole):
     """
     Folds role.

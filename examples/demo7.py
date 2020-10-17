@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 import logging
-
+import os
+import pickle
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -10,9 +11,11 @@ from sklearn.model_selection import train_test_split
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.dataset.roles import DatetimeRole
 from lightautoml.tasks import Task
+from lightautoml.utils.profiler import Profiler
 
 np.random.seed(42)
-
+p = Profiler()
+p.change_deco_settings({'enabled': True})
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
@@ -43,3 +46,19 @@ test_pred = automl.predict(test)
 logging.debug('Check scores...')
 logging.debug('OOF score: {}'.format(roc_auc_score(train[roles['target']].values, oof_pred.data[:, 0])))
 logging.debug('TEST score: {}'.format(roc_auc_score(test[roles['target']].values, test_pred.data[:, 0])))
+logging.debug('Pickle automl')
+with open('automl.pickle', 'wb') as f:
+    pickle.dump(automl, f)
+
+logging.debug('Load pickled automl')
+with open('automl.pickle', 'rb') as f:
+    automl = pickle.load(f)
+
+logging.debug('Predict loaded automl')
+test_pred = automl.predict(test)
+logging.debug('TEST score, loaded: {}'.format(roc_auc_score(test['TARGET'].values, test_pred.data[:, 0])))
+
+os.remove('automl.pickle')
+p.profile('my_report_profile.html')
+assert os.path.exists('my_report_profile.html'), 'Profile report failed to build'
+os.remove('my_report_profile.html')

@@ -14,7 +14,7 @@ from ...ml_algo.base import MLAlgo
 from ...ml_algo.utils import tune_and_fit_predict
 
 
-@record_history()
+@record_history(enabled=False)
 def _create_chunks_from_list(lst, n):
     """
     Creates chunks of list.
@@ -29,7 +29,7 @@ def _create_chunks_from_list(lst, n):
     return chunks
 
 
-@record_history()
+@record_history(enabled=False)
 class NpPermutationImportanceEstimator(ImportanceEstimator):
     """
     Importance based feature selector.
@@ -96,7 +96,7 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
         self.raw_importances = Series(permutation_importance).sort_values(ascending=False)
 
 
-@record_history()
+@record_history(enabled=False)
 class NpIterativeFeatureSelector(SelectionPipeline):
     """
     Select features sequentially using chunks.

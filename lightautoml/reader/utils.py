@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold, KFold, GroupKFold
 from ..tasks import Task
 
 
-@record_history()
+@record_history(enabled=False)
 def set_sklearn_folds(task: Task, target: np.ndarray, cv: Union[Callable, int] = 5, random_state: int = 42,
                       group: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
     """

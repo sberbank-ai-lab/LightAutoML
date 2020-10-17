@@ -6,7 +6,7 @@ import numpy as np
 from log_calls import record_history
 
 
-@record_history()
+@record_history(enabled=False)
 class Timer:
     _timeout = 1e10
     _overhead = 0
@@ -47,7 +47,7 @@ class Timer:
         return self
 
 
-@record_history()
+@record_history(enabled=False)
 class PipelineTimer(Timer):
     """
     Timer is used to control time over full automl run
@@ -95,7 +95,7 @@ class PipelineTimer(Timer):
         return TaskTimer(self, key, self._rate_overhead, self._mode, self.tuning_rate)
 
 
-@record_history()
+@record_history(enabled=False)
 class TaskTimer(Timer):
     """
     Timer is used to control time over single ML task run

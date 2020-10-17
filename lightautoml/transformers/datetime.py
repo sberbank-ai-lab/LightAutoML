@@ -19,7 +19,7 @@ date_attrs = {'y': 'year', 'm': 'month',
               'sec': 'second', 'ms': 'microsecond', 'ns': 'nanosecond'}
 
 
-@record_history()
+@record_history(enabled=False)
 def datetime_check(dataset: LAMLDataset):
     """
     Check if all passed vars are datetimes.
@@ -35,7 +35,7 @@ def datetime_check(dataset: LAMLDataset):
         assert roles[f].name == 'Datetime', 'Only datetimes accepted in this transformer'
 
 
-@record_history()
+@record_history(enabled=False)
 class TimeToNum(LAMLTransformer):
     """
     Basic convertion strategy, used in selection one-to-one transformers.
@@ -77,7 +77,7 @@ class TimeToNum(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class BaseDiff(LAMLTransformer):
     """
     Basic convertion strategy, used in selection one-to-one transformers.
@@ -163,7 +163,7 @@ class BaseDiff(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class DateSeasons(LAMLTransformer):
     """
     Basic convertion strategy, used in selection one-to-one transformers.

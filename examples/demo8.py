@@ -2,7 +2,7 @@
 # coding: utf-8
 import logging
 import os
-
+import pickle
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score, log_loss
@@ -25,7 +25,8 @@ from lightautoml.utils.timer import PipelineTimer
 # demo of timer, blender and multiclass
 
 np.random.seed(42)
-
+p = Profiler()
+p.change_deco_settings({'enabled': True})
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
 data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
@@ -116,13 +117,26 @@ logging.debug('Check scores...')
 logging.debug('OOF score: {}'.format(log_loss(train['TARGET'].values, oof_pred.data)))
 logging.debug('TEST score: {}'.format(log_loss(test['TARGET'].values, test_pred.data)))
 # ======================================================================================
+logging.debug('Pickle automl')
+with open('automl.pickle', 'wb') as f:
+    pickle.dump(automl, f)
+
+logging.debug('Load pickled automl')
+with open('automl.pickle', 'rb') as f:
+    automl = pickle.load(f)
+
+logging.debug('Predict loaded automl')
+test_pred = automl.predict(test)
+logging.debug('TEST score, loaded: {}'.format(log_loss(test['TARGET'].values, test_pred.data)))
+
+# ======================================================================================
 for dat, df, name in zip([oof_pred, test_pred], [train, test], ['train', 'test']):
     logging.debug('Check aucs {0}...'.format(name))
     for c in range(3):
         _sc = roc_auc_score((df['TARGET'].values == c).astype(np.float32), dat.data[:, c])
         logging.debug('Cl {0} auc score: {1}'.format(c, _sc))
 # ======================================================================================
-p = Profiler()
+
 p.profile('my_report_profile.html')
 assert os.path.exists('my_report_profile.html'), 'Profile report failed to build'
 os.remove('my_report_profile.html')

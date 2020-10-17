@@ -8,7 +8,7 @@ from .base import SelectionPipeline
 from ...validation.base import TrainValidIterator
 
 
-@record_history()
+@record_history(enabled=False)
 class HighCorrRemoval(SelectionPipeline):
     """
     Del totally correlated feats to speedup L1 regression models.

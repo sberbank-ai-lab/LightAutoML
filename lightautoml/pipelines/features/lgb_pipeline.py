@@ -10,13 +10,13 @@ from ...dataset.np_pd_dataset import NumpyDataset, PandasDataset
 from ...dataset.roles import NumericRole, CategoryRole
 from ...transformers.base import LAMLTransformer, SequentialTransformer, UnionTransformer, ColumnsSelector, \
     ConvertDataset, ChangeRoles
-from ...transformers.categorical import LabelEncoder
+from ...transformers.categorical import OrdinalEncoder
 from ...transformers.datetime import TimeToNum
 
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 class LGBSimpleFeatures(FeaturesPipeline):
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
@@ -40,8 +40,8 @@ class LGBSimpleFeatures(FeaturesPipeline):
             cat_processing = SequentialTransformer([
 
                 ColumnsSelector(keys=categories),
-                LabelEncoder(subs=None, random_state=42),
-                ChangeRoles(NumericRole(np.float32))
+                OrdinalEncoder(subs=None, random_state=42),
+                # ChangeRoles(NumericRole(np.float32))
 
             ])
             transformers_list.append(cat_processing)
@@ -73,7 +73,7 @@ class LGBSimpleFeatures(FeaturesPipeline):
         return union_all
 
 
-@record_history()
+@record_history(enabled=False)
 class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,

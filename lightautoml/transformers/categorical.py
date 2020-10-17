@@ -17,7 +17,7 @@ NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 def categorical_check(dataset: LAMLDataset):
     """
     Check if all passed vars are categories.
@@ -33,7 +33,7 @@ def categorical_check(dataset: LAMLDataset):
         assert roles[f].name == 'Category', 'Only categories accepted in this transformer'
 
 
-@record_history()
+@record_history(enabled=False)
 def oof_task_check(dataset: LAMLDataset):
     """
     Check if all passed vars are categories
@@ -47,7 +47,7 @@ def oof_task_check(dataset: LAMLDataset):
     assert task.name in ['binary', 'reg'], 'Only binary and regression tasks supported in this transformer'
 
 
-@record_history()
+@record_history(enabled=False)
 def multiclass_task_check(dataset: LAMLDataset):
     """
     Check if all passed vars are categories
@@ -61,7 +61,7 @@ def multiclass_task_check(dataset: LAMLDataset):
     assert task.name in ['multiclass'], 'Only multiclass tasks supported in this transformer'
 
 
-@record_history()
+@record_history(enabled=False)
 def encoding_check(dataset: LAMLDataset):
     """
     Check if all passed vars are categories
@@ -79,7 +79,7 @@ def encoding_check(dataset: LAMLDataset):
             f, roles[f])
 
 
-@record_history()
+@record_history(enabled=False)
 class LabelEncoder(LAMLTransformer):
     """
     Simple LabelEncoder in order of frequency.
@@ -192,7 +192,7 @@ class LabelEncoder(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class OHEEncoder(LAMLTransformer):
     """
     Simple OneHotEncoder over label encoded categories
@@ -298,7 +298,7 @@ class OHEEncoder(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class FreqEncoder(LabelEncoder):
     """
     Labels are integers from 1 to n. Unknown category encoded as 0.
@@ -342,7 +342,7 @@ class FreqEncoder(LabelEncoder):
         return self
 
 
-@record_history()
+@record_history(enabled=False)
 class TargetEncoder(LAMLTransformer):
     """
     Out-of-fold target encoding
@@ -489,7 +489,7 @@ class TargetEncoder(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class MultiClassTargetEncoder(LAMLTransformer):
     _fit_checks = (categorical_check, multiclass_task_check, encoding_check)
     _transform_checks = ()
@@ -632,7 +632,7 @@ class MultiClassTargetEncoder(LAMLTransformer):
         return output
 
 
-@record_history()
+@record_history(enabled=False)
 class CatIntersectstions(LabelEncoder):
     """
     Build label encoded intertsections of categorical variables
@@ -728,7 +728,7 @@ class CatIntersectstions(LabelEncoder):
         return super().transform(inter_dataset)
 
 
-@record_history()
+@record_history(enabled=False)
 class OrdinalEncoder(LabelEncoder):
     """
     Encoding ordinal categories into numbers

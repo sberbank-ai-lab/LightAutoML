@@ -10,7 +10,7 @@ from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDatase
 NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 class FoldsIterator(TrainValidIterator):
     """
     Classic cv iterator. Folds should be defined in Reader, based on cross validation method.
@@ -98,7 +98,7 @@ class FoldsIterator(TrainValidIterator):
         return HoldoutIterator(train, valid)
 
 
-@record_history()
+@record_history(enabled=False)
 def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = None,
                        n_folds: Optional[int] = None,
                        iterator: Optional[Callable[[LAMLDataset], Iterator]] = None) -> Union[FoldsIterator, HoldoutIterator,

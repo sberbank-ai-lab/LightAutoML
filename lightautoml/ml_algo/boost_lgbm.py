@@ -14,7 +14,7 @@ from ..pipelines.selection.base import ImportanceEstimator
 from ..validation.base import TrainValidIterator
 
 
-@record_history()
+@record_history(enabled=False)
 class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
     """
     Boosting lgbm.
@@ -107,7 +107,7 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
 
         if rows_num <= 20000:
             init_lr = 0.02
-            ntrees = 5000
+            ntrees = 3000
             es = 200
 
         elif rows_num <= 100000:

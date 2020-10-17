@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import copy  # , deepcopy
 from typing import Any, Optional, Dict, List, Tuple, Sequence, Union, TypeVar
 
 from log_calls import record_history
@@ -18,7 +18,7 @@ ColsSlice = Optional[Union[Sequence[int], Sequence[bool]]]
 RowSlice = Optional[Union[Sequence[str], str]]
 
 
-@record_history()
+@record_history(enabled=False)
 class LAMLColumn:
     """
     Basic class for pair - column, role.
@@ -45,7 +45,7 @@ class LAMLColumn:
         return self.data.__repr__()
 
 
-@record_history()
+@record_history(enabled=False)
 class LAMLDataset:
     """
     Basic class to create dataset.
@@ -229,7 +229,7 @@ class LAMLDataset:
         Returns:
             dict of feature roles.
         """
-        return deepcopy(self._roles)
+        return copy(self._roles)  # copy(self._roles)
 
     @roles.setter
     def roles(self, val: RolesDict):
@@ -240,7 +240,7 @@ class LAMLDataset:
             val: roles dict.
 
         """
-        self._roles = dict(((x, val[x]) for x in self.features))  # copy(val)
+        self._roles = dict(((x, val[x]) for x in self.features))
 
     @property
     def inverse_roles(self) -> Dict[ColumnRole, List[str]]:
@@ -308,8 +308,6 @@ class LAMLDataset:
         # data checks
         for check in self._data_checks:
             check(self)
-
-        # Ае убрал это говно !!!
 
     def empty(self) -> "LAMLDataset":
         """

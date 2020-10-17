@@ -15,7 +15,7 @@ from ...transformers.numeric import StandardScaler, NaNFlags, FillnaMedian, LogO
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history()
+@record_history(enabled=False)
 class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5, max_bin_count: int = 10,

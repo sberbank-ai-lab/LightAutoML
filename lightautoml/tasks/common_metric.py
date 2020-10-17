@@ -7,7 +7,7 @@ from sklearn.metrics import roc_auc_score, mean_squared_error, r2_score, accurac
     mean_squared_log_error
 
 
-@record_history()
+@record_history(enabled=False)
 def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                         q: float = 0.9) -> float:
     """
@@ -33,7 +33,7 @@ def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: O
     return err.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                      a: float = 0.9) -> float:
     """
@@ -77,7 +77,7 @@ def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Opti
 # Second derivative:
 #
 # c2(|x|+c)2
-@record_history()
+@record_history(enabled=False)
 def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                     c: float = 0.9) -> float:
     """
@@ -102,7 +102,7 @@ def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optio
     return err.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None) -> float:
     """
     Computes Mean Absolute Percentage error.
@@ -126,7 +126,7 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray, sampl
 
 
 @record_history()
-def best_class_binary_wrapper(func: Callable) -> Callable:
+class BestClassBinaryWrapper:
     """
     Metric wrapper to get best class prediction instead of probs
 
@@ -136,17 +136,18 @@ def best_class_binary_wrapper(func: Callable) -> Callable:
     Returns:
 
     """
+    def __init__(self, func):
+        self.func = func
 
-    def new_metric(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
         y_pred = (y_pred > .5).astype(np.float32)
 
-        return func(y_true, y_pred, sample_weight, **kwargs)
+        return self.func(y_true, y_pred, sample_weight, **kwargs)
 
-    return new_metric
 
 
 @record_history()
-def best_class_multiclass_wrapper(func: Callable) -> Callable:
+class BestClassMulticlassWrapper:
     """
     Metric wrapper to get best class prediction instead of probs for multiclass
 
@@ -156,13 +157,13 @@ def best_class_multiclass_wrapper(func: Callable) -> Callable:
     Returns:
 
     """
+    def __init__(self, func):
+        self.func = func
 
-    def new_metric(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
         y_pred = (y_pred.argmax(axis=1)).astype(np.float32)
 
-        return func(y_true, y_pred, sample_weight, **kwargs)
-
-    return new_metric
+        return self.func(y_true, y_pred, sample_weight, **kwargs)
 
 
 # TODO: Add custom metrics - precision/recall/fscore at K. Fscore at best co
@@ -175,7 +176,7 @@ valid_str_metric_names = {
     'r2': r2_score,
     'mse': mean_squared_error,
     'mae': mean_absolute_error,
-    'accuracy': best_class_binary_wrapper(accuracy_score),
+    'accuracy': BestClassBinaryWrapper(accuracy_score),
     'rmsle': mean_squared_log_error,
     'fair': mean_fair_error,
     'huber': mean_huber_error,
@@ -188,6 +189,6 @@ valid_str_multiclass_metric_names = {
 
     'auc': roc_auc_score,
     'crossentropy': partial(log_loss, eps=1e-7),
-    'accuracy': best_class_multiclass_wrapper(accuracy_score),
+    'accuracy': BestClassMulticlassWrapper(accuracy_score),
 
 }

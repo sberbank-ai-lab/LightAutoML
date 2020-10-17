@@ -1,5 +1,6 @@
 import warnings
 
+from log_calls import record_history
 from pandas import DataFrame
 
 from .base import AutoMLPreset
@@ -17,6 +18,7 @@ from ...pipelines.selection.permutation_importance_based import NpPermutationImp
 from ...reader.base import PandasToPandasReader
 
 
+@record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
     """
     Classic preset - almost same like sber_ailab_automl but with additional LAMA features
@@ -43,8 +45,6 @@ class TabularAutoML(AutoMLPreset):
                 self.tuning_params['max_tuning_iter'] = 50
             elif length < 70000:
                 self.tuning_params['max_tuning_iter'] = 10
-            # elif length <= 150000:
-            #     self.tuning_params['max_tuning_iter'] = 5
             else:
                 self.tuning_params['max_tuning_iter'] = 5
 
@@ -106,6 +106,17 @@ class TabularAutoML(AutoMLPreset):
             if mode == 2:
                 pre_selector = hard_selector
 
+        # linear model with l2
+        linear_l2_timer = self.timer.get_task_timer('reg_l2')
+        linear_l2_model = LinearLBFGS(timer=linear_l2_timer, **self.linear_l2_params)
+        linear_l2_feats = LinearFeatures(output_categories=True, **self.linear_pipeline_params)
+
+        linear_l2_selector = None
+        if 'linear_l2' in selection_params['select_algos']:
+            linear_l2_selector = pre_selector
+
+        linear_l2_pipe = MLPipeline([linear_l2_model], pre_selection=linear_l2_selector, features_pipeline=linear_l2_feats)
+
         # create lightgbm model
         gbm_timer = self.timer.get_task_timer('gbm')
         gbm_feats = LGBAdvancedPipeline(output_categories=False, **self.gbm_pipeline_params)
@@ -114,7 +125,7 @@ class TabularAutoML(AutoMLPreset):
 
         gbms = [gbm_model]
         # tuned model
-        if self.tuning_params['max_tuning_iter'] > 0:
+        if self.tuning_params['max_tuning_iter'] > 0 and self.tuning_params['max_tuning_time'] > 0:
             gbm_timer_tuned = self.timer.get_task_timer('gbm')
             gbm_model_tuned = BoostLGBM(timer=gbm_timer_tuned, **lgb_params)
             gbm_tuner = OptunaTuner(n_trials=self.tuning_params['max_tuning_iter'],
@@ -127,22 +138,12 @@ class TabularAutoML(AutoMLPreset):
         if 'lgb' in selection_params['select_algos']:
             gbm_selector = pre_selector
 
-        gbm_pipe = MLPipeline(gbms, pre_selection=gbm_selector, features_pipeline=gbm_feats)
+        gbm_pipe = MLPipeline(gbms, force_calc=[True, False], pre_selection=gbm_selector, features_pipeline=gbm_feats)
 
-        # linear model with l2
-        linear_l2_timer = self.timer.get_task_timer('reg_l2')
-        linear_l2_model = LinearLBFGS(timer=linear_l2_timer, **self.linear_l2_params)
-        linear_l2_feats = LinearFeatures(output_categories=True, **self.linear_pipeline_params)
-
-        linear_l2_selector = None
-        if 'linear_l2' in selection_params['select_algos']:
-            linear_l2_selector = pre_selector
-
-        linear_l2_pipe = MLPipeline([linear_l2_model], pre_selection=linear_l2_selector, features_pipeline=linear_l2_feats)
-
+        # blend everything
         blender = WeightedBlender()
 
         # initialize
         self._initialize(reader, [
-            [gbm_pipe, linear_l2_pipe],
+            [linear_l2_pipe, gbm_pipe],
         ], skip_conn=self.general_params['skip_conn'], blender=blender, timer=self.timer)

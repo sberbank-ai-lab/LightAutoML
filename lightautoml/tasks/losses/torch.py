@@ -8,32 +8,34 @@ from torch import nn
 from .base import Loss
 
 
-@record_history()
-def torch_loss_wrapper(func: Callable, flatten: bool = False, log: bool = False, **kwargs: Any) -> Callable:
+@record_history(enabled=False)
+class TorchLossWrapper(nn.Module):
     """
     Cusomize PyTorch-based loss.
 
     Args:
         func: loss to customize. Example: `torch.nn.MSELoss`
-        flatten:
-        log:
         **kwargs: additional parameters.
 
     Returns:
         callable loss, uses format (y_true, y_pred, sample_weight).
 
     """
-    base_loss = func(reduction='none', **kwargs)
 
-    def loss(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
-        # print(y_pred.shape, y_true.shape)
-        if flatten:
+    def __init__(self, func: Callable, flatten=False, log=False, **kwargs: Any):
+        super(TorchLossWrapper, self).__init__()
+        self.base_loss = func(reduction='none', **kwargs)
+        self.flatten = flatten
+        self.log = log
+
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+        if self.flatten:
             y_true = y_true[:, 0].type(torch.LongTensor)
 
-        if log:
+        if self.log:
             y_pred = torch.log(y_pred)
 
-        outp = base_loss(y_pred, y_true)
+        outp = self.base_loss(y_pred, y_true)
 
         if len(outp.shape) == 2:
             outp = outp.sum(dim=1)
@@ -44,10 +46,8 @@ def torch_loss_wrapper(func: Callable, flatten: bool = False, log: bool = False,
 
         return outp.mean()
 
-    return loss
 
-
-@record_history()
+@record_history(enabled=False)
 def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """
     Computes Root Mean Squared Logarithmic Error
@@ -75,7 +75,7 @@ def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return outp.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                    q: float = 0.9):
     """
@@ -106,7 +106,7 @@ def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Op
     return err.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                c: float = 0.9):
     """
@@ -135,7 +135,7 @@ def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
     return err.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                 a: float = 0.9):
     """
@@ -165,7 +165,7 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return err.mean()
 
 
-@record_history()
+@record_history(enabled=False)
 def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """
     Computes Mean Absolute Percentage Error.
@@ -194,20 +194,20 @@ def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
 
 _torch_loss_dict = {
 
-    'mse': torch_loss_wrapper(nn.MSELoss),
-    'mae': torch_loss_wrapper(nn.L1Loss),
-    'logloss': torch_loss_wrapper(nn.BCELoss),
-    'crossentropy': torch_loss_wrapper(nn.NLLLoss, True, True),
-    'rmsle': torch_rmsle,
-    'mape': torch_mape,
-    'quantile': torch_quantile,
-    'fair': torch_fair,
-    'huber': torch_huber,
+    'mse': (nn.MSELoss, False, False),
+    'mae': (nn.L1Loss, False, False),
+    'logloss': (nn.BCELoss, False, False),
+    'crossentropy': (nn.CrossEntropyLoss, True, True),
+    'rmsle': (torch_rmsle, False, False),
+    'mape': (torch_mape, False, False),
+    'quantile': (torch_quantile, False, False),
+    'fair': (torch_fair, False, False),
+    'huber': (torch_huber, False, False),
 
 }
 
 
-@record_history()
+@record_history(enabled=False)
 class TORCHLoss(Loss):
     """
     Loss used for PyTorch.
@@ -225,6 +225,6 @@ class TORCHLoss(Loss):
             self.loss_params = loss_params
 
         if type(loss) is str:
-            self.loss = partial(_torch_loss_dict[loss], **self.loss_params)
+            self.loss = TorchLossWrapper(*_torch_loss_dict[loss], **self.loss_params)
         else:
-            self.loss = partial(loss, **self.loss_params)
+            self.loss = TorchLossWrapper(loss, **self.loss_params)

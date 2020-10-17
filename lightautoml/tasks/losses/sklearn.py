@@ -6,9 +6,14 @@ from log_calls import record_history
 
 from .base import Loss
 
+
+@record_history(enabled=False)
+def fw_rmsle(x, y): return np.log1p(x), y
+
+
 _sk_loss_mapping = {
 
-    'rmsle': ('mse', (lambda x, y: (np.log1p(x), y)), np.expm1)
+    'rmsle': ('mse', fw_rmsle, np.expm1)
 
 }
 
@@ -19,7 +24,7 @@ _sk_force_metric = {
 }
 
 
-@record_history()
+@record_history(enabled=False)
 class SKLoss(Loss):
     """
     Loss used for scikit-learn.

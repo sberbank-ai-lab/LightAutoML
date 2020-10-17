@@ -13,7 +13,7 @@ from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
 
-@record_history()
+@record_history(enabled=False)
 class OptunaTunableMixin(ABC):
     mean_trial_time: float = None
 
@@ -76,7 +76,7 @@ class OptunaTunableMixin(ABC):
         return objective
 
 
-@record_history()
+@record_history(enabled=False)
 class OptunaTuner(ParamsTuner):
     """
     Wrapper for compatibility with optuna framework.
@@ -143,7 +143,7 @@ class OptunaTuner(ParamsTuner):
             flg_new_iterator = True
 
         # TODO: Check if time estimation will be ok with multiprocessing
-        @record_history()
+        @record_history(enabled=False)
         def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
             """
             Callback for number of iteration with time cut-off.
@@ -177,11 +177,11 @@ class OptunaTuner(ParamsTuner):
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
 
-            preds_ds = ml_algo.fit_predict(train_valid_iterator)
-
             if flg_new_iterator:
                 # if tuner was fitted on holdout set we dont need to save train results
                 return None, None
+
+            preds_ds = ml_algo.fit_predict(train_valid_iterator)
 
             return ml_algo, preds_ds
         except optuna.exceptions.OptunaError:

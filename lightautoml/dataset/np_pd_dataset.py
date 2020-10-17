@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import copy  # , deepcopy
 from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
 
 import numpy as np
@@ -31,7 +31,7 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 
 # sparse - do not replace init and set data, but move type assert in checks?
 
-@record_history()
+@record_history(enabled=False)
 class NumpyDataset(LAMLDataset):
     """
     Dataset, that contains info in np.ndarray format.
@@ -75,7 +75,7 @@ class NumpyDataset(LAMLDataset):
         Roles dict.
 
         """
-        return deepcopy(self._roles)
+        return copy(self._roles)
 
     @roles.setter
     def roles(self, val: NpRoles):
@@ -104,7 +104,8 @@ class NumpyDataset(LAMLDataset):
         Returns:
 
         """
-        dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
+        #dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
+        dtypes = list(set([i.dtype for i in self.roles.values()]))
         self.dtype = np.find_common_type(dtypes, [])
 
         for f in self.roles:
@@ -297,7 +298,7 @@ class NumpyDataset(LAMLDataset):
         return dataset.to_numpy()
 
 
-@record_history()
+@record_history(enabled=False)
 class CSRSparseDataset(NumpyDataset):
     """
     Dataset that contains sparse features and np.ndarray targets
@@ -429,7 +430,7 @@ class CSRSparseDataset(NumpyDataset):
         return dataset.to_csr()
 
 
-@record_history()
+@record_history(enabled=False)
 class PandasDataset(LAMLDataset):
     """
     Dataset that contains `pd.DataFrame` features and `pd.Series` targets.
@@ -481,7 +482,6 @@ class PandasDataset(LAMLDataset):
                 if roles[f].name == r:
                     kwargs[k] = data[f]
                     roles[f] = DropRole()
-
         self._initialize(task, **kwargs)
         if data is not None:
             self.set_data(data, None, roles)

@@ -47,7 +47,7 @@ _valid_loss_args = {
 }
 
 
-@record_history()
+@record_history(enabled=False)
 class LAMLMetric:
     """
     Abstract class
@@ -71,8 +71,8 @@ class LAMLMetric:
         raise NotImplementedError
 
 
-@record_history()
-def args_wrapper(func: Callable, metric_params: dict) -> Callable:
+@record_history(enabled=False)
+class ArgsWrapper:
     """
     Wrapper - ignore sample_weight if metric not accepts
 
@@ -83,21 +83,21 @@ def args_wrapper(func: Callable, metric_params: dict) -> Callable:
     Returns:
 
     """
-    keys = inspect.signature(func).parameters
-    flg = 'sample_weight' in keys
-    func = partial(func, **metric_params)
+    def __init__(self, func: Callable, metric_params: dict):
+        keys = inspect.signature(func).parameters
+        self.flg = 'sample_weight' in keys
+        self.func = partial(func, **metric_params)
 
-    # @record_history()
-    def new_func(y_true, y_pred, sample_weight=None):
-        if flg:
-            return func(y_true, y_pred, sample_weight=sample_weight)
+    # @record_history(enabled=False)
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        if self.flg:
+            return self.func(y_true, y_pred, sample_weight=sample_weight)
 
-        return func(y_true, y_pred)
-
-    return new_func
+        return self.func(y_true, y_pred)
 
 
-@record_history()
+
+@record_history(enabled=False)
 class SkMetric(LAMLMetric):
     """
     Abstract class
@@ -186,7 +186,7 @@ class SkMetric(LAMLMetric):
         return value * sign
 
 
-@record_history()
+@record_history(enabled=False)
 class Task:
     """
     Specify task (binary classification, multiclass classification, regression), metrics, losses.
@@ -266,7 +266,8 @@ class Task:
             # case - dict passed directly
             # TODO: check loss parameters?
             #  Or it there will be assert when use functools.partial
-            assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
+            #assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
+            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(loss), 'Invalid loss key.'
             self.losses = loss
 
         else:
@@ -288,7 +289,7 @@ class Task:
             self.metric_name = metric
 
         else:
-            metric = args_wrapper(metric, self.metric_params)
+            metric = ArgsWrapper(metric, self.metric_params)
             self.metric_params = {}
             self.metric_func = metric
             self.metric_name = None

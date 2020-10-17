@@ -31,7 +31,7 @@ UserDefinedRolesSequence = Sequence[UserDefinedRole]
 UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
 
 
-@record_history()
+@record_history(enabled=False)
 class Reader:
     """
     Abstract class
@@ -120,7 +120,7 @@ class Reader:
         return new_reader
 
 
-@record_history()
+@record_history(enabled=False)
 class PandasToPandasReader(Reader):
     """
     Reader to convert pd.DataFrame to AutoML's PandasDataset
@@ -135,7 +135,6 @@ class PandasToPandasReader(Reader):
                  drop_score_co: float = .01,
                  **kwargs: Any):
         """
-        PandasToPandasReader constructor
 
         Args:
             task: Task object
@@ -159,8 +158,7 @@ class PandasToPandasReader(Reader):
             max_score_rate:
             abs_score_val:
             drop_score_co:
-            **kwargs:
-
+            **kwargs: ignored
         """
         super().__init__(task)
         self.samples = samples

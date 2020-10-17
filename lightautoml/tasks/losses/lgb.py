@@ -9,6 +9,10 @@ from log_calls import record_history
 from .base import Loss
 from ..utils import infer_gib
 
+@record_history(enabled=False)
+def fw_rmsle(x, y): return np.log1p(x), y
+
+
 _lgb_metric_mapping = {
 
     'auc': 'auc',
@@ -41,7 +45,7 @@ _lgb_loss_mapping = {
     'mae': ('l1', None, None),
     'mape': ('mape', None, None),
     'crossentropy': ('multiclass', None, None),
-    'rmsle': ('mse', (lambda x, y: (np.log1p(x), y)), np.expm1),
+    'rmsle': ('mse', fw_rmsle, np.expm1),
     'quantile': ('quantile', None, None),
     'huber': ('huber', None, None),
     'fair': ('fair', None, None)
@@ -77,8 +81,8 @@ _lgb_force_metric = {
 }
 
 
-@record_history()
-def custom_multiclass_wrapper(old_metric: Callable) -> Callable:
+@record_history(enabled=False)
+class CustomMulticlassWrapper:
     """
     Wrapper to apply custom metric for classification task
 
@@ -89,16 +93,44 @@ def custom_multiclass_wrapper(old_metric: Callable) -> Callable:
 
     """
 
-    def new_metric(y_true: np.ndarray, y_pred: np.ndarray, *args: Any, **kwargs: Any) -> float:
+    def __init__(self, old_metric):
+        self.old_metric = old_metric
+
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, *args: Any, **kwargs: Any) -> float:
         y_pred = y_pred.reshape((y_true.shape[0], -1), order='F')
         y_true = y_true.astype(np.int32)
 
-        return old_metric(y_true, y_pred, *args, **kwargs)
-
-    return new_metric
+        return self.old_metric(y_true, y_pred, *args, **kwargs)
 
 
-@record_history()
+@record_history(enabled=False)
+class LGBFunc:
+    def __init__(self, metric_func, greater_is_better, bw_func):
+        self.metric_func = metric_func
+        self.greater_is_better = greater_is_better
+        self.bw_func = bw_func
+
+    def __call__(self, pred: np.ndarray, dtrain: lgb.Dataset) -> Tuple[str, float, bool]:
+
+        label = dtrain.get_label()
+        pred = self.bw_func(pred)
+        try:
+            weights = dtrain.get_weight()
+        except Exception:  # Lightgbm raise this exception ...
+            weights = None
+
+        # for weighted case
+        try:
+            val = self.metric_func(label, pred, sample_weight=weights)
+        except TypeError:
+            val = self.metric_func(label, pred)
+
+        # TODO: what if grouped case
+
+        return 'Opt metric', val, self.greater_is_better
+
+
+@record_history(enabled=False)
 class LGBLoss(Loss):
     """
     Loss used for LightGBM.
@@ -173,22 +205,7 @@ class LGBLoss(Loss):
         if metric_params is not None:
             metric_func = partial(metric_func, **metric_params)
 
-        def feval(pred: np.ndarray, dtrain: lgb.Dataset) -> Tuple[str, float, bool]:
-
-            label = dtrain.get_label()
-            pred = self.bw_func(pred)
-            try:
-                weights = dtrain.get_weight()
-            except Exception:  # Lightgbm raise this exception ...
-                weights = None
-
-            val = metric_func(label, pred, sample_weight=weights)
-
-            # TODO: what if grouped case
-
-            return 'Opt metric', val, greater_is_better
-
-        return feval
+        return LGBFunc(metric_func, greater_is_better, self._bw_func)
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
                             metric_params: Optional[Dict] = None):
@@ -224,5 +241,5 @@ class LGBLoss(Loss):
         else:
             self.metric_name = None
             if self.fobj_name == 'multiclass':
-                metric = custom_multiclass_wrapper(metric)
+                metric = CustomMulticlassWrapper(metric)
             self.feval = self.metric_wrapper(metric, greater_is_better, self.metric_params)

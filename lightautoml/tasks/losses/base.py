@@ -7,7 +7,25 @@ from lightautoml.tasks.utils import infer_gib
 from ..common_metric import valid_str_metric_names
 
 
-@record_history()
+@record_history(enabled=False)
+class MetricFunc:
+    def __init__(self, metric_func, m, bw_func):
+        self.metric_func = metric_func
+        self.m = m
+        self.bw_func = bw_func
+
+    def __call__(self, y_true, y_pred, sample_weight=None) -> float:
+        y_pred = self.bw_func(y_pred)
+
+        try:
+            val = self.metric_func(y_true, y_pred, sample_weight=sample_weight)
+        except TypeError:
+            val = self.metric_func(y_true, y_pred)
+
+        return val * self.m
+
+
+@record_history(enabled=False)
 class Loss:
     """
     Loss function with target transformation.
@@ -85,17 +103,7 @@ class Loss:
         if metric_params is not None:
             metric_func = partial(metric_func, **metric_params)
 
-        def metric(y_true, y_pred, sample_weight=None) -> float:
-            y_pred = self.bw_func(y_pred)
-
-            try:
-                val = metric_func(y_true, y_pred, sample_weight=sample_weight)
-            except TypeError:
-                val = metric_func(y_true, y_pred)
-
-            return val * m
-
-        return metric
+        return MetricFunc(metric_func, m, self._bw_func)
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
                             metric_params: Optional[Dict] = None):

@@ -1,7 +1,7 @@
 import warnings
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import Optional, Tuple, Any, List, cast, Dict
+from typing import Optional, Tuple, Any, List, cast, Dict, Sequence
 
 import numpy as np
 from log_calls import record_history
@@ -13,7 +13,7 @@ from ..dataset.roles import NumericRole
 from ..utils.timer import TaskTimer, PipelineTimer
 
 
-@record_history()
+@record_history(enabled=False)
 class MLAlgo(ABC):
     """
     Absract class. ML algorithm. \
@@ -40,6 +40,13 @@ class MLAlgo(ABC):
         List of features.
         """
         return self._features
+
+    @features.setter
+    def features(self, val: Sequence[str]):
+        """
+        List of features.
+        """
+        self._features = list(val)
 
     @property
     def is_fitted(self) -> bool:
@@ -151,7 +158,7 @@ class MLAlgo(ABC):
         self._name = '_'.join([prefix, self._name])
 
 
-@record_history()
+@record_history(enabled=False)
 class NumpyMLAlgo(MLAlgo):
     """
     ML algos that accepts numpy arrays as input.
@@ -244,7 +251,7 @@ class NumpyMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    warnings.warn('Time limit exceeded after calculating {0} folds'.format(n + 1))
+                    warnings.warn('Time limit exceeded after calculating fold {0}'.format(n))
                     break
 
         print('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))

@@ -12,13 +12,14 @@ from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
 from ...ml_algo.utils import tune_and_fit_predict
 
 
-@record_history()
+@record_history(enabled=False)
 class MLPipeline:
     """
     ML Pipeline contains 2 selection part (pre and post), preprocessing part and multiple ML parts.
     """
 
     def __init__(self, ml_algos: Sequence[Union[MLAlgo, Tuple[MLAlgo, ParamsTuner]]],
+                 force_calc: Union[bool, Sequence[bool]] = True,
                  pre_selection: Optional[SelectionPipeline] = None,
                  features_pipeline: Optional[FeaturesPipeline] = None,
                  post_selection: Optional[SelectionPipeline] = None
@@ -28,6 +29,7 @@ class MLPipeline:
 
         Args:
             ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner)
+            force_calc: flag if single fold of ml_algo should be calculated anyway
             pre_selection: initial feature selection. If ``None`` there is no initial selection.
             features_pipeline: composition of feature transforms.
             post_selection: post feature selection. If ``None`` there is no post selection.
@@ -48,7 +50,7 @@ class MLPipeline:
 
         self.post_selection = post_selection
 
-        self.ml_algos = []
+        self._ml_algos = []
         self.params_tuners = []
 
         for n, mt_pair in enumerate(ml_algos):
@@ -62,8 +64,12 @@ class MLPipeline:
 
             mod.set_prefix('Mod_{0}'.format(n))
 
-            self.ml_algos.append(mod)
+            self._ml_algos.append(mod)
             self.params_tuners.append(tuner)
+
+        self.force_calc = [force_calc] * len(self._ml_algos) if type(force_calc) is bool else force_calc
+        # TODO: Do we need this assert?
+        assert any(self.force_calc), 'At least single algo in pipe should be forced to calc'
 
     def fit_predict(self, train_valid: TrainValidIterator) -> LAMLDataset:
         """
@@ -76,6 +82,7 @@ class MLPipeline:
             dataset with predictions of all modles.
 
         """
+        self.ml_algos = []
         # train and apply pre selection
         train_valid = train_valid.apply_selector(self.pre_selection)
 
@@ -87,11 +94,12 @@ class MLPipeline:
 
         predictions = []
 
-        for n in range(len(self.ml_algos)):
-            ml_algo, preds = tune_and_fit_predict(self.ml_algos[n], self.params_tuners[n], train_valid)
-            self.ml_algos[n] = ml_algo
+        for ml_algo, param_tuner, force_calc in zip(self._ml_algos, self.params_tuners, self.force_calc):
+            ml_algo, preds = tune_and_fit_predict(ml_algo, param_tuner, train_valid, force_calc)
+            if ml_algo is not None:
+                self.ml_algos.append(ml_algo)
 
-            predictions.append(preds)
+                predictions.append(preds)
 
         predictions = concatenate(predictions)
 
@@ -130,5 +138,5 @@ class MLPipeline:
             prefix: new prefix name.
 
         """
-        for n, mod in enumerate(self.ml_algos):
+        for n, mod in enumerate(self._ml_algos):
             mod.set_prefix(prefix)

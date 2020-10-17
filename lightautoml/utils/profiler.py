@@ -6,6 +6,12 @@ import networkx as nx
 import pandas as pd
 
 
+def get_last_element(x): return x[-1]
+
+
+def get_string(x): return x.__module__ + '.' + x.__qualname__
+
+
 class Profiler:
     """
     AutoML algorithm statistics profiler.
@@ -106,6 +112,8 @@ class Profiler:
         self.full_stats_df = None
         self.prof_graph = None
 
+        self._get_all_funcs()
+
     def _get_all_funcs(self):
         queue = [__import__('lightautoml')]
 
@@ -144,7 +152,7 @@ class Profiler:
             self.all_funcs.update(meth_from_module)
 
         self.all_funcs = sorted(
-            list(self.all_funcs), key=lambda x: x.__module__ + '.' + x.__qualname__)
+            list(self.all_funcs), key=get_string)
         self.all_funcs = [
             f for f in self.all_funcs if f.__name__ not in self.drop_funcs]
         print('ALL_FUNCS len = {}'.format(len(self.all_funcs)))
@@ -166,8 +174,7 @@ class Profiler:
                     cur_df['call_num'] = list(range(1, len(cur_df) + 1))
                 cur_df.insert(4, 'run_fname',
                               cur_df['prefixed_func_name'].astype(str) + ' [' + cur_df['call_num'].astype(str) + ']')
-                cur_df['caller_chain'] = cur_df['caller_chain'].map(
-                    lambda x: x[-1])
+                cur_df['caller_chain'] = cur_df['caller_chain'].map(get_last_element)
                 dfs_arr.append(cur_df)
             f.stats.clear_history()
 
@@ -254,9 +261,16 @@ class Profiler:
             report_path: path to save profile.
 
         """
-        self._get_all_funcs()
         self._aggregate_stats_from_functions()
         if self.full_stats_df is None:
             return
         self._generate_and_check_calls_graph()
         self._create_html_report(report_path)
+
+    def change_deco_settings(self, new_settings: dict):
+        for f in self.all_funcs:
+            if not hasattr(f, 'record_history_settings'):
+                print('\t Func with no decorator - {}'.format(f))
+                continue
+            for k in new_settings:
+                f.record_history_settings[k] = new_settings[k]

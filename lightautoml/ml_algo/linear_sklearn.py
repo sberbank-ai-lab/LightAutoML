@@ -16,7 +16,7 @@ NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset]
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
 
-@record_history()
+@record_history(enabled=False)
 class LinearLBFGS(NumpyMLAlgo):
     """
     LBFGS L2 regression based on torch
@@ -86,7 +86,7 @@ class LinearLBFGS(NumpyMLAlgo):
         return pred
 
 
-@record_history()
+@record_history(enabled=False)
 class LinearL1CD(NumpyMLAlgo):
     """
     Coordinate descent based on sklearn implementation
@@ -138,7 +138,8 @@ class LinearL1CD(NumpyMLAlgo):
         assert 'sklearn' in task.losses, 'Sklearn loss should be defined'
 
         if task.name == 'reg':
-            suggested_params['cs'] = list(map(lambda x: 1 / (2 * x), suggested_params['cs']))
+            #suggested_params['cs'] = list(map(lambda x: 1 / (2 * x), suggested_params['cs']))
+            suggested_params['cs'] = [1 / (2 * i) for i in suggested_params['cs']]
 
         return suggested_params
 

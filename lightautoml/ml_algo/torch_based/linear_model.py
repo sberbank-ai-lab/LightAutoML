@@ -9,12 +9,12 @@ from scipy import sparse
 from torch import nn
 from torch import optim
 
-from ...tasks.losses import torch_loss_wrapper
+from ...tasks.losses import TorchLossWrapper
 
 ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 
-@record_history()
+@record_history(enabled=False)
 def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor:
     """
     Convert scipy sparse matrix to torch sparse tensor.
@@ -35,7 +35,7 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
     return sparse_tensor
 
 
-@record_history()
+@record_history(enabled=False)
 class CatLinear(nn.Module):
     """
     Simple linear model to handle numeric and categorical features.
@@ -83,7 +83,7 @@ class CatLinear(nn.Module):
         return x
 
 
-@record_history()
+@record_history(enabled=False)
 class CatLogisticRegression(CatLinear):
     """
     Realisation of torch-based logistic regression.
@@ -103,12 +103,13 @@ class CatLogisticRegression(CatLinear):
 
         """
         x = super().forward(numbers, categories)
+        x = torch.clamp(x, -50, 50)
         x = self.sigmoid(x)
 
         return x
 
 
-@record_history()
+@record_history(enabled=False)
 class CatRegression(CatLinear):
     """
     Realisation of torch-based linear regreession.
@@ -118,7 +119,7 @@ class CatRegression(CatLinear):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
 
 
-@record_history()
+@record_history(enabled=False)
 class CatMulticlass(CatLinear):
     """
     Realisation of multi-class linear classifier.
@@ -130,12 +131,13 @@ class CatMulticlass(CatLinear):
 
     def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
         x = super().forward(numbers, categories)
+        x = torch.clamp(x, -50, 50)
         x = self.softmax(x)
 
         return x
 
 
-@record_history()
+@record_history(enabled=False)
 class TorchBasedLinearEstimator:
     """
     Linear model based on torch L-BFGS solver
@@ -389,7 +391,7 @@ class TorchBasedLinearEstimator:
         return self._score(data, data_cat)
 
 
-@record_history()
+@record_history(enabled=False)
 class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
     """
     Linear binary classifier
@@ -423,7 +425,7 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
             self._binary = False
 
         if loss is None:
-            loss = torch_loss_wrapper(_loss)
+            loss = TorchLossWrapper(_loss)
 
         super().__init__(data_size, categorical_idx, embed_sizes, output_size, cs, max_iter, tol, early_stopping, loss, metric)
         self.model = _model(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
@@ -445,7 +447,7 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         return pred
 
 
-@record_history()
+@record_history(enabled=False)
 class TorchBasedLinearRegression(TorchBasedLinearEstimator):
     """
     Torch-based linear regressor optimized by L-BFGS.
@@ -470,7 +472,7 @@ class TorchBasedLinearRegression(TorchBasedLinearEstimator):
 
         """
         if loss is None:
-            loss = torch_loss_wrapper(nn.MSELoss)
+            loss = TorchLossWrapper(nn.MSELoss)
         super().__init__(data_size, categorical_idx, embed_sizes, output_size, cs, max_iter, tol, early_stopping, loss, metric)
         self.model = CatRegression(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
 

@@ -9,7 +9,7 @@ from lightautoml.dataset.roles import ColumnRole
 RoleType = TypeVar("RoleType", bound=ColumnRole)
 
 
-@record_history()
+@record_history(enabled=False)
 def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, RoleType]:
     """
     Parse roles from old format numeric: [var1, var2 ...] to {var1:numeric, var2:numeric ...}.
@@ -37,7 +37,7 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
     return roles
 
 
-@record_history()
+@record_history(enabled=False)
 def get_common_concat(datasets: Sequence[LAMLDataset]) -> Callable[[Sequence[LAMLDataset]], LAMLDataset]:
     """
     Takes multiple datasets as input and check - if is's ok to concatenate it and return function.
@@ -64,7 +64,7 @@ def get_common_concat(datasets: Sequence[LAMLDataset]) -> Callable[[Sequence[LAM
     raise TypeError('Unable to concatenate dataset types {0}'.format(list(dataset_types)))
 
 
-@record_history()
+@record_history(enabled=False)
 def concatenate(datasets: Sequence[LAMLDataset]) -> LAMLDataset:
     """
     Check if datasets have common concat function and then apply.
