@@ -480,7 +480,7 @@ class PandasDataset(LAMLDataset):
         for f in roles:
             for k, r in zip(valid_array_attributes, array_attr_roles):
                 if roles[f].name == r:
-                    kwargs[k] = data[f]
+                    kwargs[k] = data[f].reset_index(drop=True)
                     roles[f] = DropRole()
         self._initialize(task, **kwargs)
         if data is not None:
@@ -532,6 +532,7 @@ class PandasDataset(LAMLDataset):
                 self.dtypes[f] = self.roles[f].dtype
 
         self.data = self.data.astype(self.dtypes)
+        self.data.reset_index(drop=True, inplace=True)
         # do we need to reset_index ?? If yes - drop for Series attrs too
         # case to check - concat pandas dataset and from numpy to pandas dataset
         # TODO: Think about reset_index here

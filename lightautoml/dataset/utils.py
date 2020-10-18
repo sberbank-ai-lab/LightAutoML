@@ -1,9 +1,9 @@
-from typing import Dict, Union, Sequence, Callable, TypeVar
+from typing import Dict, Union, Sequence, Callable, TypeVar, Optional, Tuple
 
 from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
-from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset
+from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from lightautoml.dataset.roles import ColumnRole
 
 RoleType = TypeVar("RoleType", bound=ColumnRole)
@@ -38,7 +38,7 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
 
 
 @record_history(enabled=False)
-def get_common_concat(datasets: Sequence[LAMLDataset]) -> Callable[[Sequence[LAMLDataset]], LAMLDataset]:
+def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Optional[type]]:
     """
     Takes multiple datasets as input and check - if is's ok to concatenate it and return function.
 
@@ -55,13 +55,22 @@ def get_common_concat(datasets: Sequence[LAMLDataset]) -> Callable[[Sequence[LAM
     # general - if single type, concatenation for that type
     if len(dataset_types) == 1:
         klass = list(dataset_types)[0]
-        return klass.concat
+        return klass.concat, None
 
     # np and sparse goes to sparse
     elif dataset_types == {NumpyDataset, CSRSparseDataset}:
-        return CSRSparseDataset.concat
+        return CSRSparseDataset.concat, CSRSparseDataset
+
+    elif dataset_types == {NumpyDataset, PandasDataset}:
+        return numpy_and_pandas_concat, None
 
     raise TypeError('Unable to concatenate dataset types {0}'.format(list(dataset_types)))
+
+
+def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset]]) -> PandasDataset:
+    datasets = [x.to_pandas() for x in datasets]
+
+    return PandasDataset.concat(datasets)
 
 
 @record_history(enabled=False)
@@ -76,6 +85,16 @@ def concatenate(datasets: Sequence[LAMLDataset]) -> LAMLDataset:
         LAMLDataset with concatenated features.
 
     """
-    conc = get_common_concat(datasets)
+    conc, klass = get_common_concat(datasets)
+
+    # this part is made to avoid setting first dataset of required type
+    if klass is not None:
+
+        n = 0
+        for n, ds in enumerate(datasets):
+            if type(ds) is klass:
+                break
+
+        datasets = [datasets[n]] + [x for (y, x) in enumerate(datasets) if n != y]
 
     return conc(datasets)
