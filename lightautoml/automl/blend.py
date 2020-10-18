@@ -121,7 +121,7 @@ class BestModelSelector(Blender):
                 best_pred = pred
 
         best_pipe = pipes[best_pipe_idx]
-        best_pipe.ml_algos = best_pipe.ml_algos[best_model_idx]
+        best_pipe.ml_algos = [best_pipe.ml_algos[best_model_idx]]
 
         return best_pred, [best_pipe]
 
