@@ -1,5 +1,7 @@
 # LightAutoML (LAMA) - automatic model creation framework
 
+[![Slack](https://lightautoml-slack.herokuapp.com/badge.svg)](https://lightautoml-slack.herokuapp.com)
+
 LightAutoML (LAMA) project from Sberbank AI Lab - framework for automatic classification and regression model creation.
 
 Current available tasks to solve:
