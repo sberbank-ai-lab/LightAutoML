@@ -14,8 +14,8 @@ array_attr_roles = ('Target', 'Group', 'Folds', 'Weights')
 RoleType = TypeVar("RoleType", bound=ColumnRole)
 RolesDict = Dict[str, RoleType]
 IntIdx = Union[Sequence[int], int]
-ColsSlice = Optional[Union[Sequence[int], Sequence[bool]]]
-RowSlice = Optional[Union[Sequence[str], str]]
+RowSlice = Optional[Union[Sequence[int], Sequence[bool]]]
+ColSlice = Optional[Union[Sequence[str], str]]
 
 
 @record_history(enabled=False)
@@ -96,7 +96,7 @@ class LAMLDataset:
         return self.data.__repr__()
 
     # default behavior and abstract methods
-    def __getitem__(self, k: Tuple[ColsSlice, RowSlice]) -> Union['LAMLDataset', LAMLColumn]:
+    def __getitem__(self, k: Tuple[RowSlice, ColSlice]) -> Union['LAMLDataset', LAMLColumn]:
         """
         Define how to slice a dataset in way dataset[[1, 2, 3...], ['feat_0', 'feat_1'...]].
         Default behavior based on ._get_cols, ._get_rows, ._get_2d.
@@ -125,7 +125,7 @@ class LAMLDataset:
 
             # case of multiple columns - return LAMLDataset
             roles = dict(((x, self.roles[x]) for x in self.roles if x in cols))
-            features = [x for x in self.features if x in cols]
+            features = [x for x in cols if x in set(self.features)]
         else:
             data, roles, features = self.data, self.roles, self.features
 

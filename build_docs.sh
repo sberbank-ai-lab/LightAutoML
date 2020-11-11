@@ -2,7 +2,7 @@
 
 set -e
 PACKAGE_NAME=LightAutoML_LAMA
-source ./automl_venv/bin/activate
+source ./lama_venv/bin/activate
 
 #Build docs
 cd docs

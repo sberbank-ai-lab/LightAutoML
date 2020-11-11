@@ -6,6 +6,7 @@ from log_calls import record_history
 # import pandas as pd
 from pandas import Series, DataFrame
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.utils.murmurhash import murmurhash3_32
 
 from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
@@ -654,19 +655,22 @@ class CatIntersectstions(LabelEncoder):
         self.max_depth = max_depth
 
     @staticmethod
-    def _make_category(df: DataFrame) -> Series:
+    def _make_category(df: DataFrame, cols: Sequence[str]) -> np.ndarray:
         """
-        Make single string category
+        Make hash for category interactions
+
         Args:
             df:
+            cols:
 
         Returns:
 
         """
-        res = df[df.columns[0]].astype(str)
+        res = np.empty((df.shape[0],), dtype=np.int32)
 
-        for i in df.columns[1:]:
-            res += df[i].astype(str)
+        for n, inter in enumerate(zip(*(df[x] for x in cols))):
+            h = murmurhash3_32('_'.join(map(str, inter)), seed=42)
+            res[n] = h
 
         return res
 
@@ -686,7 +690,7 @@ class CatIntersectstions(LabelEncoder):
         new_df = DataFrame(index=df.index)
         for comb in self.intersections:
             name = '({0})'.format('__'.join(comb))
-            new_df[name] = self._make_category(df[list(comb)])
+            new_df[name] = self._make_category(df, comb)
             roles[name] = CategoryRole(object, unknown=max((dataset.roles[x].unknown for x in comb)), label_encoded=True)
 
         output = dataset.empty()

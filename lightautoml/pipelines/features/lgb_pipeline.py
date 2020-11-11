@@ -77,7 +77,7 @@ class LGBSimpleFeatures(FeaturesPipeline):
 class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
-                 max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None, multiclass_te: bool = True,
+                 max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None, multiclass_te_co: int = 3,
                  auto_unique_co: int = 10, output_categories: bool = False):
         """
 
@@ -86,10 +86,10 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
             top_intersections:
             max_intersection_depth:
             subsample:
-            multiclass_te:
+            multiclass_te_co:
             auto_unique_co:
         """
-        super().__init__(multiclass_te=multiclass_te,
+        super().__init__(multiclass_te_co=multiclass_te_co,
                          top_intersections=top_intersections,
                          max_intersection_depth=max_intersection_depth,
                          subsample=subsample,
@@ -116,29 +116,36 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
         output_category_role = CategoryRole(np.float32) if self.output_categories else NumericRole(np.float32)
 
         # handle categorical feats
-        # split categories by handling type. This pipe use 3 encodings - freq/label/target
+        # split categories by handling type. This pipe use 3 encodings - freq/label/target/ordinal
         # 1 - separate freqs. It does not need label encoding
         transformer_list.append(self.get_freq_encoding(train))
 
-        # 2 - check 'auto' type (ohe is the same - no ohe in gbm)
+        # 2 - check different target encoding parts and split (ohe is the same as auto - no ohe in gbm)
         auto = (get_columns_by_role(train, 'Category', encoding_type='auto')
                 + get_columns_by_role(train, 'Category', encoding_type='ohe'))
-        auto_te, auto_le = [], auto
-        # auto are splitted on label encoder and target encoder parts if
-        # 1) target_encoder defined
-        # 2) output should not be categories
-        if target_encoder is not None and not self.output_categories and len(auto) > 0:
-            un_values = self.get_uniques_cnt(train, auto)
-            auto_te = [x for x in un_values.index if un_values[x] > self.auto_unique_co]
-            auto_le = sorted(list(set(auto) - set(auto_te)))
 
-        # collect target encoded part
-        te = get_columns_by_role(train, 'Category', encoding_type='oof') + auto_te
-        # collect label encoded part
-        le = get_columns_by_role(train, 'Category', encoding_type='int') + auto_le
-        if target_encoder is None or self.output_categories:
-            le.extend(te)
+        if self.output_categories:
+            le = (auto + get_columns_by_role(train, 'Category', encoding_type='oof')
+                  + get_columns_by_role(train, 'Category', encoding_type='int'))
             te = []
+            ordinal = None
+
+        else:
+            le = get_columns_by_role(train, 'Category', encoding_type='int')
+            ordinal = get_columns_by_role(train, 'Category', ordinal=True)
+
+            if target_encoder is not None:
+                te = get_columns_by_role(train, 'Category', encoding_type='oof')
+                # split auto categories by unique values cnt
+                un_values = self.get_uniques_cnt(train, auto)
+                te = te + [x for x in un_values.index if un_values[x] > self.auto_unique_co]
+                ordinal = ordinal + list(set(auto) - set(te))
+
+            else:
+                te = []
+                ordinal = ordinal + auto + get_columns_by_role(train, 'Category', encoding_type='oof')
+
+            ordinal = sorted(list(set(ordinal)))
 
         # get label encoded categories
         le_part = self.get_categorical_raw(train, le)
@@ -146,6 +153,7 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
             le_part = SequentialTransformer([le_part, ChangeRoles(output_category_role)])
             transformer_list.append(le_part)
 
+        # get target encoded part
         te_part = self.get_categorical_raw(train, te)
         if te_part is not None:
             te_part = SequentialTransformer([te_part, target_encoder()])
@@ -163,7 +171,7 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
 
         # add numeric pipeline
         transformer_list.append(self.get_numeric_data(train))
-        transformer_list.append(self.get_ordinal_encoding(train))
+        transformer_list.append(self.get_ordinal_encoding(train, ordinal))
         # add difference with base date
         transformer_list.append(self.get_datetime_diffs(train))
         # add datetime seasonality

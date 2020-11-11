@@ -30,7 +30,7 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
     np_idx = np.stack([matrix.row, matrix.col], axis=0).astype(np.int64)
     idx = torch.from_numpy(np_idx)
     values = torch.from_numpy(matrix.data)
-    sparse_tensor = torch.sparse_coo_tensor(idx, values)
+    sparse_tensor = torch.sparse_coo_tensor(idx, values, size=matrix.shape)
 
     return sparse_tensor
 

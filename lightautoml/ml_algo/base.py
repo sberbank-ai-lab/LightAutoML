@@ -1,16 +1,18 @@
 import warnings
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import Optional, Tuple, Any, List, cast, Dict, Sequence
+from typing import Optional, Tuple, Any, List, cast, Dict, Sequence, Union
 
 import numpy as np
 from log_calls import record_history
 
 from lightautoml.validation.base import TrainValidIterator
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..dataset.roles import NumericRole
 from ..utils.timer import TaskTimer, PipelineTimer
+
+TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
 @record_history(enabled=False)
@@ -157,13 +159,19 @@ class MLAlgo(ABC):
         """
         self._name = '_'.join([prefix, self._name])
 
+    def set_timer(self, timer: TaskTimer) -> 'MLAlgo':
+
+        self.timer = timer
+
+        return self
+
 
 @record_history(enabled=False)
-class NumpyMLAlgo(MLAlgo):
+class TabularMLAlgo(MLAlgo):
     """
     ML algos that accepts numpy arrays as input.
     """
-    _name: str = 'NumpyAlgo'
+    _name: str = 'TabularAlgo'
 
     def _set_prediction(self, dataset: NumpyDataset, preds_arr: np.ndarray) -> NumpyDataset:
         """
@@ -184,7 +192,7 @@ class NumpyMLAlgo(MLAlgo):
 
         return dataset
 
-    def fit_predict_single_fold(self, train: NumpyDataset, valid: NumpyDataset) -> Tuple[Any, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
         """
         Implements training and prediction on single fold.
 
@@ -262,7 +270,7 @@ class NumpyMLAlgo(MLAlgo):
         preds_ds = self._set_prediction(preds_ds, preds_arr)
         return preds_ds
 
-    def predict_single_fold(self, model: Any, dataset: NumpyDataset) -> np.ndarray:
+    def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:
         """
         Implements prediction on single fold.
 
@@ -276,7 +284,7 @@ class NumpyMLAlgo(MLAlgo):
         """
         raise NotImplementedError
 
-    def predict(self, dataset: NumpyDataset) -> NumpyDataset:
+    def predict(self, dataset: TabularDataset) -> NumpyDataset:
         """
         Mean prediction for all fitted models.
 

@@ -209,6 +209,8 @@ class SelectionPipeline:
             raw_importances: importances of output features.
 
         """
+        if self.features_pipeline is None:
+            return raw_importances.copy()
         mapped = map_pipeline_names(self.in_features, raw_importances.index)
         mapped_importance = Series(raw_importances.values, index=mapped)
 

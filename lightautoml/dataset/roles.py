@@ -148,19 +148,17 @@ class CategoryRole(ColumnRole):
     def __init__(self, dtype: Dtype = object, encoding_type: str = 'auto', unknown: int = 5, force_input: bool = False,
                  label_encoded: bool = False, ordinal: bool = False):
         """
-        Create category role with specific dtype and attrs.
-
+        Create category role with specific dtype and attrs
         Args:
-            dtype: variable type.
-            encoding_type: encoding type. Valid are:
-
+            dtype: variable type
+            encoding_type: encoding type. Valid are
                 - auto - default processing
                 - int - encode with int
                 - oof - out-of-fold target encoding
                 - freq - frequency encoding
                 - ohe - one hot encoding
             unknown: int cut-off freq to process rare categories as unseen
-            force_input: select a feature for training regardless of the selector results
+            force_input: select a feature for training regardless of the selector results.
 
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?

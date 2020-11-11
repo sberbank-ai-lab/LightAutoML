@@ -133,7 +133,7 @@ class SkMetric(LAMLMetric):
 
         Args:
             metric: spectfies metric.  \
-             Format: func(y_true, y_false, Optional[sample_weight], \*\*kwargs) -> `float`.
+             Format: func(y_true, y_false, Optional[sample_weight], **kwargs) -> `float`.
             name: name of metric.
             greater_is_better: whether or not higher metric value is better.
             one_dim: `True` for single class, False for multiclass.

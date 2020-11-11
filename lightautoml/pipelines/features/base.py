@@ -323,8 +323,10 @@ class TabularDataFeatures:
         if train.folds is not None:
             if train.task.name in ['binary', 'reg']:
                 target_encoder = TargetEncoder
-            elif self.multiclass_te:
-                target_encoder = MultiClassTargetEncoder
+            else:
+                n_classes = train.target.max() + 1
+                if n_classes <= self.multiclass_te_co:
+                    target_encoder = MultiClassTargetEncoder
 
         return target_encoder
 
@@ -457,7 +459,7 @@ class TabularDataFeatures:
         Args:
             *kwargs:
         """
-        self.multiclass_te = False
+        self.multiclass_te_co = 3
         self.top_intersections = 5
         self.max_intersection_depth = 3
         self.subsample = 10000

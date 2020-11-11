@@ -33,10 +33,11 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
     if not force_calc and single_fold_time is not None and single_fold_time > timer.time_left:
         return None, None
 
-    # TODO: Set some conditions to the tuner
-    new_algo, preds = params_tuner.fit(ml_algo, train_valid)
-    if preds is not None:
-        return new_algo, preds
+    if params_tuner.best_params is None:
+        # TODO: Set some conditions to the tuner
+        new_algo, preds = params_tuner.fit(ml_algo, train_valid)
+        if preds is not None:
+            return new_algo, preds
 
     if not force_calc and single_fold_time is not None and single_fold_time > timer.time_left:
         return None, None

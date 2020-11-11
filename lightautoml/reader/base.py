@@ -143,12 +143,10 @@ class PandasToPandasReader(Reader):
             max_constant_rate: float
             cv: float or callable
             random_state: int
-            roles_params: dict of params of features roles. 
-                
-                Example:
-                    It's optional and commonly comes from config
-
-                    >>> roles_params = {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
+            roles_params: dict of params of features roles. Ex. {
+                    'numeric': {'dtype': np.float32},
+                    'datetime': {'date_format': '%Y-%m-%d'}
+                } It's optional and commonly comes from config
             n_jobs: int number of processes
             advanced_roles:
             numeric_unqiue_rate:
@@ -158,7 +156,7 @@ class PandasToPandasReader(Reader):
             max_score_rate:
             abs_score_val:
             drop_score_co:
-            **kwargs: ignored
+            **kwargs:
         """
         super().__init__(task)
         self.samples = samples
@@ -297,6 +295,7 @@ class PandasToPandasReader(Reader):
         assert len(self.used_features) > 0, 'All features are excluded for some reasons'
         # assert len(self.used_array_attrs) > 0, 'At least target should be defined in train dataset'
         # create folds
+
         folds = set_sklearn_folds(self.task, kwargs['target'].values, cv=self.cv, random_state=self.random_state,
                                   group=None if 'group' not in kwargs else kwargs['group'])
         if folds is not None:

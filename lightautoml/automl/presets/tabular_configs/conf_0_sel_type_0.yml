@@ -1,6 +1,6 @@
 general_params:
   # possible values are list of lists, that describes levels
-  # possible values are 'lgb', 'lgb_tuned' and 'linear_l2'. List will be extended later
+  # possible values are ['lgb', 'lgb_tuned', 'linear_l2']. List will be extended later
   # or 'auto' - configuration will be infered from data
   # ex.[['lgb', 'lgb_tuned', 'linear_l2'], ['lgb', 'linear_l2']] is 3 algos on 1 level, 2 algos on 2 level and blender on 3 level
   # to define more than 1 level nested_cv_params.cv should be > 1
@@ -51,7 +51,7 @@ selection_params:
   # selection mode 0/1/2
   # 0 for no selection, 1 - cutoff selection, 2 - iterative selection
   # harder features selection means increasing train time
-  mode: 1
+  mode: 0
   # importance type permutation/gain
   importance_type: 'gain'
   # pretrain selector on holdout set. True - fast/ False - accurate
@@ -59,7 +59,7 @@ selection_params:
   cutoff: 0
   feature_group_size: 1
   max_features_cnt_in_result:
-  # list of algos to apply selector. Possible values - 'lgb', 'linear_l2'
+  # list of algos to apply selector
   select_algos: ['lgb']
 
 tuning_params:

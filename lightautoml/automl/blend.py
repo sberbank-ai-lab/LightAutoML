@@ -81,6 +81,11 @@ class Blender:
 
         self._outp_dim = pred0.shape[1] // len(pipe0.ml_algos)
         self._outp_prob = pred0.task.name in ['binary', 'multiclass']
+        self._score = predictions[0].task.get_dataset_metric()
+
+    def score(self, dataset: LAMLDataset):
+
+        return self._score(dataset, True)
 
 
 @record_history(enabled=False)
@@ -101,7 +106,6 @@ class BestModelSelector(Blender):
         Returns:
 
         """
-        metric_func = pipes[0].ml_algos[0].score
         self._set_metadata(predictions, pipes)
         splitted_preds, model_idx, pipe_idx = self.split_models(predictions)
 
@@ -112,7 +116,7 @@ class BestModelSelector(Blender):
 
         for pred, mod, pipe in zip(splitted_preds, model_idx, pipe_idx):
 
-            score = metric_func(pred)
+            score = self.score(pred)
 
             if score > best_score:
                 best_pipe_idx = pipe
@@ -157,7 +161,7 @@ class MeanBlender(Blender):
 
         pred = np.nanmean([x.data for x in splitted_preds], axis=0)
 
-        outp.set_data(pred, ['MeanBlend_{0}'.format(x) for x in range(pred.shape[0])],
+        outp.set_data(pred, ['MeanBlend_{0}'.format(x) for x in range(pred.shape[1])],
                       NumericRole(np.float32, prob=self._outp_prob))
 
         return outp
@@ -216,8 +220,8 @@ class WeightedBlender(Blender):
             wts = np.ones(length, dtype=np.float32) / length
 
         weighted_pred = np.nansum([x.data * w for (x, w) in zip(splitted_preds, wts)], axis=0).astype(np.float32)
-        not_nulls = np.sum([np.logical_not(np.isnan(x.data).any(axis=1)) for x in splitted_preds], axis=0).astype(
-            np.float32) / length
+        not_nulls = np.sum([np.logical_not(np.isnan(x.data).any(axis=1)) * w for (x, w) in zip(splitted_preds, wts)],
+                           axis=0).astype(np.float32)
         not_nulls = not_nulls[:, np.newaxis]
 
         weighted_pred /= not_nulls
@@ -248,25 +252,25 @@ class WeightedBlender(Blender):
 
         return candidate
 
-    def _get_scorer(self, score_func: Callable, splitted_preds: Sequence[NumpyDataset], idx: int, wts: np.ndarray) -> Callable:
+    def _get_scorer(self, splitted_preds: Sequence[NumpyDataset], idx: int, wts: np.ndarray) -> Callable:
 
         def scorer(x):
             candidate = self._get_candidate(wts, idx, x)
 
             pred = self._get_weighted_pred(splitted_preds, candidate)
-            score = score_func(pred)
+            score = self.score(pred)
 
             return -score
 
         return scorer
 
-    def _optimize(self, score_func: Callable, splitted_preds: Sequence[NumpyDataset]) -> np.ndarray:
+    def _optimize(self, splitted_preds: Sequence[NumpyDataset]) -> np.ndarray:
 
         length = len(splitted_preds)
         candidate = np.ones(length, dtype=np.float32) / length
         best_pred = self._get_weighted_pred(splitted_preds, candidate)
 
-        best_score = score_func(best_pred)
+        best_score = self.score(best_pred)
         print('Blending: Optimization starts with equal weights and score {0}'.format(best_score))
         score = best_score
         for _ in range(self.max_iters):
@@ -276,7 +280,7 @@ class WeightedBlender(Blender):
                 if candidate[i] == 1:
                     continue
 
-                obj = self._get_scorer(score_func, splitted_preds, i, candidate)
+                obj = self._get_scorer(splitted_preds, i, candidate)
                 opt_res = minimize_scalar(obj, method='Bounded', bounds=(0, 1),
                                           options={'disp': False, 'maxiter': self.max_inner_iters})
                 w = opt_res.x
@@ -337,8 +341,8 @@ class WeightedBlender(Blender):
         """
         self._set_metadata(predictions, pipes)
         splitted_preds, _, pipe_idx = cast(List[NumpyDataset], self.split_models(predictions))
-        score_func = pipes[0].ml_algos[0].score
-        wts = self._optimize(score_func, splitted_preds)
+
+        wts = self._optimize(splitted_preds)
         splitted_preds = [x for (x, w) in zip(splitted_preds, wts) if w > 0]
         pipes, self.wts = self._prune_pipe(pipes, wts, pipe_idx)
 

@@ -33,6 +33,7 @@ def set_sklearn_folds(task: Task, target: np.ndarray, cv: Union[Callable, int] =
         if group is not None:
             split = GroupKFold(cv).split(group, group, group)
         elif task.name in ['binary', 'multiclass']:
+
             split = StratifiedKFold(cv, random_state=random_state, shuffle=True).split(
                 target, target)
         else:

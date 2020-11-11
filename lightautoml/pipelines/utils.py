@@ -35,7 +35,7 @@ def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) 
                 mapped[n] = name
                 break
 
-    assert None not in mapped, 'Can not infer names'
+    assert None not in mapped, 'Can not infer names. For feature selection purposes use simple pipeline (one-to-one)'
 
     return mapped
 

@@ -66,8 +66,17 @@ def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Option
 
     raise TypeError('Unable to concatenate dataset types {0}'.format(list(dataset_types)))
 
-
+@record_history(enabled=False)
 def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset]]) -> PandasDataset:
+    """
+    Concat of numpy and pandas dataset
+
+    Args:
+        datasets:
+
+    Returns:
+
+    """
     datasets = [x.to_pandas() for x in datasets]
 
     return PandasDataset.concat(datasets)

@@ -6,6 +6,7 @@ from lightautoml.validation.base import TrainValidIterator
 from ..features.base import FeaturesPipeline, EmptyFeaturePipeline
 from ..selection.base import SelectionPipeline, EmptySelector
 from ...dataset.base import LAMLDataset
+
 from ...dataset.utils import concatenate
 from ...ml_algo.base import MLAlgo
 from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
@@ -79,7 +80,7 @@ class MLPipeline:
             train_valid: dataset iterator.
 
         Returns:
-            dataset with predictions of all modles.
+            dataset with predictions of all models.
 
         """
         self.ml_algos = []
@@ -140,3 +141,7 @@ class MLPipeline:
         """
         for n, mod in enumerate(self._ml_algos):
             mod.set_prefix(prefix)
+
+    def prune_algos(self, idx: Sequence[int]):
+
+        self.ml_algos = [x for (n, x) in enumerate(self.ml_algos) if n not in idx]

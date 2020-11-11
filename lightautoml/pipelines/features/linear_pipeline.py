@@ -20,7 +20,8 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5, max_bin_count: int = 10,
                  max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None,
-                 sparse_ohe: Union[str, bool] = 'auto', auto_unique_co: int = 50, output_categories: bool = True):
+                 sparse_ohe: Union[str, bool] = 'auto', auto_unique_co: int = 50, output_categories: bool = True,
+                 multiclass_te_co: int = 3):
         """
 
 
@@ -33,6 +34,7 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
             sparse_ohe:
             auto_unique_co:
             output_categories:
+            multiclass_te_co:
         """
         assert max_bin_count is None or max_bin_count > 1, 'Max bin count should be >= 2 or None'
 
@@ -45,7 +47,8 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
                          output_categories=output_categories,
                          ascending_by_cardinality=True,
                          max_bin_count=max_bin_count,
-                         sparse_ohe=sparse_ohe
+                         sparse_ohe=sparse_ohe,
+                         multiclass_te_co=multiclass_te_co
                          )
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
@@ -69,7 +72,7 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
         te_list = dense_list if train.task.name == 'reg' else probs_list
 
         # handle categorical feats
-        # split categories by handling type. This pipe use 4 encodings - freq/label/target/ohe
+        # split categories by handling type. This pipe use 4 encodings - freq/label/target/ohe/ordinal
         # 1 - separate freqs. It does not need label encoding
         dense_list.append(self.get_freq_encoding(train))
 
@@ -77,24 +80,22 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
         auto = (get_columns_by_role(train, 'Category', encoding_type='auto') +
                 get_columns_by_role(train, 'Category', encoding_type='int'))
 
-        auto_te, auto_le_ohe = [], auto
-        # auto are splitted on ohe (label encoder in case of categorical output) and target encoder parts if
-        # 1) target_encoder defined
-        if target_encoder is not None and len(auto) > 0:
-            un_values = self.get_uniques_cnt(train, auto)
-            auto_te = [x for x in un_values.index if un_values[x] > self.auto_unique_co]
-            auto_le_ohe = list(set(auto) - set(auto_te))
-
-        # collect target encoded part
-        te = get_columns_by_role(train, 'Category', encoding_type='oof') + auto_te
-        # collect label encoded part
-        le_ohe = get_columns_by_role(train, 'Category', encoding_type='ohe') + auto_le_ohe
+        # if self.output_categories or target_encoder is None:
         if target_encoder is None:
-            le_ohe.extend(te)
+            le = (auto + get_columns_by_role(train, 'Category', encoding_type='oof')
+                  + get_columns_by_role(train, 'Category', encoding_type='ohe'))
             te = []
 
+        else:
+            te = get_columns_by_role(train, 'Category', encoding_type='oof')
+            le = get_columns_by_role(train, 'Category', encoding_type='ohe')
+            # split auto categories by unique values cnt
+            un_values = self.get_uniques_cnt(train, auto)
+            te = te + [x for x in un_values.index if un_values[x] > self.auto_unique_co]
+            le = le + list(set(auto) - set(te))
+
         # get label encoded categories
-        sparse_list.append(self.get_categorical_raw(train, le_ohe))
+        sparse_list.append(self.get_categorical_raw(train, le))
 
         # get target encoded categories
         te_part = self.get_categorical_raw(train, te)
@@ -167,6 +168,6 @@ class LinearFeatures(TabularDataFeatures, FeaturesPipeline):
             transformers_list.append(sparse_pipe)
 
         # final pipeline
-        union_all = UnionTransformer(transformers_list[::-1])
+        union_all = UnionTransformer(transformers_list)
 
         return union_all

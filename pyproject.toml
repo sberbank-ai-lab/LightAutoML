@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.1.0"
+version = "0.2.0"
 description = "Библиотека автоматического построения моделей"
 authors = ["Рыжков Александр <AMRyzhkov@sberbank.ru>",
            "Вахрушев Антон <AGVakhrushev@sberbank.ru>",

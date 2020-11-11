@@ -167,15 +167,10 @@ class AutoML:
         for n, level in enumerate(self.levels, 1):
             # check if last level
 
-            # print('LVL{0}-----------------------------'.format(n))
-
             level_predictions = []
             for _n, ml_pipe in enumerate(level):
-                # print('Pipe{0}-----------------------------'.format(_n))
-
                 level_predictions.append(ml_pipe.predict(dataset))
 
-                # print('FINISH{0}-----------------------------'.format(_n))
             if n != len(self.levels):
 
                 level_predictions = concatenate(level_predictions)

@@ -1,8 +1,7 @@
 __all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'reader', 'transformers', 'validation', 'tasks']
-__version__ = '0.1dev'
-
 
 from .automl import *
+from .automl.presets import *
 from .dataset import *
 from .ml_algo import *
 from .ml_algo.torch_based import *

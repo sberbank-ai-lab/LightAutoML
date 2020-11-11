@@ -7,15 +7,14 @@ from log_calls import record_history
 from optuna.trial import Trial
 from pandas import Series
 
-from .base import NumpyMLAlgo
+from .base import TabularMLAlgo, TabularDataset
 from .tuning.optuna import OptunaTunableMixin
-from ..dataset.np_pd_dataset import NumpyDataset
 from ..pipelines.selection.base import ImportanceEstimator
 from ..validation.base import TrainValidIterator
 
 
 @record_history(enabled=False)
-class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
+class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """
     Boosting lgbm.
     """
@@ -35,7 +34,7 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
         "min_split_gain": 0.0,
         "min_child_weight": 0,
         'zero_as_missing': False,
-        'num_threads': 4,
+        'num_threads': 8,
         'max_bin': 255,
         'min_data_in_bin': 3,
         'verbose_eval': 100,
@@ -89,7 +88,7 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
         # features_num = len(train_valid_iterator.features())
 
         rows_num = len(train_valid_iterator.train)
-        task = train_valid_iterator.train.task
+        task = train_valid_iterator.train.task.name
 
         suggested_params = copy(self.default_params)
 
@@ -105,17 +104,22 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
                 "bagging_fraction": 0.9
             }
 
-        if rows_num <= 20000:
+        if rows_num <= 10000:
+            init_lr = 0.01
+            ntrees = 3000
+            es = 200
+
+        elif rows_num <= 20000:
             init_lr = 0.02
             ntrees = 3000
             es = 200
 
         elif rows_num <= 100000:
-            init_lr = 0.05
+            init_lr = 0.03
             ntrees = 1200
             es = 200
         elif rows_num <= 300000:
-            init_lr = 0.05
+            init_lr = 0.04
             ntrees = 2000
             es = 100
         else:
@@ -203,7 +207,7 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
 
         return trial_values
 
-    def fit_predict_single_fold(self, train: NumpyDataset, valid: NumpyDataset) -> Tuple[lgb.Booster, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[lgb.Booster, np.ndarray]:
         """
         Implements training and prediction on single fold.
 
@@ -231,7 +235,7 @@ class BoostLGBM(OptunaTunableMixin, NumpyMLAlgo, ImportanceEstimator):
 
         return model, val_pred
 
-    def predict_single_fold(self, model: lgb.Booster, dataset: NumpyDataset) -> np.ndarray:
+    def predict_single_fold(self, model: lgb.Booster, dataset: TabularDataset) -> np.ndarray:
         """
         Get predict of target values for dataset.
 

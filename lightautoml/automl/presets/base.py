@@ -23,17 +23,7 @@ class AutoMLPreset(AutoML):
 
     def __init__(self, task: Task, timeout: int = 3600, memory_limit: int = 16, cpu_limit: int = 4,
                  gpu_ids: Optional[str] = None,
-                 general_params: Optional[dict] = None,
-                 reader_params: Optional[dict] = None,
-                 read_csv_params: Optional[dict] = None,
-                 tuning_params: Optional[dict] = None,
                  timing_params: Optional[dict] = None,
-                 selection_params: Optional[dict] = None,
-                 lgb_params: Optional[dict] = None,
-                 linear_l2_params: Optional[dict] = None,
-                 linear_l1_params: Optional[dict] = None,
-                 gbm_pipeline_params: Optional[dict] = None,
-                 linear_pipeline_params: Optional[dict] = None,
                  config_path: Optional[str] = None, **kwargs: Any):
         """
 
@@ -43,35 +33,14 @@ class AutoMLPreset(AutoML):
             memory_limit:
             cpu_limit:
             gpu_ids:
-            reader_params:
-            **kwargs:
+            timing_params:
+            config_path:
+            **kwargs
+
         """
         self._set_config(config_path)
-        # upd manual params
-        for name, param in zip(['general_params',
-                                'reader_params',
-                                'read_csv_params',
-                                'tuning_params',
-                                'timing_params',
-                                'selection_params',
-                                'lgb_params',
-                                'linear_l2_params',
-                                'linear_l1_params',
-                                'gbm_pipeline_params',
-                                'linear_pipeline_params'
-                                ],
-                               [general_params,
-                                reader_params,
-                                read_csv_params,
-                                tuning_params,
-                                timing_params,
-                                selection_params,
-                                lgb_params,
-                                linear_l2_params,
-                                linear_l1_params,
-                                gbm_pipeline_params,
-                                linear_pipeline_params
-                                ]):
+
+        for name, param in zip(['timing_params'], [timing_params]):
             if param is None:
                 param = {}
             self.__dict__[name] = {**self.__dict__[name], **param}
@@ -80,11 +49,7 @@ class AutoMLPreset(AutoML):
         self.memory_limit = memory_limit
         self.cpu_limit = cpu_limit
         self.gpu_ids = gpu_ids
-
         self.task = task
-
-        for k in kwargs:
-            self.__dict__[k] = kwargs[k]
 
     def _set_config(self, path):
 
@@ -98,7 +63,7 @@ class AutoMLPreset(AutoML):
             self.__dict__[k] = params[k]
 
     @classmethod
-    def get_config(cls, path):
+    def get_config(cls, path: Optional[str] = None) -> Optional[dict]:
         """
         Create new config template
 
@@ -108,9 +73,16 @@ class AutoMLPreset(AutoML):
         Returns:
 
         """
-        shutil.copy(os.path.join(base_dir, cls._default_config_path), path)
+        if path is None:
+            path = os.path.join(base_dir, cls._default_config_path)
+            with open(path) as f:
+                params = yaml.safe_load(f)
+            return params
 
-    def create_automl(self, train_data: LAMLDataset):
+        else:
+            shutil.copy(os.path.join(base_dir, cls._default_config_path), path)
+
+    def create_automl(self, train_data: Any):
         """
         Method ._initialize should be called in th end
 

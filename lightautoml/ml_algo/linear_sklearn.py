@@ -6,18 +6,17 @@ import numpy as np
 from log_calls import record_history
 from sklearn.linear_model import LogisticRegression, ElasticNet, Lasso
 
-from .base import NumpyMLAlgo
+from .base import TabularMLAlgo, TabularDataset
 from .torch_based.linear_model import TorchBasedLinearEstimator, TorchBasedLinearRegression, \
     TorchBasedLogisticRegression
-from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..validation.base import TrainValidIterator
 
-NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset]
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
 
 @record_history(enabled=False)
-class LinearLBFGS(NumpyMLAlgo):
+class LinearLBFGS(TabularMLAlgo):
     """
     LBFGS L2 regression based on torch
     """
@@ -61,7 +60,8 @@ class LinearLBFGS(NumpyMLAlgo):
 
         return suggested_params
 
-    def fit_predict_single_fold(self, train: NumpyDataset, valid: NumpyDataset) -> Tuple[TorchBasedLinearEstimator, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset
+                                ) -> Tuple[TorchBasedLinearEstimator, np.ndarray]:
         """
 
         Args:
@@ -71,6 +71,10 @@ class LinearLBFGS(NumpyMLAlgo):
         Returns:
 
         """
+        if type(train) is PandasDataset:
+            train = train.to_numpy()
+            valid = valid.to_numpy()
+
         model = self._infer_params()
 
         model.fit(train.data, train.target, train.weights, valid.data, valid.target, valid.weights)
@@ -79,7 +83,7 @@ class LinearLBFGS(NumpyMLAlgo):
 
         return model, val_pred
 
-    def predict_single_fold(self, model: TorchBasedLinearEstimator, dataset: NumpyDataset) -> np.ndarray:
+    def predict_single_fold(self, model: TorchBasedLinearEstimator, dataset: TabularDataset) -> np.ndarray:
 
         pred = model.predict(dataset.data)
 
@@ -87,7 +91,7 @@ class LinearLBFGS(NumpyMLAlgo):
 
 
 @record_history(enabled=False)
-class LinearL1CD(NumpyMLAlgo):
+class LinearL1CD(TabularMLAlgo):
     """
     Coordinate descent based on sklearn implementation
     """
@@ -138,7 +142,7 @@ class LinearL1CD(NumpyMLAlgo):
         assert 'sklearn' in task.losses, 'Sklearn loss should be defined'
 
         if task.name == 'reg':
-            #suggested_params['cs'] = list(map(lambda x: 1 / (2 * x), suggested_params['cs']))
+            # suggested_params['cs'] = list(map(lambda x: 1 / (2 * x), suggested_params['cs']))
             suggested_params['cs'] = [1 / (2 * i) for i in suggested_params['cs']]
 
         return suggested_params
@@ -159,7 +163,7 @@ class LinearL1CD(NumpyMLAlgo):
 
         return pred
 
-    def fit_predict_single_fold(self, train: NumpyDataset, valid: NumpyDataset) -> Tuple[LinearEstimator, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[LinearEstimator, np.ndarray]:
         """
 
         Args:
@@ -169,6 +173,10 @@ class LinearL1CD(NumpyMLAlgo):
         Returns:
 
         """
+        if type(train) is PandasDataset:
+            train = train.to_numpy()
+            valid = valid.to_numpy()
+
         _model, cs, l1_ratios, early_stopping = self._infer_params()
 
         train_target, train_weight = self.task.losses['sklearn'].fw_func(train.target, train.weights)
@@ -252,7 +260,7 @@ class LinearL1CD(NumpyMLAlgo):
 
         return best_model, val_pred
 
-    def predict_single_fold(self, model: LinearEstimator, dataset: NumpyDataset) -> np.ndarray:
+    def predict_single_fold(self, model: LinearEstimator, dataset: TabularDataset) -> np.ndarray:
 
         pred = self.task.losses['sklearn'].bw_func(self._predict_w_model_type(model, dataset.data))
 

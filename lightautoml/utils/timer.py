@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 from log_calls import record_history
@@ -71,7 +71,7 @@ class PipelineTimer(Timer):
         """
         if timeout is not None:
             self._timeout = timeout
-        self._n_tasks = 0
+        self._task_scores = 0
         self._rate_overhead = overhead
         self._overhead = overhead * self.timeout
         self.run_info = {}
@@ -79,20 +79,20 @@ class PipelineTimer(Timer):
         self.tuning_rate = tuning_rate
         self.child_out_of_time = False
 
-    def add_task(self):
-        self._n_tasks += 1
+    def add_task(self, score: float = 1.0):
+        self._task_scores += score
 
-    def close_task(self):
-        self._n_tasks -= 1
+    def close_task(self, score: float = 1.0):
+        self._task_scores -= score
 
-    def get_time_for_next_task(self):
-        if self._n_tasks == 0:
+    def get_time_for_next_task(self, score: float = 1.0):
+        if round(self._task_scores, 3) == 0:
             return self.time_left
 
-        return (self.time_left - self._overhead) / self._n_tasks
+        return (self.time_left - self._overhead) * (score / self._task_scores)
 
-    def get_task_timer(self, key: Optional[str] = None) -> 'TaskTimer':
-        return TaskTimer(self, key, self._rate_overhead, self._mode, self.tuning_rate)
+    def get_task_timer(self, key: Optional[str] = None, score: float = 1.0) -> 'TaskTimer':
+        return TaskTimer(self, key, score, self._rate_overhead, self._mode, self.tuning_rate)
 
 
 @record_history(enabled=False)
@@ -106,7 +106,8 @@ class TaskTimer(Timer):
     def in_progress(self) -> bool:
         return self.t is not None
 
-    def __init__(self, pipe_timer: PipelineTimer, key: Optional[str] = None, overhead: Optional[float] = 1, mode: int = 1,
+    def __init__(self, pipe_timer: PipelineTimer, key: Optional[str] = None, score: float = 1.0,
+                 overhead: Optional[float] = 1, mode: int = 1,
                  default_tuner_time_rate: float = 0.7):
         """
 
@@ -114,13 +115,14 @@ class TaskTimer(Timer):
         Args:
             pipe_timer: global automl timer
             key: string name that will be associated with this task
+            score: time score for current task. Defaults to 1.0. For ex. if you want to give more of total time to task set it > 1
             overhead: see overhead of PipelineTimer
             mode: see mode for PipelineTimer
             default_tuner_time_rate: if no timing history for the moment of estimating tuning time,
                 timer will use this rate of time_left
         """
-
-        pipe_timer.add_task()
+        self.score = score
+        pipe_timer.add_task(self.score)
         self.pipe_timer = pipe_timer
         self.t = None
         self.key = key
@@ -133,9 +135,9 @@ class TaskTimer(Timer):
             return self
 
         self.t = time()
-        self._timeout = self.pipe_timer.get_time_for_next_task()
+        self._timeout = self.pipe_timer.get_time_for_next_task(self.score)
         self._overhead = self._rate_overhead * self.time_left
-        self.pipe_timer.close_task()
+        self.pipe_timer.close_task(self.score)
 
         return self
 
@@ -212,3 +214,11 @@ class TaskTimer(Timer):
     def __deepcopy__(self, *args, **kwargs):
 
         return self.__copy__()
+
+    def split_timer(self, n_parts: int) -> List['TaskTimer']:
+
+        new_tasks_score = self.score / n_parts
+        timers = [self.pipe_timer.get_task_timer(self.key, new_tasks_score) for _ in range(n_parts)]
+        self.pipe_timer.close_task(self.score)
+
+        return timers
