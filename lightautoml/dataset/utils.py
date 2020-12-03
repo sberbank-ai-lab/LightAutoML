@@ -1,12 +1,13 @@
 """Utilities for working with the structure of a dataset."""
 
-from typing import Dict, Union, Sequence, Callable, TypeVar, Optional, Tuple
+from typing import Dict, Union, Sequence, Callable, Optional, Tuple
 
 from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from lightautoml.dataset.roles import ColumnRole
+
 
 # RoleType = TypeVar("RoleType", bound=ColumnRole)
 

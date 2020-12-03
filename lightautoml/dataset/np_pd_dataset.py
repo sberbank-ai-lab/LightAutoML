@@ -2,7 +2,6 @@
 
 
 from copy import copy  # , deepcopy
-
 from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
 
 import numpy as np

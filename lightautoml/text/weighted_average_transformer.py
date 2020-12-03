@@ -2,7 +2,8 @@
 
 from collections import Counter
 from itertools import repeat
-from typing import Any, Optional, Dict, Sequence
+from typing import Any, Dict, Sequence
+
 import numpy as np
 from log_calls import record_history
 from scipy.linalg import svd

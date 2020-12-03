@@ -2,7 +2,8 @@
 
 import os
 import random
-from typing import Optional, Dict, List, Sequence
+from typing import Dict, List, Sequence
+
 import numpy as np
 import torch
 from log_calls import record_history

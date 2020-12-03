@@ -1,14 +1,15 @@
 """Main pytorch training and prediction class with Snapshots Ensemble."""
 
 from copy import deepcopy
+from typing import Optional, Dict, List, Callable, Union, Tuple
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
+from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing import Optional, Dict, List, Callable, Union, Tuple
+
 from .dp_utils import CustomDataParallel
 
 try:

@@ -5,8 +5,8 @@ from typing import Optional, Sequence, Tuple, Union, cast
 import numpy as np
 from log_calls import record_history
 
-from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 from .base import CustomIdxs, CustomIterator, DummyIterator, HoldoutIterator, TrainValidIterator
+from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 
 NumpyOrSparse = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 

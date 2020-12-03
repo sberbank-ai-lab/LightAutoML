@@ -1,15 +1,14 @@
 """Base classes to implement hyperparameter tuning."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Dict, overload, TYPE_CHECKING
+from typing import Optional, Tuple, Dict, overload
 
 from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
-from lightautoml.validation.base import TrainValidIterator
-
 # if TYPE_CHECKING:
 from lightautoml.ml_algo.base import MLAlgo
+from lightautoml.validation.base import TrainValidIterator
 
 
 @record_history(enabled=False)

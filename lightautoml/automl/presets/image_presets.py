@@ -15,9 +15,9 @@ from ...ml_algo.boost_lgbm import BoostLGBM
 from ...ml_algo.linear_sklearn import LinearLBFGS
 from ...ml_algo.tuning.optuna import OptunaTuner
 from ...pipelines.features.base import FeaturesPipeline
+from ...pipelines.features.image_pipeline import ImageSimpleFeatures, ImageAutoFeatures
 from ...pipelines.features.lgb_pipeline import LGBAdvancedPipeline
 from ...pipelines.features.linear_pipeline import LinearFeatures
-from ...pipelines.features.image_pipeline import ImageSimpleFeatures, ImageAutoFeatures
 from ...pipelines.ml.nested_ml_pipe import NestedTabularMLPipeline
 from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader

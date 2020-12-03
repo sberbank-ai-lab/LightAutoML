@@ -15,8 +15,8 @@ from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
 from ..dataset.roles import NumericRole
 from ..image.image import CreateImageFeatures, DeepImageEmbedder
 from ..image.utils import pil_loader
-from ..utils.logging import get_logger
 from ..text.utils import single_text_hash, get_textarr_hash
+from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
