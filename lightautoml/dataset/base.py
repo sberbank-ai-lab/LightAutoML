@@ -1,6 +1,5 @@
 """Contains base classes for internal dataset interface."""
 
-
 from copy import copy  # , deepcopy
 from typing import Any, Optional, Dict, List, Tuple, Sequence, Union, TypeVar
 
@@ -226,7 +225,6 @@ class LAMLDataset:
         """
 
         return copy(self._roles)
-
 
     @roles.setter
     def roles(self, val: RolesDict):

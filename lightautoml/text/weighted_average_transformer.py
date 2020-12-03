@@ -23,7 +23,7 @@ class WeightedAverageTransformer(TransformerMixin):
 
     def __init__(self, embedding_model: Dict, embed_size: int,
                  weight_type: str = 'idf', use_svd: bool = True,
-                 alpha: int =0.001, verbose: bool = False, **kwargs: Any):
+                 alpha: int = 0.001, verbose: bool = False, **kwargs: Any):
         """Calculate sentence embedding as weighted average of word embeddings.
 
         Args:

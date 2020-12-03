@@ -1,6 +1,5 @@
 """Wrapped LightGBM for tabular datasets."""
 
-
 import logging
 from copy import copy
 from typing import Optional, Callable, Tuple, Dict

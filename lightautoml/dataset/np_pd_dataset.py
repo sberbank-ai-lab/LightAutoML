@@ -1,6 +1,5 @@
 """Internal representation of dataset in numpy, pandas and csr formats."""
 
-
 from copy import copy  # , deepcopy
 from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
 
@@ -74,7 +73,6 @@ class NumpyDataset(LAMLDataset):
         """Roles dict."""
         return copy(self._roles)
 
-
     @roles.setter
     def roles(self, val: NpRoles):
         """Define how to set roles.
@@ -107,7 +105,7 @@ class NumpyDataset(LAMLDataset):
             AttributeError: if there is non-numeric type in dataset.
 
         """
-        #dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
+        # dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
         dtypes = list(set([i.dtype for i in self.roles.values()]))
         self.dtype = np.find_common_type(dtypes, [])
 

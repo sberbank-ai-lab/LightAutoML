@@ -23,7 +23,6 @@ TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
 @record_history(enabled=False)
 class OptunaTunableMixin(ABC):
-
     mean_trial_time: float = None
 
     @abstractmethod

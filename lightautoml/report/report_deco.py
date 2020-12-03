@@ -859,7 +859,7 @@ class ReportDecoWhitebox(ReportDeco):
 
         """
         if len(args) >= 2:
-            args = (args[0], )
+            args = (args[0],)
 
         kwargs['report'] = self._model.general_params['report']
 
@@ -872,7 +872,6 @@ class ReportDecoWhitebox(ReportDeco):
 
         self.generate_report()
         return predict_proba
-
 
     def _generate_whitebox_section(self):
         self._model.whitebox.generate_report(self.wb_report_params)

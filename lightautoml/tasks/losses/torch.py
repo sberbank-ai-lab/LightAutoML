@@ -161,6 +161,7 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
 
     return err.mean()
 
+
 @record_history(enabled=False)
 def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """Computes F1 macro.

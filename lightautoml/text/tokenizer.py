@@ -1,6 +1,5 @@
 """Tokenizer classes for text preprocesessing and tokenization."""
 
-
 import re
 from functools import partial
 from multiprocessing import Pool
@@ -31,7 +30,7 @@ class BaseTokenizer:
     _fit_checks = ()
     _transform_checks = ()
 
-    def __init__(self, n_jobs: int= 4, to_string: bool = True, **kwargs: Any):
+    def __init__(self, n_jobs: int = 4, to_string: bool = True, **kwargs: Any):
         """Tokenization with simple text cleaning and preprocessing.
 
         Args:

@@ -1,6 +1,5 @@
 """Deep Learning transformers for calculating sentence embeddings."""
 
-
 import gc
 from typing import Any, Dict, Optional, Sequence
 

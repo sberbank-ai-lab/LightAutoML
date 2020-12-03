@@ -1,6 +1,5 @@
 """Dimension reduction transformers."""
 
-
 from typing import Union, List, Optional
 
 import numpy as np

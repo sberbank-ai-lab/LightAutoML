@@ -1,12 +1,10 @@
 """Categorical features transformerrs."""
 
-
 from itertools import combinations
 from typing import Optional, Union, List, Sequence, cast
 
 import numpy as np
 from log_calls import record_history
-# import pandas as pd
 from pandas import Series, DataFrame
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.utils.murmurhash import murmurhash3_32
@@ -293,7 +291,6 @@ class OHEEncoder(LAMLTransformer):
         return output
 
 
-
 @record_history(enabled=False)
 class FreqEncoder(LabelEncoder):
     """Labels are encoded with frequency in train data.
@@ -500,7 +497,6 @@ class TargetEncoder(LAMLTransformer):
         output.set_data(out, self.features, self.output_role)
 
         return output
-
 
 
 @record_history(enabled=False)

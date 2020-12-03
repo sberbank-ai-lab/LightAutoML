@@ -180,7 +180,7 @@ class TabularCVAutoML(TabularAutoML):
         # other params as tabular
         super().infer_auto_params(train_data, multilevel_avail)
 
-    def get_cv_pipe(self, type: str ='simple') -> Optional[FeaturesPipeline]:
+    def get_cv_pipe(self, type: str = 'simple') -> Optional[FeaturesPipeline]:
         if type == 'simple':
             return ImageSimpleFeatures(**self.cv_simple_features)
         elif type == 'embed':
@@ -302,4 +302,3 @@ class TabularCVAutoML(TabularAutoML):
 
         """
         return super().predict(data, features_names, batch_size)
-
