@@ -3,8 +3,9 @@
 
 import logging
 import os
-import time
 import pickle
+import time
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -18,7 +19,6 @@ from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.pipelines.selection.importance_based import ImportanceCutoffSelector, ModelBasedImportanceEstimator
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
 
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 

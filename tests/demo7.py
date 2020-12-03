@@ -3,6 +3,7 @@
 import logging
 import os
 import pickle
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -11,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.dataset.roles import DatetimeRole
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
+
 
 def test_tabular_automl_preset_without_params():
     np.random.seed(42)
