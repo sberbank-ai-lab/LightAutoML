@@ -1,9 +1,7 @@
-"""
-Timer
-"""
+"""Timer."""
 
 from time import time
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import numpy as np
 from log_calls import record_history
@@ -16,6 +14,7 @@ logger.addFilter(DuplicateFilter())
 
 @record_history(enabled=False)
 class Timer:
+    """Timer to limit the duration tasks."""
     _timeout = 1e10
     _overhead = 0
     _mode = 1
@@ -64,25 +63,29 @@ class Timer:
 
 @record_history(enabled=False)
 class PipelineTimer(Timer):
-    """
-    Timer is used to control time over full automl run.
+    """Timer is used to control time over full automl run.
+
     It decides how much time spend to each algo
     """
 
     def __init__(self, timeout: Optional[float] = None, overhead: float = .1, mode: int = 1, tuning_rate: float = 0.7):
-        """
-        Create global automl timer
+        """Create global automl timer.
 
         Args:
-            timeout:
+            timeout: Maximum amount of time that AutoML can run.
             overhead: (0, 1) - rate of time that will be used to early stop.
-                Ex. if set to 0.1 and timing mode is set to 2, timer will finish tasks after 0.9 of all time spent
-            mode: Timing mode
-                0 - timer is used to estimate runtime but if something goes out of time - keep it run (Real life mode)
-                1 - timer is used to terminate tasks, but do it after real timeout (Trade off mode)
-                2 - timer is used to terminate tasks with the goal to be exactly in time (Benchmarking/competitions mode)
-                Keep in mind - all time limitations will turn on after at least single model/single fold will be computed
-            tuning_rate:
+                Ex. if set to 0.1 and timing mode is set to 2, timer will finish tasks after 0.9 of all time spent.
+            mode: Timing mode. Can be 0, 1 or 2. Keep in mind - all time limitations will
+                turn on after at least single model/single fold will be computed.
+            tuning_rate: Approximate fraction of all time will be used for tuning.
+
+        Note:
+            Modes explanation:
+
+                - 0 - timer is used to estimate runtime but if something goes out of time - keep it run (Real life mode).
+                - 1 - timer is used to terminate tasks, but do it after real timeout (Trade off mode).
+                - 2 - timer is used to terminate tasks with the goal to be exactly in time (Benchmarking/competitions mode).
+
         """
         if timeout is not None:
             self._timeout = timeout
@@ -112,13 +115,14 @@ class PipelineTimer(Timer):
 
 @record_history(enabled=False)
 class TaskTimer(Timer):
-    """
-    Timer is used to control time over single ML task run.
-    It decides how much time is ok to spend on tuner and if we have enough time to calc more folds
+    """Timer is used to control time over single ML task run.
+
+    It decides how much time is ok to spend on tuner and if we have enough time to calc more folds.
     """
 
     @property
     def in_progress(self) -> bool:
+        """Check if the task is running."""
         return self.start_time is not None
 
     def __init__(self, pipe_timer: PipelineTimer, key: Optional[str] = None, score: float = 1.0,
@@ -128,13 +132,15 @@ class TaskTimer(Timer):
 
 
         Args:
-            pipe_timer: global automl timer
-            key: string name that will be associated with this task
-            score: time score for current task. Defaults to 1.0. For ex. if you want to give more of total time to task set it > 1
-            overhead: see overhead of PipelineTimer
-            mode: see mode for PipelineTimer
-            default_tuner_time_rate: if no timing history for the moment of estimating tuning time,
-                timer will use this rate of time_left
+            pipe_timer: Global automl timer.
+            key: String name that will be associated with this task.
+            score: Time score for current task.
+                For ex. if you want to give more of total time to task set it > 1.
+            overhead: See overhead of PipelineTimer.
+            mode: See mode for PipelineTimer.
+            default_tuner_time_rate: If no timing history for the moment of estimating tuning time,
+                timer will use this rate of time_left.
+
         """
         self.score = score
         pipe_timer.add_task(self.score)
@@ -146,6 +152,12 @@ class TaskTimer(Timer):
         self.default_tuner_rate = default_tuner_time_rate
 
     def start(self):
+        """Starts counting down.
+
+        Returns:
+            self.
+
+        """
         if self.in_progress:
             return self
 
@@ -157,31 +169,43 @@ class TaskTimer(Timer):
         return self
 
     def set_control_point(self):
+        """Set control point.
+
+        Updates the countdown and time left parameters.
+
+        """
         self._timeout = self.timeout - self.time_spent
         self.start_time = time()
 
     def write_run_info(self):
+        """Collect timer history."""
 
         if self.key in self.pipe_timer.run_info:
             self.pipe_timer.run_info[self.key].append(self.time_spent)
         else:
             self.pipe_timer.run_info[self.key] = [self.time_spent]
 
-    def get_run_results(self) -> Optional[np.ndarray]:
+    def get_run_results(self) -> Union[None, np.ndarray]:
+        """Get timer history.
 
+        Returns:
+            `None` if there is no history,
+             or array with history of runs.
+
+        """
         if self.key in self.pipe_timer.run_info:
             return self.pipe_timer.run_info[self.key]
         else:
             return None
 
     def estimate_folds_time(self, n_folds: int = 1) -> Optional[float]:
-        """
-        Estimate time for n_folds
+        """Estimate time for n_folds.
 
         Args:
-            n_folds:
+            n_folds: Number of folds.
 
         Returns:
+            Estimated time needed to run all n_folds.
 
         """
         run_results = self.get_run_results()
@@ -196,10 +220,10 @@ class TaskTimer(Timer):
         return single_run_est * n_folds
 
     def estimate_tuner_time(self, n_folds: int = 1) -> float:
-        """
-        Estimates time that is ok to spend on tuner
+        """Estimates time that is ok to spend on tuner.
 
         Returns:
+            How much time timer will be able spend on tuner.
 
         """
         folds_est = self.estimate_folds_time(n_folds)
@@ -208,10 +232,10 @@ class TaskTimer(Timer):
         return self.time_left - folds_est
 
     def time_limit_exceeded(self) -> bool:
-        """
-        Estimate time limit and send results to parent timer.
+        """Estimate time limit and send results to parent timer.
 
         Returns:
+            `True` if time limit exceeded.
 
         """
         out_of_time = super().time_limit_exceeded()
@@ -231,7 +255,12 @@ class TaskTimer(Timer):
         return self.__copy__()
 
     def split_timer(self, n_parts: int) -> List['TaskTimer']:
+        """Split the timer into equal-sized tasks.
 
+        Args:
+             n_parts: Number of tasks.
+
+        """
         new_tasks_score = self.score / n_parts
         timers = [self.pipe_timer.get_task_timer(self.key, new_tasks_score) for _ in range(n_parts)]
         self.pipe_timer.close_task(self.score)

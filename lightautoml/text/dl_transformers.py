@@ -1,6 +1,4 @@
-"""
-DL transformers
-"""
+"""DL transformers."""
 
 import gc
 
@@ -43,17 +41,17 @@ class DLTransformer(TransformerMixin):
         """Class to compute sentence embeddings from words embeddings.
 
         Args:
-            model: torch model for aggregation word embeddings into sentence embedding
-            model_params: dict with model parameters
-            dataset: torch dataset
-            dataset_params: dict with dataset params
-            loader_params: dict with params for torch dataloader
-            device: string with torch device type or device ids. I.e: '0,2'
-            random_state: determines random number generation
-            embedding_model: torch word embedding model if dataset do not return embeddings
-            embedding_model_params: dict with embedding model params
-            multigpu: use data parallel for multiple GPU
-            verbose: show tqdm progress bar
+            model: torch model for aggregation word embeddings into sentence embedding.
+            model_params: dict with model parameters.
+            dataset: torch dataset.
+            dataset_params: dict with dataset params.
+            loader_params: dict with params for torch dataloader.
+            device: string with torch device type or device ids. I.e: '0,2'.
+            random_state: determines random number generation.
+            embedding_model: torch word embedding model if dataset do not return embeddings.
+            embedding_model_params: dict with embedding model params.
+            multigpu: use data parallel for multiple GPU.
+            verbose: show tqdm progress bar.
 
         """
         super(DLTransformer, self).__init__()
@@ -80,7 +78,7 @@ class DLTransformer(TransformerMixin):
         """Module name.
 
         Returns:
-            string with module name
+            string with module name.
 
         """
         if self.embedding_model is None:
@@ -93,7 +91,7 @@ class DLTransformer(TransformerMixin):
         """Output shape.
 
         Returns:
-            int with module output shape
+            int with module output shape.
 
         """
         return self.model.get_out_shape()
@@ -158,11 +156,11 @@ def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     """Compute positional embedding matrix.
 
     Args:
-        n_pos: len of sequence
-        embed_size: size of output sentence embedding
+        n_pos: len of sequence.
+        embed_size: size of output sentence embedding.
 
     Returns:
-        torch tensor with all positional embeddings
+        torch tensor with all positional embeddings.
 
     """
     position_enc = np.array([
@@ -186,21 +184,21 @@ class BOREP(nn.Module):
         """Bag of Random Embedding Projections sentence embeddings.
 
         Args:
-            embed_size: size of word embeddings
-            proj_size: size of output sentence embedding
+            embed_size: size of word embeddings.
+            proj_size: size of output sentence embedding.
             pooling: str with pooling type:
-                - max: maximum on seq_len dimension for non masked inputs
-                - mean: mean on seq_len dimension for non masked inputs
-                - sum: sum on seq_len dimension for non masked inputs
-            max_length: maximum length of sentence
+                - max: maximum on seq_len dimension for non masked inputs.
+                - mean: mean on seq_len dimension for non masked inputs.
+                - sum: sum on seq_len dimension for non masked inputs.
+            max_length: maximum length of sentence.
             init: type of weight initialization:
-                - orthogonal: orthogonal init
-                - normal: normal with std 0.1
-                - uniform: uniform from -0.1 to 0.1
-                - kaiming: uniform kaiming init
-                - xavier: uniform xavier init
-            pos_encoding: add positional embedding
-            kwargs: ignored params
+                - orthogonal: orthogonal init.
+                - normal: normal with std 0.1.
+                - uniform: uniform from -0.1 to 0.1.
+                - kaiming: uniform kaiming init.
+                - xavier: uniform xavier init.
+            pos_encoding: add positional embedding.
+            kwargs: ignored params.
 
         """
         super(BOREP, self).__init__()
@@ -230,7 +228,7 @@ class BOREP(nn.Module):
         """Output shape.
 
         Returns:
-            int with module output shape
+            int with module output shape.
 
         """
         return self.proj_size
@@ -239,7 +237,7 @@ class BOREP(nn.Module):
         """Module name.
 
         Returns:
-            string with module name
+            string with module name.
 
         """
         return self.name
@@ -271,14 +269,14 @@ class RandomLSTM(nn.Module):
         """Random LSTM sentence embeddings.
 
         Args:
-            embed_size: size of word embeddings
-            hidden_size: size of hidden dimensions of LSTM
+            embed_size: size of word embeddings.
+            hidden_size: size of hidden dimensions of LSTM.
             pooling: str with pooling type:
-                - max: maximum on seq_len dimension for non masked inputs
-                - mean: mean on seq_len dimension for non masked inputs
-                - sum: sum on seq_len dimension for non masked inputs
-            num_layers: number of lstm layers
-            kwargs: ignored params
+                - max: maximum on seq_len dimension for non masked inputs.
+                - mean: mean on seq_len dimension for non masked inputs.
+                - sum: sum on seq_len dimension for non masked inputs.
+            num_layers: number of lstm layers.
+            kwargs: ignored params.
 
         """
         super(RandomLSTM, self).__init__()
@@ -295,7 +293,7 @@ class RandomLSTM(nn.Module):
         """Output shape.
 
         Returns:
-            int with module output shape
+            int with module output shape.
 
         """
         return self.hidden_size * 2
@@ -304,7 +302,7 @@ class RandomLSTM(nn.Module):
         """Module name.
 
         Returns:
-            string with module name
+            string with module name.
 
         """
         return self.name
@@ -328,14 +326,14 @@ class BertEmbedder(nn.Module):
         """Bert sentence or word embeddings.
 
         Args:
-            model_name: name of transformers model
+            model_name: name of transformers model.
             pooling: str with pooling type:
-                - cls: use CLS token for sentence embedding from last hidden state
-                - max: maximum on seq_len dimension for non masked inputs from last hidden state
-                - mean: mean on seq_len dimension for non masked inputs from last hidden state
-                - sum: sum on seq_len dimension for non masked inputs from last hidden state
-                - none: don not use pooling (for RandomLSTM pooling strategy)
-            kwargs: ignored params
+                - cls: use CLS token for sentence embedding from last hidden state.
+                - max: maximum on seq_len dimension for non masked inputs from last hidden state.
+                - mean: mean on seq_len dimension for non masked inputs from last hidden state.
+                - sum: sum on seq_len dimension for non masked inputs from last hidden state.
+                - none: don not use pooling (for RandomLSTM pooling strategy).
+            **kwargs: ignored params.
 
         """
         super(BertEmbedder, self).__init__()
@@ -366,7 +364,7 @@ class BertEmbedder(nn.Module):
         """Module name.
 
         Returns:
-            string with module name
+            string with module name.
 
         """
         return self.name + single_text_hash(self.model_name)
@@ -375,7 +373,7 @@ class BertEmbedder(nn.Module):
         """Output shape.
 
         Returns:
-            int with module output shape
+            int with module output shape.
 
         """
         return self.transformer.config.hidden_size

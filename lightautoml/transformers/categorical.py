@@ -1,6 +1,4 @@
-"""
-Categorical features
-"""
+"""Categorical features."""
 
 from itertools import combinations
 from typing import Optional, Union, List, Sequence, cast
@@ -40,12 +38,10 @@ def categorical_check(dataset: LAMLDataset):
 
 @record_history(enabled=False)
 def oof_task_check(dataset: LAMLDataset):
-    """Check if all passed vars are categories
+    """Check if all passed vars are categories.
 
     Args:
-        dataset:
-
-    Returns:
+        dataset: input.
 
     """
     task = dataset.task
@@ -57,7 +53,7 @@ def multiclass_task_check(dataset: LAMLDataset):
     """Check if all passed vars are categories
 
     Args:
-        dataset:
+        dataset: input.
 
     Returns:
 
@@ -68,12 +64,10 @@ def multiclass_task_check(dataset: LAMLDataset):
 
 @record_history(enabled=False)
 def encoding_check(dataset: LAMLDataset):
-    """Check if all passed vars are categories
+    """Check if all passed vars are categories.
 
     Args:
-        dataset:
-
-    Returns:
+        dataset: input.
 
     """
     roles = dataset.roles
@@ -112,12 +106,13 @@ class LabelEncoder(LAMLTransformer):
         self._output_role = CategoryRole(np.int32, label_encoded=True)
 
     def _get_df(self, dataset: NumpyOrPandas) -> DataFrame:
-        """Get df and sample
+        """Get df and sample.
 
         Args:
-            dataset:
+            dataset: input dataset.
 
         Returns:
+            subsample.
 
         """
         dataset = dataset.to_pandas()
@@ -204,8 +199,7 @@ class OHEEncoder(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list
-        """
+        """Features list."""
         return self._features
 
     def __init__(self, make_sparse: Optional[bool] = None, total_feats_cnt: Optional[int] = None, dtype: type = np.float32):
@@ -298,10 +292,11 @@ class OHEEncoder(LAMLTransformer):
         return output
 
 
+
 @record_history(enabled=False)
 class FreqEncoder(LabelEncoder):
-    """
-    Labels are encoded with frequency in train data
+    """Labels are encoded with frequency in train data.
+
     Labels are integers from 1 to n. Unknown category encoded as 1.
     """
     _fit_checks = (categorical_check,)
@@ -316,13 +311,14 @@ class FreqEncoder(LabelEncoder):
         self._output_role = NumericRole(np.float32)
 
     def fit(self, dataset: NumpyOrPandas):
-        """Estimate label frequencies and create encoding dicts
+        """Estimate label frequencies and create encoding dicts.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features
 
         Returns:
-
+            self.
+            
         """
         # set transformer names and add checks
         LAMLTransformer.fit(self, dataset)
@@ -345,28 +341,38 @@ class FreqEncoder(LabelEncoder):
 @record_history(enabled=False)
 class TargetEncoder(LAMLTransformer):
     """
-    Out-of-fold target encoding
+    Out-of-fold target encoding.
+
     Limitation:
-        - required .folds attribute in dataset - array of int from 0 to n_folds-1
-        - working only after label encoding
+
+        - required .folds attribute in dataset - array of int from 0 to n_folds-1.
+        - working only after label encoding.
+
     """
     _fit_checks = (categorical_check, oof_task_check, encoding_check)
     _transform_checks = ()
     _fname_prefix = 'oof'
 
     def __init__(self, alphas: Sequence[float] = (.5, 1., 2., 5., 10., 50., 250., 1000.)):
+        """
+
+        Args:
+            alphas: Smooth coefficients.
+
+        """
         self.alphas = alphas
 
     @staticmethod
     def binary_score_func(candidates: np.ndarray, target: np.ndarray) -> int:
-        """Score candidates alpha with logloss metric
+        """Score candidates alpha with logloss metric.
 
         Args:
-            candidates: candidate oof encoders
-            target: target array
+            candidates: candidate oof encoders.
+            target: target array.
 
         Returns:
-            index of best encoder
+            index of best encoder.
+
         """
         target = target[:, np.newaxis]
         scores = - (target * np.log(candidates) + (1 - target) * np.log(1 - candidates)).mean(axis=0)
@@ -376,14 +382,15 @@ class TargetEncoder(LAMLTransformer):
 
     @staticmethod
     def reg_score_func(candidates: np.ndarray, target: np.ndarray) -> int:
-        """Score candidates alpha with mse metric
+        """Score candidates alpha with mse metric.
 
         Args:
-            candidates: candidate oof encoders
-            target: target array
+            candidates: candidate oof encoders.
+            target: target array.
 
         Returns:
-            index of best encoder
+            index of best encoder.
+
         """
         target = target[:, np.newaxis]
         scores = ((target - candidates) ** 2).mean(axis=0)
@@ -395,13 +402,14 @@ class TargetEncoder(LAMLTransformer):
         super().fit_transform(dataset)
 
     def fit_transform(self, dataset: NumpyOrPandas) -> NumpyDataset:
-        """Calc oof encoding and save encoding stats for new data
+        """Calc oof encoding and save encoding stats for new data.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical label encoded features
+            dataset: Pandas or Numpy dataset of categorical label encoded features.
 
         Returns:
-            NumpyDataset - target encoded features
+            NumpyDataset - target encoded features.
+            
         """
         # set transformer names and add checks
         super().fit(dataset)
@@ -466,13 +474,14 @@ class TargetEncoder(LAMLTransformer):
         return output
 
     def transform(self, dataset: NumpyOrPandas) -> NumpyOrSparse:
-        """Transform categorical dataset to target encoded
+        """Transform categorical dataset to target encoding.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
+            dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
-            NumpyDataset of target encoded features
+            Numpy dataset with encoded labels.
+            
         """
         # checks here
         super().transform(dataset)
@@ -492,13 +501,17 @@ class TargetEncoder(LAMLTransformer):
         return output
 
 
+
 @record_history(enabled=False)
 class MultiClassTargetEncoder(LAMLTransformer):
     """
-    Out-of-fold target encoding for multiclass task
+    Out-of-fold target encoding for multiclass task.
+    
     Limitation:
+    
         - required .folds attribute in dataset - array of int from 0 to n_folds-1
         - working only after label encoding
+        
     """
     _fit_checks = (categorical_check, multiclass_task_check, encoding_check)
     _transform_checks = ()
@@ -513,14 +526,16 @@ class MultiClassTargetEncoder(LAMLTransformer):
 
     @staticmethod
     def score_func(candidates: np.ndarray, target: np.ndarray) -> int:
-        """Score candidates alpha with logloss metric
+        """
+
 
         Args:
-            candidates: candidate oof encoders
-            target: target array
+            candidates: np.ndarray.
+            target: np.ndarray.
 
         Returns:
-            index of best encoder
+            index of best encoder.
+            
         """
         target = target[:, np.newaxis, np.newaxis]
         scores = -np.log(np.take_along_axis(candidates, target, axis=1)).mean(axis=0)[0]
@@ -529,13 +544,14 @@ class MultiClassTargetEncoder(LAMLTransformer):
         return idx
 
     def fit_transform(self, dataset: NumpyOrPandas) -> NumpyDataset:
-        """Calc oof encoding and save encoding stats for new data
+        """Estimate label frequencies and create encoding dicts.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical label encoded features
+            dataset: Pandas or Numpy dataset of categorical label encoded features.
 
         Returns:
-            NumpyDataset - target encoded features
+            NumpyDataset - target encoded features.
+            
         """
         # set transformer names and add checks
         for check_func in self._fit_checks:
@@ -611,13 +627,14 @@ class MultiClassTargetEncoder(LAMLTransformer):
         return output
 
     def transform(self, dataset: NumpyOrPandas) -> NumpyOrSparse:
-        """Transform categorical dataset to target encoded
+        """Transform categorical dataset to target encoding.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
+            dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
-            NumpyDataset of target encoded features
+            Numpy dataset with encoded labels.
+            
         """
         # checks here
         super().transform(dataset)
@@ -641,20 +658,20 @@ class MultiClassTargetEncoder(LAMLTransformer):
 
 @record_history(enabled=False)
 class CatIntersectstions(LabelEncoder):
-    """
-    Build label encoded intertsections of categorical variables
-    """
+    """Build label encoded intertsections of categorical variables."""
+
     _fit_checks = (categorical_check,)
     _transform_checks = ()
     _fname_prefix = 'inter'
 
     def __init__(self, subs: Optional[int] = None, random_state: int = 42,
                  intersections: Optional[Sequence[Sequence[str]]] = None, max_depth: int = 2):
-        """Create label encoded intersection columns for categories
+        """Create label encoded intersection columns for categories.
 
         Args:
             intersections: columns to create intersections. Default is None - all
             max_depth: max intersection depth
+
         """
         super().__init__(subs, random_state)
         self.intersections = intersections
@@ -662,13 +679,14 @@ class CatIntersectstions(LabelEncoder):
 
     @staticmethod
     def _make_category(df: DataFrame, cols: Sequence[str]) -> np.ndarray:
-        """Make hash for category interactions
+        """Make hash for category interactions.
 
         Args:
-            df:
-            cols:
+            df: input DataFrame
+            cols: list of columns
 
         Returns:
+            hash np.ndarray.
 
         """
         res = np.empty((df.shape[0],), dtype=np.int32)
@@ -704,10 +722,10 @@ class CatIntersectstions(LabelEncoder):
         return output
 
     def fit(self, dataset: NumpyOrPandas):
-        """Create label encoded intersections and save mapping
+        """Create label encoded intersections and save mapping.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
+            dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
 
@@ -740,8 +758,8 @@ class CatIntersectstions(LabelEncoder):
 @record_history(enabled=False)
 class OrdinalEncoder(LabelEncoder):
     """
-    Encoding ordinal categories into numbers
-    Number type categories passed as is, object type sorted in ascending lexicographical order
+    Encoding ordinal categories into numbers.
+    Number type categories passed as is, object type sorted in ascending lexicographical order.
     """
     _fit_checks = (categorical_check,)
     _transform_checks = ()
@@ -755,12 +773,10 @@ class OrdinalEncoder(LabelEncoder):
         self._output_role = NumericRole(np.float32)
 
     def fit(self, dataset: NumpyOrPandas):
-        """Create mapping
+        """Estimate label frequencies and create encoding dicts.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
-
-        Returns:
+            dataset: Pandas or Numpy dataset of categorical features.
 
         """
         # set transformer names and add checks

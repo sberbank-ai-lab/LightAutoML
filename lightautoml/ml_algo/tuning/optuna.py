@@ -26,8 +26,7 @@ class OptunaTunableMixin(ABC):
 
     @abstractmethod
     def sample_params_values(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
-        """
-        Sample hyperparameters from suggested.
+        """Sample hyperparameters from suggested.
 
         Args:
             trial: optuna trial object.
@@ -44,6 +43,7 @@ class OptunaTunableMixin(ABC):
             train_valid_iterator: Optional[TrainValidIterator] = None
     ) -> dict:
         """
+
         Args:
             estimated_n_trials: maximum number of hyperparameter estimations.
             trial: optuna trial object.
@@ -59,7 +59,8 @@ class OptunaTunableMixin(ABC):
 
     def get_objective(self: TunableAlgo, estimated_n_trials: int, train_valid_iterator: TrainValidIterator) -> \
             Callable[[optuna.trial.Trial], Union[float, int]]:
-        """
+        """Get objective.
+
         Args:
             estimated_n_trials: maximum number of hyperparameter estimations.
             train_valid_iterator: used for getting parameters depending on dataset.
@@ -87,9 +88,7 @@ class OptunaTunableMixin(ABC):
 
 @record_history(enabled=False)
 class OptunaTuner(ParamsTuner):
-    """
-    Wrapper for optuna tuner.
-    """
+    """Wrapper for optuna tuner."""
 
     _name: str = 'OptunaTuner'
 
@@ -102,6 +101,7 @@ class OptunaTuner(ParamsTuner):
             fit_on_holdout: bool = True, random_state: int = 42
     ):
         """
+
         Args:
             timeout: maximum learning time.
             n_trials: maximum number of trials.
@@ -123,8 +123,7 @@ class OptunaTuner(ParamsTuner):
 
     def fit(self, ml_algo: TunableAlgo, train_valid_iterator: Optional[TrainValidIterator] = None) -> \
             Tuple[Optional[TunableAlgo], Optional[LAMLDataset]]:
-        """
-        Tune model.
+        """Tune model.
 
         Args:
             ml_algo: MLAlgo that is tuned.
@@ -157,8 +156,7 @@ class OptunaTuner(ParamsTuner):
         # TODO: Check if time estimation will be ok with multiprocessing
         @record_history(enabled=False)
         def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
-            """
-            Callback for number of iteration with time cut-off.
+            """Callback for number of iteration with time cut-off.
 
             Args:
                 study: optuna study object.
@@ -200,8 +198,5 @@ class OptunaTuner(ParamsTuner):
             return None, None
 
     def plot(self):
-        """
-        Plot optimization history of all trials in a study.
-
-        """
+        """Plot optimization history of all trials in a study."""
         return optuna.visualization.plot_optimization_history(self.study)

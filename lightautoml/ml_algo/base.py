@@ -36,30 +36,27 @@ class MLAlgo(ABC):
 
     @property
     def name(self) -> str:
-        """Get model name.
-        """
+        """Get model name."""
         return self._name
 
     @property
     def features(self) -> List[str]:
-        """Get list of features.
-        """
+        """Get list of features."""
         return self._features
 
     @features.setter
     def features(self, val: Sequence[str]):
+        """List of features."""
         self._features = list(val)
 
     @property
     def is_fitted(self) -> bool:
-        """Get flag is the model fitted or not.
-        """
+        """Get flag is the model fitted or not."""
         return self.features is not None
 
     @property
     def params(self) -> dict:
-        """Get model's params dict.
-        """
+        """Get model's params dict."""
         if self._params is None:
             self._params = copy(self.default_params)
         return self._params
@@ -90,7 +87,8 @@ class MLAlgo(ABC):
             freeze_defaults:
                 - ``True`` :  params may be rewrited depending on dataset.
                 - ``False``:  params may be changed only manually or with tuning.
-            timer: Timer instance or None
+            timer: ``Timer`` instance or `None`
+
         """
         self.task = None
 
@@ -111,7 +109,7 @@ class MLAlgo(ABC):
 
     @abstractmethod
     def fit_predict(self, train_valid_iterator: TrainValidIterator) -> LAMLDataset:
-        """Abstract method
+        """Abstract method.
 
         Fit new algo on iterated datasets and predict on valid parts.
 
@@ -126,7 +124,7 @@ class MLAlgo(ABC):
         """Predict target for input data.
 
         Args:
-            test:
+            test: ``LAMLDataset`` on test.
 
         Returns:
             dataset with predicted values.
@@ -152,19 +150,20 @@ class MLAlgo(ABC):
 
         Args:
             prefix: str that used as prefix.
+            
         """
         self._name = '_'.join([prefix, self._name])
 
     def set_timer(self, timer: TaskTimer) -> 'MLAlgo':
+        """Set timer."""
         self.timer = timer
+
         return self
 
 
 @record_history(enabled=False)
 class TabularMLAlgo(MLAlgo):
-    """
-    Machine learning algorithms that accepts numpy arrays as input.
-    """
+    """Machine learning algorithms that accepts numpy arrays as input."""
     _name: str = 'TabularAlgo'
 
     def _set_prediction(self, dataset: NumpyDataset, preds_arr: np.ndarray) -> NumpyDataset:
@@ -175,7 +174,8 @@ class TabularMLAlgo(MLAlgo):
             preds_arr: array with predicted values.
 
         Returns:
-            changed dataset.
+            transformed dataset.
+
         """
 
         prefix = '{0}_prediction'.format(self._name)

@@ -28,9 +28,7 @@ _sk_force_metric = {
 
 @record_history(enabled=False)
 class SKLoss(Loss):
-    """
-    Loss used for scikit-learn.
-    """
+    """Loss used for scikit-learn."""
 
     def __init__(self, loss: str, loss_params: Optional[Dict] = None, fw_func: Optional[Callable] = None,
                  bw_func: Optional[Callable] = None):
@@ -69,7 +67,7 @@ class SKLoss(Loss):
         Uses default callback of parent class `Loss`.
 
         Args:
-            metric: callback metric
+            metric: callback metric.
             greater_is_better: whether or not higher value is better.
             metric_params: additional metric parameters.
 

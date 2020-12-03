@@ -1,6 +1,4 @@
-"""
-Utils
-"""
+"""Profiler and timer."""
 
 from .profiler import Profiler
 

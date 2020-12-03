@@ -1,6 +1,4 @@
-"""
-Basic classes for validation iterators
-"""
+"""Basic classes for validation iterators."""
 
 from copy import copy
 from typing import Any, Generator, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
@@ -22,9 +20,9 @@ CustomIdxs = Iterable[Tuple[Sequence, Sequence]]
 # check for same columns in dataset
 @record_history(enabled=False)
 class TrainValidIterator:
-    """Abstract class to train/validation iteration
+    """Abstract class to train/validation iteration.
 
-    Train/valid iterator - should implement __iter__ and __next__ for using in ml_pipeline
+    Train/valid iterator - should implement __iter__ and __next__ for using in ml_pipeline.
 
     """
 
@@ -39,7 +37,7 @@ class TrainValidIterator:
         return self.train.features
 
     def __init__(self, train: Dataset, **kwargs: Any):
-        """Create iterator
+        """
 
         Args:
             train: train dataset.
@@ -78,7 +76,7 @@ class TrainValidIterator:
 
     # TODO: add typing
     def apply_selector(self, selector) -> 'TrainValidIterator':
-        """Select features on train data
+        """Select features on train data.
 
         Check if selector is fitted.
         If not - fit and then perform selection.
@@ -160,8 +158,8 @@ class HoldoutIterator(TrainValidIterator):
         """Create iterator.
 
         Args:
-            train: LAMLDataset of train data
-            valid: LAMLDataset of valid data
+            train: LAMLDataset of train data.
+            valid: LAMLDataset of valid data.
 
         """
         self.train = train
@@ -285,10 +283,10 @@ class CustomIterator(TrainValidIterator):
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
         """Convert iterator to HoldoutIterator.
 
-        Use first train/valid split for HoldoutIterator creation
+        Use first train/valid split for HoldoutIterator creation.
 
         Returns:
-            new HoldoutIterator
+            new HoldoutIterator.
 
         """
         for (tr_idx, val_idx) in self.iterator:

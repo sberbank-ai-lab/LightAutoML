@@ -1,6 +1,4 @@
-"""
-Selectors for linear models
-"""
+"""Selectors for linear models."""
 
 from typing import Union, Optional
 
@@ -14,7 +12,7 @@ from ...validation.base import TrainValidIterator
 
 @record_history(enabled=False)
 class HighCorrRemoval(SelectionPipeline):
-    """Selector to remove highly correlated features
+    """Selector to remove highly correlated features.
 
     Del totally correlated feats to speedup L1 regression models.
     For sparse data cosine will be used. It's not exact but ok for remove very high correlations.
@@ -23,7 +21,7 @@ class HighCorrRemoval(SelectionPipeline):
 
     def __init__(self, corr_co: float = 0.98, subsample: Union[int, float] = 100000,
                  random_state: int = 42, **kwargs):
-        """Highly correlated features removal selector init
+        """
 
         Args:
             corr_co: similarity threshold.
@@ -39,9 +37,9 @@ class HighCorrRemoval(SelectionPipeline):
         self.random_state = random_state
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator]):
-        """Select features to save in dataset during selection
+        """Select features to save in dataset during selection.
 
-        Method is used to perform selection based on features correlation
+        Method is used to perform selection based on features correlation.
         Should save _selected_features attribute in the end of working.
 
         Args:

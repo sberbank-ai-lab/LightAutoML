@@ -1,6 +1,4 @@
-"""
-Tabular iterators
-"""
+"""Tabular iterators."""
 
 from typing import Optional, Sequence, Tuple, Union, cast
 
@@ -134,18 +132,18 @@ def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = No
 
 @record_history(enabled=False)
 class TimeSeriesIterator:
-    """Time Series Iterator"""
+    """Time Series Iterator."""
 
     @staticmethod
     def split_by_dates(datetime_col, splitter):
-        """Create indexes of folds splitted by thresholds
+        """Create indexes of folds splitted by thresholds.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
-            splitter: List of thresholds (same value as )
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            splitter: List of thresholds (same value as ).
 
         Returns:
-            folds: Array of folds' indexes
+            folds: Array of folds' indexes.
 
         """
 
@@ -156,14 +154,14 @@ class TimeSeriesIterator:
 
     @staticmethod
     def split_by_parts(datetime_col, n_splits: int):
-        """Create indexes of folds splitted into equal parts
+        """Create indexes of folds splitted into equal parts.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
-            n_splits: Number of splits(folds)
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            n_splits: Number of splits(folds).
 
         Returns:
-            folds: Array of folds' indexes
+            folds: Array of folds' indexes.
 
         """
 
@@ -178,13 +176,13 @@ class TimeSeriesIterator:
 
     def __init__(self, datetime_col, n_splits: Optional[int] = 5,
                  date_splits: Optional[Sequence] = None, sorted_kfold: bool = False):
-        """Generates time series data split. Sorter - include left, exclude right
+        """Generates time series data split. Sorter - include left, exclude right.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
-            n_splits: Number of splits
-            date_splits: List of thresholds
-            sorted_kfold:
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            n_splits: Number of splits.
+            date_splits: List of thresholds.
+            sorted_kfold: is sorted.
 
         """
         self.sorted_kfold = sorted_kfold
@@ -201,10 +199,10 @@ class TimeSeriesIterator:
         self.n_splits = uniques.shape[0]
 
     def __len__(self) -> int:
-        """Get number of folds
+        """Get number of folds.
 
         Returns:
-            length
+            length.
 
         """
         if self.sorted_kfold:
@@ -212,15 +210,16 @@ class TimeSeriesIterator:
         return self.n_splits - 1
 
     def __getitem__(self, item) -> Tuple[np.ndarray, np.ndarray]:
-        """Select train/validation indexes
+        """Select train/validation indexes.
 
-        For Train indexes use all dates before Validation dates
+        For Train indexes use all dates before Validation dates.
 
         Args:
-            item: index of fold
+            item: index of fold.
 
         Returns:
-            Tuple of train/validation indexes
+            Tuple of train/validation indexes.
+
         """
 
         if item >= len(self):

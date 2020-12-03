@@ -1,6 +1,4 @@
-"""
-Datetime features
-"""
+"""Datetime features."""
 
 from collections import OrderedDict
 from typing import Union, Sequence, List, Optional
@@ -95,8 +93,7 @@ class BaseDiff(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """List of features.
-        """
+        """List of features."""
         return self._features
 
     def __init__(self, base_names: Sequence[str], diff_names: Sequence[str],
@@ -176,15 +173,15 @@ class DateSeasons(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """List of features names.
-        """
+        """List of features names."""
         return self._features
 
     def __init__(self, output_role: Optional[ColumnRole] = None):
         """
 
         Args:
-            output_role: which role to assign for input feautres
+            output_role: which role to assign for input feautres.
+
         """
         self.output_role = output_role
         if output_role is None:

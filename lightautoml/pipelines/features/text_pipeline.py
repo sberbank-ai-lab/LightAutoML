@@ -1,6 +1,4 @@
-"""
-Text features
-"""
+"""Text features."""
 
 from typing import Any
 
@@ -28,18 +26,17 @@ _tokenizer_by_lang = {'ru': SimpleRuTokenizer,
 
 @record_history(enabled=False)
 class NLPDataFeatures:
-    """
-    Class contains basic features transformations for text data
+    """Class contains basic features transformations for text data.
 
     """
     _lang = {'en', 'ru', 'multi'}
 
     def __init__(self, **kwargs: Any):
-        """
-        Set default parameters for nlp pipeline constructor
+        """Set default parameters for nlp pipeline constructor.
 
         Args:
-            **kwargs:
+            **kwargs: default params.
+
         """
         if 'lang' in kwargs:
             assert kwargs['lang'] in self._lang, f'Language must be one of: {self._lang}'
@@ -72,9 +69,9 @@ class NLPDataFeatures:
 
 @record_history(enabled=False)
 class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
+    """Class contains embedding features for text data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
-        # TODO: Transformer params to config
         transformers_list = []
         # process texts
         texts = get_columns_by_role(train, 'Text')
@@ -102,9 +99,9 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
 
 @record_history(enabled=False)
 class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
+    """Class contains tfidf features for text data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
-        # TODO: Transformer params to config
         transformers_list = []
 
         # process texts
@@ -129,7 +126,6 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
 class TextBertFeatures(FeaturesPipeline, NLPDataFeatures):
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
-        # TODO: Transformer params to config
         transformers_list = []
 
         # process texts

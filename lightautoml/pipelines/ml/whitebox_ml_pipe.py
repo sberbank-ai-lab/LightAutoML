@@ -1,6 +1,4 @@
-"""
-Whitebox MLPipeline
-"""
+"""Whitebox MLPipeline."""
 
 import warnings
 from typing import Union, Tuple, cast
@@ -17,9 +15,8 @@ TunedWB = Union[WbMLAlgo, Tuple[WbMLAlgo, ParamsTuner]]
 
 
 class WBPipeline(MLPipeline):
-    """
-    Special pipeline to handle whitebox model
-    """
+    """Special pipeline to handle whitebox model."""
+
     @property
     def whitebox(self) -> WbMLAlgo:
         if len(self.ml_algos[0].models) > 1:
@@ -28,21 +25,22 @@ class WBPipeline(MLPipeline):
         return self.ml_algos[0].models[0]
 
     def __init__(self, whitebox: TunedWB):
-        """Create whitebox MLPipeline
+        """Create whitebox MLPipeline.
 
         Args:
-            whitebox: WbMLAlgo or tuple WbMLAlgo with params tuner
+            whitebox: WbMLAlgo or tuple WbMLAlgo with params tuner.
         """
         super().__init__([whitebox], True, features_pipeline=WBFeatures())
         self._used_features = None
 
     def fit_predict(self, train_valid: TrainValidIterator) -> NumpyDataset:
-        """Fit whitebox
+        """Fit whitebox.
 
         Args:
-            train_valid: TrainValidIterator
+            train_valid: TrainValidIterator.
 
         Returns:
+            Dataset.
 
         """
         _subsamp_to_refit = train_valid.train[:5]
@@ -52,15 +50,16 @@ class WBPipeline(MLPipeline):
         return cast(NumpyDataset, val_pred)
 
     def predict(self, dataset: PandasDataset, report: bool = False) -> NumpyDataset:
-        """Predict whitebox
+        """Predict whitebox.
 
-        Additional report param stands for whitebox report generation
+        Additional report param stands for whitebox report generation.
 
         Args:
-            dataset: PandasDataset of input features
-            report:
+            dataset: PandasDataset of input features.
+            report: generate report.
 
         Returns:
+            Dataset.
 
         """
         dataset = self.features_pipeline.transform(dataset)

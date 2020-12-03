@@ -1,6 +1,4 @@
-"""
-Pipeline utils
-"""
+"""Pipeline utils."""
 
 from typing import Sequence, List, Optional, Any
 
@@ -11,8 +9,8 @@ from lightautoml.dataset.base import LAMLDataset
 
 @record_history(enabled=False)
 def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) -> List[Optional[str]]:
-    """
-    Pipelines create name in the way 'prefix__feature_name'.
+    """Pipelines create name in the way 'prefix__feature_name'.
+
     Multiple pipelines will create names in the way 'prefix1__prefix2__feature_name'.
     This function maps initial features names to outputs.
     Result may be not exact in some rare cases, but it's ok for real pipelines.

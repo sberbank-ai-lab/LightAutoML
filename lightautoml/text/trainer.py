@@ -1,6 +1,4 @@
-"""
-Trainer
-"""
+"""Trainer."""
 
 from copy import deepcopy
 
@@ -8,6 +6,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Optional, Dict, List, Callable, Union, Tuple
 from .dp_utils import CustomDataParallel
@@ -27,14 +26,14 @@ logger = get_logger(__name__)
 
 @record_history(enabled=False)
 def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch.optim.Optimizer:
-    """Change optimizer device
+    """Change optimizer device.
 
     Args:
-        optim: optimizer
-        device: to device
+        optim: optimizer.
+        device: to device.
 
     Returns:
-        optimizer on selected device
+        optimizer on selected device.
 
     """
 
@@ -47,18 +46,18 @@ def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch
 
 @record_history(enabled=False)
 class SnapshotEns:
-    """In memory snapshots class"""
+    """In memory snapshots class."""
 
     def __init__(self, device: torch.device, k: int = 1, early_stopping: bool = True,
                  patience: int = 3, swa: bool = False):
         """Class for SE, SWA and early stopping.
 
         Args:
-            device: torch device
-            k: number of snapshots / checkpoint for swa
-            early_stopping: use early stopping
-            patience: patience before early stopping
-            swa: use stochastic weight averaging
+            device: torch device.
+            k: number of snapshots / checkpoint for swa.
+            early_stopping: use early stopping.
+            patience: patience before early stopping.
+            swa: use stochastic weight averaging.
 
         """
         self.best_loss = np.array([np.inf] * k)
@@ -72,11 +71,11 @@ class SnapshotEns:
         self.early_stop = False
 
     def update(self, model: nn.Module, loss: float):
-        """Update current state
+        """Update current state.
 
         Args:
-            model: torch model
-            loss: loss value, lower is better
+            model: torch model.
+            loss: loss value, lower is better.
 
         """
         if np.any(self.best_loss > loss):
@@ -92,15 +91,15 @@ class SnapshotEns:
                 self.early_stop = True and self.early_stopping
 
     def predict(self, data: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Make snapshots prediction
+        """Make snapshots prediction.
 
-        Final prediction is a result of averaging predictions from snapshots
+        Final prediction is a result of averaging predictions from snapshots.
 
         Args:
-            data: dict with model data
+            data: dict with model data.
 
         Returns:
-            torch tensor snapshot ensemble prediction
+            torch tensor snapshot ensemble prediction.
 
         """
 
@@ -114,15 +113,15 @@ class SnapshotEns:
         return preds
 
     def forward(self, data: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Make snapshots forward (compute loss)
+        """Make snapshots forward (compute loss).
 
-        Final result is a result of averaging losses from snapshots
+        Final result is a result of averaging losses from snapshots.
 
         Args:
-            data: dict with model data
+            data: dict with model data.
 
         Returns:
-            torch tensor snapshot ensemble loss
+            torch tensor snapshot ensemble loss.
 
         """
         preds = 0
@@ -134,18 +133,18 @@ class SnapshotEns:
         return preds
 
     def _sort(self):
-        """Sort models by loss value"""
+        """Sort models by loss value."""
 
         ids = np.argsort(self.best_loss)
         self.best_loss = self.best_loss[ids]
         self.models = [self.models[z] for z in ids]
 
     def set_weights(self, model: nn.Module, best: bool = False):
-        """Set model weights as SWA or from best state
+        """Set model weights as SWA or from best state.
 
         Args:
-            model: torch model
-            best: save only best model
+            model: torch model.
+            best: save only best model.
 
         """
         n = 1 if best else min(self.k, sum(self.best_loss != np.inf))
@@ -172,10 +171,10 @@ class SnapshotEns:
         model.load_state_dict(state_dict)
 
     def set_best_params(self, model: nn.Module):
-        """Set best model params and clean cache
+        """Set best model params and clean cache.
 
         Args:
-            model: torch model
+            model: torch model.
 
         """
         self._sort()
@@ -188,10 +187,10 @@ class SnapshotEns:
         self.best_loss = self.best_loss[:min_k]
 
     def state_dict(self) -> Dict:
-        """State SE dcit
+        """State SE dict.
 
         Returns:
-            dict with SE state
+            dict with SE state.
 
         """
         models_dict = {'best_loss': self.best_loss}
@@ -204,11 +203,11 @@ class SnapshotEns:
         return models_dict
 
     def load_state_dict(self, weights: Dict, model: nn.Module):
-        """Load SE state
+        """Load SE state.
 
         Args:
-            model: torch model
-            weights: state dict with weights
+            model: torch model.
+            weights: state dict with weights.
 
         """
         self.best_loss = weights.pop('best_loss')
@@ -225,7 +224,7 @@ class SnapshotEns:
 
 @record_history(enabled=False)
 class Trainer:
-    """Torch main trainer class"""
+    """Torch main trainer class."""
 
     def __init__(self, net, net_params: Dict, opt, opt_params: Dict, n_epochs: int,
                  device: torch.device, device_ids: List[int], metric: Callable, snap_params: Dict,
@@ -235,25 +234,25 @@ class Trainer:
                  apex: bool = False, pretrained_path: Optional[str] = None):
         """Train, validation and test loops for NN models.
 
-        Use DataParallel if device_ids is not None
+        Use DataParallel if device_ids is not None.
 
         Args:
-            net: uninitialized torch model
-            net_params: dict with model params
-            opt: uninitialized torch optimizer
-            opt_params: dict with optim params
-            n_epochs: number of training epochs
-            device: torch device
-            device_ids: ids of used gpu devices or None
-            metric: callable metric for validation
-            snap_params: dict with SE parameters
-            is_snap: use snapshots
-            sch: uninitialized torch scheduler
-            scheduler_params: dict with scheduler params
-            verbose: verbose every N epochs
-            verbose_inside: numer of steps between verbose inside epoch or None
-            apex: use apex (lead to GPU memory leak among folds)
-            pretrained_path: path to the pretrained model weights
+            net: uninitialized torch model.
+            net_params: dict with model params.
+            opt: uninitialized torch optimizer.
+            opt_params: dict with optim params.
+            n_epochs: number of training epochs.
+            device: torch device.
+            device_ids: ids of used gpu devices or None.
+            metric: callable metric for validation.
+            snap_params: dict with SE parameters.
+            is_snap: use snapshots.
+            sch: uninitialized torch scheduler.
+            scheduler_params: dict with scheduler params.
+            verbose: verbose every N epochs.
+            verbose_inside: number of steps between verbose inside epoch or None.
+            apex: use apex (lead to GPU memory leak among folds).
+            pretrained_path: path to the pretrained model weights.
 
         """
         self.net = net
@@ -282,7 +281,7 @@ class Trainer:
         self.is_fitted = False
 
     def clean(self):
-        """Clean all models"""
+        """Clean all models."""
 
         self.model = None
         self.optimizer = None
@@ -292,7 +291,7 @@ class Trainer:
         return self
 
     def _init(self):
-        """Init all models"""
+        """Init all models."""
 
         self.model = self.net(**self.net_params)
         if self.device_ids is not None:
@@ -309,10 +308,10 @@ class Trainer:
         return self
 
     def load_state(self, path: Union[str, Dict]):
-        """Load all models state
+        """Load all models state.
 
         Args:
-            path: path to state dict or state dict
+            path: path to state dict or state dict.
 
         """
 
@@ -343,15 +342,15 @@ class Trainer:
         return self
 
     def state_dict(self, path: Optional = None):
-        """Create all models state
+        """Create all models state.
 
-        Switch all models on cpu before saving state
+        Switch all models on cpu before saving state.
 
         Args:
-            path: path to save state dict
+            path: path to save state dict.
 
         Returns:
-            checkpoint if path is not None
+            checkpoint if path is not None.
 
         """
 
@@ -375,14 +374,14 @@ class Trainer:
         else:
             return checkpoint
 
-    def fit(self, dataloaders: Dict[str, torch.utils.data.DataLoader]) -> np.ndarray:
-        """Fit model
+    def fit(self, dataloaders: Dict[str, DataLoader]) -> np.ndarray:
+        """Fit model.
 
         Args:
-            dataloaders: dict with torch dataloaders
+            dataloaders: dict with torch dataloaders.
 
         Returns:
-            validation prediction
+            validation prediction.
 
         """
 
@@ -427,14 +426,14 @@ class Trainer:
 
         return val_data[1]
 
-    def train(self, dataloaders: Dict[str, torch.utils.data.DataLoader]) -> List[float]:
-        """Training loop
+    def train(self, dataloaders: Dict[str, DataLoader]) -> List[float]:
+        """Training loop.
 
         Args:
-            dataloaders: dict with torch dataloaders
+            dataloaders: dict with torch dataloaders.
 
         Returns:
-            loss
+            loss.
 
         """
 
@@ -478,16 +477,16 @@ class Trainer:
 
         return loss_log
 
-    def test(self, dataloader: torch.utils.data.DataLoader, stage: str = 'val', snap: bool = False) -> Tuple:
-        """Testing loop
+    def test(self, dataloader: DataLoader, stage: str = 'val', snap: bool = False) -> Tuple:
+        """Testing loop.
 
         Args:
-            dataloader: torch dataloader
-            stage: train, val or test
-            snap: use snapshots
+            dataloader: torch dataloader.
+            stage: train, val or test.
+            snap: use snapshots.
 
         Returns:
-            loss, (target, oof)
+            loss, (target, oof).
 
         """
         loss_log = []
@@ -530,15 +529,15 @@ class Trainer:
                           np.vstack(pred) if len(pred[0].shape) == 2 else np.hstack(pred),
                           )
 
-    def predict(self, dataloader: torch.utils.data.DataLoader, stage: str) -> np.ndarray:
-        """Predict model
+    def predict(self, dataloader: DataLoader, stage: str) -> np.ndarray:
+        """Predict model.
 
         Args:
-            dataloader: torch dataloader
-            stage: train, val or test
+            dataloader: torch dataloader.
+            stage: train, val or test.
 
         Returns:
-            prediction
+            prediction.
 
         """
 

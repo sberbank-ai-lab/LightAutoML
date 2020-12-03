@@ -1,6 +1,4 @@
-"""
-Nested MLPipeline
-"""
+"""Nested MLPipeline."""
 
 from copy import copy, deepcopy
 from typing import Optional, Tuple, Any, Union, Sequence
@@ -32,12 +30,13 @@ logger = get_logger(__name__)
 @record_history(enabled=False)
 class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
     """
-    Wrapper for MLAlgo to make it trainable over nested folds
-    Limitations - only for TabularMLAlgo
+    Wrapper for MLAlgo to make it trainable over nested folds.
+    Limitations - only for ``TabularMLAlgo``.
     """
 
     @property
     def params(self) -> dict:
+        """Parameters of ml_algo."""
         if self._ml_algo._params is None:
             self._ml_algo._params = copy(self.default_params)
         return self._ml_algo._params
@@ -94,7 +93,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
             valid: TabularDataset to validate.
 
         Returns:
-            Tuple (model, predicted_values)
+            Tuple (model, predicted_values).
 
         """
         logger.info('Start fit_predict for nested model on a single fold ...')
@@ -151,10 +150,13 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
 @record_history(enabled=False)
 class NestedTabularMLPipeline(MLPipeline):
     """
-    Wrapper for MLPipeline to make it trainable over nested folds
+    Wrapper for MLPipeline to make it trainable over nested folds.
+
     Limitations:
+
         - only for TabularMLAlgo
         - nested trained only MLAlgo. FeaturesPipelines and SelectionPipelines are trained as usual
+
     """
 
     def __init__(self, ml_algos: Sequence[Union[TabularMLAlgo, Tuple[TabularMLAlgo, ParamsTuner]]],
@@ -167,15 +169,16 @@ class NestedTabularMLPipeline(MLPipeline):
         """
 
         Args:
-            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner)
-            force_calc: flag if single fold of ml_algo should be calculated anyway
+            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner).
+            force_calc: flag if single fold of ml_algo should be calculated anyway.
             pre_selection: initial feature selection. If ``None`` there is no initial selection.
             features_pipeline: composition of feature transforms.
             post_selection: post feature selection. If ``None`` there is no post selection.
-            cv: nested folds cv split
-            n_folds: limit of valid iterations from cv
-            inner_tune: should we refit tuner each inner cv run or tune ones on outer cv
-            refit_tuner: should we refit tuner each inner loop with inner_tune==True
+            cv: nested folds cv split.
+            n_folds: limit of valid iterations from cv.
+            inner_tune: should we refit tuner each inner cv run or tune ones on outer cv.
+            refit_tuner: should we refit tuner each inner loop with inner_tune==True.
+
         """
         if cv > 1:
             new_ml_algos = []

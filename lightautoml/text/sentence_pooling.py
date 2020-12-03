@@ -1,6 +1,4 @@
-"""
-Pooling
-"""
+"""Pooling."""
 
 from abc import ABC, abstractmethod
 

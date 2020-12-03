@@ -1,6 +1,4 @@
-"""
-Logging
-"""
+"""Logging."""
 
 import logging
 import sys

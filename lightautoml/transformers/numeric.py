@@ -35,9 +35,7 @@ def numeric_check(dataset: LAMLDataset):
 
 @record_history(enabled=False)
 class NaNFlags(LAMLTransformer):
-    """
-    Create NaN flags
-    """
+    """Create NaN flags."""
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'nanflg'
@@ -46,15 +44,16 @@ class NaNFlags(LAMLTransformer):
         """
 
         Args:
-            nan_rate: nan rate cutoff - should we create column - Feature == NaN
+            nan_rate: nan rate cutoff - should we create column - Feature == NaN.
+            
         """
         self.nan_rate = nan_rate
 
     def fit(self, dataset: NumpyTransformable):
-        """Extract nan flags
+        """Extract nan flags.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
+            dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
             self.
@@ -103,15 +102,13 @@ class NaNFlags(LAMLTransformer):
 
 @record_history(enabled=False)
 class FillnaMedian(LAMLTransformer):
-    """
-    Fillna with median
-    """
+    """Fillna with median."""
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'fillnamed'
 
     def fit(self, dataset: NumpyTransformable):
-        """Estimate medians
+        """Estimate medians.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -133,7 +130,7 @@ class FillnaMedian(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """Transform - fillna with medians
+        """Transform - fillna with medians.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -158,15 +155,13 @@ class FillnaMedian(LAMLTransformer):
 
 @record_history(enabled=False)
 class FillInf(LAMLTransformer):
-    """
-    Fill inf with nan to handle as nan value
-    """
+    """Fill inf with nan to handle as nan value."""
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'fillinf'
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """Replace inf to nan
+        """Replace inf to nan.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -193,9 +188,7 @@ class FillInf(LAMLTransformer):
 
 @record_history(enabled=False)
 class LogOdds(LAMLTransformer):
-    """
-    Convert probs to logodds
-    """
+    """Convert probs to logodds."""
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'logodds'
@@ -229,9 +222,7 @@ class LogOdds(LAMLTransformer):
 
 @record_history(enabled=False)
 class StandardScaler(LAMLTransformer):
-    """
-    Classic StandardScaler
-    """
+    """Classic StandardScaler."""
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
@@ -290,9 +281,7 @@ class StandardScaler(LAMLTransformer):
 
 @record_history(enabled=False)
 class QuantileBinning(LAMLTransformer):
-    """
-    Discretization of numeric features by quantiles
-    """
+    """Discretization of numeric features by quantiles."""
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'qntl'
@@ -301,19 +290,20 @@ class QuantileBinning(LAMLTransformer):
         """
 
         Args:
-            nbins: maximum number of bins
+            nbins: maximum number of bins.
 
         """
         self.nbins = nbins
 
     def fit(self, dataset: NumpyTransformable):
-        """Estimate bins borders
+        """Estimate bins borders.
 
         Args:
-            dataset: Pandas or Numpy dataset of numeric features
+            dataset: Pandas or Numpy dataset of numeric features.
 
         Returns:
             self.
+
         """
         # set transformer names and add checks
         super().fit(dataset)
@@ -336,13 +326,14 @@ class QuantileBinning(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """Apply bin borders
+        """Apply bin borders.
 
         Args:
-            dataset: Pandas or Numpy dataset of numeric features
+            dataset: Pandas or Numpy dataset of numeric features.
 
         Returns:
-            Numpy dataset with encoded labels
+            Numpy dataset with encoded labels.
+
         """
         # checks here
         super().transform(dataset)

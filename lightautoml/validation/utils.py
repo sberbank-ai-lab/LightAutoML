@@ -1,6 +1,4 @@
-"""
-Validation utils
-"""
+"""Validation utils."""
 
 from typing import Optional, Callable, cast, Union
 

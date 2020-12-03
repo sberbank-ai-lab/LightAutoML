@@ -1,4 +1,2 @@
-"""
-Basic feature generation steps and helper utils
-"""
+"""Basic feature generation steps and helper utils."""
 __all__ = ['base', 'categorical', 'datetime', 'numeric']

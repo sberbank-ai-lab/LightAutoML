@@ -1,6 +1,4 @@
-"""
-Base AutoML module
-"""
+"""Base AutoML Class."""
 
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
@@ -20,25 +18,30 @@ logger = get_logger(__name__)
 
 @record_history(enabled=False)
 class AutoML:
-    """
-    Class for compile full pipeline of AutoML task
+    """Class for compile full pipeline of AutoML task.
+
     AutoML steps:
+
         - read, analyze data and get inner LAMLDataset from input dataset: performed by reader
         - create validation scheme
         - compute passed ml pipelines from levels. Each element of levels is list of MLPipelines
-            prediction from current level are passed to next level pipelines as features
+          prediction from current level are passed to next level pipelines as features
         - time monitoring - check if we have enough time to calc new pipeline
         - blend last level models and prune useless pipelines to speedup inference: performed by blender
         - returns prediction on validation data. If crossvalidation scheme is used, out-of-fold prediction will returned
-            If validation data is passed - will return prediction on validation dataset
-            In case of cv scheme when some point of train data never was used as validation (ex. timeout exceeded
-                or custom cv iterator like TimeSeriesIterator was used) NaN for this point will be returned
-    Common usecase - create custom pipelines or presets. Ex:
-    reader = SomeReader()
-    pipe = MLPipeline([SomeAlgo()])
-    levels = [[pipe]]
-    automl = AutoML(reader, levels, )
-    automl.fit_predict(data, roles={'target: 'TARGET'})
+          If validation data is passed - will return prediction on validation dataset
+          In case of cv scheme when some point of train data never was used as validation (ex. timeout exceeded
+          or custom cv iterator like TimeSeriesIterator was used) NaN for this point will be returned
+
+    Example:
+        Common usecase - create custom pipelines or presets.
+
+        >>> reader = SomeReader()
+        >>> pipe = MLPipeline([SomeAlgo()])
+        >>> levels = [[pipe]]
+        >>> automl = AutoML(reader, levels, )
+        >>> automl.fit_predict(data, roles={'target: 'TARGET'})
+
     """
 
     def __init__(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
@@ -46,32 +49,31 @@ class AutoML:
         """
 
         Args:
-            reader: instance of Reader class - object that creates LAMLDataset from input data
-            levels: list of list of MLPipelines
-            timer: instance of PipelineTimer. Default - unlimited timer
-            blender: instance of Blender. By default - BestModelSelector
-            skip_conn: True if we should pass first level input features to next levels
-            verbose: verbosity level. Default 2
-                0 - no messages
-                1 - warnings
-                2 - info
-                3 - debug
+            reader: instance of Reader class - object that creates LAMLDataset from input data.
+            levels: list of list of MLPipelines.
+            timer: instance of PipelineTimer. Default - unlimited timer.
+            blender: instance of Blender. By default - BestModelSelector.
+            skip_conn: True if we should pass first level input features to next levels.
+            verbose: verbosity level. Levels:
+                - 0 - no messages.
+                - 1 - warnings.
+                - 2 - info.
+                - 3 - debug.
+
         """
         self._initialize(reader, levels, timer, blender, skip_conn, verbose)
 
     def _initialize(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
                     blender: Optional[Blender] = None, skip_conn: bool = False, verbose: int = 2):
-        """Same as __init__. Exists for delayed initialization in presets
+        """Same as __init__. Exists for delayed initialization in presets.
 
         Args:
-            reader: instance of Reader class - object that creates LAMLDataset from input data
-            levels: list of list of MLPipelines
-            timer: instance of PipelineTimer. Default - unlimited timer
-            blender: instance of Blender. By default - BestModelSelector
-            skip_conn: True if we should pass first level input features to next levels
-            verbose: verbosity level. Default 2
-
-        Returns:
+            reader: instance of Reader class - object that creates LAMLDataset from input data.
+            levels: list of list of MLPipelines.
+            timer: instance of PipelineTimer. Default - unlimited timer.
+            blender: instance of Blender. By default - BestModelSelector.
+            skip_conn: True if we should pass first level input features to next levels.
+            verbose: verbosity level. Default 2.
 
         """
 
@@ -101,19 +103,18 @@ class AutoML:
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
                     valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
-        """Fit on input data and make prediction on validation part
+        """Fit on input data and make prediction on validation part.
 
         Args:
-            train_data:  dataset to train
-            roles: roles dict
-            train_features: optional features names, if cannot be inferred from train_data
-            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance
-                Note - cv_iter must support iterations and get len
-            valid_data: optional validation dataset
-            valid_features: optional validation dataset features if cannot be inferred from valid_data
+            train_data: Dataset to train.
+            roles: Roles dict.
+            train_features: Optional features names, if cannot be inferred from train_data.
+            cv_iter: Custom cv iterator. Ex. `TimeSeriesIterator` instance.
+            valid_data: Optional validation dataset.
+            valid_features: Optional validation dataset features if cannot be inferred from valid_data.
 
         Returns:
-
+            Predicted values.
 
         """
         self.timer.start()
@@ -198,14 +199,14 @@ class AutoML:
         return blended_prediction
 
     def predict(self, data: Any, features_names: Optional[Sequence[str]] = None) -> LAMLDataset:
-        """Predict with automl on new dataset
+        """Predict with automl on new dataset.
 
         Args:
-            data: dataset to perform inference
-            features_names: optional features names, if cannot be inferred from train_data
+            data: Dataset to perform inference.
+            features_names: Optional features names, if cannot be inferred from train_data.
 
         Returns:
-            LAMLDataset of predictions
+            Dataset with predictions.
 
         """
         dataset = self.reader.read(data, features_names=features_names, add_array_attrs=False)
@@ -240,10 +241,10 @@ class AutoML:
         return blended_prediction
 
     def collect_used_feats(self) -> List[str]:
-        """Get feats that automl uses on inference
+        """Get feats that automl uses on inference.
 
         Returns:
-            List of str features names
+            Features names list.
 
         """
         used_feats = set()
@@ -257,10 +258,10 @@ class AutoML:
         return used_feats
 
     def collect_model_stats(self) -> Dict[str, int]:
-        """Collect info about models in automl
+        """Collect info about models in automl.
 
         Returns:
-            Dict of {'Model': n_runtimes}
+            Dict of ``{'Model': n_runtimes}``.
 
         """
         model_stats = {}

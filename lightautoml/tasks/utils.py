@@ -6,14 +6,16 @@ from log_calls import record_history
 
 @record_history(enabled=False)
 def infer_gib(metric: Callable) -> bool:
-    """
-    Infer greater is better from metric.
+    """Infer greater is better from metric.
 
     Args:
-        metric: score or loss function
+        metric: Score or loss function.
 
     Returns:
         True if grater is better.
+
+    Raises:
+        AssertionError: if there is no way to order the predictions.
 
     """
     label = np.array([0, 1])
@@ -22,19 +24,25 @@ def infer_gib(metric: Callable) -> bool:
     g_val = metric(label, pred)
     b_val = metric(label, pred[::-1])
 
-    assert g_val != b_val, 'Cannot infer greater is better from metric. Should be set manually'
+    assert g_val != b_val, 'Cannot infer greater is better from metric.' \
+                           ' Should be set manually.'
 
     return g_val > b_val
 
 
 @record_history(enabled=False)
 def infer_gib_multiclass(metric: Callable) -> bool:
-    """
-    Infer greater is better from metric
+    """Infer greater is better from metric.
+
     Args:
-        metric:
+        metric: Metric function. It must take two
+            arguments y_true, y_pred.
 
     Returns:
+         True if grater is better.
+
+    Raises:
+        AssertionError: if there is no way to order the predictions.
 
     """
     label = np.array([0, 1, 2])
@@ -43,6 +51,7 @@ def infer_gib_multiclass(metric: Callable) -> bool:
     g_val = metric(label, pred)
     b_val = metric(label, pred[::-1])
 
-    assert g_val != b_val, 'Cannot infer greater is better from metric. Should be set manually'
+    assert g_val != b_val, 'Cannot infer greater is better from metric. ' \
+                           'Should be set manually.'
 
     return g_val > b_val

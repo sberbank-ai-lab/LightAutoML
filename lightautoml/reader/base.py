@@ -1,6 +1,4 @@
-"""
-Reader
-"""
+"""Reader and its derivatives."""
 
 from copy import deepcopy
 from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
@@ -48,6 +46,7 @@ class Reader:
             task: Task object
             *args : ignored.
             *kwargs : ignored.
+
         """
         self.task = task
         self._roles = {}
@@ -57,50 +56,39 @@ class Reader:
 
     @property
     def roles(self) -> RolesDict:
-        """Roles dict.
-        """
+        """Roles dict."""
         return self._roles
 
     @property
     def dropped_features(self) -> List[str]:
-        """List of dropped features.
-
-        """
+        """List of dropped features."""
         return self._dropped_features
 
     @property
     def used_features(self) -> List[str]:
-        """List of used features.
-
-        """
+        """List of used features."""
         return self._used_features
 
     @property
     def used_array_attrs(self) -> Dict[str, str]:
-        """Dict of used array attributes.
-
-        """
+        """Dict of used array attributes."""
         return self._used_array_attrs
 
     def fit_read(self, train_data: Any, features_names: Optional[List[str]] = None, roles: UserRolesDefinition = None,
                  **kwargs: Any):
-        """Abstract function to get dataset with initial feature selection.
-
-        """
+        """Abstract function to get dataset with initial feature selection."""
         raise NotImplementedError
 
     def read(self, data: Any, features_names: Optional[List[str]], **kwargs: Any):
-        """Abstract function to add validation columns.
-
-        """
+        """Abstract function to add validation columns."""
         raise NotImplementedError
 
     def upd_used_features(self, add: Optional[Sequence[str]] = None, remove: Optional[Sequence[str]] = None):
-        """Updates the list of used features
+        """Updates the list of used features.
 
         Args:
-            add: list of feature names to add or None
-            remove: list of feature names to remove or None
+            add: list of feature names to add or None.
+            remove: list of feature names to remove or None.
 
         """
         curr_feats = set(self.used_features)
@@ -114,7 +102,7 @@ class Reader:
     def from_reader(cls, reader: 'Reader', **kwargs) -> 'Reader':
         """Create reader for new data type from existed.
 
-        Note - for now only Pandas reader exists, made for future plans
+        Note - for now only Pandas reader exists, made for future plans.
 
         Args:
             reader: source reader.
@@ -138,12 +126,14 @@ class PandasToPandasReader(Reader):
     """
     Reader to convert pd.DataFrame to AutoML's PandasDataset.
     Stages:
-        - drop obviously useless features
-        - convert roles dict from user format to automl format
-        - simple role guess for features without input role
-        - create cv folds
-        - create initial PandasDataset
-        - Optional: advanced guessing of role and handling types
+
+        - drop obviously useless features.
+        - convert roles dict from user format to automl format.
+        - simple role guess for features without input role.
+        - create cv folds.
+        - create initial PandasDataset.
+        - Optional: advanced guessing of role and handling types.
+
     """
 
     def __init__(self, task: Task, samples: Optional[int] = 100000, max_nan_rate: float = 0.999, max_constant_rate: float = 0.999,
@@ -155,25 +145,26 @@ class PandasToPandasReader(Reader):
                  drop_score_co: float = .01,
                  **kwargs: Any):
         """
+
         Args:
-            task: Task object
-            samples: number of elements used when checking role type
-            max_nan_rate: float
-            max_constant_rate: float
-            cv: int
-            random_state: int
+            task: Task object.
+            samples: number of elements used when checking role type.
+            max_nan_rate: float.
+            max_constant_rate: float.
+            cv: int.
+            random_state: int.
             roles_params: dict of params of features roles. \
                 Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
                 It's optional and commonly comes from config
-            n_jobs: int number of processes
-            advanced_roles: param of roles guess (experimental, do not change)
-            numeric_unqiue_rate: param of roles guess (experimental, do not change)
-            max_to_3rd_rate: param of roles guess (experimental, do not change)
-            binning_enc_rate: param of roles guess (experimental, do not change)
-            raw_decr_rate: param of roles guess (experimental, do not change)
-            max_score_rate: param of roles guess (experimental, do not change)
-            abs_score_val: param of roles guess (experimental, do not change)
-            drop_score_co: param of roles guess (experimental, do not change)
+            n_jobs: int number of processes.
+            advanced_roles: param of roles guess (experimental, do not change).
+            numeric_unqiue_rate: param of roles guess (experimental, do not change).
+            max_to_3rd_rate: param of roles guess (experimental, do not change).
+            binning_enc_rate: param of roles guess (experimental, do not change).
+            raw_decr_rate: param of roles guess (experimental, do not change).
+            max_score_rate: param of roles guess (experimental, do not change).
+            abs_score_val: param of roles guess (experimental, do not change).
+            drop_score_co: param of roles guess (experimental, do not change).
             **kwargs:
 
         """
@@ -206,16 +197,16 @@ class PandasToPandasReader(Reader):
 
     def fit_read(self, train_data: DataFrame, features_names: Any = None, roles: UserDefinedRolesDict = None,
                  **kwargs: Any) -> PandasDataset:
-        """Get dataset with initial feature selection
+        """Get dataset with initial feature selection.
 
         Args:
-            train_data: input DataFrame
+            train_data: input DataFrame.
             features_names: ignored. Just to keep signature.
             roles: dict of features roles in format {RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}.
-            **kwargs: can be used for target/group/weights
+            **kwargs: can be used for target/group/weights.
 
         Returns:
-            dataset with selected features
+            dataset with selected features.
 
         """
         logger.info('Train data shape: {}'.format(train_data.shape))
@@ -352,13 +343,13 @@ class PandasToPandasReader(Reader):
         return target
 
     def _get_default_role_from_str(self, name) -> RoleType:
-        """Get default role for string name according to automl's defaults and user settings
+        """Get default role for string name according to automl's defaults and user settings.
 
         Args:
-            name: name of role to get
+            name: name of role to get.
 
         Returns:
-            role object
+            role object.
 
         """
         name = name.lower()
@@ -370,7 +361,7 @@ class PandasToPandasReader(Reader):
         return ColumnRole.from_string(name, **role_params)
 
     def _guess_role(self, feature: Series) -> RoleType:
-        """Try to infer role, simple way
+        """Try to infer role, simple way.
 
         If convertable to float -> number.
         Else if convertable to datetime -> datetime.
@@ -423,7 +414,7 @@ class PandasToPandasReader(Reader):
         return True
 
     def read(self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
-        """Read dataset with fitted metadata
+        """Read dataset with fitted metadata.
 
         Args:
             data: pd.Dataframe with values.
@@ -431,7 +422,7 @@ class PandasToPandasReader(Reader):
             add_array_attrs: target/group/weights/folds.
 
         Returns:
-            LAMLDataset
+            dataset with new columns.
 
         """
         kwargs = {}
@@ -452,18 +443,18 @@ class PandasToPandasReader(Reader):
         return dataset
 
     def advanced_roles_guess(self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None) -> RolesDict:
-        """Advanced roles guess over user's definition and reader's simple guessing
+        """Advanced roles guess over user's definition and reader's simple guessing.
 
-        Strategy - compute feature's NormalizedGini for different encoding ways and calc stats over results
-        Role is inferred by comparing performance stats with manual rules
-        Rule params are params of roles guess in init. Defaults are ok in general case
+        Strategy - compute feature's NormalizedGini for different encoding ways and calc stats over results.
+        Role is inferred by comparing performance stats with manual rules.
+        Rule params are params of roles guess in init. Defaults are ok in general case.
 
         Args:
-            dataset: input PandasDataset
-            manual_roles: dict of user defined roles
+            dataset: input PandasDataset.
+            manual_roles: dict of user defined roles.
 
         Returns:
-
+            Dict.
         """
         if manual_roles is None:
             manual_roles = {}

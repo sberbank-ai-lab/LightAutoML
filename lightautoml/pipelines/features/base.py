@@ -1,6 +1,4 @@
-"""
-Basic classes for features generation
-"""
+"""Basic classes for features generation."""
 
 from copy import copy, deepcopy
 from typing import List, Any, Union, Optional, Tuple, Callable
@@ -27,13 +25,14 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 @record_history(enabled=False)
 class FeaturesPipeline:
-    """
-    Abstract class.
+    """Abstract class.
+
     Analyze train dataset and create composite transformer based on subset of features.
     Instance can be interpreted like Transformer (look for transformers.base.LAMLTransformer)
     with delayed initialization (based on dataset metadata)
     Main method, user should define in custom pipeline is .create_pipeline. For ex. look at lgb_pipeline.LGBSimpleFeatures
-    After FeaturePipeline instance is created, it is used like transformer with .fit_transform and .transform method
+    After FeaturePipeline instance is created, it is used like transformer with .fit_transform and .transform method.
+
     """
 
     def __init__(self, **kwargs):
@@ -44,25 +43,27 @@ class FeaturesPipeline:
     # TODO: visualize pipeline ?
     @property
     def input_features(self) -> List[str]:
-        """Names of input features of train data.
-        """
+        """Names of input features of train data."""
         return self._input_features
 
     @input_features.setter
     def input_features(self, val: List[str]):
+        """Setter for input_features.
+
+        Args:
+            val: list of str.
+
+        """
         self._input_features = deepcopy(val)
 
     @property
     def output_features(self) -> List[str]:
-        """List of feature names that produces _pipeline.
-        """
+        """List of feature names that produces _pipeline."""
         return self._pipeline.features
 
     @property
     def used_features(self) -> List[str]:
-        """List of feature names from original dataset \
-            that was used to produce output.
-        """
+        """List of feature names from original dataset that was used to produce output."""
         mapped = map_pipeline_names(self.input_features, self.output_features)
         return list(set(mapped))
 
@@ -84,7 +85,8 @@ class FeaturesPipeline:
             train: LAMLDataset with train data.
 
         Returns:
-            LAMLDataset - dataset with new features
+            LAMLDataset - dataset with new features.
+
         """
         # TODO: Think about input/output features attributes
         self._input_features = train.features
@@ -99,7 +101,8 @@ class FeaturesPipeline:
             test: LAMLDataset with new data.
 
         Returns:
-            LAMLDataset - dataset with new features
+            LAMLDataset - dataset with new features.
+
         """
         return self._pipeline.transform(test)
 
@@ -148,9 +151,7 @@ class FeaturesPipeline:
 
 @record_history(enabled=False)
 class EmptyFeaturePipeline(FeaturesPipeline):
-    """
-    Dummy feature pipeline - .fit_transform and transform do nothing
-    """
+    """Dummy feature pipeline - .fit_transform and transform do nothing."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
         """Create empty pipeline.
@@ -166,13 +167,13 @@ class EmptyFeaturePipeline(FeaturesPipeline):
 
 @record_history(enabled=False)
 class TabularDataFeatures:
-    """
-    Helper class contains basic features transformations for tabular data
+    """Helper class contains basic features transformations for tabular data.
+
     This method can de shared by all tabular feature pipelines, to simplify .create_automl definition
     """
 
     def __init__(self, **kwargs: Any):
-        """Set default parameters for tabular pipeline constructor
+        """Set default parameters for tabular pipeline constructor.
 
         Args:
             *kwargs:
@@ -193,13 +194,14 @@ class TabularDataFeatures:
 
     @staticmethod
     def get_cols_for_datetime(train: NumpyOrPandas) -> Tuple[List[str], List[str]]:
-        """Get datetime columns to calculate features
+        """Get datetime columns to calculate features.
 
         Args:
             train: LAMLDataset with train data.
 
         Returns:
-            2 list of features names - base dates and common dates
+            2 list of features names - base dates and common dates.
+
         """
         base_dates = get_columns_by_role(train, 'Datetime', base_date=True)
         datetimes = (get_columns_by_role(train, 'Datetime', base_date=False) +
@@ -208,13 +210,14 @@ class TabularDataFeatures:
         return base_dates, datetimes
 
     def get_datetime_diffs(self, train: NumpyOrPandas) -> Optional[LAMLTransformer]:
-        """Difference for all datetimes with base date
+        """Difference for all datetimes with base date.
 
         Args:
             train: LAMLDataset with train data.
 
         Returns:
-            LAMLTransformer or None if no required features
+            LAMLTransformer or None if no required features.
+
         """
         base_dates, datetimes = self.get_cols_for_datetime(train)
         if len(datetimes) == 0 or len(base_dates) == 0:
@@ -229,14 +232,15 @@ class TabularDataFeatures:
         return dt_processing
 
     def get_datetime_seasons(self, train: NumpyOrPandas, outp_role: Optional[ColumnRole] = None) -> Optional[LAMLTransformer]:
-        """Get season params from dates
+        """Get season params from dates.
 
         Args:
             train: LAMLDataset with train data.
-            outp_role: ColumnRole associated with output features
+            outp_role: ColumnRole associated with output features.
 
         Returns:
-            LAMLTransformer or None if no required features
+            LAMLTransformer or None if no required features.
+
         """
         _, datetimes = self.get_cols_for_datetime(train)
         for col in copy(datetimes):
@@ -260,14 +264,15 @@ class TabularDataFeatures:
     @staticmethod
     def get_numeric_data(train: NumpyOrPandas, feats_to_select: Optional[List[str]] = None,
                          prob: Optional[bool] = None) -> Optional[LAMLTransformer]:
-        """Select numeric features
+        """Select numeric features.
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
             prob:
 
         Returns:
+            Transformer.
 
         """
         if feats_to_select is None:
@@ -291,14 +296,14 @@ class TabularDataFeatures:
 
     @staticmethod
     def get_freq_encoding(train: NumpyOrPandas, feats_to_select: Optional[List[str]] = None) -> Optional[LAMLTransformer]:
-        """
-        Get frequency encoding part
+        """Get frequency encoding part.
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
 
         Returns:
+            Transformer.
 
         """
         if feats_to_select is None:
@@ -317,13 +322,14 @@ class TabularDataFeatures:
 
     def get_ordinal_encoding(self, train: NumpyOrPandas, feats_to_select: Optional[List[str]] = None
                              ) -> Optional[LAMLTransformer]:
-        """Get order encoded part
+        """Get order encoded part.
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
 
         Returns:
+            Transformer.
 
         """
         if feats_to_select is None:
@@ -341,13 +347,14 @@ class TabularDataFeatures:
         return cat_processing
 
     def get_categorical_raw(self, train: NumpyOrPandas, feats_to_select: Optional[List[str]] = None) -> Optional[LAMLTransformer]:
-        """Get label encoded categories data
+        """Get label encoded categories data.
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
 
         Returns:
+            Transformer.
 
         """
 
@@ -369,12 +376,13 @@ class TabularDataFeatures:
         return cat_processing
 
     def get_target_encoder(self, train: NumpyOrPandas) -> Optional[type]:
-        """Get target encoder func for dataset
+        """Get target encoder func for dataset.
 
         Args:
             train: LAMLDataset with train data.
 
         Returns:
+            Type.
 
         """
         target_encoder = None
@@ -389,13 +397,14 @@ class TabularDataFeatures:
         return target_encoder
 
     def get_binned_data(self, train: NumpyOrPandas, feats_to_select: Optional[List[str]] = None) -> Optional[LAMLTransformer]:
-        """Get encoded quantiles of numeric features
+        """Get encoded quantiles of numeric features.
 
         Args:
             train: LAMLDataset with train data.
             feats_to_select: features to hanlde. If none - default filter
 
         Returns:
+            Transformer.
 
         """
         if feats_to_select is None:
@@ -414,13 +423,14 @@ class TabularDataFeatures:
 
     def get_categorical_intersections(self, train: NumpyOrPandas,
                                       feats_to_select: Optional[List[str]] = None) -> Optional[LAMLTransformer]:
-        """Get transformer that implements categorical intersections
+        """Get transformer that implements categorical intersections.
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
 
         Returns:
+            Transformer.
 
         """
 
@@ -449,14 +459,14 @@ class TabularDataFeatures:
         return cat_processing
 
     def get_uniques_cnt(self, train: NumpyOrPandas, feats: List[str]) -> Series:
-        """Get unique values cnt
+        """Get unique values cnt.
 
         Args:
             train: LAMLDataset with train data.
-            feats: features names list to calc
+            feats: features names list to calc.
 
         Returns:
-
+            Series.
         """
 
         uns = []
@@ -473,16 +483,17 @@ class TabularDataFeatures:
         return Series(uns, index=feats)
 
     def get_top_categories(self, train: NumpyOrPandas, top_n: int = 5) -> List[str]:
-        """Get top categories by importance
+        """Get top categories by importance.
 
         If feature importance is not defined, or feats has same importance - sort it by unique values counts
         In second case init param ascending_by_cardinality defines how - asc or desc
 
         Args:
             train: LAMLDataset with train data.
-            top_n:
+            top_n: top categories.
 
         Returns:
+            List.
 
         """
         if self.max_intersection_depth <= 1 or self.top_intersections <= 1:

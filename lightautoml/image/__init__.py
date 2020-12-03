@@ -1,3 +1,1 @@
-"""
-Image handlers
-"""
+"""Image handlers."""

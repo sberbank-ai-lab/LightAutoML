@@ -6,15 +6,13 @@ from log_calls import record_history
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.validation.base import TrainValidIterator
 
-if TYPE_CHECKING:
-    from lightautoml.ml_algo.base import MLAlgo
+# if TYPE_CHECKING:
+from lightautoml.ml_algo.base import MLAlgo
 
 
 @record_history(enabled=False)
 class ParamsTuner(ABC):
-    """
-    Base abstract class for hyperparameters tuners.
-    """
+    """Base abstract class for hyperparameters tuners."""
 
     _name: str = 'AbstractTuner'
     _best_params: Dict = None
@@ -22,11 +20,11 @@ class ParamsTuner(ABC):
 
     @property
     def best_params(self) -> dict:
-        """
-        Get best params.
+        """Get best params.
 
         Returns:
             dict with best fitted params.
+
         """
         assert hasattr(self, '_best_params'), 'ParamsTuner should be fitted first'
         return self._best_params
@@ -38,8 +36,7 @@ class ParamsTuner(ABC):
     @abstractmethod
     def fit(self, ml_algo: 'MLAlgo', train_valid_iterator: Optional[TrainValidIterator] = None) -> \
             Tuple[None, None]:
-        """
-        Tune model hyperparameters.
+        """Tune model hyperparameters.
 
         Args:
             ml_algo: ML algorithm.
@@ -48,14 +45,13 @@ class ParamsTuner(ABC):
         Returns:
             (None, None) if ml_algo is fitted or models are not fitted during training,
             (BestMLAlgo, BestPredictionsLAMLDataset) otherwise.
+
         """
 
 
 @record_history(enabled=False)
 class DefaultTuner(ParamsTuner):
-    """
-    Default realization of ParamsTuner - just take algo's defaults.
-    """
+    """Default realization of ParamsTuner - just take algo's defaults."""
 
     _name: str = 'DefaultTuner'
 

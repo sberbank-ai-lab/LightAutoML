@@ -23,20 +23,21 @@ LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
 @record_history(enabled=False)
 class LinearLBFGS(TabularMLAlgo):
-    """
-    LBFGS L2 regression based on torch.
+    """LBFGS L2 regression based on torch.
 
-    Parameters
-    ----------
+
     default_params:
-            cs: list of regularization coefficients.
-            max_iter: maximum iterations of L-BFGS.
-            tol: the tolerance for the stopping criteria.
-            early_stopping: maximum rounds without improving.
+        - cs: list of regularization coefficients.
+        - max_iter: maximum iterations of L-BFGS.
+        - tol: the tolerance for the stopping criteria.
+        - early_stopping: maximum rounds without improving.
+
     freeze_defaults:
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
-    timer: Timer instance or None
+
+    timer: Timer instance or None.
+
     """
     _name: str = 'LinearL2'
 
@@ -120,9 +121,7 @@ class LinearLBFGS(TabularMLAlgo):
 
 @record_history(enabled=False)
 class LinearL1CD(TabularMLAlgo):
-    """
-    Coordinate descent based on sklearn implementation
-    """
+    """Coordinate descent based on sklearn implementation."""
     _name: str = 'LinearElasticNet'
 
     _default_params = {
@@ -207,7 +206,7 @@ class LinearL1CD(TabularMLAlgo):
             valid: NumpyDataset to validate.
 
         Returns:
-            target predictions for valid dataset.
+            Target predictions for valid dataset.
 
         """
         if type(train) is PandasDataset:

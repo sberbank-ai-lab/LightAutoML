@@ -1,6 +1,5 @@
-"""
-Base dataset class
-"""
+"""Contains base classes for internal dataset interface."""
+
 
 from copy import copy  # , deepcopy
 from typing import Any, Optional, Dict, List, Tuple, Sequence, Union, TypeVar
@@ -50,6 +49,7 @@ class LAMLColumn:
 @record_history(enabled=False)
 class LAMLDataset:
     """Basic class to create dataset."""
+
     # TODO: Create checks here
     _init_checks = ()  # list of functions that checks that _array_like_attrs are valid
     _data_checks = ()  # list of functions that checks that data in .set_data is valid for _array_like_attrs
@@ -77,7 +77,7 @@ class LAMLDataset:
             self.set_data(data, features, roles)
 
     def __len__(self):
-        """Get count of rows in dataset
+        """Get count of rows in dataset.
 
         Returns:
             Number of rows in dataset.
@@ -86,10 +86,11 @@ class LAMLDataset:
         return self.shape[0]
 
     def __repr__(self):
-        """Get str representation
+        """Get str representation.
 
         Returns:
             String with data representation.
+
         """
         # TODO: View for empty
         return self.data.__repr__()
@@ -242,7 +243,7 @@ class LAMLDataset:
         """Get inverse dict of feature roles.
 
         Returns:
-            dict, keys - instance of ColumnRole, values - list of str features names
+            dict, keys - instance of ColumnRole, values - list of str features names.
 
         """
         inv_roles = {}
@@ -340,6 +341,7 @@ class LAMLDataset:
 
         Returns:
             Tuple of 2 elements.
+
         """
         rows, cols = None, None
         try:

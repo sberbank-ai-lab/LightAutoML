@@ -1,6 +1,4 @@
-"""
-Reader utils
-"""
+"""Reader utils."""
 
 from typing import Optional, Union, Callable
 
@@ -17,11 +15,11 @@ def set_sklearn_folds(task: Task, target: np.ndarray, cv: Union[Callable, int] =
     """Determines the cross-validation splitting strategy.
 
     Args:
-        task: if 'binary' or 'multiclass' used stratified cv
-        target: target values
-        cv: int - specifes number of folds
-        random_state: determines random number generation
-        group: for group k-folding
+        task: if 'binary' or 'multiclass' used stratified cv.
+        target: target values.
+        cv: int - specifes number of folds.
+        random_state: determines random number generation.
+        group: for group k-folding.
 
     Returns:
         array with fold indices.

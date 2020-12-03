@@ -9,9 +9,10 @@ def softmax_ax1(x: np.ndarray) -> np.ndarray:
     """
 
     Args:
-        x:
+        x: input.
 
     Returns:
+        softmax values.
 
     """
     return softmax(x, axis=1)
@@ -19,15 +20,15 @@ def softmax_ax1(x: np.ndarray) -> np.ndarray:
 
 @record_history(enabled=False)
 def lgb_f1_loss_multiclass(preds: np.ndarray, train_data: lgb.Dataset, clip: float = 1e-5):
-    """
-    Custom loss for optimizing f1
+    """Custom loss for optimizing f1.
 
     Args:
-        preds:
-        train_data:
-        clip:
+        preds: np.ndarray.
+        train_data: lgb dataset.
+        clip: clip values.
 
     Returns:
+        lgb loss output.
 
     """
     y_true = train_data.get_label().astype(np.int32)

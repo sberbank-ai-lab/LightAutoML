@@ -1,6 +1,6 @@
-"""
-Datasets for tabular data
-"""
+"""Internal representation of dataset in numpy, pandas and csr formats."""
+
+
 from copy import copy  # , deepcopy
 
 from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
@@ -46,10 +46,7 @@ class NumpyDataset(LAMLDataset):
 
     @property
     def features(self) -> List[str]:
-        """
-        Features list.
-
-        """
+        """Features list."""
         return list(self._features)
 
     @features.setter
@@ -75,10 +72,7 @@ class NumpyDataset(LAMLDataset):
 
     @property
     def roles(self) -> RolesDict:
-        """
-        Roles dict.
-
-        """
+        """Roles dict."""
         return copy(self._roles)
 
 
@@ -107,7 +101,7 @@ class NumpyDataset(LAMLDataset):
             self._roles = dict(((x, role) for x in self.features))
 
     def _check_dtype(self):
-        """Check if dtype in .set_data is ok and cast if not
+        """Check if dtype in .set_data is ok and cast if not.
 
 
         Raises:
@@ -146,7 +140,7 @@ class NumpyDataset(LAMLDataset):
 
             For different type of parameter feature there is different behavior:
 
-                 - list, should be same len as data.shape[1].
+                - list, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
@@ -285,7 +279,7 @@ class NumpyDataset(LAMLDataset):
         """Convert to PandasDataset.
 
         Returns:
-            same dataset in PandasDataset format.
+            Same dataset in PandasDataset format.
 
         """
         # check for empty case
@@ -310,7 +304,7 @@ class NumpyDataset(LAMLDataset):
 
 @record_history(enabled=False)
 class CSRSparseDataset(NumpyDataset):
-    """Dataset that contains sparse features and np.ndarray targets"""
+    """Dataset that contains sparse features and np.ndarray targets."""
     _init_checks = ()
     _data_checks = ()
     _concat_checks = ()
@@ -353,6 +347,7 @@ class CSRSparseDataset(NumpyDataset):
 
         Returns:
             tuple of 2 elements.
+
         """
         rows, cols = None, None
         try:
@@ -367,10 +362,10 @@ class CSRSparseDataset(NumpyDataset):
         """Concatenate function for sparse and numpy arrays.
 
         Args:
-            datasets: sequence of csr_matrix or np.ndarray
+            datasets: Sequence of csr_matrix or np.ndarray.
 
         Returns:
-            sparse matrix.
+            Sparse matrix.
 
         """
         return sparse.hstack(datasets, format='csr')
@@ -381,7 +376,7 @@ class CSRSparseDataset(NumpyDataset):
 
         Args:
             data: csr_matrix of features.
-            features: features names.
+            features: Features names.
             roles: Roles specifier.
             task: Task specifier.
             **kwargs: Named attributes like target, group etc ..
@@ -395,7 +390,7 @@ class CSRSparseDataset(NumpyDataset):
 
             For different type of parameter feature there is different behavior:
 
-                 - list, should be same len as data.shape[1].
+                - list, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
@@ -422,7 +417,7 @@ class CSRSparseDataset(NumpyDataset):
 
             For different type of parameter feature there is different behavior:
 
-                 - list, should be same len as data.shape[1].
+                - list, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
@@ -445,8 +440,7 @@ class CSRSparseDataset(NumpyDataset):
 
 @record_history(enabled=False)
 class PandasDataset(LAMLDataset):
-    """Dataset that contains `pd.DataFrame` features and `pd.Series` targets.
-    """
+    """Dataset that contains `pd.DataFrame` features and `pd.Series` targets."""
     _init_checks = ()
     _data_checks = ()
     _concat_checks = ()
@@ -644,7 +638,7 @@ class PandasDataset(LAMLDataset):
         """Empty method, return the same object.
 
         Returns:
-            Same class:`PandasDataset`.
+            Self.
 
         """
         return self
@@ -660,7 +654,7 @@ class PandasDataset(LAMLDataset):
         return dataset.to_pandas()
 
     def nan_rate(self):
-        """Counts overall number of nans in dataset
+        """Counts overall number of nans in dataset.
 
         Returns:
             Number of nans.

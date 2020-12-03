@@ -1,4 +1,4 @@
-__all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'image', 'reader', 'transformers', 'validation', 'text', 'tasks', 'utils']
+__all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'image', 'reader', 'transformers', 'validation', 'text', 'tasks', 'utils', 'addons', 'report']
 
 from .addons import *
 from .addons.utilization import *
