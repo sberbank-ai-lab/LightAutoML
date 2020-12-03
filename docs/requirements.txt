@@ -1,3 +1,4 @@
+log_calls
 IPython
 nbsphinx
 nbsphinx-link
