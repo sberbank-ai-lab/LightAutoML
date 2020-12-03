@@ -846,10 +846,33 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
+        """Wrapped automl.fit_predict method.
+
+        Valid args, kwargs are the same as wrapped automl.
+
+        Args:
+            *args: arguments.
+            **kwargs: additional parameters.
+
+        Returns:
+            predictions.
+
+        """
+        if len(args) >= 2:
+            args = (args[0], )
+
+        kwargs['report'] = self._model.general_params['report']
+
         predict_proba = super().predict(*args, **kwargs)
-        self._generate_whitebox_section()
+
+        if self._model.general_params['report']:
+            self._generate_whitebox_section()
+        else:
+            logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
+
         self.generate_report()
         return predict_proba
+
 
     def _generate_whitebox_section(self):
         self._model.whitebox.generate_report(self.wb_report_params)
