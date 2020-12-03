@@ -78,7 +78,7 @@ class TabularAutoML(AutoMLPreset):
                  gbm_pipeline_params: Optional[dict] = None,
                  linear_pipeline_params: Optional[dict] = None):
 
-        """Init
+        """
 
         Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
         If you need to change just few params, it's possible to pass it as dict of dicts, like json

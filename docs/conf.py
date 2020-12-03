@@ -32,7 +32,9 @@ extensions = [
     'sphinx.ext.autosummary',  # will be used for tables
     'sphinx.ext.viewcode',  # for [source] button
     'sphinx.ext.napoleon', # structure
-    'sphinx_autodoc_typehints'
+    'sphinx_autodoc_typehints',
+    'nbsphinx',
+    'nbsphinx_link'
 ]
 
 
@@ -75,6 +77,8 @@ html_static_path = ['_static']
 
 # code style
 pygments_style = 'default'
+
+nbsphinx_execute = 'never'
 
 # autodoc
 # function names that will not be included in documentation

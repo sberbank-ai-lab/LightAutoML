@@ -1,18 +1,11 @@
 Tutorials
 =========
 
-sometimes
 
-lightautoml.automl
-lightautoml.reader
-lightautoml.tasks
-lightautoml.pipelines
-lightautoml.validation
-lightautoml.ml_algo
-lightautoml.text
-lightautoml.image
-lightautoml.report
-lightautoml.utils
-lightautoml.addons
-lightautoml.dataset
-lightautoml.transformers
+.. toctree::
+    :maxdepth: 1
+    :caption: Contents
+
+    notebooks/tutor_1.ipynb
+    notebooks/tutor_2.ipynb
+    notebooks/tutor_3.ipynb

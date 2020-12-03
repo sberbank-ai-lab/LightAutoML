@@ -1,5 +1,5 @@
 log_calls
-IPython
+ipykernel
 nbsphinx
 nbsphinx-link
 sphinx-autodoc-typehints
