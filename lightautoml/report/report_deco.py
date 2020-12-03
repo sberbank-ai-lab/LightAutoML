@@ -833,13 +833,11 @@ class ReportDecoWhitebox(ReportDeco):
             oof predictions.
 
         """
-        # predict_proba = super().fit_predict(*args, **kwargs)
+        predict_proba = super().fit_predict(*args, **kwargs)
 
-        if self.model.general_params['report']:
-            predict_proba = super().fit_predict(*args, report=True)
+        if self._model.general_params['report']:
             self._generate_whitebox_section()
         else:
-            predict_proba = super().fit_predict(*args, report=False)
             logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
 
         self.generate_report()
