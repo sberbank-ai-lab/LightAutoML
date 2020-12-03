@@ -1,0 +1,5 @@
+IPython
+nbsphinx
+nbsphinx-link
+sphinx-autodoc-typehints
+pandoc
