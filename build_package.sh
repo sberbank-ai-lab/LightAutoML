@@ -7,3 +7,4 @@ pip install -U poetry pip
 
 poetry lock
 poetry install
+poetry build

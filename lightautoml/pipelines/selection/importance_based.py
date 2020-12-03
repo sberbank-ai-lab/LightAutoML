@@ -1,3 +1,7 @@
+"""
+Importance based selectors
+"""
+
 from typing import Optional, TypeVar
 
 from log_calls import record_history
@@ -13,16 +17,12 @@ ImportanceEstimatedAlgo = TypeVar('ImportanceEstimatedAlgo', bound=ImportanceEst
 
 @record_history(enabled=False)
 class ModelBasedImportanceEstimator(ImportanceEstimator):
-    """
-    Base class for performing feature selection according using feature importance.
-
-    """
+    """Base class for performing feature selection using model feature importances."""
 
     def fit(self, train_valid: Optional[TrainValidIterator] = None,
             ml_algo: Optional[ImportanceEstimatedAlgo] = None,
             preds: Optional[LAMLDataset] = None):
-        """
-        Find the importances of features.
+        """Find the importances of features.
 
         Args:
             train_valid: dataset iterator.
@@ -36,9 +36,9 @@ class ModelBasedImportanceEstimator(ImportanceEstimator):
 
 @record_history(enabled=False)
 class ImportanceCutoffSelector(SelectionPipeline):
-    """
-    Selector based on importance treshold.
-    Data passed to .fit should be ok to fit ml_algo or preprocessing pipeline should be defined.
+    """ Selector based on importance threshold.
+
+    It is important that data which passed to .fit should be ok to fit ml_algo or preprocessing pipeline should be defined.
 
     """
 
@@ -47,21 +47,21 @@ class ImportanceCutoffSelector(SelectionPipeline):
                  imp_estimator: ImportanceEstimator,
                  fit_on_holdout: bool = True,
                  cutoff: float = 0.0):
-        """
+        """Importance cutoff selector init
+
         Args:
-            feature_pipeline: composition of feature transforms.
-            ml_algo: Tuple (MlAlgo, ParamsTuner).
-            imp_estimator: feature importance estimator.
-            fit_on_holdout: if use the holdout iterator.
-            cutoff: threshold to cut-off features.
+            feature_pipeline: composition of feature transforms
+            ml_algo: Tuple (MlAlgo, ParamsTuner)
+            imp_estimator: feature importance estimator
+            fit_on_holdout: if use the holdout iterator
+            cutoff: threshold to cut-off features
 
         """
         super().__init__(feature_pipeline, ml_algo, imp_estimator, fit_on_holdout)
         self.cutoff = cutoff
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator] = None):
-        """
-        Select features.
+        """ Select features based on cutoff value
 
         Args:
             train_valid: ignored.
@@ -70,4 +70,6 @@ class ImportanceCutoffSelector(SelectionPipeline):
         imp = self.imp_estimator.get_features_score()
         self.map_raw_feature_importances(imp)
         selected = self.mapped_importances.index.values[self.mapped_importances.values > self.cutoff]
+        if len(selected) == 0:
+            selected = self.mapped_importances.index.values[:1]
         self._selected_features = list(selected)

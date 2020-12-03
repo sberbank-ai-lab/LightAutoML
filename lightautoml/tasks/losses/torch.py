@@ -30,7 +30,7 @@ class TorchLossWrapper(nn.Module):
 
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
         if self.flatten:
-            y_true = y_true[:, 0].type(torch.LongTensor)
+            y_true = y_true[:, 0].type(torch.int64)
 
         if self.log:
             y_pred = torch.log(y_pred)
@@ -164,6 +164,41 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
 
     return err.mean()
 
+@record_history(enabled=False)
+def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+    """
+    Computes F1 macro.
+
+    Args:
+        y_true: true target values.
+        y_pred: predicted target values.
+        sample_weight: specify weighted mean.
+
+    Returns:
+        metric value.
+
+    """
+    y_true = y_true[:, 0].type(torch.int64)
+    y_true_ohe = torch.zeros_like(y_pred)
+
+    y_true_ohe[range(y_true.shape[0]), y_true] = 1
+    tp = y_true_ohe * y_pred
+    if sample_weight is not None:
+        sample_weight = sample_weight.unsqueeze(-1)
+        sm = sample_weight.mean()
+        tp = (tp * sample_weight).mean(dim=0) / sm
+        f1 = (2 * tp) / ((y_pred * sample_weight).mean(dim=0) / sm + (y_true_ohe * sample_weight).mean(dim=0) / sm + 1e-7)
+
+        return - f1.mean()
+
+    tp = torch.mean(tp, dim=0)
+
+    f1 = (2 * tp) / (y_pred.mean(dim=0) + y_true_ohe.mean(dim=0) + 1e-7)
+
+    f1[f1 != f1] = 0
+
+    return - f1.mean()
+
 
 @record_history(enabled=False)
 def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
@@ -204,6 +239,8 @@ _torch_loss_dict = {
     'fair': (torch_fair, False, False),
     'huber': (torch_huber, False, False),
 
+    'f1': (torch_f1, False, False)
+
 }
 
 
@@ -224,7 +261,9 @@ class TORCHLoss(Loss):
         if loss_params is not None:
             self.loss_params = loss_params
 
-        if type(loss) is str:
+        if loss in ['mse', 'mae', 'logloss', 'crossentropy']:
             self.loss = TorchLossWrapper(*_torch_loss_dict[loss], **self.loss_params)
+        elif type(loss) is str:
+            self.loss = partial(_torch_loss_dict[loss][0], **self.loss_params)
         else:
-            self.loss = TorchLossWrapper(loss, **self.loss_params)
+            self.loss = partial(loss, **self.loss_params)

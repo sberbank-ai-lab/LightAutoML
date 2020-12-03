@@ -1,13 +1,17 @@
-import warnings
 from functools import partial
-from typing import Callable, Tuple, Union, Optional, Dict, Any
+from typing import Callable, Tuple, Union, Optional, Dict
 
 import lightgbm as lgb
 import numpy as np
 from log_calls import record_history
 
-from .base import Loss
+from .base import Loss, valid_str_multiclass_metric_names
+from .lgb_custom import lgb_f1_loss_multiclass, softmax_ax1  # , F1Factory
 from ..utils import infer_gib
+from ...utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 @record_history(enabled=False)
 def fw_rmsle(x, y): return np.log1p(x), y
@@ -26,7 +30,7 @@ _lgb_metric_mapping = {
 
     'quantile': 'quantile',
     'huber': 'huber',
-    'fair': 'fair'
+    'fair': 'fair',
 
 }
 
@@ -34,8 +38,11 @@ _lgb_multiclass_metric_mapping = {
 
     # 'auc': 'auc_mu',
     'crossentropy': 'multi_logloss',
-    'accuracy': 'multi_error'
+    'accuracy': 'multi_error',
 
+    'f1_macro': valid_str_multiclass_metric_names['f1_macro'],
+    'f1_micro': valid_str_multiclass_metric_names['f1_micro'],
+    'f1_weighted': valid_str_multiclass_metric_names['f1_weighted'],
 }
 
 _lgb_loss_mapping = {
@@ -48,7 +55,8 @@ _lgb_loss_mapping = {
     'rmsle': ('mse', fw_rmsle, np.expm1),
     'quantile': ('quantile', None, None),
     'huber': ('huber', None, None),
-    'fair': ('fair', None, None)
+    'fair': ('fair', None, None),
+    'f1': (lgb_f1_loss_multiclass, None, softmax_ax1)
 
 }
 
@@ -82,28 +90,6 @@ _lgb_force_metric = {
 
 
 @record_history(enabled=False)
-class CustomMulticlassWrapper:
-    """
-    Wrapper to apply custom metric for classification task
-
-    Args:
-        old_metric:
-
-    Returns:
-
-    """
-
-    def __init__(self, old_metric):
-        self.old_metric = old_metric
-
-    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, *args: Any, **kwargs: Any) -> float:
-        y_pred = y_pred.reshape((y_true.shape[0], -1), order='F')
-        y_true = y_true.astype(np.int32)
-
-        return self.old_metric(y_true, y_pred, *args, **kwargs)
-
-
-@record_history(enabled=False)
 class LGBFunc:
     def __init__(self, metric_func, greater_is_better, bw_func):
         self.metric_func = metric_func
@@ -113,11 +99,14 @@ class LGBFunc:
     def __call__(self, pred: np.ndarray, dtrain: lgb.Dataset) -> Tuple[str, float, bool]:
 
         label = dtrain.get_label()
+
+        weights = dtrain.get_weight()
+
+        if label.shape[0] != pred.shape[0]:
+            pred = pred.reshape((label.shape[0], -1), order='F')
+            label = label.astype(np.int32)
+
         pred = self.bw_func(pred)
-        try:
-            weights = dtrain.get_weight()
-        except Exception:  # Lightgbm raise this exception ...
-            weights = None
 
         # for weighted case
         try:
@@ -157,8 +146,13 @@ class LGBLoss(Loss):
 
         """
         if loss in _lgb_loss_mapping:
-            self.fobj_name, fw_func, bw_func = _lgb_loss_mapping[loss]
-            self.fobj = None
+            fobj, fw_func, bw_func = _lgb_loss_mapping[loss]
+            if type(fobj) is str:
+                self.fobj_name = fobj
+                self.fobj = None
+            else:
+                self.fobj_name = None
+                self.fobj = fobj
             # map param name for known objectives
             if self.fobj_name in _lgb_loss_params_mapping:
                 param_mapping = _lgb_loss_params_mapping[self.fobj_name]
@@ -221,7 +215,7 @@ class LGBLoss(Loss):
         # force metric if special loss
         if self.fobj_name in _lgb_force_metric:
             metric, greater_is_better, metric_params = _lgb_force_metric[self.fobj_name]
-            warnings.warn('For lgbm {0} callback metric switched to {1}'.format(self.fobj_name, metric), UserWarning)
+            logger.warning('For lgbm {0} callback metric switched to {1}'.format(self.fobj_name, metric), UserWarning)
 
         self.metric_params = {}
 
@@ -233,13 +227,19 @@ class LGBLoss(Loss):
                 self.metric_params = metric_params
 
             # for multiclass case
-            _metric_dict = _lgb_multiclass_metric_mapping if self.fobj_name == 'multiclass' else _lgb_metric_mapping
-            self.metric_name = _metric_dict.get(metric)
+            multiclass_flg = (self.fobj_name == 'multiclass') or self.fobj == lgb_f1_loss_multiclass
 
-            self.feval = None
+            _metric_dict = _lgb_multiclass_metric_mapping if multiclass_flg else _lgb_metric_mapping
+            _metric = _metric_dict.get(metric)
+            if type(_metric) is str:
+                self.metric_name = _metric
+                self.feval = None
+            else:
+                self.metric_name = None
+                # _metric = CustomWrapper(_metric)
+                self.feval = self.metric_wrapper(_metric, greater_is_better, {})
 
         else:
             self.metric_name = None
-            if self.fobj_name == 'multiclass':
-                metric = CustomMulticlassWrapper(metric)
+            # metric = CustomWrapper(metric)
             self.feval = self.metric_wrapper(metric, greater_is_better, self.metric_params)

@@ -1,24 +1,26 @@
+"""
+Validation utils
+"""
+
 from typing import Optional, Callable, cast, Union
 
 from log_calls import record_history
 
+from ..dataset.base import LAMLDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 from .base import DummyIterator, HoldoutIterator, TrainValidIterator
 from .np_iterators import get_numpy_iterator
-from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, CSRSparseDataset, NumpyDataset
 
-NpDataset = Union[PandasDataset, NumpyDataset, CSRSparseDataset]
+NpDataset = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 
 
 @record_history(enabled=False)
 def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] = None,
                                n_folds: Optional[int] = None, cv_iter: Optional[Callable] = None) -> TrainValidIterator:
-    """
-    Creates train-validation iterator.
+    """Creates train-validation iterator.
 
     If train is one of common datasets types (``PandasDataset``, ``NumpyDataset``, ``CSRSparseDataset``) \
         the :func:`lightautoml.validation.np_iterators.get_numpy_iterator` will be used.
-
     Else if validation dataset is defined, the holdout-iterator will be used.
     Else the dummy iterator will be used.
 

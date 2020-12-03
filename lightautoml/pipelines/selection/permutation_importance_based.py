@@ -1,4 +1,7 @@
-import warnings
+"""
+Iterative feature selector
+"""
+
 from copy import deepcopy
 from typing import Optional
 
@@ -12,16 +15,19 @@ from ..features.base import FeaturesPipeline
 from ...dataset.base import LAMLDataset
 from ...ml_algo.base import MLAlgo
 from ...ml_algo.utils import tune_and_fit_predict
+from ...utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @record_history(enabled=False)
 def _create_chunks_from_list(lst, n):
-    """
-    Creates chunks of list.
+    """Creates chunks of list
 
     Args:
-        lst: list of elements.
-        n: size of chunk.
+        lst: list of elements
+        n: size of chunk
+
     """
     chunks = []
     for i in range(0, len(lst), n):
@@ -31,13 +37,15 @@ def _create_chunks_from_list(lst, n):
 
 @record_history(enabled=False)
 class NpPermutationImportanceEstimator(ImportanceEstimator):
-    """
-    Importance based feature selector.
+    """Permuation importance based estimator
+
     Importance calculate, using random permutation of items in single column for each feature.
+
     """
 
     def __init__(self, random_state: int = 42):
-        """
+        """Permutation importance estimator init
+
         Args:
             random_state: seed for random generation of features permutation.
 
@@ -48,19 +56,17 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
     def fit(self, train_valid: Optional[TrainValidIterator] = None,
             ml_algo: Optional[MLAlgo] = None,
             preds: Optional[LAMLDataset] = None):
-        """
-        Set features score from model.
-
+        """Find importances for each feature in dataset
 
         Args:
-            train_valid:
-            ml_algo: MlAlgo.
-            preds: predicted target values for validation dataset.
+            train_valid: initial dataset iterator
+            ml_algo: MlAlgo
+            preds: predicted target values for validation dataset
 
         """
 
         normal_score = ml_algo.score(preds)
-        print('Normal score = {}'.format(normal_score))
+        logger.debug('Normal score = {}'.format(normal_score))
 
         valid_data = train_valid.get_validation_data()
         valid_data = valid_data.to_numpy()
@@ -69,7 +75,7 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
         permutation_importance = {}
 
         for it, col in enumerate(valid_data.features):
-            print('Start processing ({},{})'.format(it, col))
+            logger.debug('Start processing ({},{})'.format(it, col))
             # Save initial column
             save_col = deepcopy(valid_data[:, col])
 
@@ -77,20 +83,20 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
             shuffled_col = valid_data[permutation, col]
 
             # Set shuffled column
-            print('Shuffled column set')
+            logger.info('Shuffled column set')
             valid_data[col] = shuffled_col
 
             # Calculate predict and metric
-            print('Shuffled column set')
+            logger.info('Shuffled column set')
             new_preds = ml_algo.predict(valid_data)
             shuffled_score = ml_algo.score(new_preds)
-            print('Shuffled score for col {} = {}, difference with normal = {}'.format(col,
-                                                                                       shuffled_score,
-                                                                                       normal_score - shuffled_score))
+            logger.debug('Shuffled score for col {} = {}, difference with normal = {}'.format(col,
+                                                                                              shuffled_score,
+                                                                                              normal_score - shuffled_score))
             permutation_importance[col] = normal_score - shuffled_score
 
             # Set normal column back to the dataset
-            print('Normal column set')
+            logger.debug('Normal column set')
             valid_data[col] = save_col
 
         self.raw_importances = Series(permutation_importance).sort_values(ascending=False)
@@ -98,10 +104,10 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
 
 @record_history(enabled=False)
 class NpIterativeFeatureSelector(SelectionPipeline):
-    """
-    Select features sequentially using chunks.
-    Selected the best combination of chunks.
+    """Select features sequentially using chunks to find the best combination of chunks.
 
+    The general idea of this algorithm is to sequentially check groups of features ordered by feature importances and
+    if the quality of the model becomes better, we select such group, if not - ignore group.
     """
 
     def __init__(self, feature_pipeline: FeaturesPipeline,
@@ -110,7 +116,8 @@ class NpIterativeFeatureSelector(SelectionPipeline):
                  fit_on_holdout: bool = True,
                  feature_group_size: Optional[int] = 5,
                  max_features_cnt_in_result: Optional[int] = None):
-        """
+        """Iterative feature selector init
+
         Args:
             feature_pipeline: composition of feature transforms.
             ml_algo: Tuple (MlAlgo, ParamsTuner).
@@ -121,8 +128,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
 
         """
         if not fit_on_holdout:
-            warnings.warn('This selector only for holdout training. fit_on_holout argument added just to be compatible',
-                          UserWarning)
+            logger.warning('This selector only for holdout training. fit_on_holout argument added just to be compatible')
 
         super().__init__(feature_pipeline, ml_algo, imp_estimator, True)
 
@@ -130,9 +136,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         self.max_features_cnt_in_result = max_features_cnt_in_result
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator] = None):
-        """
-        Select features.
-
+        """Select features iteratively by checking model quality for current selected feats and new group
 
         Args:
             train_valid: iterator for dataset.
@@ -152,36 +156,37 @@ class NpIterativeFeatureSelector(SelectionPipeline):
 
         for it, chunk in enumerate(chunks):
             if self.max_features_cnt_in_result is not None and len(selected_feats) >= self.max_features_cnt_in_result:
-                print('We exceeded max_feature_cnt_in_result bound (selected features count = {}). Exiting from iterative algo...'
-                      .format(len(selected_feats)))
+                logger.info(
+                    'We exceeded max_feature_cnt_in_result bound (selected features count = {}). Exiting from iterative algo...'.format(
+                        len(selected_feats)))
                 break
             selected_feats += chunk
-            print('Started iteration {}, chunk = {}, feats to check = {}'.format(it, chunk, selected_feats))
+            logger.info('Started iteration {}, chunk = {}, feats to check = {}'.format(it, chunk, selected_feats))
             cs = PredefinedSelector(selected_feats)
             selected_cols_iterator = train_valid.apply_selector(cs)
-            print('Features in SCI = {}'.format(selected_cols_iterator.features))
+            logger.info('Features in SCI = {}'.format(selected_cols_iterator.features))
 
             # Create copy of MLAlgo for iterative algo only
             ml_algo_for_iterative, preds = tune_and_fit_predict(deepcopy(self._empty_algo), self.tuner, selected_cols_iterator)
 
             cur_score = ml_algo_for_iterative.score(preds)
-            print('Current score = {}, current best score = {}'.format(cur_score, cur_best_score))
+            logger.debug('Current score = {}, current best score = {}'.format(cur_score, cur_best_score))
 
             if cur_best_score is None or cur_best_score < cur_score:
-                print('Update best score from {} to {}'.format(cur_best_score, cur_score))
+                logger.info('Update best score from {} to {}'.format(cur_best_score, cur_score))
                 cur_best_score = cur_score
                 cnt_without_update = 0
             else:
                 cnt_without_update += 1
-                print('Without update for {} steps. Remove last added group {} from selected features...'
-                      .format(cnt_without_update, chunk))
+                logger.debug('Without update for {} steps. Remove last added group {} from selected features...'
+                             .format(cnt_without_update, chunk))
                 selected_feats = selected_feats[:-len(chunk)]
-                print('Selected feats after delete = {}'.format(selected_feats))
+                logger.debug('Selected feats after delete = {}'.format(selected_feats))
 
-        print('Update mapped importance')
+        logger.debug('Update mapped importance')
         imp = imp[imp.index.isin(selected_feats)]
         self.map_raw_feature_importances(imp)
 
         selected_feats = list(self.mapped_importances.index)
-        print('Finally selected feats = {}'.format(selected_feats))
+        logger.info('Finally selected feats = {}'.format(selected_feats))
         self._selected_features = selected_feats

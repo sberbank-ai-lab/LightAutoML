@@ -1,9 +1,17 @@
-import warnings
+"""
+Timer
+"""
+
 from time import time
 from typing import Optional, List
 
 import numpy as np
 from log_calls import record_history
+
+from .logging import get_logger, DuplicateFilter
+
+logger = get_logger(__name__)
+logger.addFilter(DuplicateFilter())
 
 
 @record_history(enabled=False)
@@ -12,13 +20,17 @@ class Timer:
     _overhead = 0
     _mode = 1
 
+    def __init__(self):
+        self.start_time = None
+        self.total_duration = None
+
     @property
     def time_left(self) -> float:
         return self.timeout - self.time_spent
 
     @property
     def time_spent(self) -> float:
-        return time() - self.t
+        return time() - self.start_time
 
     @property
     def perc_left(self) -> float:
@@ -43,14 +55,17 @@ class Timer:
             return (self.time_left - self._overhead) < 0
 
     def start(self):
-        self.t = time()
+        self.start_time = time()
         return self
+
+    def stop(self):
+        self.total_duration = time() - self.start_time
 
 
 @record_history(enabled=False)
 class PipelineTimer(Timer):
     """
-    Timer is used to control time over full automl run
+    Timer is used to control time over full automl run.
     It decides how much time spend to each algo
     """
 
@@ -98,13 +113,13 @@ class PipelineTimer(Timer):
 @record_history(enabled=False)
 class TaskTimer(Timer):
     """
-    Timer is used to control time over single ML task run
+    Timer is used to control time over single ML task run.
     It decides how much time is ok to spend on tuner and if we have enough time to calc more folds
     """
 
     @property
     def in_progress(self) -> bool:
-        return self.t is not None
+        return self.start_time is not None
 
     def __init__(self, pipe_timer: PipelineTimer, key: Optional[str] = None, score: float = 1.0,
                  overhead: Optional[float] = 1, mode: int = 1,
@@ -124,7 +139,7 @@ class TaskTimer(Timer):
         self.score = score
         pipe_timer.add_task(self.score)
         self.pipe_timer = pipe_timer
-        self.t = None
+        self.start_time = None
         self.key = key
         self._rate_overhead = overhead
         self._mode = mode
@@ -134,7 +149,7 @@ class TaskTimer(Timer):
         if self.in_progress:
             return self
 
-        self.t = time()
+        self.start_time = time()
         self._timeout = self.pipe_timer.get_time_for_next_task(self.score)
         self._overhead = self._rate_overhead * self.time_left
         self.pipe_timer.close_task(self.score)
@@ -143,7 +158,7 @@ class TaskTimer(Timer):
 
     def set_control_point(self):
         self._timeout = self.timeout - self.time_spent
-        self.t = time()
+        self.start_time = time()
 
     def write_run_info(self):
 
@@ -194,7 +209,7 @@ class TaskTimer(Timer):
 
     def time_limit_exceeded(self) -> bool:
         """
-        Estimate time limit and send results to parnet timer
+        Estimate time limit and send results to parent timer.
 
         Returns:
 
@@ -207,7 +222,7 @@ class TaskTimer(Timer):
     def __copy__(self):
 
         proxy_timer = PipelineTimer().start()
-        warnings.warn('Copying TaskTimer may affect the parent PipelineTimer, so copy will create new unlimited TaskTimer')
+        logger.warning('Copying TaskTimer may affect the parent PipelineTimer, so copy will create new unlimited TaskTimer')
 
         return proxy_timer.get_task_timer(self.key)
 

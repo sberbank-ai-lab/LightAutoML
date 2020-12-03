@@ -1,24 +1,27 @@
-from typing import Optional, Tuple, Callable, Union, Iterator, cast
+"""
+Tabular iterators
+"""
+
+from typing import Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 from log_calls import record_history
 
-from .base import TrainValidIterator, HoldoutIterator, CallableIterator, DummyIterator
-from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
+from .base import CustomIdxs, CustomIterator, DummyIterator, HoldoutIterator, TrainValidIterator
 
-NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
+NumpyOrSparse = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 
 
 @record_history(enabled=False)
 class FoldsIterator(TrainValidIterator):
-    """
-    Classic cv iterator. Folds should be defined in Reader, based on cross validation method.
+    """Classic cv iterator.
+
+    Folds should be defined in Reader, based on cross validation method.
     """
 
     def __init__(self, train: NumpyOrSparse, n_folds: Optional[int] = None):
-        """
-        Creates iterator.
+        """Creates iterator.
 
         Args:
             train: dataset for folding.
@@ -33,8 +36,7 @@ class FoldsIterator(TrainValidIterator):
             self.n_folds = min(self.n_folds, n_folds)
 
     def __len__(self) -> int:
-        """
-        Get len of iterator.
+        """Get len of iterator.
 
         Returns:
             number of folds.
@@ -43,8 +45,7 @@ class FoldsIterator(TrainValidIterator):
         return self.n_folds
 
     def __iter__(self) -> 'FoldsIterator':
-        """
-        Set counter to 0 and return self.
+        """Set counter to 0 and return self.
 
         Returns:
             iterator for folds.
@@ -54,8 +55,7 @@ class FoldsIterator(TrainValidIterator):
         return self
 
     def __next__(self) -> Tuple[np.ndarray, NumpyOrSparse, NumpyOrSparse]:
-        """
-        Define how to get next object.
+        """Define how to get next object.
 
         Returns:
             mask for current fold, train dataset, validation dataset.
@@ -72,8 +72,7 @@ class FoldsIterator(TrainValidIterator):
         return val_idx, cast(NumpyOrSparse, train), cast(NumpyOrSparse, valid)
 
     def get_validation_data(self) -> NumpyOrSparse:
-        """
-        Just return train dataset.
+        """Just return train dataset.
 
         Returns:
             Whole train dataset.
@@ -82,8 +81,8 @@ class FoldsIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> HoldoutIterator:
-        """
-        Convert iterator to HoldoutIterator.
+        """Convert iterator to HoldoutIterator.
+
         Fold 0 is used for validation, everything else is used for training.
 
         Returns:
@@ -101,10 +100,9 @@ class FoldsIterator(TrainValidIterator):
 @record_history(enabled=False)
 def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = None,
                        n_folds: Optional[int] = None,
-                       iterator: Optional[Callable[[LAMLDataset], Iterator]] = None) -> Union[FoldsIterator, HoldoutIterator,
-                                                                                              CallableIterator, DummyIterator]:
-    """
-    Get iterator for np/sparse dataset.
+                       iterator: Optional[CustomIdxs] = None
+                       ) -> Union[FoldsIterator, HoldoutIterator, CustomIterator, DummyIterator]:
+    """Get iterator for np/sparse dataset.
 
     If valid is defined, other parameters are ignored.
     Else if iterator is defined n_folds is ignored.
@@ -125,10 +123,112 @@ def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = No
     if valid is not None:
         train_valid = HoldoutIterator(train, valid)
     elif iterator is not None:
-        train_valid = CallableIterator(train, iterator)
+        train_valid = CustomIterator(train, iterator)
     elif train.folds is not None:
         train_valid = FoldsIterator(train, n_folds)
     else:
         train_valid = DummyIterator(train)
 
     return train_valid
+
+
+@record_history(enabled=False)
+class TimeSeriesIterator:
+    """Time Series Iterator"""
+
+    @staticmethod
+    def split_by_dates(datetime_col, splitter):
+        """Create indexes of folds splitted by thresholds
+
+        Args:
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
+            splitter: List of thresholds (same value as )
+
+        Returns:
+            folds: Array of folds' indexes
+
+        """
+
+        splitter = np.sort(splitter)
+        folds = np.searchsorted(splitter, datetime_col)
+
+        return folds
+
+    @staticmethod
+    def split_by_parts(datetime_col, n_splits: int):
+        """Create indexes of folds splitted into equal parts
+
+        Args:
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
+            n_splits: Number of splits(folds)
+
+        Returns:
+            folds: Array of folds' indexes
+
+        """
+
+        idx = np.arange(datetime_col.shape[0])
+        order = np.argsort(datetime_col)
+        sorted_idx = idx[order]
+        folds = np.concatenate([[n] * x.shape[0] for (n, x) in
+                                enumerate(np.array_split(sorted_idx, n_splits))], axis=0)
+        folds = folds[sorted_idx]
+
+        return folds
+
+    def __init__(self, datetime_col, n_splits: Optional[int] = 5,
+                 date_splits: Optional[Sequence] = None, sorted_kfold: bool = False):
+        """Generates time series data split. Sorter - include left, exclude right
+
+        Args:
+            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64)
+            n_splits: Number of splits
+            date_splits: List of thresholds
+            sorted_kfold:
+
+        """
+        self.sorted_kfold = sorted_kfold
+
+        if date_splits is not None:
+            folds = self.split_by_dates(datetime_col, date_splits)
+        elif n_splits is not None:
+            folds = self.split_by_parts(datetime_col, n_splits)
+
+        uniques = np.unique(folds)
+        assert (uniques == np.arange(uniques.shape[0])).all(), 'Fold splits is incorrect'
+        # sort in descending order - for holdout from custom be the biggest part
+        self.folds = uniques[::-1][folds]
+        self.n_splits = uniques.shape[0]
+
+    def __len__(self) -> int:
+        """Get number of folds
+
+        Returns:
+            length
+
+        """
+        if self.sorted_kfold:
+            return self.n_splits
+        return self.n_splits - 1
+
+    def __getitem__(self, item) -> Tuple[np.ndarray, np.ndarray]:
+        """Select train/validation indexes
+
+        For Train indexes use all dates before Validation dates
+
+        Args:
+            item: index of fold
+
+        Returns:
+            Tuple of train/validation indexes
+        """
+
+        if item >= len(self):
+            raise StopIteration
+
+        idx = np.arange(self.folds.shape[0])
+
+        if self.sorted_kfold:
+            return idx[self.folds != item], idx[self.folds == item]
+
+        return idx[self.folds < (item + 1)], idx[self.folds == (item + 1)]

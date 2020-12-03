@@ -1,20 +1,26 @@
+"""
+Task
+"""
+
 import inspect
-import warnings
 from functools import partial
 from typing import Callable, Union, Optional, Dict, Any, TYPE_CHECKING
 
 import numpy as np
 from log_calls import record_history
 
-from lightautoml.tasks.losses import LGBLoss, SKLoss, TORCHLoss
+from lightautoml.tasks.losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
 from .common_metric import valid_str_metric_names, valid_str_multiclass_metric_names
 from .utils import infer_gib, infer_gib_multiclass
+from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
     from ..dataset.np_pd_dataset import NumpyDataset, PandasDataset
     from ..dataset.base import LAMLDataset
 
     SklearnCompatible = Union[NumpyDataset, PandasDataset]
+
+logger = get_logger(__name__)
 
 _valid_task_names = ['binary', 'reg', 'multiclass']
 _one_dim_output_tasks = ['binary', 'reg']
@@ -35,8 +41,8 @@ _default_metrics = {
 
 }
 
-_valid_loss_types = ['lgb', 'sklearn', 'torch']
-_valid_str_loss_names = ['mse', 'mae', 'mape', 'rmsle', 'logloss', 'crossentropy', 'quantile', 'huber', 'fair']
+_valid_loss_types = ['lgb', 'sklearn', 'torch', 'cb']
+_valid_str_loss_names = ['mse', 'mae', 'mape', 'rmsle', 'logloss', 'crossentropy', 'quantile', 'huber', 'fair', 'f1']
 
 _valid_loss_args = {
 
@@ -61,7 +67,7 @@ class LAMLMetric:
 
         Args:
             dataset: LAMLDataset
-            dropna: to ignore NaN in metric calulation.
+            dropna: to ignore NaN in metric calculation.
 
         Returns:
             metric value.
@@ -83,6 +89,7 @@ class ArgsWrapper:
     Returns:
 
     """
+
     def __init__(self, func: Callable, metric_params: dict):
         keys = inspect.signature(func).parameters
         self.flg = 'sample_weight' in keys
@@ -94,7 +101,6 @@ class ArgsWrapper:
             return self.func(y_true, y_pred, sample_weight=sample_weight)
 
         return self.func(y_true, y_pred)
-
 
 
 @record_history(enabled=False)
@@ -132,8 +138,7 @@ class SkMetric(LAMLMetric):
         """
 
         Args:
-            metric: spectfies metric.  \
-             Format: func(y_true, y_false, Optional[sample_weight], **kwargs) -> `float`.
+            metric: specifies metric. Format: ``func(y_true, y_false, Optional[sample_weight], **kwargs)`` -> `float`.
             name: name of metric.
             greater_is_better: whether or not higher metric value is better.
             one_dim: `True` for single class, False for multiclass.
@@ -156,7 +161,7 @@ class SkMetric(LAMLMetric):
 
         Args:
             dataset: NumpyDataset or PandasDataset.
-            dropna: to ignore NaN in metric calulation.
+            dropna: to ignore NaN in metric calculation.
 
         Returns:
             metric value.
@@ -204,8 +209,8 @@ class Task:
             name: task name. Valid names:
              - 'binary' for binary classification,
              - 'reg' for regression,
-             - 'multiclass' for multiclass clsassification.
-            loss: objective function or dict of fuctions.
+             - 'multiclass' for multiclass classification.
+            loss: objective function or dict of functions.
             loss_params: additional loss parameters,
              if dict there is no presence check for loss_params
             metric: string name or callable.
@@ -243,7 +248,7 @@ class Task:
                 # ??? "rewrite METRIC params" ???
                 if loss == metric:
                     metric_params = loss_params
-                    warnings.warn('As loss and metric are equal, metric params are ignored.', UserWarning)
+                    logger.warning('As loss and metric are equal, metric params are ignored.')
 
             else:
                 assert loss not in _valid_loss_args, \
@@ -252,11 +257,11 @@ class Task:
 
             assert loss in _valid_str_loss_names, 'Invalid loss name.'
 
-            for loss_key, loss_factory in zip(['lgb', 'sklearn', 'torch'], [LGBLoss, SKLoss, TORCHLoss]):
+            for loss_key, loss_factory in zip(['lgb', 'sklearn', 'torch', 'cb'], [LGBLoss, SKLoss, TORCHLoss, CBLoss]):
                 try:
                     self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
-                except (AssertionError, TypeError):
-                    warnings.warn("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
+                except (AssertionError, TypeError, ValueError):
+                    logger.warning("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
 
                 # self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
 
@@ -266,7 +271,7 @@ class Task:
             # case - dict passed directly
             # TODO: check loss parameters?
             #  Or it there will be assert when use functools.partial
-            #assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
+            # assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
             assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(loss), 'Invalid loss key.'
             self.losses = loss
 
@@ -283,7 +288,8 @@ class Task:
             self.metric_params = metric_params
 
         if type(metric) is str:
-            metric_func = valid_str_multiclass_metric_names[metric] if name == 'multiclass' else valid_str_metric_names[metric]
+            metric_func = valid_str_multiclass_metric_names[metric] if name == 'multiclass' else valid_str_metric_names[
+                metric]
             metric_func = partial(metric_func, **self.metric_params)
             self.metric_func = metric_func
             self.metric_name = metric

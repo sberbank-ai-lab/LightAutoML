@@ -1,4 +1,7 @@
-import warnings
+"""
+Linear models
+"""
+
 from copy import copy, deepcopy
 from typing import Tuple, Union, Sequence
 
@@ -10,7 +13,10 @@ from .base import TabularMLAlgo, TabularDataset
 from .torch_based.linear_model import TorchBasedLinearEstimator, TorchBasedLinearRegression, \
     TorchBasedLogisticRegression
 from ..dataset.np_pd_dataset import PandasDataset
+from ..utils.logging import get_logger
 from ..validation.base import TrainValidIterator
+
+logger = get_logger(__name__)
 
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
@@ -18,7 +24,19 @@ LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 @record_history(enabled=False)
 class LinearLBFGS(TabularMLAlgo):
     """
-    LBFGS L2 regression based on torch
+    LBFGS L2 regression based on torch.
+
+    Parameters
+    ----------
+    default_params:
+            cs: list of regularization coefficients.
+            max_iter: maximum iterations of L-BFGS.
+            tol: the tolerance for the stopping criteria.
+            early_stopping: maximum rounds without improving.
+    freeze_defaults:
+        - ``True`` :  params may be rewrited depending on dataset.
+        - ``False``:  params may be changed only manually or with tuning.
+    timer: Timer instance or None
     """
     _name: str = 'LinearL2'
 
@@ -62,13 +80,14 @@ class LinearLBFGS(TabularMLAlgo):
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset
                                 ) -> Tuple[TorchBasedLinearEstimator, np.ndarray]:
-        """
+        """Train on train dataset and predict on holdout dataset.
 
         Args:
-            train:
-            valid:
+            train: NumpyDataset to train.
+            valid: NumpyDataset to validate.
 
         Returns:
+            target predictions for valid dataset.
 
         """
         if type(train) is PandasDataset:
@@ -84,7 +103,16 @@ class LinearLBFGS(TabularMLAlgo):
         return model, val_pred
 
     def predict_single_fold(self, model: TorchBasedLinearEstimator, dataset: TabularDataset) -> np.ndarray:
+        """Implements prediction on single fold.
 
+        Args:
+            model: model uses to predict.
+            dataset: ``NumpyDataset`` used for prediction.
+
+        Returns:
+            predictions for input dataset.
+
+        """
         pred = model.predict(dataset.data)
 
         return pred
@@ -135,6 +163,14 @@ class LinearL1CD(TabularMLAlgo):
         return model, cs, l1_ratios, early_stopping
 
     def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
+        """Get model parameters depending on dataset parameters.
+
+        Args:
+            train_valid_iterator: classic cv iterator.
+
+        Returns:
+            parameters of model.
+        """
 
         suggested_params = copy(self.default_params)
         task = train_valid_iterator.train.task
@@ -164,13 +200,14 @@ class LinearL1CD(TabularMLAlgo):
         return pred
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[LinearEstimator, np.ndarray]:
-        """
+        """Train on train dataset and predict on holdout dataset.
 
         Args:
-            train:
-            valid:
+            train: NumpyDataset to train.
+            valid: NumpyDataset to validate.
 
         Returns:
+            target predictions for valid dataset.
 
         """
         if type(train) is PandasDataset:
@@ -215,15 +252,15 @@ class LinearL1CD(TabularMLAlgo):
 
                 if np.allclose(model.coef_, 0):
                     if n == (len(cs) - 1):
-                        warnings.warn('All model coefs are 0. Model with l1_ratio {0} is dummy'.format(l1_ratio), UserWarning)
+                        logger.warning('All model coefs are 0. Model with l1_ratio {0} is dummy'.format(l1_ratio), UserWarning)
                     else:
-                        print('C = {0} all model coefs are 0'.format(c))
+                        logger.debug('C = {0} all model coefs are 0'.format(c))
                         continue
 
                 pred = self._predict_w_model_type(model, valid.data)
                 score = metric(valid_target, pred, valid_weight)
 
-                print('C = {0}, l1_ratio = {1}, score = {2}'.format(c, 1, score))
+                logger.debug('C = {0}, l1_ratio = {1}, score = {2}'.format(c, 1, score))
 
                 # TODO: check about greater and equal
                 if score >= c_best_score:
@@ -235,16 +272,16 @@ class LinearL1CD(TabularMLAlgo):
                     es += 1
 
                 if es >= early_stopping:
-                    print('Early stopping..')
+                    logger.debug('Early stopping..')
                     break
 
                 if self.timer.time_limit_exceeded():
-                    print('Time limit exceeded')
+                    logger.info('Time limit exceeded')
                     break
 
                 # TODO: Think about is it ok to check time inside train loop?
                 if (model.coef_ != 0).all():
-                    print('All coefs are nonzero')
+                    logger.debug('All coefs are nonzero')
                     break
 
             if c_best_score >= best_score:
@@ -253,7 +290,7 @@ class LinearL1CD(TabularMLAlgo):
                 best_model = deepcopy(c_best_model)
 
             if self.timer.time_limit_exceeded():
-                print('Time limit exceeded')
+                logger.info('Time limit exceeded')
                 break
 
         val_pred = self.task.losses['sklearn'].bw_func(best_pred)
@@ -261,7 +298,16 @@ class LinearL1CD(TabularMLAlgo):
         return best_model, val_pred
 
     def predict_single_fold(self, model: LinearEstimator, dataset: TabularDataset) -> np.ndarray:
+        """Implements prediction on single fold.
 
+        Args:
+            model: model uses to predict.
+            dataset: ``NumpyDataset`` used for prediction.
+
+        Returns:
+            predictions for input dataset.
+
+        """
         pred = self.task.losses['sklearn'].bw_func(self._predict_w_model_type(model, dataset.data))
 
         return pred

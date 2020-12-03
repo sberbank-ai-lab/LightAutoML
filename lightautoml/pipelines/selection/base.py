@@ -1,3 +1,7 @@
+"""
+Base class for selection pipelines
+"""
+
 from copy import copy, deepcopy
 from typing import Optional, List, Sequence, Any, Tuple, Union
 
@@ -15,10 +19,7 @@ from ...ml_algo.utils import tune_and_fit_predict
 
 @record_history(enabled=False)
 class ImportanceEstimator:
-    """
-    Abstract class.
-    Object that estimates feature importances.
-    """
+    """Abstract class. Object that estimates feature importances."""
 
     def __init__(self):
         self.raw_importances = None
@@ -28,39 +29,35 @@ class ImportanceEstimator:
         raise NotImplementedError
 
     def get_features_score(self) -> Series:
-        """
-        Get features importances.
+        """Get raw features importances
 
         Returns:
-            Hash table (dict or pd.Series), keys - str features names values - array of floats.
+            Pandas Series object with index - str features names and values - array of importances.
+
         """
         return self.raw_importances
 
 
 @record_history(enabled=False)
 class SelectionPipeline:
-    """
-    Abstract class.
-    Instance should accept train/valid datatsets and select features.
-    """
+    """Abstract class. Instance should accept train/valid datasets and select features."""
 
     @property
     def is_fitted(self) -> bool:
-        """
-        Check if is fitted
+        """Check if selection pipeline is already fitted
 
         Returns:
-            `bool`
+            True for fitted pipeline and False for not fitted
+
         """
         return self._selected_features is not None
 
     @property
     def selected_features(self) -> List[str]:
-        """
-        Get selected features
+        """Get selected features
 
         Returns:
-            list of feature names.
+            List of selected feature names
 
         """
         assert self._selected_features is not None, 'Should be fitted first'
@@ -68,21 +65,19 @@ class SelectionPipeline:
 
     @selected_features.setter
     def selected_features(self, val: List[str]):
-        """
-        Setter of selected features
+        """Setter of selected features
 
         Args:
-            val:
-
-        Returns:
+            val: list of selected feature vames
 
         """
         self._selected_features = deepcopy(val)
 
     @property
     def in_features(self) -> List[str]:
-        """
-        Features input to the selector.
+        """Input features to the selector.
+
+        Raises exception if not fitted beforehand.
 
         Returns:
             list of input features.
@@ -93,8 +88,7 @@ class SelectionPipeline:
 
     @property
     def dropped_features(self) -> List[str]:
-        """
-        Features that was dropped.
+        """Features that were dropped.
 
         Returns:
             list of dropped features.
@@ -108,15 +102,14 @@ class SelectionPipeline:
                  ml_algo: Optional[Union[MLAlgo, Tuple[MLAlgo, ParamsTuner]]] = None,
                  imp_estimator: Optional[ImportanceEstimator] = None,
                  fit_on_holdout: bool = False, **kwargs: Any):
-        """
-        Create features selection pipeline.
+        """Create features selection pipeline
 
         Args:
-            features_pipeline: composition of feature transforms.
-            ml_algo: Tuple (MlAlgo, ParamsTuner).
-            imp_estiamtor: feature importance estimator.
-            fit_on_holdout: if use the holdout iterator.
-            **kwargs: ignored.
+            features_pipeline: composition of feature transforms
+            ml_algo: Tuple (MlAlgo, ParamsTuner)
+            imp_estimator: feature importance estimator
+            fit_on_holdout: if use the holdout iterator
+            **kwargs: currently ignored
 
         """
         self.features_pipeline = features_pipeline
@@ -140,17 +133,20 @@ class SelectionPipeline:
 
     def perform_selection(self,
                           train_valid: Optional[TrainValidIterator]):
-        """
+        """Select features from train-valid iterator
+
         Method is used to perform selection based on features pipeline and ml model.
         Should save _selected_features attribute in the end of working.
 
         Raises:
             NotImplementedError.
+
         """
         raise NotImplementedError
 
     def fit(self, train_valid: TrainValidIterator):
-        """
+        """ Selection pipeline fit
+
         Find features selection for given dataset based on features pipeline and ml model.
 
         Args:
@@ -170,7 +166,7 @@ class SelectionPipeline:
             if self.ml_algo is not None:
                 if self.ml_algo.is_fitted:
                     assert list(self.ml_algo.features) == list(train_valid.features), \
-                        'Features in feated MLAlgo should match exactly'
+                        "Features in feated MLAlgo should match exactly"
                 else:
                     self.ml_algo, preds = tune_and_fit_predict(self.ml_algo, self.tuner, train_valid)
 
@@ -180,14 +176,13 @@ class SelectionPipeline:
             self.perform_selection(train_valid)
 
     def select(self, dataset: LAMLDataset) -> LAMLDataset:
-        """
-        Take selected features from giving dataset and creates new dataset.
+        """Takes only selected features from giving dataset and creates new dataset.
 
         Args:
             dataset: dataset for feature selection.
 
         Returns:
-            new dataset.
+            new dataset with selected features only
 
         """
         selected_features = copy(self.selected_features)
@@ -202,8 +197,7 @@ class SelectionPipeline:
         return dataset[:, self.selected_features]
 
     def map_raw_feature_importances(self, raw_importances: Series):
-        """
-        Calculate input feature importances. Calculated as sum of importances on different levels of pipeline.
+        """Calculate input feature importances. Calculated as sum of importances on different levels of pipeline.
 
         Args:
             raw_importances: importances of output features.
@@ -217,31 +211,28 @@ class SelectionPipeline:
         self.mapped_importances = mapped_importance.groupby(level=0).sum().sort_values(ascending=False)
 
     def get_features_score(self):
-        """
-        Get input feature importances.
+        """Get input feature importances.
 
         Returns:
             Series with importances in not ascending order.
+
         """
         return self.mapped_importances
 
 
 @record_history(enabled=False)
 class EmptySelector(SelectionPipeline):
-    """
-    Empty selector - perform no selection, just save input features names.
-    """
+    """Empty selector - perform no selection, just save input features names."""
 
     def __init__(self):
-        """
-        Empty selector - perform no selection, just save input features names
+        """Empty Selector init
+
         """
         super().__init__()
 
     def perform_selection(self,
                           train_valid: Optional[TrainValidIterator]):
-        """
-        Just save input features names.
+        """Just save input features names.
 
         Args:
             train_valid: used for getting features names.
@@ -252,12 +243,10 @@ class EmptySelector(SelectionPipeline):
 
 @record_history(enabled=False)
 class PredefinedSelector(SelectionPipeline):
-    """
-    Empty selector - perform no selection, just save input features names.
-    """
+    """Predefined selector - selects columns specified by user"""
 
     def __init__(self, columns_to_select: Sequence[str]):
-        """
+        """Init
         Args:
             columns_to_select: columns will be selected.
 
@@ -267,8 +256,7 @@ class PredefinedSelector(SelectionPipeline):
 
     def perform_selection(self,
                           train_valid: Optional[TrainValidIterator]):
-        """
-        Select only specified columns.
+        """Select only specified columns.
 
         Args:
             train_valid: used for validation of features presence.
@@ -281,12 +269,11 @@ class PredefinedSelector(SelectionPipeline):
 
 @record_history(enabled=False)
 class ComposedSelector(SelectionPipeline):
-    """
-    Perform composition of selections.
-    """
+    """Composed selector - perform composition of selections."""
 
     def __init__(self, selectors: Sequence[SelectionPipeline]):
-        """
+        """Composed Selector init
+
         Args:
             selectors: sequence of selectors.
 
@@ -295,8 +282,7 @@ class ComposedSelector(SelectionPipeline):
         self.selectors = selectors
 
     def fit(self, train_valid: Optional[TrainValidIterator] = None):
-        """
-        Select features.
+        """Fit all selectors in composition
 
         Args:
             train_valid: dataset iterator.
@@ -309,8 +295,7 @@ class ComposedSelector(SelectionPipeline):
         self.perform_selection(train_valid)
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator]):
-        """
-        Defines selected features.
+        """Defines selected features.
 
         Args:
             train_valid: ignored.
@@ -319,8 +304,7 @@ class ComposedSelector(SelectionPipeline):
         self._selected_features = self.selectors[-1].selected_features
 
     def get_features_score(self):
-        """
-        Get mapped input features importances.
+        """Get mapped input features importances.
 
         """
         return self.selectors[-1].mapped_importances

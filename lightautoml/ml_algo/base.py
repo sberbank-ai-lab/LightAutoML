@@ -1,4 +1,7 @@
-import warnings
+"""
+Base classes for ML models
+"""
+
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Optional, Tuple, Any, List, cast, Dict, Sequence, Union
@@ -10,16 +13,18 @@ from lightautoml.validation.base import TrainValidIterator
 from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..dataset.roles import NumericRole
+from ..utils.logging import get_logger
 from ..utils.timer import TaskTimer, PipelineTimer
 
+logger = get_logger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
 @record_history(enabled=False)
 class MLAlgo(ABC):
     """
-    Absract class. ML algorithm. \
-    Assume that features are already selected, \
+    Abstract class for machine learning algorithm.
+    Assume that features are already selected,
     but parameters my be tuned and set before training.
     """
     _default_params: Dict = {}
@@ -31,38 +36,29 @@ class MLAlgo(ABC):
 
     @property
     def name(self) -> str:
-        """
-        Current model name
+        """Get model name.
         """
         return self._name
 
     @property
     def features(self) -> List[str]:
-        """
-        List of features.
+        """Get list of features.
         """
         return self._features
 
     @features.setter
     def features(self, val: Sequence[str]):
-        """
-        List of features.
-        """
         self._features = list(val)
 
     @property
     def is_fitted(self) -> bool:
-        """
-        Flag: is fitted
+        """Get flag is the model fitted or not.
         """
         return self.features is not None
 
     @property
     def params(self) -> dict:
-        """
-
-        Returns:
-
+        """Get model's params dict.
         """
         if self._params is None:
             self._params = copy(self.default_params)
@@ -74,8 +70,10 @@ class MLAlgo(ABC):
         self._params = {**self.params, **new_params}
 
     def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
-        """
-        Init params depending on input data.
+        """Init params depending on input data.
+
+        Args:
+            train_valid_iterator: classic cv iterator.
 
         Returns:
             dict with model hyperparameters.
@@ -83,7 +81,7 @@ class MLAlgo(ABC):
         """
         return self.params
 
-    # TODO: THink about typing
+    # TODO: Think about typing
     def __init__(self, default_params: Optional[dict] = None, freeze_defaults: bool = True, timer: Optional[TaskTimer] = None):
         """
 
@@ -107,12 +105,14 @@ class MLAlgo(ABC):
 
         self.timer = timer
         if timer is None:
-            self.timer = PipelineTimer().start().get_task_timer('no matter what')
+            self.timer = PipelineTimer().start().get_task_timer()
+
+        self._nan_rate = None
 
     @abstractmethod
     def fit_predict(self, train_valid_iterator: TrainValidIterator) -> LAMLDataset:
-        """
-        Abstract method.
+        """Abstract method
+
         Fit new algo on iterated datasets and predict on valid parts.
 
         Args:
@@ -123,23 +123,20 @@ class MLAlgo(ABC):
 
     @abstractmethod
     def predict(self, test: LAMLDataset) -> LAMLDataset:
-        """
-        Abstract method.
-        Predict on new dataset.
+        """Predict target for input data.
 
         Args:
-            test: ``LAMLDataset`` on test.
+            test:
 
         Returns:
             dataset with predicted values.
         """
 
     def score(self, dataset: LAMLDataset) -> float:
-        """
-        Score prediction dataset with given metric.
+        """Score prediction on dataset with defined metric.
 
         Args:
-            dataset: ``LAMLDataset`` to score.
+            dataset: dataset with ground truth and predictions.
 
         Returns:
             metric value.
@@ -151,8 +148,7 @@ class MLAlgo(ABC):
         return metric(dataset, dropna=True)
 
     def set_prefix(self, prefix: str):
-        """
-        Set prefix to separate models from different levels/pipelines.
+        """Set prefix to separate models from different levels/pipelines.
 
         Args:
             prefix: str that used as prefix.
@@ -160,30 +156,26 @@ class MLAlgo(ABC):
         self._name = '_'.join([prefix, self._name])
 
     def set_timer(self, timer: TaskTimer) -> 'MLAlgo':
-
         self.timer = timer
-
         return self
 
 
 @record_history(enabled=False)
 class TabularMLAlgo(MLAlgo):
     """
-    ML algos that accepts numpy arrays as input.
+    Machine learning algorithms that accepts numpy arrays as input.
     """
     _name: str = 'TabularAlgo'
 
     def _set_prediction(self, dataset: NumpyDataset, preds_arr: np.ndarray) -> NumpyDataset:
-        """
-        Inplace trasformation of dataset with replacement of data for predicted values.
+        """Insert predictions to dataset with. Inplace transformation.
 
         Args:
             dataset: NumpyDataset to transform.
             preds_arr: array with predicted values.
 
         Returns:
-            transformed dataset.
-
+            changed dataset.
         """
 
         prefix = '{0}_prediction'.format(self._name)
@@ -193,22 +185,21 @@ class TabularMLAlgo(MLAlgo):
         return dataset
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
-        """
-        Implements training and prediction on single fold.
+        """Train on train dataset and predict on holdout dataset.
 
         Args:
             train: NumpyDataset to train.
             valid: NumpyDataset to validate.
 
         Returns:
-            # Not implemented.
+            target predictions for valid dataset.
 
         """
         raise NotImplementedError
 
     def fit_predict(self, train_valid_iterator: TrainValidIterator) -> NumpyDataset:
-        """
-        Fit and then predict accordig the strategy that uses train_valid_iterator.
+        """Fit and then predict accordig the strategy that uses train_valid_iterator.
+
         If item uses more then one time it will predict mean value of predictions.
         If the element is not used in training then the prediction will be ``np.nan`` for this item
 
@@ -219,6 +210,7 @@ class TabularMLAlgo(MLAlgo):
             dataset with predicted values.
 
         """
+        logger.info('Start fitting {} ...'.format(self._name))
         self.timer.start()
 
         assert self.is_fitted is False, 'Algo is already fitted'
@@ -259,34 +251,34 @@ class TabularMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    warnings.warn('Time limit exceeded after calculating fold {0}'.format(n))
+                    logger.warning('Time limit exceeded after calculating fold {0}'.format(n))
                     break
 
-        print('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))
+        self.timer.stop()
+        logger.debug('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.total_duration))
 
-        preds_arr /= counter_arr
+        preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
         preds_arr = np.where(counter_arr == 0, np.nan, preds_arr)
 
         preds_ds = self._set_prediction(preds_ds, preds_arr)
+        logger.info('{} fitting and predicting completed'.format(self._name))
         return preds_ds
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:
-        """
-        Implements prediction on single fold.
+        """Implements prediction on single fold.
 
         Args:
             model: model uses to predict.
             dataset: ``NumpyDataset`` used for prediction.
 
         Returns:
-            # Not implemented.
+            predictions for input dataset.
 
         """
         raise NotImplementedError
 
     def predict(self, dataset: TabularDataset) -> NumpyDataset:
-        """
-        Mean prediction for all fitted models.
+        """Mean prediction for all fitted models.
 
         Args:
             dataset: ``NumpyDataset`` used for prediction.

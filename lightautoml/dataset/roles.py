@@ -1,3 +1,7 @@
+"""
+Features roles
+"""
+
 from datetime import datetime
 from typing import Union, Callable, Optional, Sequence, Any
 
@@ -11,10 +15,11 @@ Dtype = Union[Callable, type, str]
 
 @record_history(enabled=False)
 class ColumnRole:
-    """
-    Abstract class for column role.
+    """Abstract class for column role.
+
     Role type defines column dtype, place of column in dataset and transformers
     and set additional attributes which impacts on the way how it's handled.
+
     """
     dtype = object
     force_input = False
@@ -22,8 +27,7 @@ class ColumnRole:
 
     @property
     def name(self) -> str:
-        """
-        Get str role name.
+        """Get str role name.
 
         Returns:
             str role name.
@@ -32,8 +36,7 @@ class ColumnRole:
         return self._name
 
     def __repr__(self) -> str:
-        """
-        String view of role.
+        """String view of role.
 
         Returns:
             represintation string.
@@ -44,37 +47,35 @@ class ColumnRole:
         return '{0} role, dtype {1}. Additional params: {2}'.format(self.name, self.dtype, params)
 
     def __hash__(self) -> int:
-        """
-        Define how to hash - hash from str view.
+        """Define how to hash - hash from str view.
 
         Returns:
-            `int`.
+            hased name of column.
 
         """
         return hash(self.__repr__())
 
     def __eq__(self, other: Any) -> bool:
-        """
-        Define how to compare - if reprs are equal (hashed).
+        """Define how to compare - if reprs are equal (hashed).
 
         Args:
             other: another `ColumnRole`.
 
         Returns:
-            `bool`.
+            `True` if equal. 
+
         """
         return self.__repr__() == other.__repr__()
 
     @staticmethod
     def from_string(name: str, **kwargs: Any) -> 'ColumnRole':
-        """
-        Create default params role from string.
+        """Create default params role from string.
 
         Args:
-            name: `str`.
+            name: Role name.
 
         Returns:
-            `ColumnRole`.
+            Corresponding role object.
 
         """
         name = name.lower()
@@ -114,23 +115,25 @@ class ColumnRole:
         if name in ['weights']:
             return WeightsRole()
 
+        if name in ['path']:
+            return PathRole()
+
         raise ValueError('Unknown string role')
 
 
 @record_history(enabled=False)
 class NumericRole(ColumnRole):
-    """
-    Numeric role
-    """
+    """Numeric role"""
     _name = 'Numeric'
 
     def __init__(self, dtype: Dtype = np.float32, force_input: bool = False, prob: bool = False, discretization: bool = False):
-        """
-        Create numeric role with specific numeric dtype
+        """Create numeric role with specific numeric dtype.
+
         Args:
-            dtype: variable type
-            force_input: select a feature for training regardless of the selector results.
-            prob: If input number is probability
+            dtype: Variable type
+            force_input: Select a feature for training regardless of the selector results.
+            prob: If input number is probability.
+
         """
         self.dtype = dtype
         self.force_input = force_input
@@ -140,26 +143,28 @@ class NumericRole(ColumnRole):
 
 @record_history(enabled=False)
 class CategoryRole(ColumnRole):
-    """
-    Category role
-    """
+    """Category role."""
     _name = 'Category'
 
     def __init__(self, dtype: Dtype = object, encoding_type: str = 'auto', unknown: int = 5, force_input: bool = False,
                  label_encoded: bool = False, ordinal: bool = False):
-        """
-        Create category role with specific dtype and attrs
+        """Create category role with specific dtype and attrs
+
         Args:
-            dtype: variable type
-            encoding_type: encoding type. Valid are
+            dtype: Variable type
+            encoding_type: Encoding type
+            unknown: Cut-off freq to process rare categories as unseen.
+            force_input: Select a feature for training regardless of the selector results.
+        
+        Note:
+            Valid encoding_type:
+
                 - auto - default processing
                 - int - encode with int
                 - oof - out-of-fold target encoding
                 - freq - frequency encoding
                 - ohe - one hot encoding
-            unknown: int cut-off freq to process rare categories as unseen
-            force_input: select a feature for training regardless of the selector results.
-
+            
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
         # assert encoding_type == 'auto', 'For the moment only auto is supported'
@@ -174,48 +179,25 @@ class CategoryRole(ColumnRole):
 
 @record_history(enabled=False)
 class TextRole(ColumnRole):
-    """
-    Text role
-    """
+    """Text role."""
     _name = 'Text'
 
-    def __init__(self, dtype: Dtype = str, encoding_type: str = 'auto', embedding_path: Optional[str] = None, pool: str = 'auto',
-                 force_input: bool = False):
-        """
-        Create text role with specific dtype and attrs.
+    def __init__(self, dtype: Dtype = str,
+                 force_input: bool = True):
+        """Create text role with specific dtype and attrs.
 
         Args:
-            dtype: variable type
-            encoding_type: encoding type. Valid are:
-
-                - auto.
-                - oof (tf-idf encoding / sgd .. like basic transformers).
-                - emb (embedding, path and pool should be defined).
-            embedding_path: path for embedding. Default from config.
-            pool: pooling method for embedded sequence. Valid are:
-
-                - auto
-                - avg
-                - rnn
-            force_input: select a feature for training regardless of the selector results.
+            dtype: Variable type
+            force_input: Select a feature for training regardless of the selector results.
 
         """
-        assert encoding_type == 'auto', 'For the moment only auto is supported'
-        # TODO: support for all
-        assert pool == 'auto', 'For the moment only auto is supported'
-        # TODO: support for all
         self.dtype = dtype
-        self.encoding_type = encoding_type
-        self.embedding_path = embedding_path
-        self.pool = pool
         self.force_input = force_input
 
 
 @record_history(enabled=False)
 class DatetimeRole(ColumnRole):
-    """
-    Datetime role
-    """
+    """Datetime role."""
     _name = 'Datetime'
 
     def __init__(self, dtype: Dtype = np.datetime64, seasonality: Optional[Sequence[str]] = ('y', 'm', 'wd'),
@@ -223,23 +205,23 @@ class DatetimeRole(ColumnRole):
                  date_format: Optional[str] = None, unit: Optional[str] = None, origin: Union[str, datetime] = 'unix',
                  force_input: bool = False, base_feats: bool = True,
                  country: Optional[str] = None, prov: Optional[str] = None, state: Optional[str] = None):
-        """
-        Create datetime role with specific dtype and attrs.
+        """Create datetime role with specific dtype and attrs.
 
         Args:
-            dtype: variable type.
+            dtype: Variable type.
             seasonality: Seasons to extract from date. Valid are: 'y', 'm', 'd', 'wd', 'hour', 'min', 'sec', 'ms', 'ns'
-            base_date: bool. Base date is used to calculate difference with other dates, like age = report_dt - birth_dt
-            date_format: format to parse date.
+            base_date: Base date is used to calculate difference with other dates, like age = report_dt - birth_dt
+            date_format: Format to parse date.
             unit: The unit of the arg denote the unit, pandas like, see more:
              https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
             origin: Define the reference date, pandas like, see more:
              https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
-            force_input: select a feature for training regardless of the selector results.
-            base_feats: calculate feats on base date
-            country: datetime metadata to extract holidays
-            prov: datetime metadata to extract holidays
-            state: datetime metadata to extract holidays
+            force_input: Select a feature for training regardless of the selector results.
+            base_feats: To calculate feats on base date.
+            country: Datetime metadata to extract holidays.
+            prov: Datetime metadata to extract holidays.
+            state: Datetime metadata to extract holidays.
+        
         """
         self.dtype = dtype
         self.seasonality = []
@@ -267,14 +249,11 @@ class DatetimeRole(ColumnRole):
 
 @record_history(enabled=False)
 class TargetRole(ColumnRole):
-    """
-    Target role
-    """
+    """Target role."""
     _name = 'Target'
 
     def __init__(self, dtype: Dtype = np.float32):
-        """
-        Create target role with specific numeric dtype.
+        """Create target role with specific numeric dtype.
 
         Args:
             dtype: dtype of target.
@@ -285,31 +264,29 @@ class TargetRole(ColumnRole):
 
 @record_history(enabled=False)
 class GroupRole(ColumnRole):
-    """
-    Group role.
-    """
+    """Group role."""
     _name = 'Group'
 
 
 @record_history(enabled=False)
 class DropRole(ColumnRole):
-    """
-    Drop role.
-    """
+    """Drop role."""
     _name = 'Drop'
 
 
 @record_history(enabled=False)
 class WeightsRole(ColumnRole):
-    """
-    Weights role.
-    """
+    """Weights role."""
     _name = 'Weights'
 
 
 @record_history(enabled=False)
 class FoldsRole(ColumnRole):
-    """
-    Folds role.
-    """
+    """Folds role."""
     _name = 'Folds'
+
+
+@record_history(enabled=False)
+class PathRole(ColumnRole):
+    """Folds role."""
+    _name = 'Path'

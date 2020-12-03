@@ -1,3 +1,7 @@
+"""
+Datetime features
+"""
+
 from collections import OrderedDict
 from typing import Union, Sequence, List, Optional
 
@@ -21,8 +25,8 @@ date_attrs = {'y': 'year', 'm': 'month',
 
 @record_history(enabled=False)
 def datetime_check(dataset: LAMLDataset):
-    """
-    Check if all passed vars are datetimes.
+    """Check if all passed vars are datetimes.
+
     Raises AssertionError if non-datetime features are present.
 
     Args:
@@ -38,8 +42,8 @@ def datetime_check(dataset: LAMLDataset):
 @record_history(enabled=False)
 class TimeToNum(LAMLTransformer):
     """
-    Basic convertion strategy, used in selection one-to-one transformers.
-    Datetime converted to difference with basic_date.
+    Basic conversion strategy, used in selection one-to-one transformers.
+    Datetime converted to difference with basic_date (basic_date == '2020-01-01').
     """
     basic_time = '2020-01-01'
     basic_interval = 'D'
@@ -49,8 +53,7 @@ class TimeToNum(LAMLTransformer):
     _transform_checks = ()
 
     def transform(self, dataset: DatetimeCompatible) -> NumpyDataset:
-        """
-        Transform dates to numeric differences with base date.
+        """Transform dates to numeric differences with base date.
 
         Args:
             dataset: Numpy or Pandas dataset with datetime columns.
@@ -92,8 +95,7 @@ class BaseDiff(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """
-        List of features.
+        """List of features.
         """
         return self._features
 
@@ -112,8 +114,7 @@ class BaseDiff(LAMLTransformer):
         self.basic_interval = basic_interval
 
     def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
-        """
-        Fit transformer and return it's instance.
+        """Fit transformer and return it's instance.
 
         Args:
             dataset: LAMLDataset to fit on.
@@ -131,14 +132,13 @@ class BaseDiff(LAMLTransformer):
         return self
 
     def transform(self, dataset: DatetimeCompatible) -> NumpyDataset:
-        """
-        Transform dates to numeric differences with base date.
+        """Transform dates to numeric differences with base date.
 
         Args:
             dataset: Numpy or Pandas dataset with datetime columns.
 
         Returns:
-            Numpy dataset of numeric features.
+            NumpyDataset of numeric features.
         """
         # checks if exist
         super().transform(dataset)
@@ -176,8 +176,7 @@ class DateSeasons(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """
-        List of features names.
+        """List of features names.
         """
         return self._features
 
@@ -185,15 +184,14 @@ class DateSeasons(LAMLTransformer):
         """
 
         Args:
-            output_role:
+            output_role: which role to assign for input feautres
         """
         self.output_role = output_role
         if output_role is None:
             self.output_role = CategoryRole(np.int32)
 
     def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
-        """
-        Fit transformer and return it's instance.
+        """Fit transformer and return it's instance.
 
         Args:
             dataset: LAMLDataset to fit on.
@@ -221,8 +219,7 @@ class DateSeasons(LAMLTransformer):
         return self
 
     def transform(self, dataset: DatetimeCompatible) -> NumpyDataset:
-        """
-        Transform dates to categories - seasons and holiday flag.
+        """Transform dates to categories - seasons and holiday flag.
 
         Args:
             dataset: Numpy or Pandas dataset with datetime columns.

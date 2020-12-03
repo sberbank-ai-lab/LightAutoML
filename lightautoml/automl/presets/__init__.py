@@ -1,4 +1,6 @@
-__all__ = ['base', 'tabular_presets']
+"""
+Presets for end-to-end model training for special tasks
+"""
 
 
 

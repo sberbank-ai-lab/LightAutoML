@@ -1,5 +1,9 @@
+"""
+Reader
+"""
+
 from copy import deepcopy
-from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, Callable, cast
+from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
 
 import numpy as np
 import pandas as pd
@@ -14,6 +18,9 @@ from ..dataset.np_pd_dataset import PandasDataset
 from ..dataset.roles import ColumnRole, DropRole, DatetimeRole, CategoryRole, NumericRole
 from ..dataset.utils import roles_parser
 from ..tasks import Task
+from ..utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 # roles, how it's passed to automl
 RoleType = TypeVar("RoleType", bound=ColumnRole)
@@ -21,10 +28,6 @@ RolesDict = Dict[str, RoleType]
 
 # how user can define roles
 UserDefinedRole = Optional[Union[str, RoleType]]
-# UserDefinedRolesDict = Dict[str, UserDefinedRole]
-# UserDefinedRolesSequence = Sequence[UserDefinedRole]
-# UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
-
 
 UserDefinedRolesDict = Dict[UserDefinedRole, Sequence[str]]
 UserDefinedRolesSequence = Sequence[UserDefinedRole]
@@ -34,16 +37,17 @@ UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, User
 @record_history(enabled=False)
 class Reader:
     """
-    Abstract class
+    Abstract class for analyzing input data and creating inner LAMLDataset from raw data
     Takes data in different formats as input, drop obviously useless features, estimates avaliable size and returns dataset
     """
 
     def __init__(self, task: Task, *args: Any, **kwargs: Any):
         """
-            Args:
-                task: Task object
-                *args : ignored.
-                *kwargs : ignored.
+
+        Args:
+            task: Task object
+            *args : ignored.
+            *kwargs : ignored.
         """
         self.task = task
         self._roles = {}
@@ -53,55 +57,64 @@ class Reader:
 
     @property
     def roles(self) -> RolesDict:
-        """
-        Roles dict.
-
+        """Roles dict.
         """
         return self._roles
 
     @property
     def dropped_features(self) -> List[str]:
-        """
-        List of dropped features.
+        """List of dropped features.
 
         """
         return self._dropped_features
 
     @property
     def used_features(self) -> List[str]:
-        """
-        List of used features.
+        """List of used features.
 
         """
         return self._used_features
 
     @property
     def used_array_attrs(self) -> Dict[str, str]:
-        """
-        Dict of used array attributes.
+        """Dict of used array attributes.
 
         """
         return self._used_array_attrs
 
     def fit_read(self, train_data: Any, features_names: Optional[List[str]] = None, roles: UserRolesDefinition = None,
                  **kwargs: Any):
-        """
-        Abstract function to get dataset with initial feature selection.
+        """Abstract function to get dataset with initial feature selection.
 
         """
         raise NotImplementedError
 
     def read(self, data: Any, features_names: Optional[List[str]], **kwargs: Any):
-        """
-        Abstract function to add validation columns.
+        """Abstract function to add validation columns.
 
         """
         raise NotImplementedError
 
+    def upd_used_features(self, add: Optional[Sequence[str]] = None, remove: Optional[Sequence[str]] = None):
+        """Updates the list of used features
+
+        Args:
+            add: list of feature names to add or None
+            remove: list of feature names to remove or None
+
+        """
+        curr_feats = set(self.used_features)
+        if add is not None:
+            curr_feats = curr_feats.union(add)
+        if remove is not None:
+            curr_feats = curr_feats - set(remove)
+        self._used_features = list(curr_feats)
+
     @classmethod
     def from_reader(cls, reader: 'Reader', **kwargs) -> 'Reader':
-        """
-        Create reader for new data type from existed
+        """Create reader for new data type from existed.
+
+        Note - for now only Pandas reader exists, made for future plans
 
         Args:
             reader: source reader.
@@ -123,11 +136,18 @@ class Reader:
 @record_history(enabled=False)
 class PandasToPandasReader(Reader):
     """
-    Reader to convert pd.DataFrame to AutoML's PandasDataset
+    Reader to convert pd.DataFrame to AutoML's PandasDataset.
+    Stages:
+        - drop obviously useless features
+        - convert roles dict from user format to automl format
+        - simple role guess for features without input role
+        - create cv folds
+        - create initial PandasDataset
+        - Optional: advanced guessing of role and handling types
     """
 
     def __init__(self, task: Task, samples: Optional[int] = 100000, max_nan_rate: float = 0.999, max_constant_rate: float = 0.999,
-                 cv: Union[int, Callable] = 5, random_state: int = 42, roles_params: Optional[dict] = None, n_jobs: int = 4,
+                 cv: int = 5, random_state: int = 42, roles_params: Optional[dict] = None, n_jobs: int = 4,
                  # params for advanced roles guess
                  advanced_roles: bool = True, numeric_unique_rate: float = .999, max_to_3rd_rate: float = 1.1,
                  binning_enc_rate: float = 2, raw_decr_rate: float = 1.1,
@@ -135,28 +155,27 @@ class PandasToPandasReader(Reader):
                  drop_score_co: float = .01,
                  **kwargs: Any):
         """
-
         Args:
             task: Task object
             samples: number of elements used when checking role type
             max_nan_rate: float
             max_constant_rate: float
-            cv: float or callable
+            cv: int
             random_state: int
-            roles_params: dict of params of features roles. Ex. {
-                    'numeric': {'dtype': np.float32},
-                    'datetime': {'date_format': '%Y-%m-%d'}
-                } It's optional and commonly comes from config
+            roles_params: dict of params of features roles. \
+                Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
+                It's optional and commonly comes from config
             n_jobs: int number of processes
-            advanced_roles:
-            numeric_unqiue_rate:
-            max_to_3rd_rate:
-            binning_enc_rate:
-            raw_decr_rate:
-            max_score_rate:
-            abs_score_val:
-            drop_score_co:
+            advanced_roles: param of roles guess (experimental, do not change)
+            numeric_unqiue_rate: param of roles guess (experimental, do not change)
+            max_to_3rd_rate: param of roles guess (experimental, do not change)
+            binning_enc_rate: param of roles guess (experimental, do not change)
+            raw_decr_rate: param of roles guess (experimental, do not change)
+            max_score_rate: param of roles guess (experimental, do not change)
+            abs_score_val: param of roles guess (experimental, do not change)
+            drop_score_co: param of roles guess (experimental, do not change)
             **kwargs:
+
         """
         super().__init__(task)
         self.samples = samples
@@ -185,26 +204,9 @@ class PandasToPandasReader(Reader):
 
         self.params = kwargs
 
-    def upd_used_features(self, add: Optional[Sequence[str]] = None, remove: Optional[Sequence[str]] = None):
-        """
-        Updates the list of used features
-
-        Args:
-            add: list of feature names to add or None
-            remove: list of feature names to remove or None
-
-        """
-        curr_feats = set(self.used_features)
-        if add is not None:
-            curr_feats = curr_feats.union(add)
-        if remove is not None:
-            curr_feats = curr_feats - set(remove)
-        self._used_features = list(curr_feats)
-
     def fit_read(self, train_data: DataFrame, features_names: Any = None, roles: UserDefinedRolesDict = None,
                  **kwargs: Any) -> PandasDataset:
-        """
-        Get dataset with initial feature selection
+        """Get dataset with initial feature selection
 
         Args:
             train_data: input DataFrame
@@ -216,6 +218,8 @@ class PandasToPandasReader(Reader):
             dataset with selected features
 
         """
+        logger.info('Train data shape: {}'.format(train_data.shape))
+
         if roles is None:
             roles = {}
         # transform roles from user format {RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}
@@ -253,6 +257,8 @@ class PandasToPandasReader(Reader):
 
         # infer roles
         for feat in subsample.columns:
+            assert isinstance(feat, str), 'Feature names must be string,' \
+                                          ' find feature name: {}, with type: {}'.format(feat, type(feat))
             if feat in parsed_roles:
                 r = parsed_roles[feat]
                 # handle datetimes
@@ -313,8 +319,7 @@ class PandasToPandasReader(Reader):
         return dataset
 
     def _create_target(self, target: Series):
-        """
-        Validate target column and create class mapping is needed
+        """Validate target column and create class mapping is needed
 
         Args:
             target:
@@ -347,8 +352,7 @@ class PandasToPandasReader(Reader):
         return target
 
     def _get_default_role_from_str(self, name) -> RoleType:
-        """
-        Get default role for string name according to automl's defaults and user settings
+        """Get default role for string name according to automl's defaults and user settings
 
         Args:
             name: name of role to get
@@ -366,8 +370,8 @@ class PandasToPandasReader(Reader):
         return ColumnRole.from_string(name, **role_params)
 
     def _guess_role(self, feature: Series) -> RoleType:
-        """
-        Try to infer role.
+        """Try to infer role, simple way
+
         If convertable to float -> number.
         Else if convertable to datetime -> datetime.
         Else category.
@@ -403,8 +407,7 @@ class PandasToPandasReader(Reader):
             return CategoryRole(object)
 
     def _is_ok_feature(self, feature) -> bool:
-        """
-        Check if column is filled well to be a feature.
+        """Check if column is filled well to be a feature.
 
         Args:
             feature: column from dataset.
@@ -420,8 +423,7 @@ class PandasToPandasReader(Reader):
         return True
 
     def read(self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
-        """
-        Now: only add validation columns.
+        """Read dataset with fitted metadata
 
         Args:
             data: pd.Dataframe with values.
@@ -429,27 +431,36 @@ class PandasToPandasReader(Reader):
             add_array_attrs: target/group/weights/folds.
 
         Returns:
-            dataset with new columns.
+            LAMLDataset
+
         """
         kwargs = {}
         if add_array_attrs:
             for array_attr in self.used_array_attrs:
+                col_name = self.used_array_attrs[array_attr]
                 try:
-                    kwargs[array_attr] = data[self.used_array_attrs[array_attr]]
+                    val = data[col_name]
                 except KeyError:
                     continue
 
-        dataset = PandasDataset(data[self.used_features], roles=self.roles, **kwargs)
+                if array_attr == 'target' and self.class_mapping is not None:
+                    val = Series(val.map(self.class_mapping).values, index=data.index, name=col_name)
+                kwargs[array_attr] = val
+
+        dataset = PandasDataset(data[self.used_features], roles=self.roles, task=self.task, **kwargs)
 
         return dataset
 
     def advanced_roles_guess(self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None) -> RolesDict:
-        """
+        """Advanced roles guess over user's definition and reader's simple guessing
 
+        Strategy - compute feature's NormalizedGini for different encoding ways and calc stats over results
+        Role is inferred by comparing performance stats with manual rules
+        Rule params are params of roles guess in init. Defaults are ok in general case
 
         Args:
-            dataset:
-            manual_roles:
+            dataset: input PandasDataset
+            manual_roles: dict of user defined roles
 
         Returns:
 
@@ -495,7 +506,7 @@ class PandasToPandasReader(Reader):
                                           subsample=self.samples)
             top_scores = pd.concat([null_scores, top_scores], axis=1).max(axis=1)
             rejected = list(top_scores[top_scores < drop_co].index)
-            print('Feats was rejected during automatic roles guess: {0}'.format(rejected))
+            logger.info('Feats was rejected during automatic roles guess: {0}'.format(rejected))
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict

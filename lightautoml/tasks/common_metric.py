@@ -1,10 +1,10 @@
 from functools import partial
-from typing import Optional, Callable
+from typing import Optional
 
 import numpy as np
 from log_calls import record_history
 from sklearn.metrics import roc_auc_score, mean_squared_error, r2_score, accuracy_score, log_loss, mean_absolute_error, \
-    mean_squared_log_error
+    mean_squared_log_error, f1_score
 
 
 @record_history(enabled=False)
@@ -59,24 +59,6 @@ def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Opti
     return err.mean()
 
 
-# fairobj <- function(preds, dtrain) {
-#   labels <- getinfo(dtrain, "label")
-#   c <- 2 #the lower the "slower/smoother" the loss is. Cross-Validate.
-#   x <-  preds-labels
-#   grad <- c*x / (abs(x)+c)
-#   hess <- c^2 / (abs(x)+c)^2
-#   return(list(grad = grad, hess = hess))
-# }
-
-# Function:
-#
-# c2(|x|c−ln(|x|c+1))
-# First derivative:
-#
-# cx|x|+c
-# Second derivative:
-#
-# c2(|x|+c)2
 @record_history(enabled=False)
 def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                     c: float = 0.9) -> float:
@@ -103,7 +85,8 @@ def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optio
 
 
 @record_history(enabled=False)
-def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None) -> float:
+def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
+                                   sample_weight: Optional[np.ndarray] = None) -> float:
     """
     Computes Mean Absolute Percentage error.
 
@@ -124,6 +107,26 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray, sampl
 
     return err.mean()
 
+@record_history(enabled=False)
+class F1Factory:
+
+    def __init__(self, average: str = 'micro'):
+        self.average = average
+
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray,
+                 sample_weight: Optional[np.ndarray] = None) -> float:
+        """
+
+        Args:
+            y_true:
+            y_pred:
+            sample_weight:
+
+        Returns:
+
+        """
+        return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
+
 
 @record_history()
 class BestClassBinaryWrapper:
@@ -136,6 +139,7 @@ class BestClassBinaryWrapper:
     Returns:
 
     """
+
     def __init__(self, func):
         self.func = func
 
@@ -143,7 +147,6 @@ class BestClassBinaryWrapper:
         y_pred = (y_pred > .5).astype(np.float32)
 
         return self.func(y_true, y_pred, sample_weight, **kwargs)
-
 
 
 @record_history()
@@ -157,6 +160,7 @@ class BestClassMulticlassWrapper:
     Returns:
 
     """
+
     def __init__(self, func):
         self.func = func
 
@@ -191,4 +195,7 @@ valid_str_multiclass_metric_names = {
     'crossentropy': partial(log_loss, eps=1e-7),
     'accuracy': BestClassMulticlassWrapper(accuracy_score),
 
+    'f1_macro': BestClassMulticlassWrapper(F1Factory('macro')),
+    'f1_micro': BestClassMulticlassWrapper(F1Factory('micro')),
+    'f1_weighted': BestClassMulticlassWrapper(F1Factory('weighted')),
 }

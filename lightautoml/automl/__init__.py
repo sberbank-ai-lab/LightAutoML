@@ -1,1 +1,4 @@
-__all__ = ['base', 'blend', 'presets']
+"""
+Base AutoML classes
+"""
+__all__ = ['base']

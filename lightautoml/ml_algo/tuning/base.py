@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 @record_history(enabled=False)
 class ParamsTuner(ABC):
     """
-    Base class for hyperparameters tuners.
+    Base abstract class for hyperparameters tuners.
     """
 
     _name: str = 'AbstractTuner'
@@ -23,7 +23,7 @@ class ParamsTuner(ABC):
     @property
     def best_params(self) -> dict:
         """
-        Getter for best params.
+        Get best params.
 
         Returns:
             dict with best fitted params.

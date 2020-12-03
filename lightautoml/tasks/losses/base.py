@@ -4,7 +4,7 @@ from typing import Callable, Tuple, Union, Optional, Dict, Any
 from log_calls import record_history
 
 from lightautoml.tasks.utils import infer_gib
-from ..common_metric import valid_str_metric_names
+from ..common_metric import valid_str_metric_names, valid_str_multiclass_metric_names
 
 
 @record_history(enabled=False)
@@ -122,7 +122,11 @@ class Loss:
             metric_params = {}
 
         if type(metric) is str:
-            self.metric_func = self.metric_wrapper(valid_str_metric_names[metric], greater_is_better, metric_params)
+            try:
+                self.metric_func = self.metric_wrapper(valid_str_metric_names[metric], greater_is_better, metric_params)
+            except KeyError:
+                self.metric_func = self.metric_wrapper(valid_str_multiclass_metric_names[metric],
+                                                       greater_is_better, metric_params)
             self.metric_name = metric
         else:
             self.metric_func = self.metric_wrapper(metric, greater_is_better, metric_params)

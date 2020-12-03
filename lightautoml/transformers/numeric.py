@@ -1,3 +1,7 @@
+"""
+Numeric features
+"""
+
 from typing import Union
 
 import numpy as np
@@ -8,14 +12,13 @@ from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
 from ..dataset.roles import NumericRole, CategoryRole
 
-# type - something that can be convered to pandas dataset
+# type - something that can be converted to pandas dataset
 NumpyTransformable = Union[NumpyDataset, PandasDataset]
 
 
 @record_history(enabled=False)
 def numeric_check(dataset: LAMLDataset):
-    """
-    Check if all passed vars are categories.
+    """Check if all passed vars are categories.
 
     Args:
         dataset: dataset to check.
@@ -48,8 +51,7 @@ class NaNFlags(LAMLTransformer):
         self.nan_rate = nan_rate
 
     def fit(self, dataset: NumpyTransformable):
-        """
-        Estimate label frequencies and create encoding dicts.
+        """Extract nan flags
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features
@@ -74,8 +76,7 @@ class NaNFlags(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
-        Transform - fill with 0 and add null flags.
+        """Transform - extract null flags.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -110,8 +111,7 @@ class FillnaMedian(LAMLTransformer):
     _fname_prefix = 'fillnamed'
 
     def fit(self, dataset: NumpyTransformable):
-        """
-        Estimate means and stds.
+        """Estimate medians
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -133,8 +133,7 @@ class FillnaMedian(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
-        Transform - fill with 0 and add null flags.
+        """Transform - fillna with medians
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -167,7 +166,8 @@ class FillInf(LAMLTransformer):
     _fname_prefix = 'fillinf'
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
+        """Replace inf to nan
+
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
 
@@ -201,8 +201,7 @@ class LogOdds(LAMLTransformer):
     _fname_prefix = 'logodds'
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
-        Transform - convert num values to logodds.
+        """Transform - convert num values to logodds.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -217,6 +216,7 @@ class LogOdds(LAMLTransformer):
         dataset = dataset.to_numpy()
         data = dataset.data
         # transform
+        # TODO: maybe np.exp and then cliping and logodds?
         data = np.clip(data, 1e-7, 1 - 1e-7)
         data = np.log(data / (1 - data))
 
@@ -238,8 +238,7 @@ class StandardScaler(LAMLTransformer):
     _fname_prefix = 'scaler'
 
     def fit(self, dataset: NumpyTransformable):
-        """
-        Estimate means and stds.
+        """Estimate means and stds.
 
         Args:
             dataset: Pandas or Numpy dataset of categorical features.
@@ -264,8 +263,7 @@ class StandardScaler(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
-        Scale test data.
+        """Scale test data.
 
         Args:
             dataset: Pandas or Numpy dataset of numeric features.
@@ -292,28 +290,30 @@ class StandardScaler(LAMLTransformer):
 
 @record_history(enabled=False)
 class QuantileBinning(LAMLTransformer):
+    """
+    Discretization of numeric features by quantiles
+    """
     _fit_checks = (numeric_check,)
     _transform_checks = ()
     _fname_prefix = 'qntl'
 
     def __init__(self, nbins: int = 10):
         """
-        Create quantile binner
 
         Args:
             nbins: maximum number of bins
+
         """
         self.nbins = nbins
 
     def fit(self, dataset: NumpyTransformable):
-        """
-        Estimate means and stds
+        """Estimate bins borders
 
         Args:
             dataset: Pandas or Numpy dataset of numeric features
 
         Returns:
-
+            self.
         """
         # set transformer names and add checks
         super().fit(dataset)
@@ -336,8 +336,7 @@ class QuantileBinning(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """
-        Scale test data
+        """Apply bin borders
 
         Args:
             dataset: Pandas or Numpy dataset of numeric features

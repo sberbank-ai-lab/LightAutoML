@@ -1,3 +1,7 @@
+"""
+ML utils
+"""
+
 from typing import Tuple, Optional
 
 from log_calls import record_history
@@ -12,19 +16,19 @@ from ..validation.base import TrainValidIterator
 def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
                          train_valid: TrainValidIterator,
                          force_calc: bool = True) -> Tuple[Optional[MLAlgo], Optional[LAMLDataset]]:
-    """
-    Tune new algo, fit on data and return algo and preds.
+    """Tune new algorithm, fit on data and return algo and predictions.
 
     Args:
         ml_algo: ML algorithm that will be tuned.
         params_tuner: tuner object.
         train_valid: classic cv iterator.
-        force_calc: flag if single fold of ml_algo should be calculated anyway
+        force_calc: flag if single fold of ml_algo should be calculated anyway.
 
     Returns:
         Tuple (BestMlAlgo, predictions).
 
     """
+
     timer = ml_algo.timer
     timer.start()
     single_fold_time = timer.estimate_folds_time(1)

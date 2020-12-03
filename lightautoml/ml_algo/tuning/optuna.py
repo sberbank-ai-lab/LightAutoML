@@ -8,25 +8,34 @@ from log_calls import record_history
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.ml_algo.tuning.base import ParamsTuner
+from lightautoml.utils.logging import get_logger
 from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
+
+logger = get_logger(__name__)
+optuna.logging.enable_propagation()
+optuna.logging.disable_default_handler()
+optuna.logging.set_verbosity(optuna.logging.ERROR)
 
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
 
 @record_history(enabled=False)
 class OptunaTunableMixin(ABC):
+
     mean_trial_time: float = None
 
     @abstractmethod
     def sample_params_values(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
         """
+        Sample hyperparameters from suggested.
+
         Args:
             trial: optuna trial object.
             suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimation.
+            estimated_n_trials: maximum number of hyperparameter estimations.
 
         Returns:
-            dict with hyperparameters and their search.
+            dict with sampled hyperparameters.
 
         """
 
@@ -36,7 +45,7 @@ class OptunaTunableMixin(ABC):
     ) -> dict:
         """
         Args:
-            estimated_n_trials: maximum number of hyperparameter estiamtion.
+            estimated_n_trials: maximum number of hyperparameter estimations.
             trial: optuna trial object.
             train_valid_iterator: iterator used for getting parameters depending on dataset.
 
@@ -48,12 +57,11 @@ class OptunaTunableMixin(ABC):
             suggested_params=self.init_params_on_input(train_valid_iterator)
         )
 
-    def get_objective(
-            self: TunableAlgo, estimated_n_trials: int, train_valid_iterator: TrainValidIterator) -> \
+    def get_objective(self: TunableAlgo, estimated_n_trials: int, train_valid_iterator: TrainValidIterator) -> \
             Callable[[optuna.trial.Trial], Union[float, int]]:
         """
         Args:
-            estimated_n_trials: maximum number of hyperparameter estiamtion.
+            estimated_n_trials: maximum number of hyperparameter estimations.
             train_valid_iterator: used for getting parameters depending on dataset.
 
         Returns:
@@ -69,6 +77,7 @@ class OptunaTunableMixin(ABC):
                 train_valid_iterator=train_valid_iterator,
                 trial=trial,
             )
+
             output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
 
             return _ml_algo.score(output_dataset)
@@ -79,7 +88,7 @@ class OptunaTunableMixin(ABC):
 @record_history(enabled=False)
 class OptunaTuner(ParamsTuner):
     """
-    Wrapper for compatibility with optuna framework.
+    Wrapper for optuna tuner.
     """
 
     _name: str = 'OptunaTuner'
@@ -94,11 +103,11 @@ class OptunaTuner(ParamsTuner):
     ):
         """
         Args:
-            timeout: maxtime of learning.
+            timeout: maximum learning time.
             n_trials: maximum number of trials.
             direction: direction of optimization. Set ``minimize`` for minimization and ``maximize`` for maximization.
             fit_on_holdout: will be used holdout cv iterator.
-            random_state: seed for oputna sampler.
+            random_state: seed for optuna sampler.
 
         """
 
@@ -129,11 +138,14 @@ class OptunaTuner(ParamsTuner):
 
         """
         assert not ml_algo.is_fitted, 'Fitted algo cannot be tuned.'
+        optuna.logging.set_verbosity(logger.getEffectiveLevel())
         # upd timeout according to ml_algo timer
         estimated_tuning_time = ml_algo.timer.estimate_tuner_time(len(train_valid_iterator))
-        # TODO: Check for minimal runtime!!
+        # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
-        print('Optuna may run {0} secs'.format(estimated_tuning_time))
+
+        logger.info('Optuna may run {0} secs'.format(estimated_tuning_time))
+
         self._upd_timeout(estimated_tuning_time)
         ml_algo = deepcopy(ml_algo)
 

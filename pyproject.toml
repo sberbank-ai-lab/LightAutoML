@@ -1,15 +1,17 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.0"
-description = "Библиотека автоматического построения моделей"
-authors = ["Рыжков Александр <AMRyzhkov@sberbank.ru>",
-           "Вахрушев Антон <AGVakhrushev@sberbank.ru>",
-           "Дамдинов Ринчин <RGDamdinov@sberbank.ru>"]
+version = "0.2.1"
+description = "Fast and customizable framework for automatic ML model creation (AutoML)"
+authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
+           "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
+           "Simakov Dmitrii <Simakov.D.E@sberbank.ru>"]
 readme = "README.md"
 homepage = "https://github.com/sberbank-ai-lab/LightAutoML"
 repository = "https://github.com/sberbank-ai-lab/LightAutoML"
 classifiers = [
+    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Development Status :: 3 - Alpha",
@@ -35,6 +37,31 @@ log-calls = "*"
 pyyaml = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
+catboost = "*"
+json2html = "*"
+jinja2 = "*"
+seaborn = "*"
+
+transformers = '*'
+nltk = '*'
+gensim = '*'
+tqdm = '*'
+
+efficientnet-pytorch = '*'
+albumentations = '*'
+opencv-python = '*'
+joblib = '*'
+pywavelets = '*'
+scikit-image = '*'
+torchvision = '*'
+
+IPython = "*"
+nbsphinx = "*"
+nbsphinx-link = "*"
+sphinx-autodoc-typehints = "*"
+pandoc = "*"
+pytest = "*"
+autowoe = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]

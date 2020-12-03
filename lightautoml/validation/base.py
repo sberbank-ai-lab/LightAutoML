@@ -1,5 +1,9 @@
+"""
+Basic classes for validation iterators
+"""
+
 from copy import copy
-from typing import Optional, Tuple, Iterable, List, Callable, Generator, Any, TypeVar, Iterator, cast
+from typing import Any, Generator, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
 
 from log_calls import record_history
 
@@ -11,28 +15,32 @@ from lightautoml.pipelines.features.base import FeaturesPipeline
 # TODO: SOLVE CYCLIC IMPORT PROBLEM!!! add Selectors typing
 
 Dataset = TypeVar("Dataset", bound=LAMLDataset)
+CustomIdxs = Iterable[Tuple[Sequence, Sequence]]
 
 
 # add checks here
 # check for same columns in dataset
 @record_history(enabled=False)
 class TrainValidIterator:
-    """
-    Abstract class
+    """Abstract class to train/validation iteration
+
     Train/valid iterator - should implement __iter__ and __next__ for using in ml_pipeline
 
     """
 
     @property
     def features(self):
-        """
-        Dataset features names.
+        """Dataset features names.
+
+        Returns:
+            List of features names.
 
         """
         return self.train.features
 
     def __init__(self, train: Dataset, **kwargs: Any):
-        """
+        """Create iterator
+
         Args:
             train: train dataset.
             **kwargs: key-word parameters.
@@ -43,32 +51,19 @@ class TrainValidIterator:
             self.__dict__[k] = kwargs[k]
 
     def __iter__(self) -> Iterable:
-        """
-        Abstract method.
-        Creates iterator.
-
-        """
+        """ Abstract method. Creates iterator."""
         raise NotImplementedError
 
-    def __len__(self) -> int:
-        """
-        Abstract method.
-        Get length of dataset.
-
-        """
+    def __len__(self) -> Optional[int]:
+        """Abstract method. Get length of dataset."""
         raise NotImplementedError
 
     def get_validation_data(self) -> LAMLDataset:
-        """
-        Abstract method.
-        Get validation sample.
-
-        """
+        """Abstract method. Get validation sample."""
         raise NotImplementedError
 
     def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> 'TrainValidIterator':
-        """
-        Fit transform on train data.
+        """Apply features pipeline on train data.
 
         Args:
             features_pipeline: composite transformation of features.
@@ -83,7 +78,8 @@ class TrainValidIterator:
 
     # TODO: add typing
     def apply_selector(self, selector) -> 'TrainValidIterator':
-        """
+        """Select features on train data
+
         Check if selector is fitted.
         If not - fit and then perform selection.
         If fitted, check if it's ok to apply.
@@ -102,23 +98,16 @@ class TrainValidIterator:
         return train_valid
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
-        """
-        Abstract method.
-
-        Convert iterator to HoldoutIterator.
-        """
+        """Abstract method. Convert iterator to HoldoutIterator."""
         raise NotImplementedError
 
 
 @record_history(enabled=False)
 class DummyIterator(TrainValidIterator):
-    """
-    Use train data as validation.
-    """
+    """Simple Iterator which use train data as validation."""
 
     def __init__(self, train: Dataset):
-        """
-        Create iterator. WARNING: validation on train.
+        """Create iterator. WARNING: validation on train.
 
         Args:
             train: train dataset.
@@ -126,19 +115,17 @@ class DummyIterator(TrainValidIterator):
         """
         self.train = train
 
-    def __len__(self):
-        """
-        Get 1 len.
+    def __len__(self) -> Optional[int]:
+        """Get 1 len.
 
         Returns:
-            one.
+            '1'.
 
         """
         return 1
 
     def __iter__(self) -> List[Tuple[None, Dataset, Dataset]]:
-        """
-        Simple iterable object.
+        """Simple iterable object.
 
         Returns:
             iterable object for dataset, where for validation also uses train.
@@ -147,8 +134,7 @@ class DummyIterator(TrainValidIterator):
         return [(None, self.train, self.train)]
 
     def get_validation_data(self) -> Dataset:
-        """
-        Just get validation sample.
+        """Just get validation sample.
 
         Returns:
             Whole train dataset.
@@ -157,21 +143,21 @@ class DummyIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
-        """
-        Convert iterator to HoldoutIterator.
+        """Convert iterator to HoldoutIterator.
+
+        Returns:
+            iterator: holdout iterator with 'train == valid'
+
         """
         return HoldoutIterator(self.train, self.train)
 
 
 @record_history(enabled=False)
 class HoldoutIterator(TrainValidIterator):
-    """
-    Iterator for classic holdout - just predifined train and valid samples.
-    """
+    """Iterator for classic holdout - just predefined train and valid samples."""
 
     def __init__(self, train: LAMLDataset, valid: LAMLDataset):
-        """
-        Create iterator.
+        """Create iterator.
 
         Args:
             train: LAMLDataset of train data
@@ -182,18 +168,16 @@ class HoldoutIterator(TrainValidIterator):
         self.valid = valid
 
     def __len__(self) -> Optional[int]:
-        """
-        Get 1 len.
+        """Get 1 len.
 
         Returns:
-            one.
+            1
 
         """
         return 1
 
     def __iter__(self) -> Iterable[Tuple[None, LAMLDataset, LAMLDataset]]:
-        """
-        Simple iterable object.
+        """Simple iterable object.
 
         Returns:
             iterable object for train validation dataset.
@@ -202,8 +186,7 @@ class HoldoutIterator(TrainValidIterator):
         return iter([(None, self.train, self.valid)])
 
     def get_validation_data(self) -> LAMLDataset:
-        """
-        Just get validation sample.
+        """Just get validation sample.
 
         Returns:
             Whole validation dataset.
@@ -212,8 +195,7 @@ class HoldoutIterator(TrainValidIterator):
         return self.valid
 
     def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> 'HoldoutIterator':
-        """
-        Inplace apply features pipeline to iterator components.
+        """Inplace apply features pipeline to iterator components.
 
         Args:
             features_pipeline: features pipeline to apply.
@@ -228,8 +210,7 @@ class HoldoutIterator(TrainValidIterator):
         return train_valid
 
     def apply_selector(self, selector) -> 'HoldoutIterator':
-        """
-        Same as for basic class, but also apply to validation.
+        """Same as for basic class, but also apply to validation.
 
         Args:
             selector: uses for feature selection.
@@ -244,8 +225,7 @@ class HoldoutIterator(TrainValidIterator):
         return train_valid
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
-        """
-        Do nothing.
+        """Do nothing, just return itself.
 
         Returns:
             self.
@@ -255,15 +235,14 @@ class HoldoutIterator(TrainValidIterator):
 
 
 @record_history(enabled=False)
-class CallableIterator(TrainValidIterator):
-    """
-    Iterator that uses function to create folds indexes.
+class CustomIterator(TrainValidIterator):
+    """Iterator that uses function to create folds indexes.
+
     Usefull for example - classic timeseries splits.
     """
 
-    def __init__(self, train: LAMLDataset, iterator: Callable[[LAMLDataset], Iterator]):
-        """
-        Create iterator.
+    def __init__(self, train: LAMLDataset, iterator: CustomIdxs):
+        """Create iterator.
 
         Args:
             train: LAMLDataset of train data.
@@ -273,31 +252,29 @@ class CallableIterator(TrainValidIterator):
         self.train = train
         self.iterator = iterator
 
-    def __len__(self) -> None:
-        """
-        Empty __len__ method.
+    def __len__(self) -> Optional[int]:
+        """Empty __len__ method.
 
         Returns:
             None.
 
         """
-        return None
+
+        return len(self.iterator)
 
     def __iter__(self) -> Generator:
-        """
-        Create generator of train/valid datasets.
+        """Create generator of train/valid datasets.
 
         Returns:
             data generator.
 
         """
-        generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator(self.train))
+        generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator)
 
         return generator
 
     def get_validation_data(self) -> LAMLDataset:
-        """
-        Simple return train dataset.
+        """Simple return train dataset.
 
         Returns:
             LAMLDataset of train data.
@@ -306,8 +283,13 @@ class CallableIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
+        """Convert iterator to HoldoutIterator.
+
+        Use first train/valid split for HoldoutIterator creation
+
+        Returns:
+            new HoldoutIterator
+
         """
-        Convert iterator to HoldoutIterator.
-        """
-        for (tr_idx, val_idx) in self.iterator(self.train):
+        for (tr_idx, val_idx) in self.iterator:
             return HoldoutIterator(self.train[tr_idx], self.train[val_idx])

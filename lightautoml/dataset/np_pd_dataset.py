@@ -1,4 +1,8 @@
+"""
+Datasets for tabular data
+"""
 from copy import copy  # , deepcopy
+
 from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
 
 import numpy as np
@@ -33,13 +37,12 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 
 @record_history(enabled=False)
 class NumpyDataset(LAMLDataset):
-    """
-    Dataset, that contains info in np.ndarray format.
-    """
+    """Dataset, that contains info in np.ndarray format."""
     # TODO: Checks here
     _init_checks = ()
     _data_checks = ()
     _concat_checks = ()
+    _dataset_type = 'NumpyDataset'
 
     @property
     def features(self) -> List[str]:
@@ -51,16 +54,17 @@ class NumpyDataset(LAMLDataset):
 
     @features.setter
     def features(self, val: Union[Sequence[str], str, None]):
-        """
-        Define how to set features.
+        """Define how to set features.
 
         Args:
-            val: Valid are
+            val: Values of features.
+
+        Note:
+            There is different behavior for different type of val parameter:
+
                 - list, should be same len as data.shape[1]
                 - None - automatic set names like feat_0, feat_1 ...
                 - Prefix - automatic set names like Prefix_0, Prefix_1 ...
-
-        Returns:
 
         """
         if type(val) is list:
@@ -77,14 +81,18 @@ class NumpyDataset(LAMLDataset):
         """
         return copy(self._roles)
 
+
     @roles.setter
     def roles(self, val: NpRoles):
-        """
-        Define how to set roles.
+        """Define how to set roles.
 
         Args:
-            val: valid are
-                - list, should be same len as data.shape[1].
+            val: valid are.
+
+        Note:
+            There is different behavior for different type of val parameter:
+
+                - List, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role for all.
                 - dict.
@@ -99,9 +107,11 @@ class NumpyDataset(LAMLDataset):
             self._roles = dict(((x, role) for x in self.features))
 
     def _check_dtype(self):
-        """
-        Check if dtype in .set_data is ok and cast if not
-        Returns:
+        """Check if dtype in .set_data is ok and cast if not
+
+
+        Raises:
+            AttributeError: if there is non-numeric type in dataset.
 
         """
         #dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
@@ -111,50 +121,59 @@ class NumpyDataset(LAMLDataset):
         for f in self.roles:
             self._roles[f].dtype = self.dtype
 
-        assert np.issubdtype(self.dtype, np.number), 'Suppor only numeric types in numpy dataset'
+        assert np.issubdtype(self.dtype, np.number), 'Support only numeric types in numpy dataset.'
 
         if self.data.dtype != self.dtype:
             self.data = self.data.astype(self.dtype)
 
     def __init__(self, data: Optional[DenseSparseArray], features: NpFeatures = (), roles: NpRoles = None,
                  task: Optional[Task] = None, **kwargs: np.ndarray):
-        """
-        Create dataset from numpy arrays.
+        """Create dataset from numpy arrays.
 
         Args:
-            data: 2d np.ndarray of features.
-            features: features names. Valid are:
+            data: 2d array of features.
+            features: Features names.
+            roles: Roles specifier.
+            task: Task specifier.
+            **kwargs: np.ndarray. Named attributes like target, group etc ..
+
+        Note:
+            For different type of parameter feature there is different behavior:
 
                 - list, should be same len as data.shape[1]
                 - None - automatic set names like feat_0, feat_1 ...
                 - Prefix - automatic set names like Prefix_0, Prefix_1 ...
-            roles: valid are:
 
-                - list, should be same len as data.shape[1].
+            For different type of parameter feature there is different behavior:
+
+                 - list, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
-            task: Task for dataset if train/valid
-            **kwargs: np.ndarray. Named attributes like target, group etc ..
+
         """
         self._initialize(task, **kwargs)
         if data is not None:
             self.set_data(data, features, roles)
 
     def set_data(self, data: DenseSparseArray, features: NpFeatures = (), roles: NpRoles = None):
-        """
-        Inplace set data, features, roles for empty dataset.
+        """Inplace set data, features, roles for empty dataset.
 
         Args:
             data: 2d np.ndarray of features.
-            features: features names. Valid are:
+            features: features names.
+            roles: Roles specifier.
 
-                - list, should be same len as data.shape[1].
-                - `None` - automatic set names like feat_0, feat_1 ...
+        Note:
+            For different type of parameter feature there is different behavior:
+
+                - List, should be same len as data.shape[1]
+                - None - automatic set names like feat_0, feat_1 ...
                 - Prefix - automatic set names like Prefix_0, Prefix_1 ...
-            roles: valid are:
 
-                - list, should be same len as data.shape[1].
+            For different type of parameter feature there is different behavior:
+
+                - List, should be same len as data.shape[1].
                 - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
@@ -166,59 +185,55 @@ class NumpyDataset(LAMLDataset):
 
     @staticmethod
     def _hstack(datasets: Sequence[np.ndarray]) -> np.ndarray:
-        """
-        Concatenate function for numpy arrays.
+        """Concatenate function for numpy arrays.
 
         Args:
-            datasets: sequence of np.ndarray.
+            datasets: Sequence of np.ndarray.
 
         Returns:
-            stacked features array.
+            Stacked features array.
 
         """
         return np.hstack(datasets)
 
     @staticmethod
     def _get_rows(data: np.ndarray, k: IntIdx) -> np.ndarray:
-        """
-        Get rows slice for numpy ndarray.
+        """Get rows slice for numpy ndarray.
 
         Args:
-            data: `np.ndarray`.
-            k: sequence of integer indexes.
+            data: Data.
+            k: Sequence of integer indexes.
 
         Returns:
-            resulting np.ndarray.
+            Rows slice.
 
         """
         return data[k]
 
     @staticmethod
     def _get_cols(data: np.ndarray, k: IntIdx) -> np.ndarray:
-        """
-        Get cols slice for numpy ndarray.
+        """Get cols slice.
 
         Args:
-            data: `np.ndarray`.
-            k: sequence of integer indexes.
+            data: Data.
+            k: Sequence of integer indexes.
 
         Returns:
-            resulting `np.ndarray`.
+            Cols slice.
 
         """
         return data[:, k]
 
     @classmethod
     def _get_2d(cls, data: np.ndarray, k: Tuple[IntIdx, IntIdx]) -> np.ndarray:
-        """
-        `np.ndarray` 2d slice.
+        """Get 2d slice.
 
         Args:
-            data: `np.ndarray`.
-            k: tuple of integer sequences.
+            data: Data.
+            k: Tuple of integer sequences.
 
         Returns:
-            `np.ndarray`.
+            2d slice.
 
         """
         rows, cols = k
@@ -227,16 +242,12 @@ class NumpyDataset(LAMLDataset):
 
     @staticmethod
     def _set_col(data: np.ndarray, k: int, val: np.ndarray):
-        """
-        Inplace set colums to numpy ndarray.
+        """Inplace set columns.
 
         Args:
-            data: `np.ndarray`.
-            k: `int` index.
-            val: `np.ndarray`.
-
-        Returns:
-            np.ndarray.
+            data: Data.
+            k: Index of column.
+            val: Values to set.
 
         """
         data[:, k] = val
@@ -246,7 +257,8 @@ class NumpyDataset(LAMLDataset):
         Empty method to convert to numpy.
 
         Returns:
-            Same NumpyDataset
+            Same NumpyDataset.
+
         """
         return self
 
@@ -270,8 +282,7 @@ class NumpyDataset(LAMLDataset):
         return CSRSparseDataset(data, features, roles, task, **params)
 
     def to_pandas(self) -> 'PandasDataset':
-        """
-        Convert to PandasDataset.
+        """Convert to PandasDataset.
 
         Returns:
             same dataset in PandasDataset format.
@@ -288,8 +299,7 @@ class NumpyDataset(LAMLDataset):
 
     @staticmethod
     def from_dataset(dataset: Dataset) -> 'NumpyDataset':
-        """
-        Convert random dataset to numpy.
+        """Convert random dataset to numpy.
 
         Returns:
             numpy dataset.
@@ -300,12 +310,11 @@ class NumpyDataset(LAMLDataset):
 
 @record_history(enabled=False)
 class CSRSparseDataset(NumpyDataset):
-    """
-    Dataset that contains sparse features and np.ndarray targets
-    """
+    """Dataset that contains sparse features and np.ndarray targets"""
     _init_checks = ()
     _data_checks = ()
     _concat_checks = ()
+    _dataset_type = 'CSRSparseDataset'
 
     @staticmethod
     def _get_cols(data: Any, k: Any):
@@ -322,8 +331,7 @@ class CSRSparseDataset(NumpyDataset):
         raise NotImplementedError
 
     def to_numpy(self) -> 'NumpyDataset':
-        """
-        Convert to NumpyDataset.
+        """Convert to NumpyDataset.
 
         Returns:
             NumpyDataset.
@@ -341,8 +349,7 @@ class CSRSparseDataset(NumpyDataset):
 
     @property
     def shape(self) -> Tuple[Optional[int], Optional[int]]:
-        """
-        Get size of 2d feature matrix.
+        """Get size of 2d feature matrix.
 
         Returns:
             tuple of 2 elements.
@@ -357,8 +364,7 @@ class CSRSparseDataset(NumpyDataset):
 
     @staticmethod
     def _hstack(datasets: Sequence[Union[sparse.csr_matrix, np.ndarray]]) -> sparse.csr_matrix:
-        """
-        Concatenate function for sparse and numpy arrays.
+        """Concatenate function for sparse and numpy arrays.
 
         Args:
             datasets: sequence of csr_matrix or np.ndarray
@@ -371,24 +377,28 @@ class CSRSparseDataset(NumpyDataset):
 
     def __init__(self, data: Optional[DenseSparseArray], features: NpFeatures = (), roles: NpRoles = None,
                  task: Optional[Task] = None, **kwargs: np.ndarray):
-        """
-        Create dataset from csr_matrix.
+        """Create dataset from csr_matrix.
 
         Args:
             data: csr_matrix of features.
-            features: features names. Valid are:
+            features: features names.
+            roles: Roles specifier.
+            task: Task specifier.
+            **kwargs: Named attributes like target, group etc ..
 
-                - list, should be same len as data.shape[1].
-                - `None` - automatic set names like feat_0, feat_1 ...
+        Note:
+            For different type of parameter feature there is different behavior:
+
+                - list, should be same len as data.shape[1]
+                - None - automatic set names like feat_0, feat_1 ...
                 - Prefix - automatic set names like Prefix_0, Prefix_1 ...
-            roles: valid are
 
-                - list, should be same len as data.shape[1].
-                - None - automatic set NumericRole(`np.float32`).
+            For different type of parameter feature there is different behavior:
+
+                 - list, should be same len as data.shape[1].
+                - None - automatic set NumericRole(np.float32).
                 - ColumnRole - single role.
                 - dict.
-            task: str task name.
-            **kwargs: `np.ndarray`. Named attributes like target, group etc ...
 
         """
         self._initialize(task, **kwargs)
@@ -396,21 +406,25 @@ class CSRSparseDataset(NumpyDataset):
             self.set_data(data, features, roles)
 
     def set_data(self, data: DenseSparseArray, features: NpFeatures = (), roles: NpRoles = None):
-        """
-        Inplace set data, features, roles for empty dataset.
+        """Inplace set data, features, roles for empty dataset.
 
         Args:
             data: csr_matrix of features.
-            features: features names. Valid are:
+            features: features names.
+            roles: Roles specifier.
 
-                - list, should be same len as data.shape[1].
-                - `None` - automatic set names like feat_0, feat_1 ...
+        Note:
+            For different type of parameter feature there is different behavior:
+
+                - list, should be same len as data.shape[1]
+                - None - automatic set names like feat_0, feat_1 ...
                 - Prefix - automatic set names like Prefix_0, Prefix_1 ...
-            roles: valid are
 
-                - list, should be same len as data.shape[1].
-                - `None` - automatic set NumericRole(`np.float32`)
-                - `ColumnRole` - single role.
+            For different type of parameter feature there is different behavior:
+
+                 - list, should be same len as data.shape[1].
+                - None - automatic set NumericRole(np.float32).
+                - ColumnRole - single role.
                 - dict.
 
         """
@@ -420,11 +434,10 @@ class CSRSparseDataset(NumpyDataset):
 
     @staticmethod
     def from_dataset(dataset: Dataset) -> 'CSRSparseDataset':
-        """
-        Convert random dataset to sparse dataset.
+        """Convert dataset to sparse dataset.
 
         Returns:
-            csr sparse dataset.
+            Dataset in sparse form.
 
         """
         return dataset.to_csr()
@@ -432,17 +445,16 @@ class CSRSparseDataset(NumpyDataset):
 
 @record_history(enabled=False)
 class PandasDataset(LAMLDataset):
-    """
-    Dataset that contains `pd.DataFrame` features and `pd.Series` targets.
+    """Dataset that contains `pd.DataFrame` features and `pd.Series` targets.
     """
     _init_checks = ()
     _data_checks = ()
     _concat_checks = ()
+    _dataset_type = 'PandasDataset'
 
     @property
     def features(self) -> List[str]:
-        """
-        Get list of features.
+        """Get list of features.
 
         Returns:
             list of features.
@@ -452,8 +464,7 @@ class PandasDataset(LAMLDataset):
 
     @features.setter
     def features(self, val: None):
-        """
-        Ignore setting features.
+        """Ignore setting features.
 
         Args:
             val: ignored.
@@ -463,14 +474,14 @@ class PandasDataset(LAMLDataset):
 
     def __init__(self, data: Optional[DataFrame] = None, roles: Optional[RolesDict] = None, task: Optional[Task] = None,
                  **kwargs: Series):
-        """
-        Create dataset from `pd.DataFrame` and `pd.Series`.
+        """Create dataset from `pd.DataFrame` and `pd.Series`.
 
         Args:
-            data: `pd.DataFrame` or `None` - features.
-            roles: `dict` of features roles.
-            task: `Task` for dataset if train/valid.
-            **kwargs: Series, array like attrs target, group etc..
+            data: Table with features.
+            features: features names.
+            roles: Roles specifier.
+            task: Task specifier.
+            **kwargs: Series, array like attrs target, group etc...
 
         """
         if roles is None:
@@ -487,8 +498,7 @@ class PandasDataset(LAMLDataset):
             self.set_data(data, None, roles)
 
     def _get_cols_idx(self, columns: Union[Sequence[str], str]) -> Union[Sequence[int], int]:
-        """
-        Get numeric index of columns by column names.
+        """Get numeric index of columns by column names.
 
         Args:
             columns: sequence of columns of single column.
@@ -506,22 +516,19 @@ class PandasDataset(LAMLDataset):
         return idx
 
     def set_data(self, data: DataFrame, features: None, roles: RolesDict):
-        """
-        Inplace set data, features, roles for empty dataset.
+        """Inplace set data, features, roles for empty dataset.
 
         Args:
-            data: features `pd.DataFrame`.
+            data: Table with features.
             features: `None`, just for same interface.
-            roles: dict of features roles.
+            roles: Dict with roles.
 
         """
         super().set_data(data, features, roles)
         self._check_dtype()
 
     def _check_dtype(self):
-        """
-        Check if dtype in .set_data is ok and cast if not.
-        """
+        """Check if dtype in .set_data is ok and cast if not."""
         date_columns = []
 
         self.dtypes = {}
@@ -549,58 +556,56 @@ class PandasDataset(LAMLDataset):
 
     @staticmethod
     def _hstack(datasets: Sequence[DataFrame]) -> DataFrame:
-        """
-        Define how to concat features arrays.
+        """Define how to concat features arrays.
 
         Args:
-            datasets: sequence of `pd.DataFrame`
+            datasets: Sequence of tables.
 
         Returns:
-            concatenated `pd.DataFrame`.
+            concatenated table.
 
         """
         return pd.concat(datasets, axis=1)
 
     @staticmethod
     def _get_rows(data: DataFrame, k: IntIdx) -> FrameOrSeries:
-        """
-        Define how to get rows slice.
+        """Define how to get rows slice.
 
         Args:
-            data: `pd.DataFrame`
-            k: sequence of `int` indexes or `int`.
+            data: Table with data.
+            k: Sequence of `int` indexes or `int`.
 
         Returns:
-            `pd.DataFrame`.
+            Sliced rows.
 
         """
         return data.iloc[k]
 
     @staticmethod
     def _get_cols(data: DataFrame, k: IntIdx) -> FrameOrSeries:
-        """
-        Define how to get cols slice.
+        """Define how to get cols slice.
 
         Args:
-            data: `pd.DataFrame`
-            k: sequence of `int` indexes or `int`
+            data: Table with data.
+            k: Sequence of `int` indexes or `int`
 
         Returns:
-           `pd.DataFrame`.
+           Sliced cols.
+
         """
         return data.iloc[:, k]
 
     @classmethod
     def _get_2d(cls, data: DataFrame, k: Tuple[IntIdx, IntIdx]) -> FrameOrSeries:
-        """
-        Define 2d slice of `pd.DataFrame`.
+        """Define 2d slice of table.
 
         Args:
-            data: `pd.DataFrame`.
-            k: sequence of `int` indexes or `int`.
+            data: Table with data.
+            k: Sequence of `int` indexes or `int`.
 
         Returns:
-            `pd.DataFrame`.
+            2d sliced table.
+
         """
         rows, cols = k
 
@@ -608,23 +613,21 @@ class PandasDataset(LAMLDataset):
 
     @staticmethod
     def _set_col(data: DataFrame, k: int, val: Union[Series, np.ndarray]):
-        """
-        Inplace set column value to `pd.DataFrame`.
+        """Inplace set column value to `pd.DataFrame`.
 
         Args:
-            data: `pd.DataFrame`.
-            k: `int`.
-            val: Series or 1d np.ndarray.
+            data: Table with data.
+            k: Column index.
+            val: Values to set.
 
         """
         data.iloc[:, k] = val
 
     def to_numpy(self) -> 'NumpyDataset':
-        """
-        Convert to class:`NumpyDataset`.
+        """Convert to class:`NumpyDataset`.
 
         Returns:
-            same dataset in class:`NumpyDataset` format.
+            Same dataset in class:`NumpyDataset` format.
 
         """
         # check for empty
@@ -638,22 +641,29 @@ class PandasDataset(LAMLDataset):
         return NumpyDataset(data, features, roles, task, **params)
 
     def to_pandas(self) -> 'PandasDataset':
-        """
-        Empty method, return the same object.
+        """Empty method, return the same object.
 
         Returns:
-            same class:`PandasDataset`.
+            Same class:`PandasDataset`.
 
         """
         return self
 
     @staticmethod
     def from_dataset(dataset: Dataset) -> 'PandasDataset':
-        """
-        Convert random dataset to pandas dataset.
+        """Convert random dataset to pandas dataset.
 
         Returns:
-            pandas dataset.
+            Converted to pandas dataset.
 
         """
         return dataset.to_pandas()
+
+    def nan_rate(self):
+        """Counts overall number of nans in dataset
+
+        Returns:
+            Number of nans.
+
+        """
+        return (len(self.data) - self.data.count()).sum()

@@ -1,3 +1,7 @@
+"""
+Pipeline utils
+"""
+
 from typing import Sequence, List, Optional, Any
 
 from log_calls import record_history
@@ -26,7 +30,6 @@ def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) 
     s_in = set(input_names)
 
     for n, name in enumerate(output_names):
-
         splitted = name.split('__')
 
         for i in range(len(splitted)):
@@ -48,7 +51,7 @@ def get_columns_by_role(dataset: LAMLDataset, role_name: str, **kwargs: Any) -> 
     Args:
         dataset: LAMLDataset to search.
         role_name: str name of features role.
-        **kwargs: specific parameters values to search. Example: search for categories with ohe processinng only.
+        **kwargs: specific parameters values to search. Example: search for categories with ohe processing only.
 
     Returns:
         list of str features names.

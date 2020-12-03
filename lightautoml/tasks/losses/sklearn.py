@@ -1,10 +1,12 @@
-import warnings
 from typing import Callable, Optional, Dict, Union
 
 import numpy as np
 from log_calls import record_history
 
 from .base import Loss
+from ...utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @record_history(enabled=False)
@@ -74,6 +76,6 @@ class SKLoss(Loss):
         """
         if self.loss in _sk_force_metric:
             metric, greater_is_better, metric_params = _sk_force_metric[self.loss]
-            warnings.warn('For sklearn {0} callback metric switched to {1}'.format(self.loss, metric), UserWarning)
+            logger.warning('For sklearn {0} callback metric switched to {1}'.format(self.loss, metric))
 
         super().set_callback_metric(metric, greater_is_better, metric_params)

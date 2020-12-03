@@ -1,3 +1,7 @@
+"""
+Pipeline for tree based models
+"""
+
 from typing import Optional, Union
 
 import numpy as np
@@ -18,12 +22,15 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 @record_history(enabled=False)
 class LGBSimpleFeatures(FeaturesPipeline):
+    """
+    Creates simple pipeline for tree based models.
+    Simple but is ok for select features
+    Numeric stay as is, Datetime transforms to numeric, Categorical label encoding
+    Maps input to output features exactly one-to-one
+    """
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
-        """
-        Create simple pipeline.
-        Simple but is ok for select features
-        Numeric stay as is, Datetime transforms to numeric, Categorical label encoding
+        """Create tree pipeline
 
         Args:
             train: LAMLDataset with train features
@@ -74,20 +81,27 @@ class LGBSimpleFeatures(FeaturesPipeline):
 
 
 @record_history(enabled=False)
-class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
+class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
+    """
+    Create advanced pipeline for trees based models
+    Includes:
+        - different cats and numbers handling according to role params
+        - dates handling - extracting seasons and create datediffs
+        - create categorical intersections
+    """
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
                  max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None, multiclass_te_co: int = 3,
-                 auto_unique_co: int = 10, output_categories: bool = False):
+                 auto_unique_co: int = 10, output_categories: bool = False, **kwargs):
         """
 
         Args:
-            feats_imp:
-            top_intersections:
-            max_intersection_depth:
-            subsample:
-            multiclass_te_co:
-            auto_unique_co:
+            feats_imp: features importances mapping
+            top_intersections: max number of categories to generate intersections
+            max_intersection_depth: max depth of cat intersection
+            subsample: subsample: subsample to calc data statistics
+            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high
+            auto_unique_co: switch to target encoding if high cardinality
         """
         super().__init__(multiclass_te_co=multiclass_te_co,
                          top_intersections=top_intersections,
@@ -100,11 +114,10 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
                          )
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
-        """
-        Create tree pipeline
+        """Create tree pipeline
 
         Args:
-            train:
+            train: LAMLDataset with train features
 
         Returns:
 
@@ -113,7 +126,7 @@ class LGBAdvancedPipeline(TabularDataFeatures, FeaturesPipeline):
         transformer_list = []
         target_encoder = self.get_target_encoder(train)
 
-        output_category_role = CategoryRole(np.float32) if self.output_categories else NumericRole(np.float32)
+        output_category_role = CategoryRole(np.float32, label_encoded=True) if self.output_categories else NumericRole(np.float32)
 
         # handle categorical feats
         # split categories by handling type. This pipe use 3 encodings - freq/label/target/ordinal

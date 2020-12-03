@@ -1,3 +1,8 @@
+"""
+LightGBM wrapper
+"""
+
+import logging
 from copy import copy
 from typing import Optional, Callable, Tuple, Dict
 
@@ -10,13 +15,26 @@ from pandas import Series
 from .base import TabularMLAlgo, TabularDataset
 from .tuning.optuna import OptunaTunableMixin
 from ..pipelines.selection.base import ImportanceEstimator
+from ..utils.logging import get_logger
 from ..validation.base import TrainValidIterator
+
+logger = get_logger(__name__)
 
 
 @record_history(enabled=False)
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
-    """
-    Boosting lgbm.
+    """Gradient boosting on decision trees from LightGBM library.
+
+    Parameters
+    ----------
+    default_params:
+        all available parameters listed in lightgbm documentation:
+        https://lightgbm.readthedocs.io/en/latest/Parameters.html
+    freeze_defaults:
+        - ``True`` :  params may be rewrited depending on dataset.
+        - ``False``:  params may be changed only manually or with tuning.
+    timer: Timer instance or None
+
     """
     _name: str = 'LightGBM'
 
@@ -24,28 +42,25 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         'task': 'train',
         "learning_rate": 0.05,
         "num_leaves": 128,
-        "feature_fraction": 0.70,
-        "bagging_fraction": 0.70,
+        "feature_fraction": 0.7,
+        "bagging_fraction": 0.7,
         'bagging_freq': 1,
         "max_depth": -1,
         "verbosity": -1,
         "reg_alpha": 1,
         "reg_lambda": 0.0,
         "min_split_gain": 0.0,
-        "min_child_weight": 0,
         'zero_as_missing': False,
-        'num_threads': 8,
+        'num_threads': 4,
         'max_bin': 255,
         'min_data_in_bin': 3,
-        'verbose_eval': 100,
         'num_trees': 3000,
         'early_stopping_rounds': 100,
         'random_state': 42
     }
 
     def _infer_params(self) -> Tuple[dict, int, int, int, Optional[Callable], Optional[Callable]]:
-        """
-        Infer all parameters in lightgbm format.
+        """Infer all parameters in lightgbm format.
 
         Returns:
             Tuple (params, num_trees, early_stopping_rounds, verbose_eval, fobj, feval).
@@ -56,7 +71,16 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         params = copy(self.params)
         early_stopping_rounds = params.pop('early_stopping_rounds')
         num_trees = params.pop('num_trees')
-        verbose_eval = params.pop('verbose_eval')
+
+        root_logger = logging.getLogger()
+        level = root_logger.getEffectiveLevel()
+
+        if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
+            verbose_eval = False
+        elif level == logging.INFO:
+            verbose_eval = 100
+        else:
+            verbose_eval = 10
 
         # get objective params
         loss = self.task.losses['lgb']
@@ -74,8 +98,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return params, num_trees, early_stopping_rounds, verbose_eval, fobj, feval
 
     def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
-        """
-        Get model parameters depending on dataset parameters.
+        """Get model parameters depending on dataset parameters.
 
         Args:
             train_valid_iterator: classic cv iterator.
@@ -154,17 +177,19 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return suggested_params
 
     def sample_params_values(self, trial: Trial, suggested_params: Dict, estimated_n_trials: int) -> Dict:
-        """
-        Lightgbm parameter tuning.
+        """Sample hyperparameters from suggested.
 
         Args:
             trial: optuna trial object.
             suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimation.
+            estimated_n_trials: maximum number of hyperparameter estimations.
 
         Returns:
-            dict with hyperparameters (some of them will be tuned).
+            dict with sampled hyperparameters.
+
         """
+        logger.debug('Suggested parameters:')
+        logger.debug(suggested_params)
 
         trial_values = copy(suggested_params)
 
@@ -208,8 +233,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return trial_values
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[lgb.Booster, np.ndarray]:
-        """
-        Implements training and prediction on single fold.
+        """Implements training and prediction on single fold.
 
         Args:
             train: NumpyDataset to train.
@@ -219,6 +243,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             Tuple (model, predicted_values)
 
         """
+
         params, num_trees, early_stopping_rounds, verbose_eval, fobj, feval = self._infer_params()
 
         train_target, train_weight = self.task.losses['lgb'].fw_func(train.target, train.weights)
@@ -236,11 +261,10 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return model, val_pred
 
     def predict_single_fold(self, model: lgb.Booster, dataset: TabularDataset) -> np.ndarray:
-        """
-        Get predict of target values for dataset.
+        """Predict target values for dataset.
 
         Args:
-            model: Lightgbm booster object.
+            model: Lightgbm object.
             dataset: test dataset.
 
         Return:
@@ -252,10 +276,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return pred
 
     def get_features_score(self) -> Series:
-        """
-        Computes feature importance.
-
-        Computes as mean values of feature importance, provided by lightgbm, per all models.
+        """Computes feature importance as mean values of feature importance provided by lightgbm per all models.
 
         Returns:
             Series with feature importances.
@@ -271,8 +292,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return Series(imp, index=self.features).sort_values(ascending=False)
 
     def fit(self, train_valid: TrainValidIterator):
-        """
-        Just to be compatible with ImportanceEstomator.
+        """Just to be compatible with ImportanceEstimator.
 
         Args:
             train_valid: classic cv iterator.

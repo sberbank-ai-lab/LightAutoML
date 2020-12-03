@@ -1,36 +1,43 @@
+"""
+Nested MLPipeline
+"""
+
 from copy import copy, deepcopy
-from log_calls import record_history
+from typing import Optional, Tuple, Any, Union, Sequence
+
 import numpy as np
 import optuna
 import pandas as pd
+from log_calls import record_history
 from pandas import Series
-from typing import Optional, Tuple, Any, Union, Sequence
 
 from .base import MLPipeline
 from ..features.base import FeaturesPipeline
 from ..selection.base import SelectionPipeline
 from ..selection.importance_based import ImportanceEstimator
 from ...dataset.np_pd_dataset import NumpyDataset
-from ...ml_algo.base import TabularMLAlgo, TabularDataset
+from ...ml_algo.base import TabularMLAlgo, TabularDataset, PandasDataset
 from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
 from ...ml_algo.tuning.optuna import OptunaTunableMixin
 from ...ml_algo.utils import tune_and_fit_predict
 from ...reader.utils import set_sklearn_folds
+from ...utils.logging import get_logger
+from ...utils.timer import PipelineTimer
 from ...validation.base import TrainValidIterator
 from ...validation.utils import create_validation_iterator
-from ...utils.timer import PipelineTimer
+
+logger = get_logger(__name__)
 
 
 @record_history(enabled=False)
 class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
+    """
+    Wrapper for MLAlgo to make it trainable over nested folds
+    Limitations - only for TabularMLAlgo
+    """
 
     @property
     def params(self) -> dict:
-        """
-
-        Returns:
-
-        """
         if self._ml_algo._params is None:
             self._ml_algo._params = copy(self.default_params)
         return self._ml_algo._params
@@ -42,8 +49,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
         self._params = self._ml_algo.params
 
     def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
-        """
-        Init params depending on input data.
+        """Init params depending on input data.
 
         Returns:
             dict with model hyperparameters.
@@ -81,8 +87,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
         return super().fit_predict(train_valid_iterator)
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
-        """
-        Implements training and prediction on single fold.
+        """Implements training and prediction on single fold.
 
         Args:
             train: TabularDataset to train.
@@ -92,27 +97,32 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
             Tuple (model, predicted_values)
 
         """
-        print('HERE GOES NESTED ALGO.............')
-        train.folds = set_sklearn_folds(train.task, train.target, self.nested_cv, random_state=42, group=train.group)
+        logger.info('Start fit_predict for nested model on a single fold ...')
+        # TODO: rewrite
+        if isinstance(train, PandasDataset):
+            train.folds = pd.Series(
+                set_sklearn_folds(train.task, train.target, self.nested_cv, random_state=42, group=train.group))
+        else:
+            train.folds = set_sklearn_folds(train.task, train.target, self.nested_cv, random_state=42, group=train.group)
 
         train_valid = create_validation_iterator(train, n_folds=self.n_folds)
 
         model = deepcopy(self._ml_algo)
         model.set_timer(PipelineTimer(timeout=self._per_task_timer, overhead=0).start().get_task_timer())
-        print(self._ml_algo.params)
+        logger.debug(self._ml_algo.params)
         tuner = self._params_tuner
         if self._refit_tuner:
             tuner = deepcopy(tuner)
 
         if tuner is None:
-            print('a')
+            logger.debug('Run without tuner')
             model.fit_predict(train_valid)
         else:
-            print('b')
+            logger.debug('Run with tuner')
             model, _, = tune_and_fit_predict(model, tuner, train_valid, True)
 
         val_pred = model.predict(valid).data
-        print('Model params', model.params)
+        logger.debug('Model params', model.params)
         return model, val_pred
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:
@@ -129,8 +139,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
         return scores
 
     def fit(self, train_valid: TrainValidIterator):
-        """
-        Just to be compatible with ImportanceEstomator.
+        """Just to be compatible with ImportanceEstomator.
 
         Args:
             train_valid: classic cv iterator.
@@ -141,6 +150,12 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
 
 @record_history(enabled=False)
 class NestedTabularMLPipeline(MLPipeline):
+    """
+    Wrapper for MLPipeline to make it trainable over nested folds
+    Limitations:
+        - only for TabularMLAlgo
+        - nested trained only MLAlgo. FeaturesPipelines and SelectionPipelines are trained as usual
+    """
 
     def __init__(self, ml_algos: Sequence[Union[TabularMLAlgo, Tuple[TabularMLAlgo, ParamsTuner]]],
                  force_calc: Union[bool, Sequence[bool]] = True,
@@ -151,13 +166,12 @@ class NestedTabularMLPipeline(MLPipeline):
                  inner_tune: bool = False, refit_tuner: bool = False):
         """
 
-
         Args:
-            ml_algos:
-            force_calc:
-            pre_selection:
-            features_pipeline:
-            post_selection:
+            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner)
+            force_calc: flag if single fold of ml_algo should be calculated anyway
+            pre_selection: initial feature selection. If ``None`` there is no initial selection.
+            features_pipeline: composition of feature transforms.
+            post_selection: post feature selection. If ``None`` there is no post selection.
             cv: nested folds cv split
             n_folds: limit of valid iterations from cv
             inner_tune: should we refit tuner each inner cv run or tune ones on outer cv

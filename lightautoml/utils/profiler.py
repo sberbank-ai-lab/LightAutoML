@@ -1,9 +1,17 @@
+"""
+Profiler
+"""
+
 import inspect
 import types
 from typing import Optional
 
 import networkx as nx
 import pandas as pd
+
+from .logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_last_element(x): return x[-1]
@@ -13,9 +21,7 @@ def get_string(x): return x.__module__ + '.' + x.__qualname__
 
 
 class Profiler:
-    """
-    AutoML algorithm statistics profiler.
-    """
+    """AutoML algorithm statistics profiler"""
 
     _DROP_FUNCS = ['get_record_history_wrapper',
                    '__repr__', '__hash__', '__eq__']
@@ -98,9 +104,11 @@ class Profiler:
                         'CC3700', 'CC3300']
 
     def __init__(self, drop_funcs: Optional[list] = None, ):
-        """
+        """Profiler init function
+
         Args:
             drop_funcs: function names that will not be inspected.
+
         """
 
         self.queue = []
@@ -115,6 +123,7 @@ class Profiler:
         self._get_all_funcs()
 
     def _get_all_funcs(self):
+        """Get all funcs of lightautoml module to gather its statistics"""
         queue = [__import__('lightautoml')]
 
         modules = set()
@@ -155,15 +164,16 @@ class Profiler:
             list(self.all_funcs), key=get_string)
         self.all_funcs = [
             f for f in self.all_funcs if f.__name__ not in self.drop_funcs]
-        print('ALL_FUNCS len = {}'.format(len(self.all_funcs)))
+        logger.debug('ALL_FUNCS len = {}'.format(len(self.all_funcs)))
 
     def _aggregate_stats_from_functions(self):
+        """Gather stats from all found functions into one dataframe"""
         cols_df = ['call_num', 'elapsed_secs', 'timestamp',
                    'prefixed_func_name', 'caller_chain']
         dfs_arr = []
         for f in self.all_funcs:
             if not hasattr(f, 'stats'):
-                print('\t Func with no stats - {}'.format(f))
+                logger.debug('\t Func with no stats - {}'.format(f))
                 continue
             cur_df = pd.DataFrame([[getattr(el, col) for col in cols_df]
                                    for el in f.stats.history], columns=cols_df)
@@ -179,31 +189,33 @@ class Profiler:
             f.stats.clear_history()
 
         if len(dfs_arr) == 0:
-            print('There is no info from functions to profile... Abort')
+            logger.debug('There is no info from functions to profile... Abort')
             return
 
         self.full_stats_df = pd.concat(dfs_arr)
         self.full_stats_df = self.full_stats_df.sort_values(
             ['timestamp', 'call_num']).reset_index(drop=True)
-        print('FULL_STATS_DF shape = {}'.format(self.full_stats_df.shape))
-        print('RUN_FNAME vc head:',
-              self.full_stats_df['run_fname'].value_counts().head(), sep='\n')
+
+        logger.debug('FULL_STATS_DF shape = {}'.format(self.full_stats_df.shape))
+        logger.debug('RUN_FNAME vc head: \n {}'.format(
+            self.full_stats_df['run_fname'].value_counts().head()))
 
     def _generate_and_check_calls_graph(self):
+        """Build graph from functions calls and check its correctness"""
         self.prof_graph = nx.Graph()
         self.prof_graph.add_edges_from(list(zip(self.full_stats_df['caller_chain'].values,
                                                 self.full_stats_df['run_fname'].values)))
 
         cc = list(nx.connected_components(self.prof_graph))
-        print('CONNECTED COMPONENTS cnt = {}'.format(len(cc)))
+        logger.debug('CONNECTED COMPONENTS cnt = {}'.format(len(cc)))
         assert len(
             cc) == 1, 'Profiler calls graph has more than 1 connected component but it must be a tree...'
 
         path_lens = {x: len(y) - 1
                      for x, y in nx.shortest_path(self.prof_graph,
                                                   source=self.full_stats_df.caller_chain.values[0]).items()}
-        print('PATH LENS describe:', pd.Series(
-            [x[1] for x in path_lens.items()]).describe(), sep='\n')
+        logger.debug('PATH LENS describe: \n {}'.format(pd.Series(
+            [x[1] for x in path_lens.items()]).describe()))
 
         self.full_stats_df['level'] = self.full_stats_df['run_fname'].map(
             path_lens)
@@ -211,6 +223,7 @@ class Profiler:
                                                             kind='mergesort').reset_index(drop=True)
 
     def _create_html_report(self, report_path: str):
+        """Create HTML report for LightAutoML profiling"""
         df = self.full_stats_df[['run_fname', 'level', 'elapsed_secs']]
         df = pd.concat([pd.DataFrame({'run_fname': ['ROOT'], 'level': [
             0], 'elapsed_secs': [0.0]}), df]).reset_index(drop=True)
@@ -254,8 +267,7 @@ class Profiler:
             fout.write('</body>\n')
 
     def profile(self, report_path: str = './profile_report.html'):
-        """
-        Create profile of algorithm.
+        """Create profile of algorithm.
 
         Args:
             report_path: path to save profile.
@@ -268,9 +280,15 @@ class Profiler:
         self._create_html_report(report_path)
 
     def change_deco_settings(self, new_settings: dict):
+        """Update profiling deco settings
+
+        Args:
+            new_settings: dict with new key-values for decorator
+
+        """
         for f in self.all_funcs:
             if not hasattr(f, 'record_history_settings'):
-                print('\t Func with no decorator - {}'.format(f))
+                logger.debug('\t Func with no decorator - {}'.format(f))
                 continue
             for k in new_settings:
                 f.record_history_settings[k] = new_settings[k]

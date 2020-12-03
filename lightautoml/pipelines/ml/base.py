@@ -1,4 +1,8 @@
-from typing import Sequence, Optional, Tuple, Union
+"""
+Base classes for MLPipeline
+"""
+
+from typing import Sequence, Optional, Tuple, Union, List
 
 from log_calls import record_history
 
@@ -6,7 +10,6 @@ from lightautoml.validation.base import TrainValidIterator
 from ..features.base import FeaturesPipeline, EmptyFeaturePipeline
 from ..selection.base import SelectionPipeline, EmptySelector
 from ...dataset.base import LAMLDataset
-
 from ...dataset.utils import concatenate
 from ...ml_algo.base import MLAlgo
 from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
@@ -16,8 +19,18 @@ from ...ml_algo.utils import tune_and_fit_predict
 @record_history(enabled=False)
 class MLPipeline:
     """
-    ML Pipeline contains 2 selection part (pre and post), preprocessing part and multiple ML parts.
+    Single ML pipeline.
+    Merge together stage of building ML model (every step, excluding model training, is optional):
+        - pre selection: select features from input data. Performed by SelectionPipeline
+        - features generation: build new features from selected. Performed by FeaturesPipelime
+        - post selection: One more selection step - from created features. Performed by SelectionPipeline
+        - hyperparams optimization for one or multiple ML models: Performed by ParamsTuner
+        - train one or multiple ML models: Performed by MLAlgo. This step is the only required for at least 1 model
     """
+
+    @property
+    def used_features(self) -> List[str]:
+        return self.pre_selection.selected_features
 
     def __init__(self, ml_algos: Sequence[Union[MLAlgo, Tuple[MLAlgo, ParamsTuner]]],
                  force_calc: Union[bool, Sequence[bool]] = True,
@@ -70,18 +83,16 @@ class MLPipeline:
 
         self.force_calc = [force_calc] * len(self._ml_algos) if type(force_calc) is bool else force_calc
         # TODO: Do we need this assert?
-        assert any(self.force_calc), 'At least single algo in pipe should be forced to calc'
+        # assert any(self.force_calc), 'At least single algo in pipe should be forced to calc'
 
     def fit_predict(self, train_valid: TrainValidIterator) -> LAMLDataset:
-        """
-        Fit on train/valid iterator and transform on validation part.
+        """Fit on train/valid iterator and transform on validation part.
 
         Args:
-            train_valid: dataset iterator.
+            train_valid: TrainValidIterator .
 
         Returns:
             dataset with predictions of all models.
-
         """
         self.ml_algos = []
         # train and apply pre selection
@@ -104,17 +115,17 @@ class MLPipeline:
 
         predictions = concatenate(predictions)
 
+        del self._ml_algos
         return predictions
 
     def predict(self, dataset: LAMLDataset) -> LAMLDataset:
-        """
-        Predict on new dataset.
+        """Predict on new dataset.
 
         Args:
             dataset: dataset used for prediction.
 
         Returns:
-            dataset with predictions of all trained modles.
+            dataset with predictions of all trained models.
 
         """
         dataset = self.pre_selection.select(dataset)
@@ -132,8 +143,9 @@ class MLPipeline:
         return predictions
 
     def upd_model_names(self, prefix: str):
-        """
-        Update prefix pipeline models names.
+        """Update prefix pipeline models names.
+
+        Used to fit inside AutoML where multiple models with same names may be trained
 
         Args:
             prefix: new prefix name.
@@ -143,5 +155,14 @@ class MLPipeline:
             mod.set_prefix(prefix)
 
     def prune_algos(self, idx: Sequence[int]):
+        """Prune model from pipeline
 
+        Used to fit blender - some models may be excluded from final ensemble
+
+        Args:
+            idx:
+
+        Returns:
+
+        """
         self.ml_algos = [x for (n, x) in enumerate(self.ml_algos) if n not in idx]

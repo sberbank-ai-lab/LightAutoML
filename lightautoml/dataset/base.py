@@ -1,3 +1,7 @@
+"""
+Base dataset class
+"""
+
 from copy import copy  # , deepcopy
 from typing import Any, Optional, Dict, List, Tuple, Sequence, Union, TypeVar
 
@@ -20,52 +24,48 @@ ColSlice = Optional[Union[Sequence[str], str]]
 
 @record_history(enabled=False)
 class LAMLColumn:
-    """
-    Basic class for pair - column, role.
-    """
+    """Basic class for pair - column, role."""
 
     def __init__(self, data: Any, role: ColumnRole):
-        """
-        Set a pair column/role.
+        """Set a pair column/role.
 
         Args:
             data: 1d array like.
             role: column role.
+
         """
         self.data = data
         self.role = role
 
     def __repr__(self) -> str:
-        """
-        Repr method.
+        """Repr method.
 
         Returns:
             String with data representation.
+
         """
         return self.data.__repr__()
 
 
 @record_history(enabled=False)
 class LAMLDataset:
-    """
-    Basic class to create dataset.
-    """
+    """Basic class to create dataset."""
     # TODO: Create checks here
     _init_checks = ()  # list of functions that checks that _array_like_attrs are valid
     _data_checks = ()  # list of functions that checks that data in .set_data is valid for _array_like_attrs
     _concat_checks = ()  # list of functions that checks that datasets for concatenation are valid
+    _dataset_type = 'LAMLDataset'
 
     def __init__(self, data: Any, features: Optional[list], roles: Optional[RolesDict], task: Optional[Task] = None,
                  **kwargs: Any):
-        """
-        Create dataset with given data, features, roles and special attributes like target, group etc.
+        """Create dataset with given data, features, roles and special attributes like target, group etc.
 
         Args:
             data: 2d array of data of special type for each dataset type.
-            features: list of feature names or None for empty data.
-            roles: dict of features roles or None for empty data.
+            features: List of feature names or None for empty data.
+            roles: Dict of features roles or None for empty data.
             task: Task for dataset if train/valid.
-            **kwargs: special named array like attributes (target, group etc..).
+            **kwargs: Special named array like attributes (target, group etc..).
 
         """
         if features is None:
@@ -77,17 +77,16 @@ class LAMLDataset:
             self.set_data(data, features, roles)
 
     def __len__(self):
-        """
-        Get count of rows in dataset
+        """Get count of rows in dataset
 
         Returns:
             Number of rows in dataset.
+
         """
         return self.shape[0]
 
     def __repr__(self):
-        """
-        Get str representation
+        """Get str representation
 
         Returns:
             String with data representation.
@@ -97,7 +96,8 @@ class LAMLDataset:
 
     # default behavior and abstract methods
     def __getitem__(self, k: Tuple[RowSlice, ColSlice]) -> Union['LAMLDataset', LAMLColumn]:
-        """
+        """Select a subset of dataset.
+
         Define how to slice a dataset in way dataset[[1, 2, 3...], ['feat_0', 'feat_1'...]].
         Default behavior based on ._get_cols, ._get_rows, ._get_2d.
 
@@ -143,11 +143,10 @@ class LAMLDataset:
         return dataset
 
     def __setitem__(self, k: str, val: Any):
-        """
-        Inplace set values for single column (in default implementation).
+        """Inplace set values for single column (in default implementation).
 
         Args:
-            k: str feature name.
+            k: Str feature name.
             val: LAMLColumn or 1d array like.
 
         """
@@ -163,14 +162,13 @@ class LAMLDataset:
             self._set_col(self.data, idx, val)
 
     def __getattr__(self, item: str) -> Any:
-        """
-        Get item for key features as target/folds/weights etc.
+        """Get item for key features as target/folds/weights etc.
 
         Args:
-            item: attr name.
+            item: Attr name.
 
         Returns:
-            attr val.
+            Attr val.
 
         """
         if item in valid_array_attributes:
@@ -179,30 +177,27 @@ class LAMLDataset:
 
     @property
     def features(self) -> list:
-        """
-        Define how to get features names list.
+        """Define how to get features names list.
 
         Returns:
-            list of features names.
+            List of features names.
 
         """
         return list(self._features)
 
     @features.setter
     def features(self, val: list):
-        """
-        Define how to set features list.
+        """Define how to set features list.
 
         Args:
-            val: features names list.
+            val: Features names list.
 
         """
         self._features = copy(val)
 
     @property
     def data(self) -> Any:
-        """
-        Get data attribute.
+        """Get data attribute.
 
         Returns:
             Any, array like or `None`.
@@ -212,43 +207,43 @@ class LAMLDataset:
 
     @data.setter
     def data(self, val: Any):
-        """
-        Set data array or `None`.
+        """Set data array or `None`.
 
         Args:
-            val: some data or `None`.
+            val: Some data or `None`.
 
         """
         self._data = val
 
     @property
     def roles(self) -> RolesDict:
-        """
-        Get roles dict.
+        """Get roles dict.
 
         Returns:
-            dict of feature roles.
+            Dict of feature roles.
+
         """
-        return copy(self._roles)  # copy(self._roles)
+
+        return copy(self._roles)
+
 
     @roles.setter
     def roles(self, val: RolesDict):
-        """
-        Set roles dict.
+        """Set roles dict.
 
         Args:
-            val: roles dict.
+            val: Roles dict.
 
         """
         self._roles = dict(((x, val[x]) for x in self.features))
 
     @property
     def inverse_roles(self) -> Dict[ColumnRole, List[str]]:
-        """
-        Get inverse dict of feature roles
+        """Get inverse dict of feature roles.
 
         Returns:
             dict, keys - instance of ColumnRole, values - list of str features names
+
         """
         inv_roles = {}
 
@@ -264,11 +259,10 @@ class LAMLDataset:
         return inv_roles
 
     def _initialize(self, task: Optional[Task], **kwargs: Any):
-        """
-        Initialize empty dataset with task and array like attributes.
+        """Initialize empty dataset with task and array like attributes.
 
         Args:
-            task: task name for dataset.
+            task: Task name for dataset.
             **kwargs: 1d arrays like attrs like target, group etc.
 
         """
@@ -292,13 +286,12 @@ class LAMLDataset:
         self._roles = {}
 
     def set_data(self, data: Any, features: Any, roles: Any):
-        """
-        Inplace set data, features, roles for empty dataset.
+        """Inplace set data, features, roles for empty dataset.
 
         Args:
             data: 2d array like or `None`.
-            features: list of features names.
-            roles: roles dict.
+            features: List of features names.
+            roles: Roles dict.
 
         """
         self.data = data
@@ -310,8 +303,7 @@ class LAMLDataset:
             check(self)
 
     def empty(self) -> "LAMLDataset":
-        """
-        Get new dataset for the same task and the same targets, groups but with no features.
+        """Get new dataset for the same task and the same targets, groups but with no features.
 
         Returns:
             New empty dataset.
@@ -324,14 +316,13 @@ class LAMLDataset:
         return dataset
 
     def _get_cols_idx(self, columns: Sequence) -> Union[List[int], int]:
-        """
-        Get numeric index of columns by column names.
+        """Get numeric index of columns by column names.
 
         Args:
-            columns: features names.
+            columns: Features names.
 
         Returns:
-            list of integer indexes of single int.
+            List of integer indexes of single int.
 
         """
         if type(columns) is str:
@@ -345,11 +336,10 @@ class LAMLDataset:
     # default calculated properties
     @property
     def shape(self) -> Tuple[Optional[int], Optional[int]]:
-        """
-        Get size of 2d feature matrix.
+        """Get size of 2d feature matrix.
 
         Returns:
-            tuple of 2 elements.
+            Tuple of 2 elements.
         """
         rows, cols = None, None
         try:
@@ -362,40 +352,38 @@ class LAMLDataset:
     # static methods - how to make 1d slice, 2s slice, concat of feature matrix etc ...
     @staticmethod
     def _hstack(datasets: Sequence[Any]) -> Any:
-        """
-        Abstract method - define how to do horizontal stack of feature arrays.
+        """Abstract method - define how to do horizontal stack of feature arrays.
 
         Args:
-            datasets: sequence of feature arrays.
+            datasets: Sequence of feature arrays.
 
         Returns:
-            single feature array.
+            Single feature array.
 
         """
         raise NotImplementedError('Horizontal Stack not implemented.')
 
     @staticmethod
     def _get_rows(data, k: IntIdx) -> Any:
-        """
-        Abstract - define how to make rows slice of feature array.
+        """Abstract - define how to make rows slice of feature array.
 
         Args:
             data: 2d feature array.
-            k: sequence of int indexes or int.
+            k: Sequence of int indexes or int.
 
         Returns:
             2d feature array.
+
         """
         raise NotImplementedError('Row Slice not Implemented.')
 
     @staticmethod
     def _get_cols(data, k: IntIdx) -> Any:
-        """
-        Abstract - define how to make columns slice of feature array.
+        """Abstract - define how to make columns slice of feature array.
 
         Args:
             data: 2d feature array.
-            k: sequence of int indexes or int.
+            k: Sequence of int indexes or int.
 
         Returns:
             2d feature array.
@@ -406,12 +394,11 @@ class LAMLDataset:
     # TODO: remove classmethod here ?
     @classmethod
     def _get_2d(cls, data: Any, k: Tuple[IntIdx, IntIdx]) -> Any:
-        """
-        Default implementation of 2d slice based on rows slice and columns slice.
+        """Default implementation of 2d slice based on rows slice and columns slice.
 
         Args:
             data: 2d feature array.
-            k: tuple of integer sequences or 2 int.
+            k: Tuple of integer sequences or 2 int.
 
         Returns:
             2d feature array.
@@ -423,8 +410,7 @@ class LAMLDataset:
 
     @staticmethod
     def _set_col(data: Any, k: int, val: Any):
-        """
-        Abstract - how to set a value of single column by column name inplace.
+        """Abstract - how to set a value of single column by column name inplace.
 
         Args:
             data: 2d feature array.
@@ -436,13 +422,12 @@ class LAMLDataset:
 
     @classmethod
     def concat(cls, datasets: Sequence['LAMLDataset']) -> 'LAMLDataset':
-        """
-        Concat multiple dataset.
+        """Concat multiple dataset.
 
         Default behavior - takes empty dataset from datasets[0] and concat all features from others.
 
         Args:
-            datasets: sequence of datasets.
+            datasets: Sequence of datasets.
 
         Returns:
             Resulting dataset.
@@ -467,14 +452,13 @@ class LAMLDataset:
         return dataset
 
     def drop_features(self, droplist: Sequence[str]):
-        """
-        Inplace drop columns from dataset.
+        """Inplace drop columns from dataset.
 
         Args:
-            droplist: sequence of str features names.
+            droplist: Sequence of str features names.
 
         Returns:
-            dataset without columns.
+            Dataset without columns.
 
         """
         if len(droplist) == 0:
@@ -483,14 +467,17 @@ class LAMLDataset:
 
     @staticmethod
     def from_dataset(dataset: 'LAMLDataset') -> 'LAMLDataset':
-        """
-        Abstract method - how to create this type of dataset from others.
+        """Abstract method - how to create this type of dataset from others.
 
         Args:
-            dataset: original type dataset.
+            dataset: Original type dataset.
 
         Returns:
-            converted type dataset.
+            Converted type dataset.
 
         """
         raise NotImplementedError
+
+    @property
+    def dataset_type(self):
+        return self._dataset_type

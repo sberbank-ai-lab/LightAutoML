@@ -1,3 +1,7 @@
+"""
+Utils
+"""
+
 from .profiler import Profiler
 
-__all__ = ['Profiler']
+__all__ = ['Profiler', 'timer']

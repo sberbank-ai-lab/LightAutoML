@@ -1,4 +1,3 @@
-import warnings
 from copy import deepcopy
 from typing import Sequence, Callable, Optional, Union
 
@@ -10,7 +9,9 @@ from torch import nn
 from torch import optim
 
 from ...tasks.losses import TorchLossWrapper
+from ...utils.logging import get_logger
 
+logger = get_logger(__name__)
 ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 
@@ -325,8 +326,7 @@ class TorchBasedLinearEstimator:
             weights = torch.from_numpy(weights.astype(np.float32))
 
         if data_val is None and y_val is None:
-            warnings.warn('Validation data should be defined. No validation will be performed and C = 1 will be used',
-                          UserWarning)
+            logger.warning('Validation data should be defined. No validation will be performed and C = 1 will be used')
             self._optimize(data, data_cat, y, weights, 1.)
 
             return self
@@ -342,7 +342,7 @@ class TorchBasedLinearEstimator:
 
             val_pred = self._score(data_val, data_val_cat)
             score = self.metric(y_val, val_pred, weights_val)
-            print('C = {0} score = {1}'.format(c, score))
+            logger.info('Linear model: C = {0} score = {1}'.format(c, score))
             if score > best_score:
                 best_score = score
                 best_model = deepcopy(self.model)
