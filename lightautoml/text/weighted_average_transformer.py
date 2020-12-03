@@ -2,7 +2,8 @@
 
 from collections import Counter
 from itertools import repeat
-from typing import Any, Optional, Dict, Sequence
+from typing import Any, Dict, Sequence
+
 import numpy as np
 from log_calls import record_history
 from scipy.linalg import svd
@@ -22,7 +23,7 @@ class WeightedAverageTransformer(TransformerMixin):
 
     def __init__(self, embedding_model: Dict, embed_size: int,
                  weight_type: str = 'idf', use_svd: bool = True,
-                 alpha: int =0.001, verbose: bool = False, **kwargs: Any):
+                 alpha: int = 0.001, verbose: bool = False, **kwargs: Any):
         """Calculate sentence embedding as weighted average of word embeddings.
 
         Args:

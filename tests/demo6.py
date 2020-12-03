@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.dataset.roles import DatetimeRole
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
+
 
 def test_tabular_automl_preset():
     np.random.seed(42)

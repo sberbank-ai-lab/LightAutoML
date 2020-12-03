@@ -1,8 +1,9 @@
 """Pytorch Datasets for text features."""
 
+from typing import Dict, Sequence, Any, Union
+
 import numpy as np
 from log_calls import record_history
-from typing import Dict, Sequence, Any, Union
 from transformers import AutoTokenizer
 
 

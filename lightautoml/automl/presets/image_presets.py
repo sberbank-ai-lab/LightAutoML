@@ -15,9 +15,9 @@ from ...ml_algo.boost_lgbm import BoostLGBM
 from ...ml_algo.linear_sklearn import LinearLBFGS
 from ...ml_algo.tuning.optuna import OptunaTuner
 from ...pipelines.features.base import FeaturesPipeline
+from ...pipelines.features.image_pipeline import ImageSimpleFeatures, ImageAutoFeatures
 from ...pipelines.features.lgb_pipeline import LGBAdvancedPipeline
 from ...pipelines.features.linear_pipeline import LinearFeatures
-from ...pipelines.features.image_pipeline import ImageSimpleFeatures, ImageAutoFeatures
 from ...pipelines.ml.nested_ml_pipe import NestedTabularMLPipeline
 from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
@@ -180,7 +180,7 @@ class TabularCVAutoML(TabularAutoML):
         # other params as tabular
         super().infer_auto_params(train_data, multilevel_avail)
 
-    def get_cv_pipe(self, type: str ='simple') -> Optional[FeaturesPipeline]:
+    def get_cv_pipe(self, type: str = 'simple') -> Optional[FeaturesPipeline]:
         if type == 'simple':
             return ImageSimpleFeatures(**self.cv_simple_features)
         elif type == 'embed':
@@ -302,4 +302,3 @@ class TabularCVAutoML(TabularAutoML):
 
         """
         return super().predict(data, features_names, batch_size)
-

@@ -194,7 +194,7 @@ class TabularNLPAutoML(TabularAutoML):
         # other params as tabular
         super().infer_auto_params(train_data, multilevel_avail)
 
-    def get_nlp_pipe(self, type: str ='tfidf') -> Optional[FeaturesPipeline]:
+    def get_nlp_pipe(self, type: str = 'tfidf') -> Optional[FeaturesPipeline]:
         if type == 'tfidf':
             return NLPTFiDFFeatures(**self.text_params, **self.tfidf_params)
         elif type == 'embed':

@@ -15,8 +15,8 @@ from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
 from ..dataset.roles import NumericRole
 from ..image.image import CreateImageFeatures, DeepImageEmbedder
 from ..image.utils import pil_loader
-from ..utils.logging import get_logger
 from ..text.utils import single_text_hash, get_textarr_hash
+from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -232,24 +232,28 @@ class AutoCVWrap(LAMLTransformer):
         # transform
         roles = NumericRole()
         outputs = []
-        for n, i in enumerate(df.columns):
+
+        for n, conlumn_name in enumerate(df.columns):
             if self.cache_dir is not None:
-                full_hash = get_textarr_hash(df[i]) + get_textarr_hash(self.dicts[i]['feats'])
+                full_hash = get_textarr_hash(df[conlumn_name]) + get_textarr_hash(self.dicts[conlumn_name]['feats'])
                 fname = os.path.join(self.cache_dir, full_hash + '.pkl')
+
                 if os.path.exists(fname):
-                    logger.info(f'Load saved dataset for {i}')
+                    logger.info(f'Load saved dataset for {conlumn_name}')
+
                     with open(fname, 'rb') as f:
                         new_arr = pickle.load(f)
+
                 else:
-                    new_arr = self.dicts[i]['transformer'].transform(df[i])
+                    new_arr = self.dicts[conlumn_name]['transformer'].transform(df[conlumn_name])
                     with open(fname, 'wb') as f:
                         pickle.dump(new_arr, f)
             else:
-                new_arr = self.dicts[i]['transformer'].transform(df[i])
+                new_arr = self.dicts[conlumn_name]['transformer'].transform(df[conlumn_name])
 
             output = dataset.empty().to_numpy()
-            output.set_data(new_arr, self.dicts[i]['feats'], roles)
+            output.set_data(new_arr, self.dicts[conlumn_name]['feats'], roles)
             outputs.append(output)
-            logger.info(f'Feature {i} transformed')
+            logger.info(f'Feature {conlumn_name} transformed')
         # create resulted
         return dataset.empty().to_numpy().concat(outputs)

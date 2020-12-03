@@ -1,7 +1,7 @@
 """Deep Learning transformers for calculating sentence embeddings."""
 
-
 import gc
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 import torch
@@ -10,9 +10,8 @@ from log_calls import record_history
 from sklearn.base import TransformerMixin
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing import Any, Dict, Optional, Sequence
-
 from transformers import AutoModel
+
 from .dp_utils import CustomDataParallel
 from .sentence_pooling import SequenceMaxPooler, SequenceAvgPooler, SequenceSumPooler, SequenceClsPooler, \
     SequenceIndentityPooler

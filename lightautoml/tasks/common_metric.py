@@ -144,6 +144,7 @@ class BestClassBinaryWrapper:
     There is cut-off for prediction by 0.5.
 
     """
+
     def __init__(self, func: Callable):
         """
 

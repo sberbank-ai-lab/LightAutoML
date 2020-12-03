@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 import logging
-import os
 
 import numpy as np
 import pandas as pd
@@ -19,7 +18,6 @@ from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.pipelines.selection.importance_based import ModelBasedImportanceEstimator, ImportanceCutoffSelector
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
 from lightautoml.utils.timer import PipelineTimer
 
 # demo of timer, blender and multiclass

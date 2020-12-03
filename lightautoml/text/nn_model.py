@@ -1,14 +1,15 @@
 """Neural Net modules for differen data types."""
 
 
+from typing import Dict, Optional, Callable
 from typing import Sequence
 
 import numpy as np
 import torch
 import torch.nn as nn
 from log_calls import record_history
-from typing import Dict, Optional, Callable
 from transformers import AutoModel
+
 from .dl_transformers import pooling_by_name
 from ..tasks.base import Task
 
