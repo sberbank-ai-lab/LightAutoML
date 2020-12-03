@@ -846,7 +846,7 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
-        """Wrapped automl.fit_predict method.
+        """Wrapped automl.predict method.
 
         Valid args, kwargs are the same as wrapped automl.
 
