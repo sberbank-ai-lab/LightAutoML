@@ -1,6 +1,4 @@
-"""
-ML utils
-"""
+"""Tools for model training."""
 
 from typing import Tuple, Optional
 

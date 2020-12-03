@@ -1,3 +1,5 @@
+"""Bunch of metrics with unified interface."""
+
 from functools import partial
 from typing import Optional, Callable
 
@@ -102,6 +104,7 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
         return (err * sample_weight).mean() / sample_weight.mean()
 
     return err.mean()
+
 
 @record_history(enabled=False)
 class F1Factory:

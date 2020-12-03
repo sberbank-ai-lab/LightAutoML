@@ -1,3 +1,5 @@
+"""Metrics and loss functions for LightGBM."""
+
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict
 

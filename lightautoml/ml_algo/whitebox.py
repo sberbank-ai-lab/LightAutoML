@@ -1,6 +1,4 @@
-"""
-Whitebox wrapper
-"""
+"""AutoMLWhitebox for tabular datasets."""
 
 import warnings
 from copy import copy, deepcopy

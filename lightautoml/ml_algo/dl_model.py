@@ -1,6 +1,4 @@
-"""
-Deep learning models
-"""
+"""Neural net for tabular datasets."""
 
 import gc
 import os

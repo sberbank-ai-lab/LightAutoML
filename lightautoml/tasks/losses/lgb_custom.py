@@ -1,3 +1,5 @@
+"""Custom metrics and loss functions for LightGBM."""
+
 import lightgbm as lgb
 import numpy as np
 from log_calls import record_history

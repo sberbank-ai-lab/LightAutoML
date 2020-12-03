@@ -1,4 +1,4 @@
-"""Report utils."""
+"""Classes for report generation and add-ons."""
 
 import os
 from copy import copy

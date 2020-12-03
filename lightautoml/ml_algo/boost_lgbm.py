@@ -1,6 +1,5 @@
-"""
-LightGBM wrapper
-"""
+"""Wrapped LightGBM for tabular datasets."""
+
 
 import logging
 from copy import copy

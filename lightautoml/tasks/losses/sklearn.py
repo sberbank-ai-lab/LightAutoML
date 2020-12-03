@@ -1,3 +1,5 @@
+"""Metrics and loss functions for scikit-learn models."""
+
 from typing import Callable, Optional, Dict, Union
 
 import numpy as np

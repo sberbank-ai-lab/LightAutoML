@@ -1,3 +1,5 @@
+"""Set of loss functions for different machine learning algorithms."""
+
 from .base import valid_str_metric_names
 from .lgb import LGBLoss
 from .sklearn import SKLoss

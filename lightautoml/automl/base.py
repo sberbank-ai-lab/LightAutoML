@@ -1,4 +1,4 @@
-"""Base AutoML Class."""
+"""Base AutoML class."""
 
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 

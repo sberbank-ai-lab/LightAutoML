@@ -1,6 +1,4 @@
-"""
-Text presets
-"""
+"""AutoML presets for data with texts."""
 
 import os
 from typing import Optional, Sequence

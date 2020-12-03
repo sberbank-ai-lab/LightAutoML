@@ -1,3 +1,5 @@
+"""Custom metrics and loss functions for Catboost."""
+
 from typing import Callable
 
 import numpy as np

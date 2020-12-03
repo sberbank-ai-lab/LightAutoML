@@ -1,3 +1,5 @@
+"""Tools to configure time utilization."""
+
 from copy import deepcopy
 from typing import Optional, Any, Sequence, Type, Union, Iterable
 

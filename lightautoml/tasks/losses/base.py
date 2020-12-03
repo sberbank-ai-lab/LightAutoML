@@ -1,3 +1,5 @@
+"""Base classes for metric and loss functions."""
+
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict, Any
 

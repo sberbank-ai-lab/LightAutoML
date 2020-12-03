@@ -1,6 +1,4 @@
-"""
-Whitebox presets
-"""
+"""Whitebox AutoML presets."""
 
 import os
 from copy import deepcopy

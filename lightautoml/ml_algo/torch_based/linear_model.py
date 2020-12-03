@@ -1,3 +1,5 @@
+"""Linear models based on Torch library."""
+
 from copy import deepcopy
 from typing import Sequence, Callable, Optional, Union
 

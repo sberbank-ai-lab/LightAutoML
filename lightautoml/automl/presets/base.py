@@ -1,6 +1,4 @@
-"""
-AutoML presets
-"""
+"""AutoML presets base class."""
 
 import os
 import shutil

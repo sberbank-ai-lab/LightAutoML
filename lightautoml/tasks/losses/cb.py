@@ -1,3 +1,5 @@
+"""Metrics and loss functions for Catboost."""
+
 from typing import Callable, Union, Optional, Dict
 
 import numpy as np

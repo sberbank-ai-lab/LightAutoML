@@ -1,6 +1,4 @@
-"""
-Base classes for ML models
-"""
+"""Base classes for machine learning algorithms."""
 
 from abc import ABC, abstractmethod
 from copy import copy

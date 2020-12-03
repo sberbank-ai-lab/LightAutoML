@@ -1,6 +1,4 @@
-"""
-Image presets
-"""
+"""AutoML presets for image data."""
 
 import os
 from typing import Optional, Sequence

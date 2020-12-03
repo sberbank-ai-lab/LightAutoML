@@ -1,3 +1,5 @@
+"""Base classes to implement hyperparameter tuning."""
+
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Dict, overload, TYPE_CHECKING
 

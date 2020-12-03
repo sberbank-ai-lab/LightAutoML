@@ -1,3 +1,5 @@
+"""Metrics and loss functions for Torch based models."""
+
 from functools import partial
 from typing import Callable, Union, Optional, Dict, Any
 

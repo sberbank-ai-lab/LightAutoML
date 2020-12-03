@@ -1,6 +1,4 @@
-"""
-Linear models
-"""
+"""Linear models for tabular datasets."""
 
 from copy import copy, deepcopy
 from typing import Tuple, Union, Sequence

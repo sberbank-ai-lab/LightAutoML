@@ -1,4 +1,4 @@
-"""Profiler and timer."""
+"""Common util tools."""
 
 from .profiler import Profiler
 
