@@ -17,9 +17,9 @@ import datetime
 from docutils.parsers.rst import Directive
 
 
-# CURR_PATH = os.path.abspath(os.path.dirname(__file__))
-# LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'lightautoml')
-# sys.path.insert(0, LIB_PATH)
+CURR_PATH = os.path.abspath(os.path.dirname(__file__))
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'lightautoml')
+sys.path.insert(0, LIB_PATH)
 
 
 project = 'LightAutoML'
