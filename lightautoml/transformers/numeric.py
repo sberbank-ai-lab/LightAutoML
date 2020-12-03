@@ -1,6 +1,4 @@
-"""
-Numeric features
-"""
+"""Numeric features transformers."""
 
 from typing import Union
 

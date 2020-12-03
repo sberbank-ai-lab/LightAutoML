@@ -1,6 +1,4 @@
-"""
-Image feature extractors
-"""
+"""Image feature extractors based on color histograms and CNN embeddings."""
 
 from copy import copy
 from typing import List, Callable, Sequence, Optional, Any, Union

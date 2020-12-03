@@ -1,4 +1,5 @@
-"""NN model."""
+"""Neural Net modules for differen data types."""
+
 
 from typing import Sequence
 

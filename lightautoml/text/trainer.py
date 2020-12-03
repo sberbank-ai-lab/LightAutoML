@@ -1,4 +1,4 @@
-"""Trainer."""
+"""Main pytorch training and prediction class with Snapshots Ensemble."""
 
 from copy import deepcopy
 

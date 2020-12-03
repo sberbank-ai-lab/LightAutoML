@@ -1,4 +1,5 @@
-"""Categorical features."""
+"""Categorical features transformerrs."""
+
 
 from itertools import combinations
 from typing import Optional, Union, List, Sequence, cast

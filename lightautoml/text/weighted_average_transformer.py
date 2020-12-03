@@ -1,6 +1,4 @@
-"""
-Weighted average transformer
-"""
+"""Weighted average transformer for sequence embeddings."""
 
 from collections import Counter
 from itertools import repeat

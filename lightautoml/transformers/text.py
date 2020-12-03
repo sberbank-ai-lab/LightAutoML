@@ -1,4 +1,4 @@
-"""Text features."""
+"""Text features transformers."""
 
 import gc
 import os

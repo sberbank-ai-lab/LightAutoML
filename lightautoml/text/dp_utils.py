@@ -1,4 +1,4 @@
-"""DP utils."""
+"""Utils for new predict method in pytorch DataParallel."""
 
 import threading
 from itertools import chain

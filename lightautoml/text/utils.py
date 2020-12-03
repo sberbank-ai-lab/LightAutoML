@@ -1,4 +1,4 @@
-"""Text utils."""
+"""Text utility script."""
 
 import os
 import random

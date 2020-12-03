@@ -1,4 +1,5 @@
-"""Tokenizer."""
+"""Tokenizer classes for text preprocesessing and tokenization."""
+
 
 import re
 from functools import partial

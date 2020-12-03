@@ -1,4 +1,5 @@
-"""Decompositions."""
+"""Dimension reduction transformers."""
+
 
 from typing import Union, List, Optional
 

@@ -1,4 +1,4 @@
-"""Embed dataset."""
+"""Pytorch Datasets for text features."""
 
 import numpy as np
 from log_calls import record_history

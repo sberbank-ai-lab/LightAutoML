@@ -1,4 +1,4 @@
-"""Datetime features."""
+"""Datetime features transformers."""
 
 from collections import OrderedDict
 from typing import Union, Sequence, List, Optional

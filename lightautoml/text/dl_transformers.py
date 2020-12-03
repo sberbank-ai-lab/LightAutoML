@@ -1,4 +1,5 @@
-"""DL transformers."""
+"""Deep Learning transformers for calculating sentence embeddings."""
+
 
 import gc
 
