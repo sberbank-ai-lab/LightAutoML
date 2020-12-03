@@ -18,7 +18,7 @@ from docutils.parsers.rst import Directive
 
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
-LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'lightautoml')
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir)
 sys.path.insert(0, LIB_PATH)
 
 
@@ -42,7 +42,14 @@ exclude_patterns = [
 ]
 
 # Delete external references
-# autodoc_mock_imports = ['numpy', 'pandas']
+autodoc_mock_imports = ['numpy', 'pandas', 'catboost',
+                        'scipy', 'sklearn', 'torch',
+                        'lightgbm', 'networkx', 'holidays',
+                        'joblib', 'yaml', 'gensim',
+                        'optuna', 'PIL', 'cv2', 'albumentations',
+                        'efficientnet_pytorch', 'tqdm',
+                        'nltk', 'transformers', 'autowoe',
+                        'matplotlib', 'seaborn', 'json2html']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
