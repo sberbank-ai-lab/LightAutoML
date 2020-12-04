@@ -129,7 +129,7 @@ class TextBert(nn.Module):
                                              token_type_ids=inp['token_type_ids'], return_dict=False)
 
         # pool the outputs into a vector
-        encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1))
+        encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1).bool())
         mean_last_hidden_state = self.activation(encoded_layers)
         mean_last_hidden_state = self.dropout(mean_last_hidden_state)
         return mean_last_hidden_state
