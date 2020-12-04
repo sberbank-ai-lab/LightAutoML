@@ -1,5 +1,7 @@
+"""Bunch of metrics with unified interface."""
+
 from functools import partial
-from typing import Optional
+from typing import Optional, Callable
 
 import numpy as np
 from log_calls import record_history
@@ -10,8 +12,7 @@ from sklearn.metrics import roc_auc_score, mean_squared_error, r2_score, accurac
 @record_history(enabled=False)
 def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                         q: float = 0.9) -> float:
-    """
-    Computes Mean Quantile Error.
+    """Computes Mean Quantile Error.
 
     Args:
         y_true: true target values.
@@ -36,8 +37,7 @@ def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: O
 @record_history(enabled=False)
 def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                      a: float = 0.9) -> float:
-    """
-    Computes Mean Huber Error.
+    """Computes Mean Huber Error.
 
     Args:
         y_true: true target values.
@@ -62,8 +62,7 @@ def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Opti
 @record_history(enabled=False)
 def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                     c: float = 0.9) -> float:
-    """
-    Computes Mean Fair Error.
+    """Computes Mean Fair Error.
 
     Args:
         y_true: true target values.
@@ -87,8 +86,7 @@ def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optio
 @record_history(enabled=False)
 def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
                                    sample_weight: Optional[np.ndarray] = None) -> float:
-    """
-    Computes Mean Absolute Percentage error.
+    """Computes Mean Absolute Percentage error.
 
     Args:
         y_true: true target values.
@@ -107,22 +105,33 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
 
     return err.mean()
 
+
 @record_history(enabled=False)
 class F1Factory:
+    """Wrapper for f1_score function."""
 
     def __init__(self, average: str = 'micro'):
+        """
+
+        Args:
+            average: Averaging type ('micro', 'macro', 'weighted').
+
+        """
         self.average = average
 
     def __call__(self, y_true: np.ndarray, y_pred: np.ndarray,
                  sample_weight: Optional[np.ndarray] = None) -> float:
-        """
+        """Compute metric.
 
         Args:
-            y_true:
-            y_pred:
-            sample_weight:
+            y_true: Ground truth target values.
+            y_pred: Estimated target values.
+            sample_weight: Sample weights.
 
         Returns:
+            F1 score of the positive class in binary classification
+            or weighted average of the F1 scores of each class
+            for the multiclass task.
 
         """
         return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
@@ -130,17 +139,19 @@ class F1Factory:
 
 @record_history()
 class BestClassBinaryWrapper:
-    """
-    Metric wrapper to get best class prediction instead of probs
+    """Metric wrapper to get best class prediction instead of probs.
 
-    Args:
-        func:
-
-    Returns:
+    There is cut-off for prediction by 0.5.
 
     """
 
-    def __init__(self, func):
+    def __init__(self, func: Callable):
+        """
+
+        Args:
+            func: Metric function. Function format:
+                func(y_pred, y_true, weights, **kwargs).
+        """
         self.func = func
 
     def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
@@ -151,17 +162,20 @@ class BestClassBinaryWrapper:
 
 @record_history()
 class BestClassMulticlassWrapper:
-    """
-    Metric wrapper to get best class prediction instead of probs for multiclass
+    """Metric wrapper to get best class prediction instead of probs for multiclass.
 
-    Args:
-        func:
-
-    Returns:
+    Prediction provides by argmax.
 
     """
 
     def __init__(self, func):
+        """
+
+        Args:
+            func: Metric function. Function format:
+                func(y_pred, y_true, weights, **kwargs)
+
+        """
         self.func = func
 
     def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):

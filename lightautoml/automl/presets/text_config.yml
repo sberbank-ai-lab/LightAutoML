@@ -5,19 +5,35 @@ general_params:
   # ex.[['lgb', 'lgb_tuned', 'linear_l2', 'cb', 'cb_tuned'], ['lgb', 'linear_l2']] is 3 algos on 1 level, 2 algos on 2 level and blender on 3 level
   # to define more than 1 level nested_cv_params.cv should be > 1
   use_algos: 'auto'
-  # nested_cv - True/False. If true, check nested_cv params
+  # nested_cv - True/False. If true, check nested_cv params. Use folds-in-folds cross-validation scheme
+  # May performs better but take much more time to run (train and inference)
   nested_cv: False
   # skip connections
   skip_conn: True
 
 reader_params:
+  # sample of data to perform analisys
   samples: 100000
+  # minimum nan_rate in feature to keep feature
   max_nan_rate: 0.999
+  # maximum frequency of top frequent value to keep feature
   max_constant_rate: 0.999
+  # create validation folds. Folds will be created even if valid samples or custom validation will be passed
+  # it will be used for feature generation
   cv: 3
+  # random state for folds creation
   random_state: 42
+  # default roles params.
+  # Ex if {'numeric': {'force_input': True}} will be passed, all numeric features will pass all selectors,
+  # if another will not be passed in roles argument of .fit_predict
   roles_params:
+  # n_jobs for advanced roles guess and reading csv files (more RAM needed due to multiprocessing)
   n_jobs: 1
+  # If to turn on advanced roles guess. Slower, but shows better quality
+  # If role of feature is not defined, reader will guess role in 2 ways:
+  #   - simple (numbers as numbers, object as categories or dates if dateformat inferred)
+  #   - advanced, based on some statistic calculation
+  # Advanced also searches to best processing type for defined roles, and in most cases is better, but slower
   advanced_roles: True
   # advanced roles parsing params
   # defaults are ok in general case, don't touch it if you don't know it's meanings
@@ -49,35 +65,41 @@ nested_cv_params:
 selection_params:
   # selection mode 0/1/2
   # 0 for no selection, 1 - cutoff selection, 2 - iterative selection
-  # harder features selection means increasing train time
+  # harder features selection means increasing train time, but much smaller and faster for inference model
   mode: 0
   # importance type permutation/gain
   importance_type: 'gain'
   # pretrain selector on holdout set. True - fast/ False - accurate
   fit_on_holdout: True
+  # cutoff value for permutation or gain (mode 1/2)
   cutoff: 0
+  # group features add size for iterative algo (mode 2)
   feature_group_size: 1
+  # max features count (mode2)
   max_features_cnt_in_result:
   # list of algos to apply selector. Possible values - 'gbm', 'linear_l2'. gbm stands for both catboost and lgb
   select_algos: [ 'gbm' ]
 
 tuning_params:
   # pretrain tuner on holdout set. True - fast/ False - accurate
+  # Ex. if you have 5-fold cv, validate tuner only on 1 fold
   fit_on_holdout: True
   # max tuning iter for lightgbm. Auto - depends on dataset
-  # smaller dataset gets more iters
-  max_tuning_iter: 101 # 'auto'
-  # max tuning time. Tuning time might be set lower depending on timer, but cannot be higher
+  # smaller dataset gets more iters (int or 'auto')
+  max_tuning_iter: 101
+  # max tuning time. Tuning time might be set lower during train by automl's timer, but cannot be higher
   max_tuning_time: 300
 
-# params for BoostLGBM MLAlgo
+# params for BoostLGBM MLAlgo. Note - params are default and may be changed during train if not freeze_defaults
 lgb_params:
+  # Look for lightgbm train params here. (num_threads will be rewrited by global preset's cpu limit)
   default_params:
     num_threads: 100
   freeze_defaults: False
 
-# params for BoostCB MLAlgo
+# params for BoostCB MLAlgo. Note - params are default and may be changed during train if not freeze_defaults
 cb_params:
+  # Look for lightgbm train params here. (thread_count will be rewrited by global preset's cpu limit)
   default_params:
     # task type - auto based on gpu available
     task_type: 'CPU'
@@ -87,11 +109,6 @@ cb_params:
 # params for LinearLBFGS MLAlgo
 # no tuner needed for this algo - regularization params are found during fit
 linear_l2_params:
-  default_params: { }
-  freeze_defaults: False
-
-# params for LinearL1CD MLAlgo
-linear_l1_params:
   default_params: { }
   freeze_defaults: False
 
@@ -152,26 +169,27 @@ nn_pipeline_params:
   text_features: "bert"
 
 gbm_pipeline_params:
+  # max number of categories to generate intersections
   top_intersections: 4
+  # max depth of cat intersection
   max_intersection_depth: 3
+  # subsample to calc data statistics
   subsample: 100000
   auto_unique_co: 10
+  # n_classes to use target encoding for multiclass task
   multiclass_te_co: 3
   # text_features in gbm feature pipeline. embed or tfidf
   text_features: "embed"
 
-cb_pipeline_params:
-  top_intersections: 4
-  max_intersection_depth: 3
-  subsample: 100000
-  # text_features in catboost feature pipeline. embed or tfidf
-  text_features: "embed"
-
 linear_pipeline_params:
+  # max number of categories to generate intersections
   top_intersections: 4
+  # max depth of cat intersection
   max_intersection_depth: 3
+  # subsample to calc data statistics
   subsample: 100000
   auto_unique_co: 50
+  # n_classes to use target encoding for multiclass task
   multiclass_te_co: 3
   # text_features in linear feature pipeline. embed or tfidf
   text_features: "tfidf"
@@ -184,7 +202,8 @@ timing_params:
   # Any time limitation mode will start working after at least single fold of single model will be computed
   mode: 1
   overhead: 0.1
-  # we assume than each algo takes same amount of time to calc. So each algo gets TIME/N_ALGOS.
+  # we assume than each algo takes same amount of time to calc (adjusted with some timing score).
+  # So each algo gets TIME/N_ALGOS.
   # tuning_rate of that time can be given to the params tuner
   # 0 - means no tuning
   # 'auto' - means infer depends on dataset size

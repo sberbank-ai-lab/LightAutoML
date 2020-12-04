@@ -1,3 +1,5 @@
+"""Tools to configure time utilization."""
+
 from copy import deepcopy
 from typing import Optional, Any, Sequence, Type, Union, Iterable
 
@@ -18,10 +20,7 @@ logger = get_logger(__name__)
 
 @record_history(enabled=False)
 class MLAlgoForAutoMLWrapper(MLAlgo):
-    """
-    Wrapper - it exists to apply blender to list of automl's
-
-    """
+    """Wrapper - it exists to apply blender to list of automl's."""
 
     @classmethod
     def from_automls(cls, automl: Union[AutoML, Sequence[AutoML]]):
@@ -39,10 +38,7 @@ class MLAlgoForAutoMLWrapper(MLAlgo):
 
 @record_history(enabled=False)
 class MLPipeForAutoMLWrapper(MLPipeline):
-    """
-    Wrapper - it exists to apply blender to list of automl's
-
-    """
+    """Wrapper - it exists to apply blender to list of automl's."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,15 +60,21 @@ class MLPipeForAutoMLWrapper(MLPipeline):
 
 @record_history(enabled=False)
 class TimeUtilization:
-    """
-    Class that helps to utilize given time to AutoMLPreset. Useful to calc benchmarks and compete
+    """Class that helps to utilize given time to AutoMLPreset.
+
+    Useful to calc benchmarks and compete
     It takes list of config files as input and run it white time limit exceeded.
     If time left - it can perform multistart on same configs with new random state.
     In best case - blend different configurations of single preset
     In worst case - averaging multiple automl's with different states
-    Basic usage ensembled_automl = TimeUtilization(TabularAutoml, Task('binary'),
-        timeout=3600, configs_list=['cfg0.yml', 'cfg1.yml'])
-    Then fit_predict and predict can be called like usual AutoML class
+
+    Note:
+        Basic usage
+
+        >>> ensembled_automl = TimeUtilization(TabularAutoml, Task('binary'), timeout=3600, configs_list=['cfg0.yml', 'cfg1.yml'])
+
+        Then fit_predict and predict can be called like usual AutoML class
+
     """
 
     def __init__(self, automl_factory: Type[AutoMLPreset],
@@ -95,25 +97,25 @@ class TimeUtilization:
         """
 
         Args:
-            automl_factory: AutoMLPreset class variable
-            task: Task to solve
-            timeout: timeout in seconds
-            memory_limit: memory limit that are passed to each automl
-            cpu_limit: cpu limit that that are passed to each automl
-            gpu_ids: gpu_ids that are passed to each automl
-            verbose: verbosity level that are passed to each automl
-            timing_params: timing_params level that are passed to each automl
-            configs_list: list of str path to configs files
-            inner_blend: blender instance to blend automl's with same configs and different random state
-            outer_blend: : blender instance to blend averaged by random_state automl's with different configs
+            automl_factory: AutoMLPreset class variable.
+            task: Task to solve.
+            timeout: timeout in seconds.
+            memory_limit: memory limit that are passed to each automl.
+            cpu_limit: cpu limit that that are passed to each automl.
+            gpu_ids: gpu_ids that are passed to each automl.
+            verbose: verbosity level that are passed to each automl.
+            timing_params: timing_params level that are passed to each automl.
+            configs_list: list of str path to configs files.
+            inner_blend: blender instance to blend automl's with same configs and different random state.
+            outer_blend: blender instance to blend averaged by random_state automl's with different configs.
             drop_last: usually last automl will be stopped with timeout. Flag that defines
                 if we should drop it from ensemble
-            max_runs_per_config: maximum number of multistart loops
+            max_runs_per_config: maximum number of multistart loops.
             random_state_keys: params of config that used as random state with initial values.
                 If None - search for random_state key in default config of preset
                 If not found - assume, that seeds are not fixed and each run is random by default
                 For ex. {'reader_params': {'random_state': 42}, 'gbm_params': {'default_params': {'seed': 42}}}
-            random_state: initial random_state value that will be set in case of search in config
+            random_state: initial random_state value that will be set in case of search in config.
             **kwargs:
 
         """
@@ -190,18 +192,18 @@ class TimeUtilization:
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
                     valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
-        """Same as automl's fit predict
+        """Same as automl's fit predict.
 
         Args:
-            train_data:  dataset to train
-            roles: roles dict
-            train_features: optional features names, if cannot be inferred from train_data
-            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance
-            valid_data: optional validation dataset
-            valid_features: optional validation dataset features if cannot be inferred from valid_data
+            train_data:  dataset to train.
+            roles: roles dict.
+            train_features: optional features names, if cannot be inferred from train_data.
+            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance.
+            valid_data: optional validation dataset.
+            valid_features: optional validation dataset features if cannot be inferred from valid_data.
 
         Returns:
-
+            Dataset.
         """
         timer = PipelineTimer(self.timeout, **self.timing_params).start()
         history = []
@@ -274,13 +276,14 @@ class TimeUtilization:
         return val_pred
 
     def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, **kwargs) -> LAMLDataset:
-        """Same as automl's predict
+        """Same as automl's predict.
 
         Args:
-            data: dataset to perform inference
-            features_names: optional features names, if cannot be inferred from train_data
+            data: dataset to perform inference.
+            features_names: optional features names, if cannot be inferred from train_data.
 
         Returns:
+            Dataset.
 
         """
 

@@ -1,3 +1,5 @@
+"""Metrics and loss functions for Torch based models."""
+
 from functools import partial
 from typing import Callable, Union, Optional, Dict, Any
 
@@ -10,11 +12,10 @@ from .base import Loss
 
 @record_history(enabled=False)
 class TorchLossWrapper(nn.Module):
-    """
-    Cusomize PyTorch-based loss.
+    """Cusomize PyTorch-based loss.
 
     Args:
-        func: loss to customize. Example: `torch.nn.MSELoss`
+        func: loss to customize. Example: `torch.nn.MSELoss`.
         **kwargs: additional parameters.
 
     Returns:
@@ -49,8 +50,7 @@ class TorchLossWrapper(nn.Module):
 
 @record_history(enabled=False)
 def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
-    """
-    Computes Root Mean Squared Logarithmic Error
+    """Computes Root Mean Squared Logarithmic Error.
 
     Args:
         y_true: true target values.
@@ -78,8 +78,7 @@ def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
 @record_history(enabled=False)
 def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                    q: float = 0.9):
-    """
-    Computes Mean Quantile Error.
+    """Computes Mean Quantile Error.
 
     Args:
         y_true: true target values.
@@ -109,8 +108,7 @@ def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Op
 @record_history(enabled=False)
 def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                c: float = 0.9):
-    """
-    Computes Mean Fair Error.
+    """Computes Mean Fair Error.
 
     Args:
         y_true: true target values.
@@ -138,8 +136,7 @@ def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
 @record_history(enabled=False)
 def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                 a: float = 0.9):
-    """
-    Computes Mean Huber Error.
+    """Computes Mean Huber Error.
 
     Args:
         y_true: true target values.
@@ -164,10 +161,10 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
 
     return err.mean()
 
+
 @record_history(enabled=False)
 def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
-    """
-    Computes F1 macro.
+    """Computes F1 macro.
 
     Args:
         y_true: true target values.
@@ -202,8 +199,7 @@ def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional
 
 @record_history(enabled=False)
 def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
-    """
-    Computes Mean Absolute Percentage Error.
+    """Computes Mean Absolute Percentage Error.
 
     Args:
         y_true: true target values.
@@ -246,9 +242,7 @@ _torch_loss_dict = {
 
 @record_history(enabled=False)
 class TORCHLoss(Loss):
-    """
-    Loss used for PyTorch.
-    """
+    """Loss used for PyTorch."""
 
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None):
         """

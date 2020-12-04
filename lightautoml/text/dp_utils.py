@@ -1,10 +1,9 @@
-"""
-DP utils
-"""
+"""Utils for new predict method in pytorch DataParallel."""
 
 import threading
 from itertools import chain
 from typing import Optional, List
+
 import torch
 import torch.nn as nn
 from log_calls import record_history
@@ -35,9 +34,9 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
     on each of `devices`.
 
     Args:
-        modules: modules to be parallelized
-        inputs: inputs to the modules
-        devices: CUDA devices
+        modules: modules to be parallelized.
+        inputs: inputs to the modules.
+        devices: CUDA devices.
 
     """
     assert len(modules) == len(inputs)
@@ -95,7 +94,7 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
 
 @record_history(enabled=False)
 class CustomDataParallel(nn.DataParallel):
-    """Extension for nn.DataParallel for supporting predict method of DL model"""
+    """Extension for nn.DataParallel for supporting predict method of DL model."""
 
     def __init__(self, module: nn.Module, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None,
                  dim: Optional[int] = 0):

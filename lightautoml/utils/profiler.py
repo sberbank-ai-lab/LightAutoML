@@ -1,6 +1,4 @@
-"""
-Profiler
-"""
+"""Profiler."""
 
 import inspect
 import types
@@ -21,7 +19,7 @@ def get_string(x): return x.__module__ + '.' + x.__qualname__
 
 
 class Profiler:
-    """AutoML algorithm statistics profiler"""
+    """AutoML algorithm statistics profiler."""
 
     _DROP_FUNCS = ['get_record_history_wrapper',
                    '__repr__', '__hash__', '__eq__']
@@ -107,7 +105,7 @@ class Profiler:
         """Profiler init function
 
         Args:
-            drop_funcs: function names that will not be inspected.
+            drop_funcs: Function names that will not be inspected.
 
         """
 
@@ -123,7 +121,7 @@ class Profiler:
         self._get_all_funcs()
 
     def _get_all_funcs(self):
-        """Get all funcs of lightautoml module to gather its statistics"""
+        """Get all funcs of lightautoml module to gather its statistics."""
         queue = [__import__('lightautoml')]
 
         modules = set()
@@ -167,7 +165,7 @@ class Profiler:
         logger.debug('ALL_FUNCS len = {}'.format(len(self.all_funcs)))
 
     def _aggregate_stats_from_functions(self):
-        """Gather stats from all found functions into one dataframe"""
+        """Gather stats from all found functions into one dataframe."""
         cols_df = ['call_num', 'elapsed_secs', 'timestamp',
                    'prefixed_func_name', 'caller_chain']
         dfs_arr = []
@@ -201,7 +199,7 @@ class Profiler:
             self.full_stats_df['run_fname'].value_counts().head()))
 
     def _generate_and_check_calls_graph(self):
-        """Build graph from functions calls and check its correctness"""
+        """Build graph from functions calls and check its correctness."""
         self.prof_graph = nx.Graph()
         self.prof_graph.add_edges_from(list(zip(self.full_stats_df['caller_chain'].values,
                                                 self.full_stats_df['run_fname'].values)))
@@ -223,7 +221,7 @@ class Profiler:
                                                             kind='mergesort').reset_index(drop=True)
 
     def _create_html_report(self, report_path: str):
-        """Create HTML report for LightAutoML profiling"""
+        """Create HTML report for LightAutoML profiling."""
         df = self.full_stats_df[['run_fname', 'level', 'elapsed_secs']]
         df = pd.concat([pd.DataFrame({'run_fname': ['ROOT'], 'level': [
             0], 'elapsed_secs': [0.0]}), df]).reset_index(drop=True)
@@ -280,10 +278,10 @@ class Profiler:
         self._create_html_report(report_path)
 
     def change_deco_settings(self, new_settings: dict):
-        """Update profiling deco settings
+        """Update profiling deco settings.
 
         Args:
-            new_settings: dict with new key-values for decorator
+            new_settings: dict with new key-values for decorator.
 
         """
         for f in self.all_funcs:

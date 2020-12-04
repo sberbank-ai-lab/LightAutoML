@@ -1,6 +1,4 @@
-"""
-Utils
-"""
+"""Common util tools."""
 
 from .profiler import Profiler
 

@@ -1,10 +1,9 @@
-"""
-Text utils
-"""
+"""Text utility script."""
 
 import os
 import random
-from typing import Optional, Dict, List, Sequence
+from typing import Dict, List, Sequence
+
 import numpy as np
 import torch
 from log_calls import record_history
@@ -23,13 +22,13 @@ _dtypes_mapping = {'label': 'float',
 
 @record_history(enabled=False)
 def inv_sigmoid(x: np.ndarray) -> np.ndarray:
-    """Inverse sigmoid transformation
+    """Inverse sigmoid transformation.
 
     Args:
-        x: input array
+        x: input array.
 
     Returns:
-        transformed array
+        transformed array.
 
     """
     return np.log(x / (1 - x))
@@ -37,13 +36,13 @@ def inv_sigmoid(x: np.ndarray) -> np.ndarray:
 
 @record_history(enabled=False)
 def inv_softmax(x: np.ndarray) -> np.ndarray:
-    """Variant of inverse softmax transformation with zero constant term
+    """Variant of inverse softmax transformation with zero constant term.
 
     Args:
-        x: input array
+        x: input array.
 
     Returns:
-        transformed array
+        transformed array.
 
     """
     eps = 1e-7
@@ -55,13 +54,13 @@ def inv_softmax(x: np.ndarray) -> np.ndarray:
 
 @record_history(enabled=False)
 def is_shuffle(stage: str) -> bool:
-    """Whether shuffle input
+    """Whether shuffle input.
 
     Args:
-        stage: train, val, test
+        stage: train, val, test.
 
     Returns:
-        bool value
+        bool value.
 
     """
     is_sh = {'train': True, 'val': False, 'test': False}
@@ -70,11 +69,11 @@ def is_shuffle(stage: str) -> bool:
 
 @record_history(enabled=False)
 def seed_everything(seed: int = 42, deterministic: bool = True):
-    """Set random seed and cudnn params
+    """Set random seed and cudnn params.
 
     Args:
-        seed: random state
-        deterministic: cudnn backend
+        seed: random state.
+        deterministic: cudnn backend.
 
     """
     random.seed(seed)
@@ -88,14 +87,14 @@ def seed_everything(seed: int = 42, deterministic: bool = True):
 
 @record_history(enabled=False)
 def parse_devices(dvs, is_dp: bool = False) -> tuple:
-    """Parse devices and convert first to the torch device
+    """Parse devices and convert first to the torch device.
 
     Args:
-        dvs: list, string with device ids or torch.device
-        is_dp: use data parallel - additionally returns device ids
+        dvs: list, string with device ids or torch.device.
+        is_dp: use data parallel - additionally returns device ids.
 
     Returns:
-        first torch device and list of gpu ids
+        first torch device and list of gpu ids.
 
     """
     device = []
@@ -139,7 +138,7 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
 
 @record_history(enabled=False)
 def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
-    """Puts each data field into a tensor with outer dimension batch size"""
+    """Puts each data field into a tensor with outer dimension batch size."""
 
     elem = batch[0]
     if isinstance(elem, torch.Tensor):
@@ -154,7 +153,7 @@ def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
 
 @record_history(enabled=False)
 def collate_dict(batch: List[Dict[str, np.ndarray]]) -> Dict[str, torch.Tensor]:
-    """custom_collate for dicts"""
+    """custom_collate for dicts."""
     keys = list(batch[0].keys())
     transposed_data = list(map(list, zip(*[tuple([i[name] for name in i.keys()]) for i in batch])))
     return {key: custom_collate(transposed_data[n]) for n, key in enumerate(keys)}
@@ -165,10 +164,10 @@ def single_text_hash(x: str) -> str:
     """Get text hash.
 
     Args:
-        x: text
+        x: text.
 
     Returns:
-        string text hash
+        string text hash.
 
     """
     numhash = murmurhash3_32(x, seed=13)
@@ -181,10 +180,10 @@ def get_textarr_hash(x: Sequence[str]) -> str:
     """Get hash of array with texts.
 
     Args:
-        x: text array
+        x: text array.
 
     Returns:
-        hash of array
+        hash of array.
 
     """
     full_hash = single_text_hash(str(x))

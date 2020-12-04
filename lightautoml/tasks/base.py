@@ -1,6 +1,4 @@
-"""
-Task
-"""
+"""Contain Task object and metric wrappers."""
 
 import inspect
 from functools import partial
@@ -56,8 +54,8 @@ _valid_loss_args = {
 @record_history(enabled=False)
 class LAMLMetric:
     """
-    Abstract class
-    Metric should be called on dataset
+    Abstract class for metric.
+    Metric should be called on dataset.
     """
     greater_is_better = True
 
@@ -66,11 +64,14 @@ class LAMLMetric:
         Call metric on dataset.
 
         Args:
-            dataset: LAMLDataset
-            dropna: to ignore NaN in metric calculation.
+            dataset: Table with data.
+            dropna: To ignore NaN in metric calculation.
 
         Returns:
-            metric value.
+            Metric value.
+
+        Raises:
+            AttributeError: If metric isn't defined.
 
         """
         assert hasattr(dataset, 'target'), 'Dataset should have target to calculate metric'
@@ -79,24 +80,32 @@ class LAMLMetric:
 
 @record_history(enabled=False)
 class ArgsWrapper:
-    """
-    Wrapper - ignore sample_weight if metric not accepts
-
-    Args:
-        func:
-        metric_params:
-
-    Returns:
-
-    """
+    """Wrapper - ignore sample_weight if metric not accepts."""
 
     def __init__(self, func: Callable, metric_params: dict):
+        """
+
+        Args:
+            func: Metric function.
+            metric_params: Additional metric parameters.
+
+        """
         keys = inspect.signature(func).parameters
         self.flg = 'sample_weight' in keys
         self.func = partial(func, **metric_params)
 
     # @record_history(enabled=False)
     def __call__(self, y_true, y_pred, sample_weight=None):
+        """Calculate metric value.
+
+        If the metric does not include weights, then they are ignored.
+
+        Args:
+            y_true: Ground truth target values.
+            y_pred: Estimated target values.
+            sample_weight: Sample weights.
+
+        """
         if self.flg:
             return self.func(y_true, y_pred, sample_weight=sample_weight)
 
@@ -105,26 +114,21 @@ class ArgsWrapper:
 
 @record_history(enabled=False)
 class SkMetric(LAMLMetric):
-    """
-    Abstract class
+    """Abstract class for scikit-learn compitable metric.
+
     Implements metric calculation in sklearn format on numpy/pandas datasets.
+
     """
 
     @property
     def metric(self) -> Callable:
-        """
-        Used metric.
-
-        """
+        """Metric function."""
         assert self._metric is not None, 'Metric calculation is not defined'
         return self._metric
 
     @property
     def name(self) -> str:
-        """
-        Name of used metric.
-
-        """
+        """Name of used metric."""
         if self._name is None:
             return 'AutoML Metric'
         else:
@@ -138,12 +142,13 @@ class SkMetric(LAMLMetric):
         """
 
         Args:
-            metric: specifies metric. Format: ``func(y_true, y_false, Optional[sample_weight], **kwargs)`` -> `float`.
-            name: name of metric.
-            greater_is_better: whether or not higher metric value is better.
+            metric: Specifies metric. Format:
+                ``func(y_true, y_false, Optional[sample_weight], **kwargs)`` -> `float`.
+            name: Name of metric.
+            greater_is_better: Whether or not higher metric value is better.
             one_dim: `True` for single class, False for multiclass.
-            weighted: weights of classes.
-            **kwargs: other parameters for metric.
+            weighted: Weights of classes.
+            **kwargs: Other parameters for metric.
 
         """
         self._metric = metric
@@ -156,15 +161,18 @@ class SkMetric(LAMLMetric):
         self.kwargs = kwargs
 
     def __call__(self, dataset: 'SklearnCompatible', dropna: bool = False) -> float:
-        """
-        Implement call sklearn metric on dataset.
+        """Implement call sklearn metric on dataset.
 
         Args:
-            dataset: NumpyDataset or PandasDataset.
-            dropna: to ignore NaN in metric calculation.
+            dataset: Dataset in Numpy or Pandas format.
+            dropna: To ignore NaN in metric calculation.
 
         Returns:
-            metric value.
+            Metric value.
+
+        Raises:
+            AssertionError: if dataset has no target or
+                target specified as one-dimensioned, but it is not.
 
         """
         assert hasattr(dataset, 'target'), 'Dataset should have target to calculate metric'
@@ -199,23 +207,33 @@ class Task:
 
     @property
     def name(self) -> str:
+        """ Name of task."""
         return self._name
 
     def __init__(self, name: str, loss: Optional[Union[dict, str]] = None, loss_params: Optional[Dict] = None,
                  metric: Optional[Union[str, Callable]] = None, metric_params: Optional[Dict] = None,
                  greater_is_better: Optional[bool] = None):
         """
+
         Args:
-            name: task name. Valid names:
-             - 'binary' for binary classification,
-             - 'reg' for regression,
-             - 'multiclass' for multiclass classification.
-            loss: objective function or dict of functions.
-            loss_params: additional loss parameters,
-             if dict there is no presence check for loss_params
-            metric: string name or callable.
-            metric_params: additional metric parameters.
-            greater_is_better: whether or not higher value is better.
+            name: Task name.
+            loss: Objective function or dict of functions.
+            loss_params: Additional loss parameters,
+                if dict there is no presence check for loss_params.
+            metric: String name or callable.
+            metric_params: Additional metric parameters.
+            greater_is_better: Whether or not higher value is better.
+
+        Note:
+            There is 3 different task types:
+
+                - `'binary'` for binary classification,
+                - `'reg'` for regression,
+                - `'multiclass'` for multiclass classification.
+
+        Example:
+
+            >>> task = Task('binary', metric='auc')
 
         """
 
@@ -310,12 +328,12 @@ class Task:
             self.losses[loss_key].set_callback_metric(metric, greater_is_better, self.metric_params)
 
     def get_dataset_metric(self) -> LAMLMetric:
-        """
-        Create metric for dataset.
+        """Create metric for dataset.
+
         Get LAMLMetric that is called on dataset.
 
         Returns:
-            SkMetric.
+            Metric in scikit-learn compatible format.
 
         """
         # for now - case of sklearn metric only

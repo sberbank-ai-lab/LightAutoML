@@ -1,6 +1,4 @@
-"""
-Image utils
-"""
+"""Image utils."""
 
 from PIL import Image
 from log_calls import record_history
@@ -11,10 +9,10 @@ def pil_loader(path: str) -> Image:
     """Load image from pathes.
 
     Args:
-        path: str image path
+        path: str image path.
 
     Returns:
-        loaded PIL Image in rgb
+        loaded PIL Image in rgb.
 
     """
     with open(path, 'rb') as f:

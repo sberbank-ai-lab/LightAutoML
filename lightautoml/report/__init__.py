@@ -1,6 +1,4 @@
-"""
-Report generators and templates
-"""
+"""Report generators and templates."""
 
 from .report_deco import ReportDeco, ReportDecoWhitebox
 

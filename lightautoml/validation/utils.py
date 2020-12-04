@@ -1,15 +1,13 @@
-"""
-Validation utils
-"""
+"""Validation utils."""
 
 from typing import Optional, Callable, cast, Union
 
 from log_calls import record_history
 
-from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 from .base import DummyIterator, HoldoutIterator, TrainValidIterator
 from .np_iterators import get_numpy_iterator
+from ..dataset.base import LAMLDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 
 NpDataset = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 

@@ -1,10 +1,9 @@
-"""
-Weighted average transformer
-"""
+"""Weighted average transformer for sequence embeddings."""
 
 from collections import Counter
 from itertools import repeat
-from typing import Any, Optional, Dict, Sequence
+from typing import Any, Dict, Sequence
+
 import numpy as np
 from log_calls import record_history
 from scipy.linalg import svd
@@ -19,22 +18,23 @@ logger = get_logger(__name__)
 
 @record_history(enabled=False)
 class WeightedAverageTransformer(TransformerMixin):
-    """Weighted average of word embeddings"""
+    """Weighted average of word embeddings."""
     name = 'WAT'
 
     def __init__(self, embedding_model: Dict, embed_size: int,
                  weight_type: str = 'idf', use_svd: bool = True,
-                 alpha: int =0.001, verbose: bool = False, **kwargs: Any):
+                 alpha: int = 0.001, verbose: bool = False, **kwargs: Any):
         """Calculate sentence embedding as weighted average of word embeddings.
 
+        Args:
+            embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}.
+            embed_size: size of embedding.
+            weight_type: 'idf' for idf weights, 'sif' for smoothed inverse frequency weights, '1' for all weights are equal.
+            use_svd: substract projection onto first singular vector.
+            alpha: param for sif weights.
+            verbose: add prints.
+            **kwargs: unused arguments.
 
-        embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}
-        embed_size: size of embedding
-        weight_type: 'idf' for idf weights, 'sif' for smoothed inverse frequency weights, '1' for all weights are equal
-        use_svd: substract projection onto first singular vector
-        alpha: param for sif weights
-        verbose: add prints
-        kwargs: unused arguments
         """
         super(WeightedAverageTransformer, self).__init__()
 
@@ -53,31 +53,31 @@ class WeightedAverageTransformer(TransformerMixin):
         self.w_emb = 0
 
     def get_name(self) -> str:
-        """Module name
+        """Module name.
 
         Returns:
-            string with module name
+            string with module name.
 
         """
         return self.name + '_' + self.weight_type
 
     def get_out_shape(self) -> int:
-        """Output shape
+        """Output shape.
 
         Returns:
-            int with module output shape
+            int with module output shape.
 
         """
         return self.embed_size
 
     def reset_statistic(self):
-        """Reset module statistics"""
+        """Reset module statistics."""
 
         self.w_all = 0
         self.w_emb = 0
 
     def get_statistic(self):
-        """Get module statistics"""
+        """Get module statistics."""
 
         logger.info(f'N_words: {self.w_all}, N_emb: {self.w_emb}, coverage: {self.w_emb / self.w_all}.')
 

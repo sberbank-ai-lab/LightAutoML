@@ -35,8 +35,7 @@ networkx = "*"
 cmaes = "*"
 log-calls = "*"
 pyyaml = "*"
-sphinx = "*"
-sphinx-rtd-theme = "*"
+
 catboost = "*"
 json2html = "*"
 jinja2 = "*"
@@ -55,6 +54,9 @@ pywavelets = '*'
 scikit-image = '*'
 torchvision = '*'
 
+
+sphinx = "*"
+sphinx-rtd-theme = "*"
 IPython = "*"
 nbsphinx = "*"
 nbsphinx-link = "*"

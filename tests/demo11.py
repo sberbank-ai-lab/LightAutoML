@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 from lightautoml.automl.presets.text_presets import TabularNLPAutoML
 from lightautoml.tasks import Task
 
+
 def test_nlp_preset():
     np.random.seed(42)
     logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)

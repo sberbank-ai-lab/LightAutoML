@@ -1,0 +1,6 @@
+log_calls
+ipykernel
+nbsphinx
+nbsphinx-link
+sphinx-autodoc-typehints
+pandoc

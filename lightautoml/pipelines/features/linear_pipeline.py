@@ -1,6 +1,4 @@
-"""
-Linear models features
-"""
+"""Linear models features."""
 
 from typing import Union, Optional
 
@@ -22,15 +20,18 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 @record_history(enabled=False)
 class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
     """
-    Creates pipeline for linear models and nnets
+    Creates pipeline for linear models and nnets.
+
     Includes:
-        - create categorical intersections
-        - ohe or embed idx encoding for categories
-        - other cats to numbers ways if defined in role params
-        - standartization and nan handling for numbers
-        - numbers discretization if needed
-        - dates handling
-        - handling probs (output of lower level models)
+
+        - create categorical intersections.
+        - ohe or embed idx encoding for categories.
+        - other cats to numbers ways if defined in role params.
+        - standartization and nan handling for numbers.
+        - numbers discretization if needed.
+        - dates handling.
+        - handling probs (output of lower level models).
+
     """
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
@@ -41,15 +42,16 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         """
 
         Args:
-            feats_imp: features importances mapping
-            top_intersections: max number of categories to generate intersections
-            max_bin_count: max number of bins to discretize numbers
-            max_intersection_depth: max depth of cat intersection
-            subsample: subsample to calc data statistics
-            sparse_ohe: should we output sparse if ohe encoding was used during cat handling
-            auto_unique_co: switch to target encoding if high cardinality
-            output_categories: output encoded categories or embed idxs
-            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high
+            feats_imp: features importances mapping.
+            top_intersections: max number of categories to generate intersections.
+            max_bin_count: max number of bins to discretize numbers.
+            max_intersection_depth: max depth of cat intersection.
+            subsample: subsample to calc data statistics.
+            sparse_ohe: should we output sparse if ohe encoding was used during cat handling.
+            auto_unique_co: switch to target encoding if high cardinality.
+            output_categories: output encoded categories or embed idxs.
+            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high.
+
         """
         assert max_bin_count is None or max_bin_count > 1, 'Max bin count should be >= 2 or None'
 
@@ -67,13 +69,13 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
                          )
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
-        """Create linear pipeline
+        """Create linear pipeline.
 
         Args:
-            train: LAMLDataset with train features
+            train: LAMLDataset with train features.
 
         Returns:
-            LAMLTransformer
+            LAMLTransformer.
 
         """
         transformers_list = []

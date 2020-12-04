@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 import logging
-import os
 
 import numpy as np
 import pandas as pd
@@ -10,8 +9,8 @@ from sklearn.model_selection import train_test_split
 
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
 from lightautoml.validation.np_iterators import TimeSeriesIterator
+
 
 ################################
 # Features:

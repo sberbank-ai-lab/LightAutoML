@@ -1,6 +1,4 @@
-"""
-Report utils
-"""
+"""Classes for report generation and add-ons."""
 
 import os
 from copy import copy
@@ -291,22 +289,26 @@ def plot_confusion_matrix(data, path):
 
 class ReportDeco:
     """
-    Decorator to wrap automl class to generate html report on fit_predict and predict
-    Usage: report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl)
+    Decorator to wrap automl class to generate html report on fit_predict and predict.
+    Usage: report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
     then call report_automl.fit_predict... and report_automl.predict...
-    Report will be generated at output_path/report_file_name automatically
+    Report will be generated at output_path/report_file_name automatically.
     Attention: do not use it just to inference (if you don't need report), because:
+
         - it needs target variable to calc performance metrics
         - it takes additional time to generate report
         - dump of decorated automl takes more memory to store
-    To get unwrapped fitted instance to pickle and inferecne access report_automl.model attribute
+
+    To get unwrapped fitted instance to pickle and inferecne access report_automl.model attribute.
+
     """
 
     @property
     def model(self):
-        """Get unwrapped model
+        """Get unwrapped model.
 
         Returns:
+            model.
 
         """
         return self._model
@@ -319,10 +321,13 @@ class ReportDeco:
         """
 
         Valid kwargs are
-            - output_path: folder with report files
-            - report_file_name: name of main report file
+
+            - output_path: folder with report files.
+            - report_file_name: name of main report file.
+
         Args:
-            **kwargs:
+            *args: arguments.
+            **kwargs: additional parameters.
 
         """
         if not kwargs:
@@ -443,13 +448,14 @@ class ReportDeco:
     def fit_predict(self, *args, **kwargs):
         """Wrapped automl.fit_predict method.
 
-        Valid args, kwargs are the same as wrapped automl
+        Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args:
-            **kwargs:
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
+            oof predictions.
 
         """
         # TODO: parameters parsing in general case
@@ -525,15 +531,16 @@ class ReportDeco:
         return preds
 
     def predict(self, *args, **kwargs):
-        """Wrapped automl.predict method
+        """Wrapped automl.predict method.
 
-        Valid args, kwargs are the same as wrapped automl
+        Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args:
-            **kwargs:
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
+            predictions.
 
         """
         self._n_test_sample += 1
@@ -609,11 +616,13 @@ class ReportDeco:
         return general_info.to_html(index=False, justify='left')
 
     def _describe_roles(self, train_data):
+
         # detect feature roles
         roles = self._model.reader._roles
         numerical_features = [feat_name for feat_name in roles if roles[feat_name].name == 'Numeric']
         categorical_features = [feat_name for feat_name in roles if roles[feat_name].name == 'Category']
         datetime_features = [feat_name for feat_name in roles if roles[feat_name].name == 'Datetime']
+
         # numerical roles
         numerical_features_df = []
         for feature_name in numerical_features:
@@ -758,22 +767,26 @@ _default_wb_report_params = {"automl_date_column": "",
 
 class ReportDecoWhitebox(ReportDeco):
     """
-    Special report wrapper for WhiteBoxPreset. Usage case is the same as main ReportDeco class
-    It generates same report as ReportDeco, but with additional whitebox report part
+    Special report wrapper for WhiteBoxPreset. Usage case is the same as main ReportDeco class.
+    It generates same report as ReportDeco, but with additional whitebox report part.
+
     Difference:
-        - report_automl.predict gets additional report argument. It stands for updating whitebox report part
-            Calling report_automl.predict(test_data, report=True) will update test part of whitebox report
-            Calling report_automl.predict(test_data, report=False) will extend general report with
-                new data and keeps whitebox part as is (much more faster)
-        - WhiteboxPreset should be created with parameter general_params={'report': True} to get white box report part
-            if general_params set to {'report': False}, only standard ReportDeco part will be created (much fasted)
+
+        - report_automl.predict gets additional report argument. It stands for updating whitebox report part.
+          Calling report_automl.predict(test_data, report=True) will update test part of whitebox report.
+          Calling report_automl.predict(test_data, report=False) will extend general report with.
+          new data and keeps whitebox part as is (much more faster).
+        - WhiteboxPreset should be created with parameter general_params={'report': True} to get white box report part.
+          if general_params set to {'report': False}, only standard ReportDeco part will be created (much fasted).
+
     """
 
     @property
     def model(self):
-        """Get unwrapped whitebox
+        """Get unwrapped whitebox.
 
         Returns:
+            model.
 
         """
         # this is made to remove heavy whitebox inner report deco
@@ -810,18 +823,19 @@ class ReportDecoWhitebox(ReportDeco):
     def fit_predict(self, *args, **kwargs):
         """Wrapped automl.fit_predict method.
 
-        Valid args, kwargs are the same as wrapped automl
+        Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args:
-            **kwargs:
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
+            oof predictions.
 
         """
         predict_proba = super().fit_predict(*args, **kwargs)
 
-        if self.model.general_params['report']:
+        if self._model.general_params['report']:
             self._generate_whitebox_section()
         else:
             logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
@@ -830,8 +844,30 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
+        """Wrapped automl.predict method.
+
+        Valid args, kwargs are the same as wrapped automl.
+
+        Args:
+            *args: arguments.
+            **kwargs: additional parameters.
+
+        Returns:
+            predictions.
+
+        """
+        if len(args) >= 2:
+            args = (args[0],)
+
+        kwargs['report'] = self._model.general_params['report']
+
         predict_proba = super().predict(*args, **kwargs)
-        self._generate_whitebox_section()
+
+        if self._model.general_params['report']:
+            self._generate_whitebox_section()
+        else:
+            logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
+
         self.generate_report()
         return predict_proba
 

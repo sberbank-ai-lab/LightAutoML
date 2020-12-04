@@ -1,6 +1,4 @@
-"""
-Blenders
-"""
+"""Blenders."""
 
 from typing import Tuple, Sequence, List, cast, Optional, Callable
 
@@ -21,9 +19,11 @@ np.seterr(divide='ignore', invalid='ignore')
 
 @record_history(enabled=False)
 class Blender:
-    """
-    Basic class for blending
-    Blender learns how to make blend on Sequence of prediction datasets and prune pipes, that are not used in final blend
+    """Basic class for blending.
+
+    Blender learns how to make blend
+    on Sequence of prediction datasets and prune pipes,
+    that are not used in final blend.
     """
 
     _outp_dim = None
@@ -36,17 +36,18 @@ class Blender:
 
     def fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
                     ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
-        """Wraps custom _fit_predict methods of blenders
+        """Wraps custom _fit_predict methods of blenders.
 
         Method wraps individual ._fit_predict method of blenders. If input is single model - take it, else _fit_predict
         Note - some pipelines may have more than 1 model. So corresponding prediction dataset have multiple prediction cols
 
         Args:
-            predictions: Sequence of prediction LAMLDataset
-            pipes: Sequence of MLPipelines
+            predictions: Sequence of prediction LAMLDataset.
+            pipes: Sequence of MLPipelines.
 
         Returns:
-            Single prediction dataset and Sequence of pruned MLPipelines
+            Single prediction dataset and Sequence of pruned MLPipelines.
+
         """
         if len(pipes) == 1 and len(pipes[0].ml_algos) == 1:
             self._bypass = True
@@ -56,24 +57,26 @@ class Blender:
 
     def _fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
                      ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
-        """Defeines how to fit, predict and prune - Abstract
+        """Defeines how to fit, predict and prune - Abstract.
 
         Args:
-            predictions:
-            pipes:
+            predictions: dataset.
+            pipes: dataset.
 
         Returns:
+            Datasets.
 
         """
         raise NotImplementedError
 
     def predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
-        """Wraps custom _fit_predict methods of blenders
+        """Wraps custom _fit_predict methods of blenders.
 
         Args:
-            predictions: Sequence of predictions from pruned LAMLDatasets
+            predictions: Sequence of predictions from pruned LAMLDatasets.
 
         Returns:
+            Dataset with predictions.
 
         """
         if self._bypass:
@@ -82,23 +85,25 @@ class Blender:
         return self._predict(predictions)
 
     def _predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
-        """Blend predictions on new sample
+        """Blend predictions on new sample.
 
         Args:
-            predictions: Sequence of predictions from pruned LAMLDatasets
+            predictions: Sequence of predictions from pruned LAMLDatasets.
 
         Returns:
+            Dataset.
 
         """
         raise NotImplementedError
 
     def split_models(self, predictions: Sequence[LAMLDataset]) -> Tuple[Sequence[LAMLDataset], List[int], List[int]]:
-        """Helper method - split predictions by single model prediction datasets
+        """Helper method - split predictions by single model prediction datasets.
 
         Args:
-            predictions:
+            predictions: Sequence of datasets with predictions.
 
         Returns:
+            Splited predictions, model indices, pipe indices.
 
         """
         splitted_preds = []
@@ -128,36 +133,38 @@ class Blender:
         self._score = predictions[0].task.get_dataset_metric()
 
     def score(self, dataset: LAMLDataset) -> float:
-        """Score metric for blender
+        """Score metric for blender.
 
         Args:
-            dataset: blended predictions dataset
+            dataset: Blended predictions dataset.
 
         Returns:
-            metric value
+            Metric value.
+
         """
         return self._score(dataset, True)
 
 
 @record_history(enabled=False)
 class BestModelSelector(Blender):
-    """
-    Select best single model from level
-    Drops pipes that are not used in calc best model
-    Works in general case (even on some custom things) and most efficient on inference
-    Perform worse than other on tables, specially if some of models was terminated by timer
+    """Select best single model from level.
+
+    Drops pipes that are not used in calc best model.
+    Works in general case (even on some custom things) and most efficient on inference.
+    Perform worse than other on tables, specially if some of models was terminated by timer.
+
     """
 
     def _fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
                      ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
-        """Simple fit - just take one best
+        """Simple fit - just take one best.
 
         Args:
-            predictions: Sequence of prediction LAMLDataset
-            pipes: Sequence of MLPipelines
+            predictions: Sequence of prediction LAMLDataset.
+            pipes: Sequence of MLPipelines.
 
         Returns:
-            Single prediction dataset and Sequence of pruned MLPipelines
+            Single prediction dataset and Sequence of pruned MLPipelines.
 
         """
         self._set_metadata(predictions, pipes)
@@ -184,23 +191,25 @@ class BestModelSelector(Blender):
         return best_pred, [best_pipe]
 
     def _predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
-        """Simple predict - pruned pipe is a single model
+        """Simple predict - pruned pipe is a single model.
 
         Args:
-            predictions: Sequence of predictions from pruned LAMLDatasets
+            predictions: Sequence of predictions from pruned LAMLDatasets.
 
         Returns:
-
+            Dataset.
         """
         return predictions[0]
 
 
 @record_history(enabled=False)
 class MeanBlender(Blender):
-    """
-    Simple average level predictions. Works only with TabularDatasets
-    Doesn't require target to fit
-    No pruning
+    """Simple average level predictions.
+
+    Works only with TabularDatasets.
+    Doesn't require target to fit.
+    No pruning.
+
     """
 
     def _get_mean_pred(self, splitted_preds: Sequence[NumpyDataset]) -> NumpyDataset:
@@ -215,14 +224,14 @@ class MeanBlender(Blender):
 
     def _fit_predict(self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
                      ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
-        """Simple fit_predict - just average and no prune
+        """Simple fit_predict - just average and no prune.
 
         Args:
-            predictions: Sequence of prediction LAMLDataset
-            pipes: Sequence of MLPipelines
+            predictions: Sequence of prediction LAMLDataset.
+            pipes: Sequence of MLPipelines.
 
         Returns:
-            Single prediction dataset and Sequence of pruned MLPipelines
+            Single prediction dataset and Sequence of pruned MLPipelines.
 
         """
         self._set_metadata(predictions, pipes)
@@ -233,13 +242,13 @@ class MeanBlender(Blender):
         return outp, pipes
 
     def _predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
-        """Simple fit_predict - just average
+        """Simple fit_predict - just average.
 
         Args:
-            predictions:
+            predictions: Dataset.
 
         Returns:
-
+            Dataset.
         """
         splitted_preds, _, __ = cast(List[NumpyDataset], self.split_models(predictions))
         outp = self._get_mean_pred(splitted_preds)
@@ -249,19 +258,22 @@ class MeanBlender(Blender):
 
 @record_history(enabled=False)
 class WeightedBlender(Blender):
-    """
-    Weighted Blender based on coordinate descent, optimize task metric directly. Weight sum eq. 1
-    Good blender for tabular data, even if some predictions are NaN (ex. timeout)
-    Model with low weights will be pruned
+    """Weighted Blender based on coordinate descent, optimize task metric directly.
+
+    Weight sum eq. 1.
+    Good blender for tabular data, even if some predictions are NaN (ex. timeout).
+    Model with low weights will be pruned.
+
     """
 
     def __init__(self, max_iters: int = 5, max_inner_iters: int = 7, max_nonzero_coef: float = 0.05):
         """
 
         Args:
-            max_iters: max number of coord desc loops
-            max_inner_iters: max number of iters to solve inner scalar optimization task
-            max_nonzero_coef: maximum model weight value to stay in ensemble
+            max_iters: Max number of coord desc loops.
+            max_inner_iters: Max number of iters to solve inner scalar optimization task.
+            max_nonzero_coef: Maximum model weight value to stay in ensemble.
+
         """
         self.max_iters = max_iters
         self.max_inner_iters = max_inner_iters
@@ -375,16 +387,17 @@ class WeightedBlender(Blender):
 
     def _fit_predict(self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
                      ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
-        """Perform coordinate descent
+        """Perform coordinate descent.
 
         Args:
-            predictions: Sequence of prediction LAMLDataset
-            pipes: Sequence of MLPipelines
+            predictions: Sequence of prediction LAMLDataset.
+            pipes: Sequence of MLPipelines.
 
         Returns:
-            Single prediction dataset and Sequence of pruned MLPipelines
+            Single prediction dataset and Sequence of pruned MLPipelines.
 
         Returns:
+            Dataset and MLPipeline.
 
         """
         self._set_metadata(predictions, pipes)
@@ -399,12 +412,13 @@ class WeightedBlender(Blender):
         return outp, pipes
 
     def _predict(self, predictions: Sequence[LAMLDataset]) -> LAMLDataset:
-        """Simple - weighted average
+        """Simple - weighted average.
 
         Args:
-            predictions:
+            predictions: dataset.
 
         Returns:
+            Dataset.
 
         """
         splitted_preds, _, __ = cast(List[NumpyDataset], self.split_models(predictions))

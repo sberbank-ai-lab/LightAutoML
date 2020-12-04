@@ -1,6 +1,4 @@
-"""
-Image feature extractors
-"""
+"""Image feature extractors based on color histograms and CNN embeddings."""
 
 from copy import copy
 from typing import List, Callable, Sequence, Optional, Any, Union
@@ -34,8 +32,8 @@ class ColorFeatures:
         Works with RGB and grayscale images only.
 
         Args:
-            hist_size: number of bins for each channel
-            is_hsv: convert image to hsv
+            hist_size: number of bins for each channel.
+            is_hsv: convert image to hsv.
 
         """
         self.hist_size = hist_size
@@ -46,10 +44,10 @@ class ColorFeatures:
         """Compute normalized color histogram for one channel.
 
         Args:
-            img: image np.ndarray with shape (h, w)
+            img: image np.ndarray with shape (h, w).
 
         Returns:
-            list of channel histogram values
+            list of channel histogram values.
 
         """
         # TODO: add value range check
@@ -64,7 +62,7 @@ class ColorFeatures:
         """Define how to get features names list.
 
         Returns:
-            list of features names
+            list of features names.
 
         """
         return [j for i in [['color_' + j + '_' + str(i) for i in np.arange(self.hist_size)] for j in self._f_names] for j in i]
@@ -73,10 +71,10 @@ class ColorFeatures:
         """Calculate normalized color histogram for rgb or hsv image.
 
         Args:
-            img: np.ndarray with shape (h, w)
+            img: np.ndarray with shape (h, w).
 
         Returns:
-            list of histogram values
+            list of histogram values.
 
         """
         img = copy(img)
@@ -99,10 +97,10 @@ class CreateImageFeatures:
         """Create normalized color histogram for rgb or hsv image.
 
         Args:
-            hist_size: number of bins for each channel
-            is_hsv: convert image to hsv
-            n_jobs: number of threads for multiprocessing
-            loader: callable for reading image from path
+            hist_size: number of bins for each channel.
+            is_hsv: convert image to hsv.
+            n_jobs: number of threads for multiprocessing.
+            loader: callable for reading image from path.
 
         """
         self.fe = ColorFeatures(hist_size, is_hsv)
@@ -110,13 +108,13 @@ class CreateImageFeatures:
         self.loader = loader
 
     def process(self, im_path_i: str) -> List[numeric]:
-        """Create normalized color histogram for input image by its path
+        """Create normalized color histogram for input image by its path.
 
         Args:
-            im_path_i: str with path to the image
+            im_path_i: str with path to the image.
 
         Returns:
-            list of histogram values
+            list of histogram values.
 
         """
         im_i = np.array(self.loader(im_path_i))
@@ -126,13 +124,13 @@ class CreateImageFeatures:
         return res_i
 
     def transform(self, samples: Sequence[str]) -> np.ndarray:
-        """Transform input sequence with paths to histogram values
+        """Transform input sequence with paths to histogram values.
 
         Args:
-            samples: sequence with images paths
+            samples: sequence with images paths.
 
         Returns:
-            array of histograms
+            array of histograms.
 
         """
         res = Parallel(self.n_jobs)(delayed(self.process)(im_path_i) for im_path_i in samples)
@@ -141,17 +139,17 @@ class CreateImageFeatures:
 
 @record_history(enabled=False)
 class EffNetImageEmbedder(nn.Module):
-    """Class to compute EfficientNet embeddings"""
+    """Class to compute EfficientNet embeddings."""
 
     def __init__(self, model_name: str = 'efficientnet-b0', weights_path: Optional[str] = None, is_advprop: bool = True,
                  device=torch.device('cuda:0')):
         """Pytorch module for image embeddings based on efficientnet model.
 
         Args:
-            model_name: name of effnet model
-            weights_path: path to saved weights
-            is_advprop: use adversarial training
-            devices: device to use
+            model_name: name of effnet model.
+            weights_path: path to saved weights.
+            is_advprop: use adversarial training.
+            devices: device to use.
 
         """
         super(EffNetImageEmbedder, self).__init__()
@@ -164,10 +162,10 @@ class EffNetImageEmbedder(nn.Module):
 
     @torch.no_grad()
     def get_shape(self) -> int:
-        """Calculate output embedding shape
+        """Calculate output embedding shape.
 
         Returns:
-            int shape of embedding
+            int shape of embedding.
 
         """
         return self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
@@ -179,15 +177,15 @@ class EffNetImageEmbedder(nn.Module):
 
 @record_history(enabled=False)
 class ImageDataset:
-    """Image Dataset Class"""
+    """Image Dataset Class."""
 
     def __init__(self, data: Sequence[str], is_advprop: bool = True, loader: Callable = pil_loader):
-        """Pytorch Dataset for EffNetImageEmbedder
+        """Pytorch Dataset for EffNetImageEmbedder.
 
         Args:
-            data: sequence of paths
-            is_advprop: use adversarial training
-            loader: callable for reading image from path
+            data: sequence of paths.
+            is_advprop: use adversarial training.
+            loader: callable for reading image from path.
 
         """
         self.X = data
@@ -209,20 +207,20 @@ class ImageDataset:
 
 @record_history(enabled=False)
 class DeepImageEmbedder(TransformerMixin):
-    """Transformer for image embeddings"""
+    """Transformer for image embeddings."""
 
     def __init__(self, device: torch.device = torch.device('cuda:0'), n_jobs=4, random_state=42, is_advprop=True,
                  model_name='efficientnet-b0', weights_path: Optional[str] = None, batch_size: int = 128, verbose: bool = True):
-        """Pytorch Dataset for EffNetImageEmbedder
+        """Pytorch Dataset for EffNetImageEmbedder.
 
         Args:
-            device: torch device
-            n_jobs: number of threads for dataloader
-            random_state: seed
-            is_advprop: use adversarial training
-            model_name: name of effnet model
-            weights_path: path to saved weights
-            batch_size: batch size
+            device: torch device.
+            n_jobs: number of threads for dataloader.
+            random_state: seed.
+            is_advprop: use adversarial training.
+            model_name: name of effnet model.
+            weights_path: path to saved weights.
+            batch_size: batch size.
             verbose: verbose data processing.
 
         """
@@ -247,10 +245,10 @@ class DeepImageEmbedder(TransformerMixin):
         """Calculate image embeddings from pathes.
 
         Args:
-            data: sequence of paths
+            data: sequence of paths.
 
         Returns:
-            array of embeddings
+            array of embeddings.
 
         """
 

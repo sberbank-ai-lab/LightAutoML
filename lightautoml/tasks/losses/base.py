@@ -1,3 +1,5 @@
+"""Base classes for metric and loss functions."""
+
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict, Any
 
@@ -27,14 +29,11 @@ class MetricFunc:
 
 @record_history(enabled=False)
 class Loss:
-    """
-    Loss function with target transformation.
-    """
+    """Loss function with target transformation."""
 
     @staticmethod
     def _fw_func(target: Any, weights: Any) -> Tuple[Any, Any]:
-        """
-        Forward transformation.
+        """Forward transformation.
 
         Args:
             target: true target values.
@@ -48,8 +47,7 @@ class Loss:
 
     @staticmethod
     def _bw_func(pred: Any) -> Any:
-        """
-        Backward transformation for predicted values.
+        """Backward transformation for predicted values.
 
         Args:
             pred: predicted target values.
@@ -61,8 +59,7 @@ class Loss:
 
     @property
     def fw_func(self):
-        """
-        Forward transformation for target values and item weights.
+        """Forward transformation for target values and item weights.
 
         Returns:
             callable transformation.
@@ -72,8 +69,7 @@ class Loss:
 
     @property
     def bw_func(self):
-        """
-        Backward transformation for predicted values.
+        """Backward transformation for predicted values.
 
         Returns:
             callable transformation.
@@ -83,8 +79,7 @@ class Loss:
 
     def metric_wrapper(self, metric_func: Callable, greater_is_better: Optional[bool],
                        metric_params: Optional[Dict] = None) -> Callable:
-        """
-        Customize metric.
+        """Customize metric.
 
         Args:
             metric_func: callable metric.
@@ -107,8 +102,7 @@ class Loss:
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
                             metric_params: Optional[Dict] = None):
-        """
-        Callback metric setter.
+        """Callback metric setter.
 
         Args:
             metric: callback metric

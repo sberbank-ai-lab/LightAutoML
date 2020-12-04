@@ -1,6 +1,4 @@
-"""
-Tokenizer
-"""
+"""Tokenizer classes for text preprocesessing and tokenization."""
 
 import re
 from functools import partial
@@ -20,7 +18,7 @@ Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
 
 @record_history(enabled=False)
 def tokenizer_func(arr, tokenizer):
-    """Additional tokenizer function"""
+    """Additional tokenizer function."""
     return [tokenizer._tokenize(x) for x in arr]
 
 
@@ -32,12 +30,12 @@ class BaseTokenizer:
     _fit_checks = ()
     _transform_checks = ()
 
-    def __init__(self, n_jobs: int= 4, to_string: bool = True, **kwargs: Any):
+    def __init__(self, n_jobs: int = 4, to_string: bool = True, **kwargs: Any):
         """Tokenization with simple text cleaning and preprocessing.
 
         Args:
-            n_jobs: number of threads for multiprocessing
-            to_string: return string or list of tokens
+            n_jobs: number of threads for multiprocessing.
+            to_string: return string or list of tokens.
 
         """
         super().__init__(**kwargs)
@@ -45,34 +43,34 @@ class BaseTokenizer:
         self.to_string = to_string
 
     def preprocess_sentence(self, snt: str) -> str:
-        """Preprocess sentence string (lowercase, etc.)
+        """Preprocess sentence string (lowercase, etc.).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         return snt
 
     def tokenize_sentence(self, snt: str) -> List[str]:
-        """Convert sentence string to a list of tokens
+        """Convert sentence string to a list of tokens.
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting list of tokens
+            resulting list of tokens.
 
         """
         return snt.split(' ')
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
-        """Clean list of sentence tokens
+        """Clean list of sentence tokens.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
             resulting list of filtered tokens
@@ -84,21 +82,21 @@ class BaseTokenizer:
         """Additional processing steps: lemmatization, pos tagging, etc.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
-            resulting list of processed tokens
+            resulting list of processed tokens.
         """
         return snt
 
     def postprocess_sentence(self, snt: str) -> str:
-        """Postprocess sentence string (merge words)
+        """Postprocess sentence string (merge words).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         return snt
@@ -107,10 +105,10 @@ class BaseTokenizer:
         """Tokenize text string
 
         Args:
-            snt: string
+            snt: string.
 
         Returns:
-            resulting tokenized list
+            resulting tokenized list.
 
         """
         res = self.preprocess_sentence(snt)
@@ -124,13 +122,13 @@ class BaseTokenizer:
         return res
 
     def tokenize(self, text: List[str]) -> Union[List[List[str]], List[str]]:
-        """Tokenize list of texts
+        """Tokenize list of texts.
 
         Args:
-            text: list of texts
+            text: list of texts.
 
         Returns:
-            resulting tokenized list
+            resulting tokenized list.
 
         """
         if self.n_jobs == 1:
@@ -143,10 +141,10 @@ class BaseTokenizer:
         """Singleproc version of tokenization.
 
         Args:
-            snt: list of texts
+            snt: list of texts.
 
         Returns:
-            list of tokenized texts
+            list of tokenized texts.
 
         """
         return [self._tokenize(x) for x in snt]
@@ -155,10 +153,10 @@ class BaseTokenizer:
         """Multiproc version of tokenization.
 
         Args:
-            snt: list of texts
+            snt: list of texts.
 
         Returns:
-            list of tokenized texts
+            list of tokenized texts.
 
         """
         idx = list(range(0, len(snt), len(snt) // self.n_jobs + 1)) + [len(snt)]
@@ -178,7 +176,7 @@ class BaseTokenizer:
 
 @record_history(enabled=False)
 class SimpleRuTokenizer(BaseTokenizer):
-    """Russian tokenizer"""
+    """Russian tokenizer."""
 
     def __init__(self, n_jobs: int = 4, to_string: bool = True,
                  stopwords: Optional[Union[bool, Sequence[str]]] = False,
@@ -188,10 +186,10 @@ class SimpleRuTokenizer(BaseTokenizer):
         Include numeric, abbreviations, punctuation and short word filtering. Use stemmer by default and do lowercase.
 
         Args:
-            n_jobs: number of threads for multiprocessing
-            to_string: return string or list of tokens
-            stopwords: use stopwords or not
-            is_stemmer: use stemmer
+            n_jobs: number of threads for multiprocessing.
+            to_string: return string or list of tokens.
+            stopwords: use stopwords or not.
+            is_stemmer: use stemmer.
 
         """
 
@@ -209,18 +207,18 @@ class SimpleRuTokenizer(BaseTokenizer):
 
     @staticmethod
     def _is_abbr(word: str) -> bool:
-        """Check if the word is an abbreviation"""
+        """Check if the word is an abbreviation."""
 
         return sum([x.isupper() and x.isalpha() for x in word]) > 1 and len(word) <= 5
 
     def preprocess_sentence(self, snt: str) -> str:
-        """Preprocess sentence string (lowercase, etc.)
+        """Preprocess sentence string (lowercase, etc.).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         snt = snt.strip()
@@ -229,25 +227,26 @@ class SimpleRuTokenizer(BaseTokenizer):
         return s
 
     def tokenize_sentence(self, snt: str) -> List[str]:
-        """Convert sentence string to a list of tokens
+        """Convert sentence string to a list of tokens.
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting list of tokens
+            resulting list of tokens.
 
         """
         return snt.split(' ')
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
-        """Clean list of sentence tokens
+        """Clean list of sentence tokens.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
-            resulting list of filtered tokens
+            resulting list of filtered tokens.
+
         """
 
         filtered_s = []
@@ -273,10 +272,10 @@ class SimpleRuTokenizer(BaseTokenizer):
         """Additional processing steps: lemmatization, pos tagging, etc.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
-            resulting list of processed tokens
+            resulting list of processed tokens.
 
         """
         if self.stemmer is not None:
@@ -285,13 +284,13 @@ class SimpleRuTokenizer(BaseTokenizer):
             return snt
 
     def postprocess_sentence(self, snt: str) -> str:
-        """Postprocess sentence string (merge words)
+        """Postprocess sentence string (merge words).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         snt = snt.replace('не ', 'не')
@@ -301,7 +300,7 @@ class SimpleRuTokenizer(BaseTokenizer):
 
 @record_history(enabled=False)
 class SimpleEnTokenizer(BaseTokenizer):
-    """English tokenizer"""
+    """English tokenizer."""
 
     def __init__(self, n_jobs: int = 4, to_string: bool = True,
                  stopwords: Optional[Union[bool, Sequence[str]]] = False,
@@ -309,10 +308,10 @@ class SimpleEnTokenizer(BaseTokenizer):
         """Tokenizer for English language.
 
         Args:
-            n_jobs: number of threads for multiprocessing
-            to_string: return string or list of tokens
-            stopwords: use stopwords or not
-            is_stemmer: use stemmer
+            n_jobs: number of threads for multiprocessing.
+            to_string: return string or list of tokens.
+            stopwords: use stopwords or not.
+            is_stemmer: use stemmer.
 
         """
 
@@ -329,37 +328,37 @@ class SimpleEnTokenizer(BaseTokenizer):
         self.stemmer = SnowballStemmer('english', ignore_stopwords=len(self.stopwords) > 0) if is_stemmer else None
 
     def preprocess_sentence(self, snt: str) -> str:
-        """Preprocess sentence string (lowercase, etc.)
+        """Preprocess sentence string (lowercase, etc.).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         return snt
 
     def tokenize_sentence(self, snt: str) -> List[str]:
-        """Convert sentence string to a list of tokens
+        """Convert sentence string to a list of tokens.
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting list of tokens
+            resulting list of tokens.
 
         """
         return snt.split(' ')
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
-        """Clean list of sentence tokens
+        """Clean list of sentence tokens.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
-            resulting list of filtered tokens
+            resulting list of filtered tokens.
 
         """
         if len(self.stopwords) > 0:
@@ -375,10 +374,10 @@ class SimpleEnTokenizer(BaseTokenizer):
         """Additional processing steps: lemmatization, pos tagging, etc.
 
         Args:
-            snt: list of tokens
+            snt: list of tokens.
 
         Returns:
-            resulting list of processed tokens
+            resulting list of processed tokens.
 
         """
         if self.stemmer is not None:
@@ -387,13 +386,13 @@ class SimpleEnTokenizer(BaseTokenizer):
             return snt
 
     def postprocess_sentence(self, snt: str) -> str:
-        """Postprocess sentence string (merge words)
+        """Postprocess sentence string (merge words).
 
         Args:
-            snt: sentence string
+            snt: sentence string.
 
         Returns:
-            resulting string
+            resulting string.
 
         """
         return snt

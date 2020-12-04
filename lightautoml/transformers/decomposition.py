@@ -1,6 +1,4 @@
-"""
-Decompositions
-"""
+"""Dimension reduction transformers."""
 
 from typing import Union, List, Optional
 
@@ -39,7 +37,7 @@ def numeric_check(dataset: LAMLDataset):
 # TODO: merge into one transformer
 @record_history(enabled=False)
 class PCATransformer(LAMLTransformer):
-    """PCA"""
+    """PCA."""
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
@@ -47,7 +45,7 @@ class PCATransformer(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list"""
+        """Features list."""
         return self._features
 
     def __init__(self, subs: Optional[int] = None, random_state: int = 42, n_components: int = 500):
@@ -66,7 +64,7 @@ class PCATransformer(LAMLTransformer):
         self.pca = None
 
     def fit(self, dataset: NumpyTransformable):
-        """Fit algorithm on dataset
+        """Fit algorithm on dataset.
 
         Args:
             dataset: Sparse or Numpy dataset of text features.
@@ -93,13 +91,14 @@ class PCATransformer(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
-        """Transform input dataset to PCA representation
+        """Transform input dataset to PCA representation.
 
         Args:
-            dataset: Pandas or Numpy dataset of text features
+            dataset: Pandas or Numpy dataset of text features.
 
         Returns:
-            Numpy dataset with text embeddings
+            Numpy dataset with text embeddings.
+
         """
         # checks here
         super().transform(dataset)
@@ -117,7 +116,7 @@ class PCATransformer(LAMLTransformer):
 
 @record_history(enabled=False)
 class SVDTransformer(LAMLTransformer):
-    """TruncatedSVD"""
+    """TruncatedSVD."""
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
@@ -125,16 +124,16 @@ class SVDTransformer(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list"""
+        """Features list."""
         return self._features
 
     def __init__(self, subs: Optional[int] = None, random_state: int = 42, n_components: int = 100):
         """
 
         Args:
-            subs: subsample to fit algorithm. If None - full data.
-            random_state: random state to take subsample.
-            n_components: number of SVD components
+            subs: Subsample to fit algorithm. If None - full data.
+            random_state: Random state to take subsample.
+            n_components: Number of SVD components.
 
         """
         self.subs = subs
@@ -144,7 +143,7 @@ class SVDTransformer(LAMLTransformer):
         self.svd = None
 
     def fit(self, dataset: NumpyCSR):
-        """Fit algorithm on dataset
+        """Fit algorithm on dataset.
 
         Args:
             dataset: Sparse or Numpy dataset of text features.
@@ -170,13 +169,14 @@ class SVDTransformer(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyCSR) -> NumpyDataset:
-        """Transform input dataset to SVD representation
+        """Transform input dataset to SVD representation.
 
         Args:
-            dataset: Sparse or Numpy dataset of text features
+            dataset: Sparse or Numpy dataset of text features.
 
         Returns:
-            Numpy dataset with text embeddings
+            Numpy dataset with text embeddings.
+
         """
         # checks here
         super().transform(dataset)

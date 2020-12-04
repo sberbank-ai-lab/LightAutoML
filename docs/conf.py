@@ -18,7 +18,7 @@ from docutils.parsers.rst import Directive
 
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
-LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'lightautoml')
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir)
 sys.path.insert(0, LIB_PATH)
 
 
@@ -31,8 +31,12 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',  # will be used for tables
     'sphinx.ext.viewcode',  # for [source] button
-    'sphinx.ext.napoleon' # structure
+    'sphinx.ext.napoleon', # structure
+    'sphinx_autodoc_typehints',
+    'nbsphinx',
+    'nbsphinx_link'
 ]
+
 
 exclude_patterns = [
     'build/*',
@@ -40,7 +44,14 @@ exclude_patterns = [
 ]
 
 # Delete external references
-# autodoc_mock_imports = ['numpy', 'pandas']
+autodoc_mock_imports = ['numpy', 'pandas', 'catboost',
+                        'scipy', 'sklearn', 'torch',
+                        'lightgbm', 'networkx', 'holidays',
+                        'joblib', 'yaml', 'gensim',
+                        'optuna', 'PIL', 'cv2', 'albumentations',
+                        'efficientnet_pytorch', 'tqdm',
+                        'nltk', 'transformers', 'autowoe',
+                        'matplotlib', 'seaborn', 'json2html']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -67,24 +78,29 @@ html_static_path = ['_static']
 # code style
 pygments_style = 'default'
 
+nbsphinx_execute = 'never'
+
 # autodoc
 # function names that will not be included in documentation
 EXCLUDED_MEMBERS = ','.join(['get_own_record_history_wrapper',
                              'get_record_history_wrapper',
                              'record_history_omit',
-                             'record_history_only'])
+                             'record_history_only',
+                             # '__repr__', '__len__',
+                             # '__getitem__', '__setitem__',
+                             #  '__iter__', '__next__'
+                             ])
 
 # function names that will be included in documentation by force
-SPECIAL_MEMBERS = ','.join(['__init__', '__repr__',
-                            '__len__', '__getitem__',
-                            '__setitem__', '__iter__',
-                            '__next__'])
+# SPECIAL_MEMBERS = ','.join(['__init__'])
 
 autodoc_default_options = {
     'ignore-module-all': True,
     'undoc-members': False,
+    'members': True,
+    # "inherited-members": True,
     'show-inheritance': True,
-    'special-members': SPECIAL_MEMBERS,
+    # 'special-members': SPECIAL_MEMBERS,
     'exclude-members': EXCLUDED_MEMBERS
 }
 
@@ -108,13 +124,13 @@ add_function_parentheses = False
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
-napoleon_include_init_with_doc = False
+napoleon_include_init_with_doc = True
 
 # to omit private members
 napoleon_include_private_with_doc = False
 
 # use spectial members
-napoleon_include_special_with_doc = True
+napoleon_include_special_with_doc = False
 
 napoleon_use_param = True
 
@@ -124,6 +140,8 @@ napoleon_use_keyword = True
 # True to use the .. admonition:: directive for References sections instead .. rubric::
 napoleon_use_admonition_for_examples = True
 
+# Autosummary true if you want to generate it from very beginning
+autosummary_generate = False
 
 def setup(app):
     app.add_css_file('style.css')  # customizing default theme

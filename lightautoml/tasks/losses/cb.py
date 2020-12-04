@@ -1,3 +1,5 @@
+"""Metrics and loss functions for Catboost."""
+
 from typing import Callable, Union, Optional, Dict
 
 import numpy as np
@@ -76,20 +78,18 @@ _cb_metric_params_mapping = {
 
 @record_history(enabled=False)
 class CBLoss(Loss):
-    """
-    Loss used for CatBoost.
-    """
+    """Loss used for CatBoost."""
 
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None,
                  fw_func: Optional[Callable] = None, bw_func: Optional[Callable] = None):
         """
         # TODO: docstring
         Args:
-            loss: Valid options are:
+            loss: String with one of default losses.
 
-                - str: one of default losses
+
             loss_params: additional loss parameters. \
-                Format like in lightautoml.tasks.custom_metrics
+                Format like in lightautoml.tasks.custom_metrics.
             fw_func: forward transformation. \
                 Used for transformation of target and item weights.
             bw_func: backward transformation. \
@@ -140,7 +140,7 @@ class CBLoss(Loss):
         Callback metric setter.
 
         Args:
-            metric: callback metric
+            metric: callback metric.
             greater_is_better: whether or not higher value is better.
             metric_params: additional metric parameters.
 

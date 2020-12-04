@@ -1,10 +1,9 @@
-"""
-Embed dataset
-"""
+"""Pytorch Datasets for text features."""
+
+from typing import Dict, Sequence, Any, Union
 
 import numpy as np
 from log_calls import record_history
-from typing import Dict, Sequence, Any, Union
 from transformers import AutoTokenizer
 
 
@@ -16,9 +15,9 @@ class BertDataset:
         """Class for preparing transformers input.
 
         Args:
-            sentences: list of tokenized sentences
-            max_length: max sentence length
-            model_name: name of transformer model
+            sentences: list of tokenized sentences.
+            max_length: max sentence length.
+            model_name: name of transformer model.
 
         """
         self.sentences = sentences
@@ -45,10 +44,10 @@ class EmbedDataset:
         """Class for transforming list of tokens to dict of embeddings and sentence length.
 
         Args:
-            sentences: list of tokenized sentences
-            embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}
-            max_length: max sentence length
-            param embed_size: size of embedding
+            sentences: list of tokenized sentences.
+            embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}.
+            max_length: max sentence length.
+            param embed_size: size of embedding.
 
         """
         self.sentences = sentences

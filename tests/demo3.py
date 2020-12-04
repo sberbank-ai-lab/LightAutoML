@@ -3,8 +3,9 @@
 
 import logging
 import os
-import time
 import pickle
+import time
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -21,7 +22,7 @@ from lightautoml.pipelines.selection.permutation_importance_based import NpPermu
     NpIterativeFeatureSelector
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
+
 
 def test_composed_selector_cutoff_and_iterative():
     np.random.seed(42)

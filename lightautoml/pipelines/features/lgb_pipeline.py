@@ -1,6 +1,4 @@
-"""
-Pipeline for tree based models
-"""
+"""Pipeline for tree based models."""
 
 from typing import Optional, Union
 
@@ -22,21 +20,22 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 @record_history(enabled=False)
 class LGBSimpleFeatures(FeaturesPipeline):
-    """
-    Creates simple pipeline for tree based models.
+    """Creates simple pipeline for tree based models.
+
     Simple but is ok for select features
     Numeric stay as is, Datetime transforms to numeric, Categorical label encoding
     Maps input to output features exactly one-to-one
     """
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
-        """Create tree pipeline
+        """Create tree pipeline.
 
         Args:
-            train: LAMLDataset with train features
+            train: LAMLDataset with train features.
 
         Returns:
-            composite datetime, categorical, numeric transformer (LAMLTransformer)
+            composite datetime, categorical, numeric transformer (LAMLTransformer).
+
         """
         # TODO: Transformer params to config
         transformers_list = []
@@ -82,12 +81,14 @@ class LGBSimpleFeatures(FeaturesPipeline):
 
 @record_history(enabled=False)
 class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
-    """
-    Create advanced pipeline for trees based models
+    """Create advanced pipeline for trees based models.
+
     Includes:
-        - different cats and numbers handling according to role params
-        - dates handling - extracting seasons and create datediffs
-        - create categorical intersections
+
+        - different cats and numbers handling according to role params.
+        - dates handling - extracting seasons and create datediffs.
+        - create categorical intersections.
+
     """
 
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
@@ -96,12 +97,13 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         """
 
         Args:
-            feats_imp: features importances mapping
-            top_intersections: max number of categories to generate intersections
-            max_intersection_depth: max depth of cat intersection
-            subsample: subsample: subsample to calc data statistics
-            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high
-            auto_unique_co: switch to target encoding if high cardinality
+            feats_imp: features importances mapping.
+            top_intersections: max number of categories to generate intersections.
+            max_intersection_depth: max depth of cat intersection.
+            subsample: subsample: subsample to calc data statistics.
+            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high.
+            auto_unique_co: switch to target encoding if high cardinality.
+
         """
         super().__init__(multiclass_te_co=multiclass_te_co,
                          top_intersections=top_intersections,
@@ -114,12 +116,13 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
                          )
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
-        """Create tree pipeline
+        """Create tree pipeline.
 
         Args:
-            train: LAMLDataset with train features
+            train: LAMLDataset with train features.
 
         Returns:
+            Transformer.
 
         """
 

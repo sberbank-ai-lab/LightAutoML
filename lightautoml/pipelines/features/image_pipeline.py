@@ -1,6 +1,4 @@
-"""
-Image feaures
-"""
+"""Image feaures."""
 
 from typing import Any
 
@@ -18,17 +16,14 @@ from ...transformers.numeric import StandardScaler, FillnaMedian, FillInf
 
 @record_history(enabled=False)
 class ImageDataFeatures:
-    """
-    Class contains basic features transformations for image data
-
-    """
+    """Class contains basic features transformations for image data."""
 
     def __init__(self, **kwargs: Any):
-        """
-        Set default parameters for image pipeline constructor
+        """Set default parameters for image pipeline constructor.
 
         Args:
-            *kwargs:
+            **kwargs: default parameters.
+
         """
         self.hist_size = 30
         self.is_hsv = True
@@ -52,9 +47,9 @@ class ImageDataFeatures:
 
 @record_history(enabled=False)
 class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
+    """Class contains simple color histrogram features for image data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
-        # TODO: Transformer params to config
         transformers_list = []
 
         # process texts
@@ -75,9 +70,9 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
 
 @record_history(enabled=False)
 class ImageAutoFeatures(FeaturesPipeline, ImageDataFeatures):
+    """Class contains efficientnet embeddings features for image data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
-        # TODO: Transformer params to config
         transformers_list = []
         # process texts
         imgs = get_columns_by_role(train, 'Path')

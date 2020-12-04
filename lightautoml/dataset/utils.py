@@ -1,8 +1,6 @@
-"""
-Dataset utils
-"""
+"""Utilities for working with the structure of a dataset."""
 
-from typing import Dict, Union, Sequence, Callable, TypeVar, Optional, Tuple
+from typing import Dict, Union, Sequence, Callable, Optional, Tuple
 
 from log_calls import record_history
 
@@ -10,21 +8,21 @@ from lightautoml.dataset.base import LAMLDataset
 from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from lightautoml.dataset.roles import ColumnRole
 
-RoleType = TypeVar("RoleType", bound=ColumnRole)
+
+# RoleType = TypeVar("RoleType", bound=ColumnRole)
 
 
 @record_history(enabled=False)
-def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, RoleType]:
+def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, ColumnRole]:
     """Parser of roles.
     
     Parse roles from old format numeric: [var1, var2 ...] to {var1:numeric, var2:numeric ...}.
 
     Args:
-        init_roles: Dict of feature roles, format key - ColumnRole instance,
-            value - str feature name or sequence of str features names.
+        init_roles: Mapping between roles and feature names.
 
     Returns:
-        roles dict in format key: str feature name, value - instance of ColumnRole.
+        Roles dict in format key -- str feature name, value - instance of ColumnRole.
 
     """
     roles = {}

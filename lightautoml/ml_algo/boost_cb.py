@@ -1,6 +1,4 @@
-"""
-Catboost wrapper
-"""
+"""Wrapped Catboost for tabular datasets."""
 
 import logging
 from copy import copy
@@ -28,14 +26,16 @@ TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
-    Parameters
-    ----------
+
     default_params:
-        all available parameters listed in lightgbm documentation:
-        https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
+        - all available parameters listed in lightgbm documentation:
+        - https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
+
     freeze_defaults:
+
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
+
     timer: Timer instance or None
 
     """
@@ -302,7 +302,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             valid: NumpyDataset to validate.
 
         Returns:
-            Tuple (model, predicted_values)
+            Tuple (model, predicted_values).
 
         """
         params, num_trees, early_stopping_rounds, fobj, feval = self._infer_params()

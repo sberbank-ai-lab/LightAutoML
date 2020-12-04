@@ -1,6 +1,4 @@
-"""
-Whitebox features
-"""
+"""Whitebox features."""
 
 import numpy as np
 from log_calls import record_history
@@ -14,18 +12,19 @@ from ...transformers.base import LAMLTransformer, UnionTransformer, ColumnsSelec
 
 @record_history(enabled=False)
 class WBFeatures(FeaturesPipeline, TabularDataFeatures):
-    """
-    Simple whitebox pipeline
+    """Simple whitebox pipeline.
+
     Just handles dates, other are handled inside whitebox
     """
 
     def create_pipeline(self, train: PandasDataset) -> LAMLTransformer:
-        """Create pipeline for whitebox
+        """Create pipeline for whitebox.
 
         Args:
-            train: LAMLDataset with train features
+            train: LAMLDataset with train features.
 
         Returns:
+            Transformer.
 
         """
         others = get_columns_by_role(train, 'Category') + get_columns_by_role(train, 'Numeric')

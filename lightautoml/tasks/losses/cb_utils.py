@@ -1,3 +1,5 @@
+"""Custom metrics and loss functions for Catboost."""
+
 from typing import Callable
 
 import numpy as np
@@ -8,17 +10,15 @@ from log_calls import record_history
 
 @record_history(enabled=False)
 class CBCustomMetric:
-    """
-    Metric wrapper class for CatBoost.
-    """
+    """Metric wrapper class for CatBoost."""
 
     def __init__(self, metric: Callable, greater_is_better: bool = True,
                  bw_func: Callable = None):
         """
 
         Args:
-            metric:
-            greater_is_better:
+            metric: callable metric.
+            greater_is_better: bool with metric direction.
 
         """
         self.metric = metric
@@ -58,9 +58,7 @@ class CBCustomMetric:
 
 @record_history(enabled=False)
 class CBRegressionMetric(CBCustomMetric):
-    """
-    Regression metric wrapper for CatBoost.
-    """
+    """Regression metric wrapper for CatBoost."""
 
     def evaluate(self, approxes, target, weight):
         assert len(approxes) == 1
@@ -72,9 +70,7 @@ class CBRegressionMetric(CBCustomMetric):
 
 @record_history(enabled=False)
 class CBClassificationMetric(CBCustomMetric):
-    """
-    Classification metric wrapper for CatBoost.
-    """
+    """Classification metric wrapper for CatBoost."""
 
     def __init__(self, metric: Callable, greater_is_better: bool, bw_func: Callable = None, use_proba: bool = True):
         super(CBClassificationMetric, self).__init__(metric, greater_is_better, bw_func)
@@ -103,9 +99,7 @@ class CBClassificationMetric(CBCustomMetric):
 
 @record_history(enabled=False)
 class CBMulticlassMetric(CBCustomMetric):
-    """
-    Multiclassification metric wrapper for CatBoost.
-    """
+    """Multiclassification metric wrapper for CatBoost."""
 
     def __init__(self, metric: Callable, greater_is_better: bool, bw_func: Callable = None, use_proba: bool = True):
         super().__init__(metric, greater_is_better, bw_func)

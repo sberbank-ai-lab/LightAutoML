@@ -1,6 +1,4 @@
-"""
-Importance based selectors
-"""
+"""Importance based selectors."""
 
 from typing import Optional, TypeVar
 
@@ -47,21 +45,21 @@ class ImportanceCutoffSelector(SelectionPipeline):
                  imp_estimator: ImportanceEstimator,
                  fit_on_holdout: bool = True,
                  cutoff: float = 0.0):
-        """Importance cutoff selector init
+        """
 
         Args:
-            feature_pipeline: composition of feature transforms
-            ml_algo: Tuple (MlAlgo, ParamsTuner)
-            imp_estimator: feature importance estimator
-            fit_on_holdout: if use the holdout iterator
-            cutoff: threshold to cut-off features
+            feature_pipeline: composition of feature transforms.
+            ml_algo: Tuple (MlAlgo, ParamsTuner).
+            imp_estimator: feature importance estimator.
+            fit_on_holdout: if use the holdout iterator.
+            cutoff: threshold to cut-off features.
 
         """
         super().__init__(feature_pipeline, ml_algo, imp_estimator, fit_on_holdout)
         self.cutoff = cutoff
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator] = None):
-        """ Select features based on cutoff value
+        """Select features based on cutoff value.
 
         Args:
             train_valid: ignored.

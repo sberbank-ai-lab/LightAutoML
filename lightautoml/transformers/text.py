@@ -1,6 +1,4 @@
-"""
-Text features
-"""
+"""Text features transformers."""
 
 import gc
 import os
@@ -72,7 +70,7 @@ model_by_name = {'random_lstm': {'model': RandomLSTM,
 
 @record_history(enabled=False)
 def oof_task_check(dataset: LAMLDataset):
-    """Check if task is binary or regression
+    """Check if task is binary or regression.
 
     Args:
         dataset: LAMLDataset to check.
@@ -110,9 +108,10 @@ class TunableTransformer(LAMLTransformer):
 
     @property
     def params(self) -> dict:
-        """
+        """Property.
 
         Returns:
+            dict.
 
         """
         if self._params is None:
@@ -125,8 +124,7 @@ class TunableTransformer(LAMLTransformer):
         self._params = {**self.params, **new_params}
 
     def init_params_on_input(self, dataset: NumpyOrPandas) -> dict:
-        """
-        Init params depending on input data.
+        """Init params depending on input data.
 
         Returns:
             dict with model hyperparameters.
@@ -164,7 +162,7 @@ class TfidfTextTransformer(TunableTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list"""
+        """Features list."""
 
         return self._features
 
@@ -209,10 +207,13 @@ class TfidfTextTransformer(TunableTransformer):
         return suggested_params
 
     def fit(self, dataset: NumpyOrPandas):
-        """Fit tfidf vectorizer
+        """Fit tfidf vectorizer.
 
         Args:
             dataset: Pandas or Numpy dataset of text features.
+
+        Returns:
+            self.
 
         """
         # set transformer names and add checks
@@ -247,11 +248,11 @@ class TfidfTextTransformer(TunableTransformer):
     def transform(self, dataset: NumpyOrPandas) -> CSRSparseDataset:
         """Transform text dataset to sparse tfidf representation.
 
-            Args:
-                dataset: Pandas or Numpy dataset of text features.
+        Args:
+            dataset: Pandas or Numpy dataset of text features.
 
-            Returns:
-                Sparse dataset with encoded text.
+        Returns:
+            Sparse dataset with encoded text.
 
         """
         # checks here
@@ -284,19 +285,20 @@ class TokenizerTransformer(LAMLTransformer):
         """
 
         Args:
-            tokenizer: text tokenizer
+            tokenizer: text tokenizer.
 
         """
         self.tokenizer = tokenizer
 
     def transform(self, dataset: NumpyOrPandas) -> PandasDataset:
-        """Transform text dataset to tokenized text dataset
+        """Transform text dataset to tokenized text dataset.
 
         Args:
-            dataset: Pandas or Numpy dataset of text features
+            dataset: Pandas or Numpy dataset of text features.
 
         Returns:
-            Pandas dataset with tokenized text
+            Pandas dataset with tokenized text.
+
         """
 
         # checks here
@@ -320,7 +322,7 @@ class TokenizerTransformer(LAMLTransformer):
 
 @record_history(enabled=False)
 class OneToOneTransformer(TunableTransformer):
-    """Out-of-fold sgd model prediction to reduce dimension of encoded text data"""
+    """Out-of-fold sgd model prediction to reduce dimension of encoded text data."""
 
     _fit_checks = (oof_task_check,)
     _transform_checks = ()
@@ -329,7 +331,7 @@ class OneToOneTransformer(TunableTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list"""
+        """Features list."""
 
         return self._features
 
@@ -372,7 +374,7 @@ class OneToOneTransformer(TunableTransformer):
         """
 
     def fit(self, dataset: NumpyOrPandas):
-        """Apply fit transform
+        """Apply fit transform.
 
         Args:
             dataset: Pandas or Numpy dataset of encoded text features.
@@ -388,13 +390,13 @@ class OneToOneTransformer(TunableTransformer):
         return self.transform(dataset)
 
     def fit_transform(self, dataset: NumpyOrPandas) -> NumpyDataset:
-        """Fit and predict out-of-fold sgd model
+        """Fit and predict out-of-fold sgd model.
 
         Args:
-            dataset: Pandas or Numpy dataset of encoded text features
+            dataset: Pandas or Numpy dataset of encoded text features.
 
         Returns:
-            Numpy dataset with out-of-fold model prediction
+            Numpy dataset with out-of-fold model prediction.
 
         """
         # set transformer names and add checks
@@ -435,13 +437,14 @@ class OneToOneTransformer(TunableTransformer):
         return output
 
     def transform(self, dataset: NumpyOrPandas) -> NumpyDataset:
-        """Transform dataset to out-of-fold model-based encoding
+        """Transform dataset to out-of-fold model-based encoding.
 
         Args:
-            dataset: Pandas or Numpy dataset of encoded text features
+            dataset: Pandas or Numpy dataset of encoded text features.
 
         Returns:
-            Numpy dataset with out-of-fold model prediction
+            Numpy dataset with out-of-fold model prediction.
+
         """
         # checks here
         super().transform(dataset)
@@ -477,19 +480,20 @@ class ConcatTextTransformer(LAMLTransformer):
         """
 
         Args:
-            special_token: add special token between columns
+            special_token: add special token between columns.
 
         """
         self.special_token = special_token
 
     def transform(self, dataset: NumpyOrPandas) -> PandasDataset:
-        """Transform text dataset to one text column
+        """Transform text dataset to one text column.
 
         Args:
-            dataset: Pandas or Numpy dataset of text features
+            dataset: Pandas or Numpy dataset of text features.
 
         Returns:
-            Pandas dataset with one text column
+            Pandas dataset with one text column.
+
         """
 
         # checks here
@@ -510,7 +514,7 @@ class ConcatTextTransformer(LAMLTransformer):
 
 @record_history(enabled=False)
 class AutoNLPWrap(LAMLTransformer):
-    """Calculate text embeddings"""
+    """Calculate text embeddings."""
 
     _fit_checks = (text_check,)
     _transform_checks = ()
@@ -521,7 +525,7 @@ class AutoNLPWrap(LAMLTransformer):
 
     @property
     def features(self) -> List[str]:
-        """Features list"""
+        """Features list."""
         return self._features
 
     def __init__(self, model_name: str, embedding_model: Optional[str] = None, cache_dir: str = './cache_NLP',
@@ -533,20 +537,20 @@ class AutoNLPWrap(LAMLTransformer):
         """
 
         Args:
-            model_name: method for aggregating word embeddings into sentence embedding
-            transformer_params: aggregating model parameters
-            embedding_model: word level embedding model with dict interface or path to gensim fasttext model
-            cache_dir: if none - do not cache transformed datasets
-            bert_model: name of HuggingFace transformer model
+            model_name: method for aggregating word embeddings into sentence embedding.
+            transformer_params: aggregating model parameters.
+            embedding_model: word level embedding model with dict interface or path to gensim fasttext model.
+            cache_dir: if none - do not cache transformed datasets.
+            bert_model: name of HuggingFace transformer model.
             subs: subsample to calculate freqs. If None - full data.
-            multigpu: use Data Parallel
+            multigpu: use Data Parallel.
             random_state: random state to take subsample.
-            train_fasttext: train fasttext
-            fasttext_params: fasttext init params
-            fasttext_epochs: number of epochs to trrain
-            verbose: verbosity
-            device: torch device or str
-            kwargs: unused params
+            train_fasttext: train fasttext.
+            fasttext_params: fasttext init params.
+            fasttext_epochs: number of epochs to train.
+            verbose: verbosity.
+            device: torch device or str.
+            kwargs: unused params.
 
         """
         if train_fasttext:
@@ -633,7 +637,7 @@ class AutoNLPWrap(LAMLTransformer):
         return params
 
     def fit(self, dataset: NumpyOrPandas):
-        """Fit chosen transformer and create feature names
+        """Fit chosen transformer and create feature names.
 
         Args:
             dataset: Pandas or Numpy dataset of text features.
@@ -685,13 +689,14 @@ class AutoNLPWrap(LAMLTransformer):
         return self
 
     def transform(self, dataset: NumpyOrPandas) -> NumpyOrPandas:
-        """Transform tokenized dataset to text embeddings
+        """Transform tokenized dataset to text embeddings.
 
         Args:
-            dataset: Pandas or Numpy dataset of text features
+            dataset: Pandas or Numpy dataset of text features.
 
         Returns:
-            Numpy dataset with text embeddings
+            Numpy dataset with text embeddings.
+
         """
         # checks here
         super().transform(dataset)
@@ -707,7 +712,7 @@ class AutoNLPWrap(LAMLTransformer):
                 full_hash = get_textarr_hash(df[i]) + get_textarr_hash(self.dicts[i]['feats'])
                 fname = os.path.join(self.cache_dir, full_hash + '.pkl')
                 if os.path.exists(fname):
-                    logger.info('Load saved dataset for', i)
+                    logger.info(f'Load saved dataset for {i}')
                     with open(fname, 'rb') as f:
                         new_arr = pickle.load(f)
                 else:

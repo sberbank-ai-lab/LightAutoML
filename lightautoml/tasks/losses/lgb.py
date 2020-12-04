@@ -1,3 +1,5 @@
+"""Metrics and loss functions for LightGBM."""
+
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict
 
@@ -121,9 +123,7 @@ class LGBFunc:
 
 @record_history(enabled=False)
 class LGBLoss(Loss):
-    """
-    Loss used for LightGBM.
-    """
+    """Loss used for LightGBM."""
 
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None,
                  fw_func: Optional[Callable] = None, bw_func: Optional[Callable] = None):
@@ -138,7 +138,7 @@ class LGBLoss(Loss):
                      or another lightgbm objectivite.
                 - callable: custom lightgbm style objective.
             loss_params: additional loss parameters. \
-                Format like in lightautoml.tasks.custom_metrics
+                Format like in lightautoml.tasks.custom_metrics.
             fw_func: forward transformation. \
                 Used for transformation of target and item weights.
             bw_func: backward transformation. \
@@ -181,8 +181,7 @@ class LGBLoss(Loss):
 
     def metric_wrapper(self, metric_func: Callable, greater_is_better: Optional[bool],
                        metric_params: Optional[Dict] = None) -> Callable:
-        """
-        Customize metric.
+        """Customize metric.
 
         Args:
             metric_func: callable metric.
@@ -203,11 +202,10 @@ class LGBLoss(Loss):
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
                             metric_params: Optional[Dict] = None):
-        """
-        Callback metric setter.
+        """Callback metric setter.
 
         Args:
-            metric: callback metric
+            metric: callback metric.
             greater_is_better: whether or not higher value is better.
             metric_params: additional metric parameters.
 

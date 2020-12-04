@@ -1,6 +1,4 @@
-"""
-Iterative feature selector
-"""
+"""Iterative feature selector."""
 
 from copy import deepcopy
 from typing import Optional
@@ -22,11 +20,11 @@ logger = get_logger(__name__)
 
 @record_history(enabled=False)
 def _create_chunks_from_list(lst, n):
-    """Creates chunks of list
+    """Creates chunks of list.
 
     Args:
-        lst: list of elements
-        n: size of chunk
+        lst: list of elements.
+        n: size of chunk.
 
     """
     chunks = []
@@ -37,15 +35,14 @@ def _create_chunks_from_list(lst, n):
 
 @record_history(enabled=False)
 class NpPermutationImportanceEstimator(ImportanceEstimator):
-    """Permuation importance based estimator
+    """Permuation importance based estimator.
 
     Importance calculate, using random permutation of items in single column for each feature.
 
     """
 
     def __init__(self, random_state: int = 42):
-        """Permutation importance estimator init
-
+        """
         Args:
             random_state: seed for random generation of features permutation.
 
@@ -56,12 +53,12 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
     def fit(self, train_valid: Optional[TrainValidIterator] = None,
             ml_algo: Optional[MLAlgo] = None,
             preds: Optional[LAMLDataset] = None):
-        """Find importances for each feature in dataset
+        """Find importances for each feature in dataset.
 
         Args:
-            train_valid: initial dataset iterator
-            ml_algo: MlAlgo
-            preds: predicted target values for validation dataset
+            train_valid: initial dataset iterator.
+            ml_algo: MlAlgo.
+            preds: predicted target values for validation dataset.
 
         """
 
@@ -116,7 +113,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
                  fit_on_holdout: bool = True,
                  feature_group_size: Optional[int] = 5,
                  max_features_cnt_in_result: Optional[int] = None):
-        """Iterative feature selector init
+        """
 
         Args:
             feature_pipeline: composition of feature transforms.
@@ -136,7 +133,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         self.max_features_cnt_in_result = max_features_cnt_in_result
 
     def perform_selection(self, train_valid: Optional[TrainValidIterator] = None):
-        """Select features iteratively by checking model quality for current selected feats and new group
+        """Select features iteratively by checking model quality for current selected feats and new group.
 
         Args:
             train_valid: iterator for dataset.

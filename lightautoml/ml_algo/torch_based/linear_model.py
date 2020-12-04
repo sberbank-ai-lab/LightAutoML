@@ -1,3 +1,5 @@
+"""Linear models based on Torch library."""
+
 from copy import deepcopy
 from typing import Sequence, Callable, Optional, Union
 
@@ -17,8 +19,7 @@ ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 @record_history(enabled=False)
 def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor:
-    """
-    Convert scipy sparse matrix to torch sparse tensor.
+    """Convert scipy sparse matrix to torch sparse tensor.
 
     Args:
         matrix: matrix to convert.
@@ -38,9 +39,7 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
 
 @record_history(enabled=False)
 class CatLinear(nn.Module):
-    """
-    Simple linear model to handle numeric and categorical features.
-    """
+    """Simple linear model to handle numeric and categorical features."""
 
     def __init__(self, numeric_size: int = 0, embed_sizes: Sequence[int] = (), output_size: int = 1):
         """
@@ -65,8 +64,7 @@ class CatLinear(nn.Module):
             self.embed_idx = torch.LongTensor(embed_sizes).cumsum(dim=0) - torch.LongTensor(embed_sizes)
 
     def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
-        """
-        Forward-pass.
+        """Forward-pass.
 
         Args:
             numbers: input numeric features.
@@ -86,17 +84,14 @@ class CatLinear(nn.Module):
 
 @record_history(enabled=False)
 class CatLogisticRegression(CatLinear):
-    """
-    Realisation of torch-based logistic regression.
-    """
+    """Realisation of torch-based logistic regression."""
 
     def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
-        """
-        Forward-pass. Sigmoid func at the end of linear layer.
+        """Forward-pass. Sigmoid func at the end of linear layer.
 
         Args:
             numbers: input numeric features.
@@ -112,9 +107,7 @@ class CatLogisticRegression(CatLinear):
 
 @record_history(enabled=False)
 class CatRegression(CatLinear):
-    """
-    Realisation of torch-based linear regreession.
-    """
+    """Realisation of torch-based linear regreession."""
 
     def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
@@ -122,9 +115,7 @@ class CatRegression(CatLinear):
 
 @record_history(enabled=False)
 class CatMulticlass(CatLinear):
-    """
-    Realisation of multi-class linear classifier.
-    """
+    """Realisation of multi-class linear classifier."""
 
     def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
@@ -140,8 +131,8 @@ class CatMulticlass(CatLinear):
 
 @record_history(enabled=False)
 class TorchBasedLinearEstimator:
-    """
-    Linear model based on torch L-BFGS solver
+    """Linear model based on torch L-BFGS solver.
+
     Accepts Numeric + Label Encoded categories or Numeric sparse input
     """
 
@@ -153,7 +144,7 @@ class TorchBasedLinearEstimator:
         Args:
             data_size: not used.
             categorical_idx: indices of categorical features.
-            embed_sizes: categorical embedding sizes
+            embed_sizes: categorical embedding sizes.
             output_size: size of output layer.
             cs: regularization coefficients.
             max_iter: maximum iterations of L-BFGS.
@@ -178,8 +169,7 @@ class TorchBasedLinearEstimator:
         self.metric = metric  # metric(y_true, y_preds, sample_weight = None) -> float (greater_is_better)
 
     def _prepare_data(self, data: ArrayOrSparseMatrix):
-        """
-        Prepare data based on input type.
+        """Prepare data based on input type.
 
         Args:
             data: data to prepare.
@@ -194,8 +184,8 @@ class TorchBasedLinearEstimator:
         return self._prepare_data_dense(data)
 
     def _prepare_data_sparse(self, data: sparse.spmatrix):
-        """
-        Prepare sparse matrix.
+        """Prepare sparse matrix.
+
         Only supports numeric features.
 
         Args:
@@ -210,8 +200,8 @@ class TorchBasedLinearEstimator:
         return data, None
 
     def _prepare_data_dense(self, data: np.ndarray):
-        """
-        Prepare dense matrix.
+        """Prepare dense matrix.
+
         Split categorical and numeric features.
 
         Args:
@@ -236,8 +226,7 @@ class TorchBasedLinearEstimator:
 
     def _optimize(self, data: torch.Tensor, data_cat: Optional[torch.Tensor], y: torch.Tensor = None,
                   weights: Optional[torch.Tensor] = None, c: float = 1):
-        """
-        Optimize single model.
+        """Optimize single model.
 
         Args:
             data: numeric data to train.
@@ -275,8 +264,7 @@ class TorchBasedLinearEstimator:
         opt.step(closure)
 
     def _loss_fn(self, y_true: torch.Tensor, y_pred: torch.Tensor, weights: Optional[torch.Tensor], c: float) -> torch.Tensor:
-        """
-        Weighted loss_fn wrapper.
+        """Weighted loss_fn wrapper.
 
         Args:
             y_true: true target values.
@@ -302,8 +290,7 @@ class TorchBasedLinearEstimator:
 
     def fit(self, data: np.ndarray, y: np.ndarray, weights: Optional[np.ndarray] = None,
             data_val: Optional[np.ndarray] = None, y_val: Optional[np.ndarray] = None, weights_val: Optional[np.ndarray] = None):
-        """
-        Fit method.
+        """Fit method.
 
         Args:
             data: data to train.
@@ -358,8 +345,7 @@ class TorchBasedLinearEstimator:
         return self
 
     def _score(self, data: np.ndarray, data_cat: Optional[np.ndarray]) -> np.ndarray:
-        """
-        Get predicts to evaluate performance of model.
+        """Get predicts to evaluate performance of model.
 
         Args:
             data: numeric data.
@@ -376,11 +362,10 @@ class TorchBasedLinearEstimator:
         return preds
 
     def predict(self, data: np.ndarray) -> np.ndarray:
-        """
-        Inference phase.
+        """Inference phase.
 
         Args:
-            data: data to test
+            data: data to test.
 
         Returns:
             predicted target values.
@@ -393,9 +378,7 @@ class TorchBasedLinearEstimator:
 
 @record_history(enabled=False)
 class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
-    """
-    Linear binary classifier
-    """
+    """Linear binary classifier."""
 
     def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
                  cs: Sequence[float] = (.00001, .00005, .0001, .0005, .001, .005, .01, .05, .1, .5, 1., 2., 5., 7., 10., 20.),
@@ -405,7 +388,7 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         Args:
             data_size: not used.
             categorical_idx: indices of categorical features.
-            embed_sizes: categorical embedding sizes
+            embed_sizes: categorical embedding sizes.
             output_size: size of output layer.
             cs: regularization coefficients.
             max_iter: maximum iterations of L-BFGS.
@@ -431,11 +414,10 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         self.model = _model(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
 
     def predict(self, data: np.ndarray) -> np.ndarray:
-        """
-        Inference phase.
+        """Inference phase.
 
         Args:
-            data: data to test
+            data: data to test.
 
         Returns:
             predicted target values.
@@ -449,9 +431,7 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
 
 @record_history(enabled=False)
 class TorchBasedLinearRegression(TorchBasedLinearEstimator):
-    """
-    Torch-based linear regressor optimized by L-BFGS.
-    """
+    """Torch-based linear regressor optimized by L-BFGS."""
 
     def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
                  cs: Sequence[float] = (.00001, .00005, .0001, .0005, .001, .005, .01, .05, .1, .5, 1., 2., 5., 7., 10., 20.),
@@ -477,11 +457,10 @@ class TorchBasedLinearRegression(TorchBasedLinearEstimator):
         self.model = CatRegression(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
 
     def predict(self, data: np.ndarray) -> np.ndarray:
-        """
-        Inference phase.
+        """Inference phase.
 
         Args:
-            data: data to test
+            data: data to test.
 
         Returns:
             predicted target values.

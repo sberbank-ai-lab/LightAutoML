@@ -1,6 +1,4 @@
-"""
-Base classes for MLPipeline
-"""
+"""Base classes for MLPipeline."""
 
 from typing import Sequence, Optional, Tuple, Union, List
 
@@ -18,14 +16,16 @@ from ...ml_algo.utils import tune_and_fit_predict
 
 @record_history(enabled=False)
 class MLPipeline:
-    """
-    Single ML pipeline.
+    """Single ML pipeline.
+
     Merge together stage of building ML model (every step, excluding model training, is optional):
-        - pre selection: select features from input data. Performed by SelectionPipeline
-        - features generation: build new features from selected. Performed by FeaturesPipelime
-        - post selection: One more selection step - from created features. Performed by SelectionPipeline
-        - hyperparams optimization for one or multiple ML models: Performed by ParamsTuner
-        - train one or multiple ML models: Performed by MLAlgo. This step is the only required for at least 1 model
+
+        - pre selection: select features from input data. Performed by SelectionPipeline.
+        - features generation: build new features from selected. Performed by FeaturesPipelime.
+        - post selection: One more selection step - from created features. Performed by SelectionPipeline.
+        - hyperparams optimization for one or multiple ML models: Performed by ParamsTuner.
+        - train one or multiple ML models: Performed by MLAlgo. This step is the only required for at least 1 model.
+
     """
 
     @property
@@ -42,8 +42,8 @@ class MLPipeline:
         """
 
         Args:
-            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner)
-            force_calc: flag if single fold of ml_algo should be calculated anyway
+            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner).
+            force_calc: flag if single fold of ml_algo should be calculated anyway.
             pre_selection: initial feature selection. If ``None`` there is no initial selection.
             features_pipeline: composition of feature transforms.
             post_selection: post feature selection. If ``None`` there is no post selection.
@@ -89,10 +89,11 @@ class MLPipeline:
         """Fit on train/valid iterator and transform on validation part.
 
         Args:
-            train_valid: TrainValidIterator .
+            train_valid: dataset iterator.
 
         Returns:
             dataset with predictions of all models.
+
         """
         self.ml_algos = []
         # train and apply pre selection
@@ -145,7 +146,7 @@ class MLPipeline:
     def upd_model_names(self, prefix: str):
         """Update prefix pipeline models names.
 
-        Used to fit inside AutoML where multiple models with same names may be trained
+        Used to fit inside AutoML where multiple models with same names may be trained.
 
         Args:
             prefix: new prefix name.
@@ -160,9 +161,7 @@ class MLPipeline:
         Used to fit blender - some models may be excluded from final ensemble
 
         Args:
-            idx:
-
-        Returns:
+            idx: selected algos.
 
         """
         self.ml_algos = [x for (n, x) in enumerate(self.ml_algos) if n not in idx]

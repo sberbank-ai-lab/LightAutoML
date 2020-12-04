@@ -1,6 +1,4 @@
-"""
-Pooling
-"""
+"""Different Pooling strategies for sequence data."""
 
 from abc import ABC, abstractmethod
 

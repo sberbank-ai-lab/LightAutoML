@@ -1,6 +1,4 @@
-"""
-Text presets
-"""
+"""AutoML presets for data with texts."""
 
 import os
 from typing import Optional, Sequence
@@ -43,10 +41,12 @@ _time_scores = {
 # TODO: add text feature selection
 @record_history(enabled=False)
 class TabularNLPAutoML(TabularAutoML):
-    """
-    Classic preset - almost same like sber_ailab_automl with text but with additional LAMA features
-    Limitations
-        - no memory management
+    """Classic preset - work with tabular and text data.
+
+    Supported data roles - numbers, dates, categories, text
+    Limitations - no memory management
+
+    GPU support in catboost/lightgbm(if installed for gpu), NN models training
     """
     _default_config_path = 'text_config.yml'
 
@@ -76,43 +76,46 @@ class TabularNLPAutoML(TabularAutoML):
                  lgb_params: Optional[dict] = None,
                  cb_params: Optional[dict] = None,
                  linear_l2_params: Optional[dict] = None,
-                 linear_l1_params: Optional[dict] = None,
                  nn_pipeline_params: Optional[dict] = None,
                  gbm_pipeline_params: Optional[dict] = None,
-                 cb_pipeline_params: Optional[dict] = None,
                  linear_pipeline_params: Optional[dict] = None,
                  text_params: Optional[dict] = None,
                  tfidf_params: Optional[dict] = None,
                  autonlp_params: Optional[dict] = None):
+
         """
 
+        Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
+        If you need to change just few params, it's possible to pass it as dict of dicts, like json
+        To get available params please look on default config template. Also you can find there param description
+        To generate config template call TabularNLPAutoML.get_config(config_path.yml)
+
         Args:
-            task:
-            timeout:
-            memory_limit:
-            cpu_limit:
-            gpu_ids:
-            verbose:
-            timing_params:
-            config_path:
-            general_params:
-            reader_params:
-            read_csv_params:
-            nested_cv_params:
-            tuning_params:
-            selection_params:
-            nn_params:
-            lgb_params:
-            cb_params:
-            linear_l2_params:
-            linear_l1_params:
-            nn_pipeline_params:
-            gbm_pipeline_params:
-            cb_pipeline_params:
-            linear_pipeline_params:
-            text_params:
-            tfidf_params:
-            autonlp_params:
+            task: Task to solve.
+            timeout: timeout in seconds.
+            memory_limit: memory limit that are passed to each automl.
+            cpu_limit: cpu limit that that are passed to each automl.
+            gpu_ids: gpu_ids that are passed to each automl.
+            verbose: verbosity level that are passed to each automl.
+            timing_params: timing param dict. Optional.
+            config_path: path to config file.
+            general_params: general param dict.
+            reader_params: reader param dict.
+            read_csv_params: params to pass pandas.read_csv (case of train/predict from file).
+            nested_cv_params: param dict for nested cross-validation.
+            tuning_params: params of Optuna tuner.
+            selection_params: params of feature selection.
+            nn_params: params of neural network model.
+            lgb_params: params of lightgbm model.
+            cb_params: params of catboost model.
+            linear_l2_params: params of linear model.
+            nn_pipeline_params: params of feature generation for neural network models.
+            gbm_pipeline_params: params of feature generation for boosting models.
+            linear_pipeline_params: params of feature generation for linear models.
+            text_params: general params of text features.
+            tfidf_params: params of tfidf features.
+            autonlp_params: params of text embeddings features.
+
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
 
@@ -127,10 +130,8 @@ class TabularNLPAutoML(TabularAutoML):
                                 'lgb_params',
                                 'cb_params',
                                 'linear_l2_params',
-                                'linear_l1_params',
                                 'nn_pipeline_params',
                                 'gbm_pipeline_params',
-                                'cb_pipeline_params',
                                 'linear_pipeline_params',
                                 'text_params',
                                 'tfidf_params',
@@ -146,10 +147,8 @@ class TabularNLPAutoML(TabularAutoML):
                                 lgb_params,
                                 cb_params,
                                 linear_l2_params,
-                                linear_l1_params,
                                 nn_pipeline_params,
                                 gbm_pipeline_params,
-                                cb_pipeline_params,
                                 linear_pipeline_params,
                                 text_params,
                                 tfidf_params,
@@ -195,7 +194,7 @@ class TabularNLPAutoML(TabularAutoML):
         # other params as tabular
         super().infer_auto_params(train_data, multilevel_avail)
 
-    def get_nlp_pipe(self, type='tfidf') -> Optional[FeaturesPipeline]:
+    def get_nlp_pipe(self, type: str = 'tfidf') -> Optional[FeaturesPipeline]:
         if type == 'tfidf':
             return NLPTFiDFFeatures(**self.text_params, **self.tfidf_params)
         elif type == 'embed':
@@ -273,15 +272,8 @@ class TabularNLPAutoML(TabularAutoML):
         return gbm_pipe
 
     def create_automl(self, **fit_args):
-        """
-        Create basic automl instance
+        """Create basic automl instance."""
 
-        Args:
-            train_data:
-
-        Returns:
-
-        """
         train_data = fit_args['train_data']
         self.infer_auto_params(train_data)
         reader = PandasToPandasReader(task=self.task, **self.reader_params)
@@ -323,5 +315,25 @@ class TabularNLPAutoML(TabularAutoML):
 
     def predict(self, data: ReadableToDf, features_names: Optional[Sequence[str]] = None,
                 batch_size: Optional[int] = None, n_jobs: Optional[int] = 1) -> NumpyDataset:
+        """Almost same as AutoML .predict on new dataset, with additional features.
 
+        Additional features - working with different data formats.  Supported now:
+
+            - path to .csv, .parquet, .feather files
+            - np.ndarray, or dict of np.ndarray, ex. {'data': X ..}. In this case roles are optional, but
+                train_features and valid_features required
+            - pd.DataFrame
+
+        parallel inference - you can pass n_jobs to speedup prediction (requires more RAM)
+        batch_inference - you can pass batch_size to decrease RAM usage (may be longer)
+
+        Args:
+            data: dataset to perform inference.
+            features_names: optional features names, if cannot be inferred from train_data.
+            batch_size: batch size or None.
+            n_jobs: n_jobs, default 1.
+
+        Returns:
+            Dataset.
+        """
         return super().predict(data, features_names, batch_size)

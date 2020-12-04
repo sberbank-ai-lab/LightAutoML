@@ -1,6 +1,4 @@
-"""
-LightGBM wrapper
-"""
+"""Wrapped LightGBM for tabular datasets."""
 
 import logging
 from copy import copy
@@ -25,15 +23,16 @@ logger = get_logger(__name__)
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
-    Parameters
-    ----------
-    default_params:
-        all available parameters listed in lightgbm documentation:
-        https://lightgbm.readthedocs.io/en/latest/Parameters.html
+
+    default_params: all available parameters listed in lightgbm documentation:
+        - https://lightgbm.readthedocs.io/en/latest/Parameters.html
+
     freeze_defaults:
+
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
-    timer: Timer instance or None
+
+    timer: ``Timer`` instance or `None`
 
     """
     _name: str = 'LightGBM'

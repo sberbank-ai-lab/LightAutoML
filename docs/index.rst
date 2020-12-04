@@ -1,29 +1,25 @@
-LightAutoML Documentation
-=======================================
+LightAutoML documentation
+=========================
 
-**LightAutoML** is automatic model search system. 
+`LightAutoML <https://github.com/sberbank-ai-lab/LightAutoML>`_ is open-source Python library aimed at automated machine learning.
+It is designed to be lightweight and efficient for various tasks with tabular, text data. LightAutoML provides easy-to-use pipeline creation, that enables:
+
+- Automatic hyperparameter tuning, data processing
+- Automatic typing, feature selection
+- Automatic time utilization
+- Automatic report creation
+- Graphical profiling system
+- Easy-to-use modular scheme to create your own pipelines
+
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Python API
+    :maxdepth: 1
+    :caption: Contents
+
+    Python API <PythonAPI>
+    Tutorials <Tutorials>
    
-   lightautoml.dataset
-   lightautoml.reader
-   lightautoml.transformers
-   lightautoml.tasks
-   lightautoml.tasks.losses
-   lightautoml.pipelines
-   lightautoml.pipelines.features
-   lightautoml.pipelines.ml
-   lightautoml.pipelines.selection
-   lightautoml.validation
-   lightautoml.ml_algo
-   lightautoml.ml_algo.torch_based
-   lightautoml.ml_algo.tuning
-   lightautoml.automl
-   lightautoml.utils
-   
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`

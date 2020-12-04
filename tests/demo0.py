@@ -3,8 +3,9 @@
 
 import logging
 import os
-import time
 import pickle
+import time
+
 from lightautoml.dataset.np_pd_dataset import *
 from lightautoml.dataset.roles import *
 from lightautoml.dataset.utils import roles_parser
@@ -14,7 +15,6 @@ from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.pipelines.selection.importance_based import ImportanceCutoffSelector, ModelBasedImportanceEstimator
 from lightautoml.tasks import Task
-from lightautoml.utils.profiler import Profiler
 from lightautoml.validation.np_iterators import FoldsIterator
 
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
