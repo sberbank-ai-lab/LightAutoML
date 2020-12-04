@@ -141,3 +141,5 @@ dmypy.json
 cython_debug/
 
 .idea/
+lama_venv/
+poetry.lock

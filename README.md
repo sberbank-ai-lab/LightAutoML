@@ -40,6 +40,8 @@ To generate documentation for LAMA framework, you can use command below (it uses
 ```bash 
 bash build_docs.sh
 ```
+
+Builded official documentation for LightAutoML is available [`here`](https://lightautoml.readthedocs.io/en/latest/).
 *******
 # Usage examples
 

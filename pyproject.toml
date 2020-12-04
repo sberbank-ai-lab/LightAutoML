@@ -6,7 +6,7 @@ authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
            "Simakov Dmitrii <Simakov.D.E@sberbank.ru>"]
 readme = "README.md"
-homepage = "https://github.com/sberbank-ai-lab/LightAutoML"
+homepage = "https://lightautoml.readthedocs.io/en/latest/"
 repository = "https://github.com/sberbank-ai-lab/LightAutoML"
 classifiers = [
     "Programming Language :: Python :: 3.6",

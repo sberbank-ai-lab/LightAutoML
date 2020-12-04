@@ -350,7 +350,7 @@ class BertEmbedder(nn.Module):
                                              attention_mask=inp['attention_mask'],
                                              token_type_ids=inp['token_type_ids'], return_dict=False)
 
-        encoded_layers = self.pooling(encoded_layers, inp['attention_mask'])
+        encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1))
 
         return encoded_layers
 

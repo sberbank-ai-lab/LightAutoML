@@ -124,7 +124,7 @@ nn_params:
   # if None: stay in memory (CPU)
   path_to_save: null
   # params of Adam optimizer
-  opt_params: { 'lr': 0.0001 }
+  opt_params: { 'lr': 0.00001 }
   # params of ReduceLROnPlateau scheduler
   scheduler_params: { 'patience': 5, 'factor': 0.5, 'verbose': True }
   # using snapshot ensembles
