@@ -3,6 +3,7 @@
 [![Slack](https://lightautoml-slack.herokuapp.com/badge.svg)](https://lightautoml-slack.herokuapp.com)
 ![GitHub all releases](https://img.shields.io/github/downloads/sberbank-ai-lab/lightautoml/total?color=green&logo=github&style=plastic)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lightautoml?color=green&label=PyPI%20downloads&logo=pypi&logoColor=orange&style=plastic)
+![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 
 LightAutoML (LAMA) project from Sberbank AI Lab AutoML group is the framework for automatic classification and regression model creation.
 
