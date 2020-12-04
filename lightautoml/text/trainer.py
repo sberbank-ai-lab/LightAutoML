@@ -519,7 +519,7 @@ class Trainer:
                 if self.model.n_out == 1:
                     output = output.view(-1).data.cpu().numpy()
                 else:
-                    output.view(-1, self.model.n_out).data.cpu().numpy()
+                    output = output.view(-1, self.model.n_out).data.cpu().numpy()
 
                 pred.append(output)
                 target.append(data['label'].view(-1).data.cpu().numpy())
