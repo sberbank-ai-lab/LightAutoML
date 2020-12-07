@@ -6,5 +6,5 @@ source ./lama_venv/bin/activate
 pip install -U poetry pip
 
 poetry lock
-poetry install
+poetry install --no-dev
 poetry build

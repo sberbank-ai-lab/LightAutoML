@@ -21,8 +21,11 @@ classifiers = [
     "Typing :: Typed"
 ]
 
+
 [tool.poetry.dependencies]
 python = "^3.6.1"
+
+poetry-core = "^1.0.0"
 numpy = "*"
 scipy = "*"
 pandas = "*"
@@ -35,26 +38,28 @@ networkx = "*"
 cmaes = "*"
 log-calls = "*"
 pyyaml = "*"
-
-catboost = "*"
 json2html = "*"
 jinja2 = "*"
 seaborn = "*"
+catboost = "*"
 
-transformers = '*'
-nltk = '*'
-gensim = '*'
-tqdm = '*'
+transformers = "*"
+nltk = "*"
+gensim = "*"
+tqdm = "*"
+efficientnet-pytorch = "*"
+albumentations = "*"
+opencv-python = "*"
+joblib = "*"
+pywavelets = "*"
+scikit-image = "*"
+torchvision = "*"
+autowoe = "*"
+pytest = "*"
+webencodings = "*"
 
-efficientnet-pytorch = '*'
-albumentations = '*'
-opencv-python = '*'
-joblib = '*'
-pywavelets = '*'
-scikit-image = '*'
-torchvision = '*'
 
-
+[tool.poetry.dev-dependencies]
 sphinx = "*"
 sphinx-rtd-theme = "*"
 IPython = "*"
@@ -62,9 +67,8 @@ nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
-pytest = "*"
-autowoe = "*"
+
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
