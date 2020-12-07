@@ -65,6 +65,8 @@ pandoc = "*"
 pytest = "*"
 autowoe = "*"
 
+importlib-metadata = {version = "^1.0", python = "<3.8"}
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
