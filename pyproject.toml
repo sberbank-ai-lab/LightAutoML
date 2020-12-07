@@ -38,10 +38,13 @@ networkx = "*"
 cmaes = "*"
 log-calls = "*"
 pyyaml = "*"
+catboost = "*"
+
+autowoe = "*"
+
 json2html = "*"
 jinja2 = "*"
 seaborn = "*"
-catboost = "*"
 
 transformers = "*"
 nltk = "*"
@@ -54,12 +57,12 @@ joblib = "*"
 pywavelets = "*"
 scikit-image = "*"
 torchvision = "*"
-autowoe = "*"
-pytest = "*"
+
 webencodings = "*"
 
 
 [tool.poetry.dev-dependencies]
+pytest = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
 IPython = "*"
