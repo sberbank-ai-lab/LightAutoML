@@ -160,13 +160,9 @@ class AutoMLPreset(AutoML):
         logger.info('Start automl preset with listed constraints:')
         logger.info('- time: {} seconds'.format(self.timer.timeout))
         logger.info('- cpus: {} cores'.format(self.cpu_limit))
-        logger.info('- memory: {} gb'.format(self.memory_limit))
-        logger.info('\n')
+        logger.info('- memory: {} gb\n'.format(self.memory_limit))
         self.timer.start()
         result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features)
-        self.timer.stop()
-
-        logger.info('\n')
-        logger.info('Automl preset training completed in {:.2f} seconds.'.format(self.timer.total_duration))
+        logger.info('\nAutoml preset training completed in {:.2f} seconds.'.format(self.timer.time_spent))
 
         return result
