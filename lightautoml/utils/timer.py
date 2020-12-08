@@ -21,7 +21,6 @@ class Timer:
 
     def __init__(self):
         self.start_time = None
-        self.total_duration = None
 
     @property
     def time_left(self) -> float:
@@ -56,9 +55,6 @@ class Timer:
     def start(self):
         self.start_time = time()
         return self
-
-    def stop(self):
-        self.total_duration = time() - self.start_time
 
 
 @record_history(enabled=False)

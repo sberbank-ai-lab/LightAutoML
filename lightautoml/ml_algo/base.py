@@ -252,7 +252,6 @@ class TabularMLAlgo(MLAlgo):
                     logger.warning('Time limit exceeded after calculating fold {0}'.format(n))
                     break
 
-        self.timer.stop()
         logger.debug('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
