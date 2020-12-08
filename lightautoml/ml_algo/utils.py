@@ -32,7 +32,8 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
     single_fold_time = timer.estimate_folds_time(1)
 
     # if force_calc is False we check if it make sense to continue
-    if not force_calc and single_fold_time is not None and single_fold_time > timer.time_left and not timer.time_limit_exceeded():
+    if not force_calc and ((single_fold_time is not None and single_fold_time > timer.time_left)
+                           or timer.time_limit_exceeded()):
         return None, None
 
     if params_tuner.best_params is None:
@@ -41,7 +42,8 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
         if preds is not None:
             return new_algo, preds
 
-    if not force_calc and single_fold_time is not None and single_fold_time > timer.time_left and not timer.time_limit_exceeded():
+    if not force_calc and ((single_fold_time is not None and single_fold_time > timer.time_left)
+                           or timer.time_limit_exceeded()):
         return None, None
 
     ml_algo.params = params_tuner.best_params
