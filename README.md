@@ -16,7 +16,11 @@ Currently we work with datasets, where **each row is an object with its specific
 
 **Note**: for automatic creation of interpretable models we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library made by our group as well.
 
-**Authors**: Ryzhkov Alexander, Vakhrushev Anton, Simakov Dmitrii, Bunakov Vasilii, Damdinov Rinchin, Shvets Pavel, Kirilin Alexander
+**Authors**: Ryzhkov Alexander, Vakhrushev Anton, Simakov Dmitry, Bunakov Vasilii, Damdinov Rinchin, Shvets Pavel, Kirilin Alexander
+
+**LAMA video guides**:
+- [LAMA framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
+- [LAMA practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
 
 *******
 # Installation
@@ -77,3 +81,4 @@ For more examples, in `tests` folder you can find different scenarios of LAMA us
 Write a message to us:
 - Alexander Ryzhkov (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
 - Anton Vakhrushev (_email_: AGVakhrushev@sberbank.ru)
+
