@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.6"
+version = "0.2.7"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -28,11 +28,11 @@ python = "^3.6.1"
 poetry-core = "^1.0.0"
 numpy = "*"
 scipy = "*"
-pandas = "*"
-scikit-learn = "*"
-lightgbm = "2.*"
+pandas = ">=1"
+scikit-learn = ">=0.22"
+lightgbm = ">=3.1"
 optuna = "*"
-torch = "*"
+torch = ">=1.6"
 holidays = "*"
 networkx = "*"
 cmaes = "*"
@@ -40,13 +40,13 @@ log-calls = "*"
 pyyaml = "*"
 catboost = "*"
 
-autowoe = "*"
+autowoe = ">=1.2"
 
 json2html = "*"
 jinja2 = "*"
 seaborn = "*"
 
-transformers = "*"
+transformers = ">=4"
 nltk = "*"
 gensim = "*"
 tqdm = "*"
@@ -60,6 +60,8 @@ torchvision = "*"
 
 webencodings = "*"
 
+importlib-metadata = {version = "^1.0", python = "<3.8"}
+
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -72,7 +74,6 @@ sphinx-autodoc-typehints = "*"
 pandoc = "*"
 
 
-importlib-metadata = {version = "^1.0", python = "<3.8"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

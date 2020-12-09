@@ -40,7 +40,7 @@ class AutoML:
         >>> pipe = MLPipeline([SomeAlgo()])
         >>> levels = [[pipe]]
         >>> automl = AutoML(reader, levels, )
-        >>> automl.fit_predict(data, roles={'target: 'TARGET'})
+        >>> automl.fit_predict(data, roles={'target': 'TARGET'})
 
     """
 

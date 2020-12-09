@@ -237,8 +237,7 @@ class TorchBasedLinearEstimator:
 
         """
         self.model.train()
-        # print(self.model.linear.weight)
-        opt = optim.LBFGS(  # WTF ???
+        opt = optim.LBFGS(
             self.model.parameters(),
             lr=1,
             max_iter=self.max_iter,
@@ -258,7 +257,6 @@ class TorchBasedLinearEstimator:
             if loss.requires_grad:
                 loss.backward()
             results.append(loss.item())
-            # print(loss)
             return loss
 
         opt.step(closure)
