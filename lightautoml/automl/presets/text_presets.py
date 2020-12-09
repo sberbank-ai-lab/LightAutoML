@@ -182,6 +182,8 @@ class TabularNLPAutoML(TabularAutoML):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
+
         self.nn_params['num_workers'] = min(self.nn_params['num_workers'], cpu_cnt)
 
         if isinstance(self.autonlp_params['transformer_params'], dict):

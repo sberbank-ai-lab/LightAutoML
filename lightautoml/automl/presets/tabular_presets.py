@@ -172,6 +172,8 @@ class TabularAutoML(AutoMLPreset):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
+
         self.cb_params['default_params']['thread_count'] = min(self.cb_params['default_params']['thread_count'], cpu_cnt)
         self.lgb_params['default_params']['num_threads'] = min(self.lgb_params['default_params']['num_threads'], cpu_cnt)
         self.reader_params['n_jobs'] = min(self.reader_params['n_jobs'], cpu_cnt)

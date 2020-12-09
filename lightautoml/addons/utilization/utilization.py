@@ -71,7 +71,7 @@ class TimeUtilization:
     Note:
         Basic usage
 
-        >>> ensembled_automl = TimeUtilization(TabularAutoml, Task('binary'), timeout=3600, configs_list=['cfg0.yml', 'cfg1.yml'])
+        >>> ensembled_automl = TimeUtilization(TabularAutoML, Task('binary'), timeout=3600, configs_list=['cfg0.yml', 'cfg1.yml'])
 
         Then fit_predict and predict can be called like usual AutoML class
 
