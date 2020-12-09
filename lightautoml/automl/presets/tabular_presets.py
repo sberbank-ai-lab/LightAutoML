@@ -34,8 +34,6 @@ from ...tasks import Task
 _base_dir = os.path.dirname(__file__)
 
 
-# set initial runtime rate guess for first level models
-
 
 @record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
@@ -51,6 +49,7 @@ class TabularAutoML(AutoMLPreset):
     """
     _default_config_path = 'tabular_config.yml'
 
+    # set initial runtime rate guess for first level models
     _time_scores = {
 
         'lgb': 1,
