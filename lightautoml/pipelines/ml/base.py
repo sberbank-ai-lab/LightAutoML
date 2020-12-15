@@ -83,7 +83,7 @@ class MLPipeline:
 
         self.force_calc = [force_calc] * len(self._ml_algos) if type(force_calc) is bool else force_calc
         # TODO: Do we need this assert?
-        # assert any(self.force_calc), 'At least single algo in pipe should be forced to calc'
+        assert any(self.force_calc), 'At least single algo in pipe should be forced to calc'
 
     def fit_predict(self, train_valid: TrainValidIterator) -> LAMLDataset:
         """Fit on train/valid iterator and transform on validation part.
@@ -113,6 +113,8 @@ class MLPipeline:
                 self.ml_algos.append(ml_algo)
 
                 predictions.append(preds)
+
+        assert len(predictions) > 0, 'Pipeline finished with 0 models for some reason.\nProbably one or more models failed'
 
         predictions = concatenate(predictions)
 

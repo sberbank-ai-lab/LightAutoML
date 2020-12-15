@@ -7,7 +7,10 @@ from log_calls import record_history
 from .base import MLAlgo
 from .tuning.base import ParamsTuner
 from ..dataset.base import LAMLDataset
+from ..utils.logging import get_logger
 from ..validation.base import TrainValidIterator
+
+logger = get_logger(__name__)
 
 
 @record_history(enabled=False)
@@ -37,8 +40,14 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
         return None, None
 
     if params_tuner.best_params is None:
-        # TODO: Set some conditions to the tuner
-        new_algo, preds = params_tuner.fit(ml_algo, train_valid)
+        # this try/except clause was added because catboost died for some unexpected reason
+        try:
+            # TODO: Set some conditions to the tuner
+            new_algo, preds = params_tuner.fit(ml_algo, train_valid)
+        except Exception as e:
+            logger.warning('Model {0} failed during params_tuner.fit call.\n\n{1}'.format(ml_algo.name, e))
+            return None, None
+
         if preds is not None:
             return new_algo, preds
 
@@ -47,5 +56,11 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
         return None, None
 
     ml_algo.params = params_tuner.best_params
-    preds = ml_algo.fit_predict(train_valid)
+    # this try/except clause was added because catboost died for some unexpected reason
+    try:
+        preds = ml_algo.fit_predict(train_valid)
+    except Exception as e:
+        logger.warning('Model {0} failed during ml_algo.fit_predict call.\n\n{1}'.format(ml_algo.name, e))
+        return None, None
+
     return ml_algo, preds

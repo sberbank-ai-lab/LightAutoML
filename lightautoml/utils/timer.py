@@ -218,7 +218,9 @@ class TaskTimer(Timer):
         """
         run_results, run_scores = self.get_run_results(), self.get_run_scores()
         if run_results is None:
-            # case - at least one algo runs before
+            if self._mode > 0:
+                return None
+            # case - at least one algo runs before and timer mode set to 0 (conservative mode)
             total_run_info, total_run_scores = [], []
             for k in self.pipe_timer.run_info:
                 total_run_info.extend(self.pipe_timer.run_info[k])
