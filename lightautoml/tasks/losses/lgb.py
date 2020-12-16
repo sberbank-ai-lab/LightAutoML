@@ -39,7 +39,7 @@ _lgb_reg_metrics_dict = {
 
 _lgb_multiclass_metrics_dict = {
     'auc': _valid_str_multiclass_metric_names['auc'],
-    'auc_mu': 'auc_mu',
+    'auc_mu': _valid_str_multiclass_metric_names['auc'],
     'crossentropy': 'multi_logloss',
     'accuracy': 'multi_error',
 
