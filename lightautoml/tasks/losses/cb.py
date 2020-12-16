@@ -51,20 +51,6 @@ _cb_loss_params_mapping = {
     }
 }
 
-# _cb_metrics_dict = {
-#     'auc': 'AUC',
-#     'mse': 'RMSE',
-#     'mae': 'MAE',
-#     'r2': 'R2',
-#     'accuracy': 'Accuracy',
-#     'logloss': 'Logloss',
-#     'rmsle': 'MSLE',
-#     'mape': 'MAPE',
-#     'quantile': 'Quantile',
-#     'fair': 'FairLoss',
-#     'huber': 'Huber'
-# }
-
 _cb_binary_metrics_dict = {
     'auc': 'AUC',
     'logloss': 'Logloss',

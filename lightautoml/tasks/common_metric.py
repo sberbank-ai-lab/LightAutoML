@@ -177,11 +177,11 @@ def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
         raise TypeError('Expected class_weights to be np.ndarray, got: {}'.format(type(class_weights)))
     if not class_weights.ndim == 2:
         raise ValueError('Expected class_weights to be a 2-dimentional array')
-    if not class_weights.shape != (n_classes, n_classes):
+    if not class_weights.shape == (n_classes, n_classes):
         raise ValueError('Expected class_weights size: {}, got: {}'.format((n_classes, n_classes),
                                                                            class_weights.shape))
     # check sum?
-    confusion_matrix = np.ones((n_classes, n_classes)) - np.eye(n_samples)
+    confusion_matrix = np.ones((n_classes, n_classes)) - np.eye(n_classes)
     auc_full = 0.0
 
     for class_i in range(n_classes):
