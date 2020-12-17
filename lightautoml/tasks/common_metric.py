@@ -123,6 +123,22 @@ def roc_auc_ovr(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[
     return roc_auc_score(y_true, y_pred, sample_weight=sample_weight, multi_class='ovr')
 
 
+def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: np.ndarray):
+    """Root mean squared log error.
+
+    Args:
+        y_true: True target values.
+        y_pred: Predicted target values.
+        sample_weight: Weights of samples.
+
+    Returns:
+        Metric values.
+
+
+    """
+    return np.sqrt(mean_squared_log_error(y_true, y_pred, sample_weight))
+
+
 @record_history(enabled=False)
 def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
            sample_weight: Optional[np.ndarray] = None,
@@ -294,7 +310,7 @@ _valid_str_reg_metric_names = {
     'r2': r2_score,
     'mse': mean_squared_error,
     'mae': mean_absolute_error,
-    'rmsle': mean_squared_log_error,
+    'rmsle': rmsle,
     'fair': mean_fair_error,
     'huber': mean_huber_error,
     'quantile': mean_quantile_error,
