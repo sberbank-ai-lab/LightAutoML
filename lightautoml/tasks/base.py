@@ -284,7 +284,12 @@ class Task:
 
             Avaliable metrics for multi-classification task:
 
-                - `'crossentropy'`
+                - `'crossentropy'` (uses by default) Standard cross-entropy loss.
+                - `'auc'` ROC-AUC of each class against the rest.
+                - `'auc_mu'` AUC-Mu. Multi-class extension of standard AUC
+                for binary classification. In short,
+                mean of n_classes * (n_classes - 1) / 2 binary AUCs.
+                More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
 
 
         Example:
