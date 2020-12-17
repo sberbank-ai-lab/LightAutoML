@@ -234,59 +234,59 @@ class Task:
         Note:
             There is 3 different task types:
 
-                - `'binary'` for binary classification.
-                - `'reg'` for regression.
-                - `'multiclass'` for multiclass classification.
+                - `'binary'` - for binary classification.
+                - `'reg'` - for regression.
+                - `'multiclass'` - for multiclass classification.
 
             Avaliable losses for binary task:
 
-                - `'logloss'` (uses by default) Standard logistic loss.
+                - `'logloss'` - (uses by default) Standard logistic loss.
 
             Avaliable losses for regression task:
 
-                - `'mse'` (uses by default) Mean Squared Error.
-                - `'mae'` Mean Absolute Error.
-                - `'mape'` Mean Absolute Percentage Error.
-                - `'rmsle'` Root Mean Squared Log Error.
-                - `'huber'` Huber loss, reqired params:
-                `a` - threshold between MAE and MSE losses.
-                - `'fair'` Fair loss, required params:
-                'c' - sets smoothness.
-                - `'quantile'` Quantile loss, required params:
-                'q' - sets quantile.
+                - `'mse'` - (uses by default) Mean Squared Error.
+                - `'mae'` - Mean Absolute Error.
+                - `'mape'` - Mean Absolute Percentage Error.
+                - `'rmsle'` - Root Mean Squared Log Error.
+                - `'huber'` - Huber loss, reqired params:
+                  ``a`` - threshold between MAE and MSE losses.
+                - `'fair'` - Fair loss, required params:
+                  ``c`` - sets smoothness.
+                - `'quantile'` - Quantile loss, required params:
+                  ``q`` - sets quantile.
 
             Avaliable losses for multi-classification task:
 
-                - `'crossentropy'` (uses by default) Standard crossentropy function.
-                - `'f1'` Optimizes F1-Macro Score, now avaliable for
-                 LightGBM and NN models. Here we implicitly assume
-                 that the prediction lies not in the set ``{0, 1}``,
-                 but in the interval ``[0, 1]``.
+                - `'crossentropy'` - (uses by default) Standard crossentropy function.
+                - `'f1'` - Optimizes F1-Macro Score, now avaliable for
+                  LightGBM and NN models. Here we implicitly assume
+                  that the prediction lies not in the set ``{0, 1}``,
+                  but in the interval ``[0, 1]``.
 
             Available metrics for binary task:
 
-                - `'auc'` (uses by default) ROC-AUC score.
-                - `'accuracy'` Accuracy score (uses argmax prediction).
-                - `'logloss'` Standard logistic loss.
+                - `'auc'` - (uses by default) ROC-AUC score.
+                - `'accuracy'` - Accuracy score (uses argmax prediction).
+                - `'logloss'` - Standard logistic loss.
 
             Avaliable metrics for regression task:
 
-                - `'mse'` (uses by default) Mean Squared Error.
-                - `'mae'` Mean Absolute Error.
-                - `'mape'` Mean Absolute Percentage Error.
-                - `'rmsle'` Root Mean Squared Log Error.
-                - `'huber'` Huber loss, reqired params:
+                - `'mse'` - (uses by default) Mean Squared Error.
+                - `'mae'` - Mean Absolute Error.
+                - `'mape'` - Mean Absolute Percentage Error.
+                - `'rmsle'` - Root Mean Squared Log Error.
+                - `'huber'` - Huber loss, reqired params:
                 `a` - threshold between MAE and MSE losses.
-                - `'fair'` Fair loss, required params:
+                - `'fair'` - Fair loss, required params:
                 'c' - sets smoothness.
-                - `'quantile'` Quantile loss, required params:
+                - `'quantile'` - Quantile loss, required params:
                 'q' - sets quantile.
 
             Avaliable metrics for multi-classification task:
 
-                - `'crossentropy'` (uses by default) Standard cross-entropy loss.
-                - `'auc'` ROC-AUC of each class against the rest.
-                - `'auc_mu'` AUC-Mu. Multi-class extension of standard AUC
+                - `'crossentropy'` - (uses by default) Standard cross-entropy loss.
+                - `'auc'` - ROC-AUC of each class against the rest.
+                - `'auc_mu'` - AUC-Mu. Multi-class extension of standard AUC
                 for binary classification. In short,
                 mean of n_classes * (n_classes - 1) / 2 binary AUCs.
                 More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
