@@ -136,7 +136,7 @@ def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.nda
 
 
     """
-    return np.sqrt(mean_squared_log_error(y_true, y_pred, sample_weight))
+    return np.sqrt(mean_squared_log_error(y_true, y_pred, sample_weight=sample_weight))
 
 
 @record_history(enabled=False)
