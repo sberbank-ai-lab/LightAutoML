@@ -480,7 +480,7 @@ class TabularDataFeatures:
             un = feat.value_counts(dropna=False)
             uns.append(un.shape[0])
 
-        return Series(uns, index=feats)
+        return Series(uns, index=feats, dtype='int')
 
     def get_top_categories(self, train: NumpyOrPandas, top_n: int = 5) -> List[str]:
         """Get top categories by importance.

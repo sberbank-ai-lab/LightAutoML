@@ -37,15 +37,15 @@ _base_dir = os.path.dirname(__file__)
 
 @record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
-    """Classic preset - work with tabular data.
-
+    """
+    Classic preset - work with tabular data.
     Supported data roles - numbers, dates, categories
     Limitations:
 
         - no memory management
         - no text support
 
-    GPU support in catboost/lightgbm(if installed for gpu) training
+    GPU support in catboost/lightgbm(if installed for gpu) training.
     """
     _default_config_path = 'tabular_config.yml'
 
@@ -104,6 +104,7 @@ class TabularAutoML(AutoMLPreset):
             linear_l2_params: params of linear model.
             gbm_pipeline_params: params of feature generation for boosting models.
             linear_pipeline_params: params of feature generation for linear models.
+
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
 
