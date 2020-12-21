@@ -122,7 +122,7 @@ def roc_auc_ovr(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[
 
     return roc_auc_score(y_true, y_pred, sample_weight=sample_weight, multi_class='ovr')
 
-
+@record_history(enabled=False)
 def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None):
     """Root mean squared log error.
 
