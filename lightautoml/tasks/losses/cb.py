@@ -69,7 +69,7 @@ _cb_reg_metrics_dict = {
 }
 
 _cb_multiclass_metrics_dict = {
-    'auc': 'AUC:type=OneVsAll',
+    'auc': 'AUC:type=Mu' # for overfitting detector
     'auc_mu': 'AUC:type=Mu',
     'accuracy': 'Accuracy',
     'crossentropy': 'MultiClass',
