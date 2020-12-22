@@ -1,5 +1,5 @@
 """Tools to configure time utilization."""
-
+import logging
 from copy import deepcopy
 from typing import Optional, Any, Sequence, Type, Union, Iterable
 
@@ -12,7 +12,7 @@ from ...dataset.base import LAMLDataset
 from ...ml_algo.base import MLAlgo
 from ...pipelines.ml.base import MLPipeline
 from ...tasks import Task
-from ...utils.logging import get_logger
+from ...utils.logging import get_logger, verbosity_to_loglevel
 from ...utils.timer import PipelineTimer
 
 logger = get_logger(__name__)
@@ -120,6 +120,8 @@ class TimeUtilization:
 
         """
 
+        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
+
         self.automl_factory = automl_factory
         self.task = task
         self.timeout = timeout
@@ -221,14 +223,14 @@ class TimeUtilization:
             for n_cfg, config in enumerate(self.configs_list):
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
                 upd_state_val += 1
-                logger.info('CUR SETUP FOR RANDOM STATE: {}'.format(random_states))
+                logger.info('Current random state: {}'.format(random_states))
                 cur_kwargs = self.kwargs.copy()
                 for k in random_states.keys():
                     if k in self.kwargs:
-                        logger.info('FOUND {} in kwargs, need to combine'.format(k))
+                        logger.info('Found {} in kwargs, need to combine'.format(k))
                         random_states[k] = {**cur_kwargs[k], **random_states[k]}
                         del cur_kwargs[k]
-                        logger.info('MERGED VARIANT FOR {} = {}'.format(k, random_states[k]))
+                        logger.info('Merged variant for {} = {}'.format(k, random_states[k]))
 
                 automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memoty_limit,
                                              cpu_limit=self.cpu_limit, gpu_ids=self.gpu_ids,

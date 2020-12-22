@@ -4,6 +4,7 @@ import os
 import shutil
 from typing import Optional, Any, Sequence, Iterable
 
+import logging
 import torch
 import yaml
 from log_calls import record_history
@@ -11,7 +12,7 @@ from log_calls import record_history
 from ..base import AutoML
 from ...dataset.base import LAMLDataset
 from ...tasks import Task
-from ...utils.logging import get_logger
+from ...utils.logging import get_logger, verbosity_to_loglevel
 from ...utils.timer import PipelineTimer
 
 logger = get_logger(__name__)
@@ -71,6 +72,7 @@ class AutoMLPreset(AutoML):
 
         """
         self._set_config(config_path)
+        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
 
         for name, param in zip(['timing_params'], [timing_params]):
             if param is None:
