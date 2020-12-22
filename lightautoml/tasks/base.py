@@ -276,20 +276,20 @@ class Task:
                 - `'mape'` - Mean Absolute Percentage Error.
                 - `'rmsle'` - Root Mean Squared Log Error.
                 - `'huber'` - Huber loss, reqired params:
-                `a` - threshold between MAE and MSE losses.
+                  ``a`` - threshold between MAE and MSE losses.
                 - `'fair'` - Fair loss, required params:
-                'c' - sets smoothness.
+                  ``c`` - sets smoothness.
                 - `'quantile'` - Quantile loss, required params:
-                'q' - sets quantile.
+                  ``q`` - sets quantile.
 
             Avaliable metrics for multi-classification task:
 
                 - `'crossentropy'` - (uses by default) Standard cross-entropy loss.
                 - `'auc'` - ROC-AUC of each class against the rest.
                 - `'auc_mu'` - AUC-Mu. Multi-class extension of standard AUC
-                for binary classification. In short,
-                mean of n_classes * (n_classes - 1) / 2 binary AUCs.
-                More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+                  for binary classification. In short,
+                  mean of n_classes * (n_classes - 1) / 2 binary AUCs.
+                  More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
 
 
         Example:

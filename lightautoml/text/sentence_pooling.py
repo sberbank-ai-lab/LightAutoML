@@ -1,6 +1,5 @@
 """Different Pooling strategies for sequence data."""
 
-from abc import ABC, abstractmethod
 
 import torch
 import torch.nn as nn
@@ -8,13 +7,12 @@ from log_calls import record_history
 
 
 @record_history(enabled=False)
-class SequenceAbstractPooler(nn.Module, ABC):
+class SequenceAbstractPooler(nn.Module):
     """Abstract pooling class."""
 
     def __init__(self):
         super(SequenceAbstractPooler, self).__init__()
 
-    @abstractmethod
     def forward(self, x: torch.Tensor, x_mask: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
