@@ -2,6 +2,7 @@
 
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
+import logging
 from log_calls import record_history
 
 from .blend import Blender, BestModelSelector
@@ -76,8 +77,7 @@ class AutoML:
             verbose: verbosity level. Default 2.
 
         """
-
-        logger.setLevel(verbosity_to_loglevel(verbose))
+        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
         assert len(levels) > 0, 'At least 1 level should be defined'
 
         self.timer = timer
