@@ -118,6 +118,9 @@ class ColumnRole:
         if name in ['path']:
             return PathRole()
 
+        if name in ['treatment']:
+            return TreatmentRole()
+
         raise ValueError('Unknown string role')
 
 
@@ -157,9 +160,10 @@ class CategoryRole(ColumnRole):
             dtype: Variable type.
             encoding_type: Encoding type.
             unknown: Cut-off freq to process rare categories as unseen.
+<<<<<<< HEAD
             force_input: Select a feature for training,
               regardless of the selector results.
-        
+
         Note:
             Valid encoding_type:
 
@@ -168,7 +172,20 @@ class CategoryRole(ColumnRole):
                 - `'oof'` - out-of-fold target encoding
                 - `'freq'` - frequency encoding
                 - `'ohe'` - one hot encoding
-            
+
+=======
+            force_input: Select a feature for training regardless of the selector results.
+
+        Note:
+            Valid encoding_type:
+
+                - auto - default processing
+                - int - encode with int
+                - oof - out-of-fold target encoding
+                - freq - frequency encoding
+                - ohe - one hot encoding
+
+>>>>>>> Uplift modeling
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
         # assert encoding_type == 'auto', 'For the moment only auto is supported'
@@ -230,7 +247,7 @@ class DatetimeRole(ColumnRole):
             country: Datetime metadata to extract holidays.
             prov: Datetime metadata to extract holidays.
             state: Datetime metadata to extract holidays.
-        
+
         """
         self.dtype = dtype
         self.seasonality = []
@@ -299,3 +316,9 @@ class FoldsRole(ColumnRole):
 class PathRole(ColumnRole):
     """Path role."""
     _name = 'Path'
+
+
+@record_history(enabled=False)
+class TreatmentRole(ColumnRole):
+    """Uplift Treatment Role."""
+    _name = 'Treatment'
