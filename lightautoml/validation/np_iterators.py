@@ -5,6 +5,9 @@ from typing import Optional, Sequence, Tuple, Union, cast
 import numpy as np
 from log_calls import record_history
 
+from lightautoml.reader.utils import set_sklearn_folds
+from lightautoml.tasks import Task
+
 from .base import CustomIdxs, CustomIterator, DummyIterator, HoldoutIterator, TrainValidIterator
 from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
 
@@ -231,3 +234,64 @@ class TimeSeriesIterator:
             return idx[self.folds != item], idx[self.folds == item]
 
         return idx[self.folds < (item + 1)], idx[self.folds == (item + 1)]
+
+
+@record_history(enabled=False)
+class UpliftIterator:
+    """Iterator for uplift modeling task
+
+    """
+
+    def __init__(self, treatment_col: np.ndarray, target: np.ndarray, mode: bool, task: Task, n_folds: int = 5):
+        """Generates time series data split. Sorter - include left, exclude right.
+
+        Args:
+            treatment_col: Treatment column: 0 - control group, 1 - treatment group
+            target: Target values
+            mode: Flag
+            task: Task
+            n_folds:
+
+        """
+
+        self.task = task
+        self.n_folds = n_folds
+        self.mode = mode
+
+        idx = np.arange(treatment_col.shape[0])
+        flg = treatment_col.astype(np.bool) == self.mode
+
+        self.constant_idx = idx[flg]
+        self.splitted_idx = idx[~flg]
+
+        self.folds = set_sklearn_folds(self.task, target[self.splitted_idx], self.n_folds)
+
+    def __len__(self):
+        """Get number of folds.
+
+        Returns:
+            length.
+
+        """
+        return self.n_folds
+
+    def __getitem__(self, item):
+        """Select train/validation indexes.
+
+        For Train indexes use all dates before Validation dates.
+
+        Args:
+            item: index of fold.
+
+        Returns:
+            Tuple of train/validation indexes.
+        """
+        if item + 1 >= self.__len__():
+            raise IndexError()
+
+        val_idx = self.splitted_idx[self.folds == item]
+        train_fold_idx = self.splitted_idx[self.folds != item]
+
+        train_idx = np.concatenate([self.constant_idx, train_fold_idx])
+
+        return train_idx, val_idx

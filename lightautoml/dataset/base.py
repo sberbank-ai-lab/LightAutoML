@@ -8,8 +8,8 @@ from log_calls import record_history
 from .roles import ColumnRole
 from ..tasks.base import Task
 
-valid_array_attributes = ('target', 'group', 'folds', 'weights')
-array_attr_roles = ('Target', 'Group', 'Folds', 'Weights')
+valid_array_attributes = ('target', 'group', 'folds', 'weights', 'treatment')
+array_attr_roles = ('Target', 'Group', 'Folds', 'Weights', 'Treatment')
 # valid_tasks = ('reg', 'binary', 'multiclass') # TODO: Add multiclass and multilabel. Refactor for some dataset and pipes needed
 # valid_tasks = ('reg', 'binary')
 
