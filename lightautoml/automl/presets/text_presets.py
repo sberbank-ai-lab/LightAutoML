@@ -1,14 +1,14 @@
 """AutoML presets for data with texts."""
 
 import os
-from typing import Optional, Sequence
+from typing import Optional, Sequence, TYPE_CHECKING
 
 import torch
 from log_calls import record_history
 from pandas import DataFrame
 
 from .base import upd_params
-from .tabular_presets import TabularAutoML, ReadableToDf, NumpyDataset
+from .tabular_presets import TabularAutoML, NumpyDataset, ReadableToDf
 from ..blend import WeightedBlender
 from ...ml_algo.boost_cb import BoostCB
 from ...ml_algo.boost_lgbm import BoostLGBM
@@ -23,6 +23,8 @@ from ...pipelines.ml.nested_ml_pipe import NestedTabularMLPipeline
 from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
+
+
 
 _base_dir = os.path.dirname(__file__)
 # set initial runtime rate guess for first level models
@@ -182,6 +184,8 @@ class TabularNLPAutoML(TabularAutoML):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
+
         self.nn_params['num_workers'] = min(self.nn_params['num_workers'], cpu_cnt)
 
         if isinstance(self.autonlp_params['transformer_params'], dict):
@@ -335,5 +339,6 @@ class TabularNLPAutoML(TabularAutoML):
 
         Returns:
             Dataset.
+
         """
         return super().predict(data, features_names, batch_size)

@@ -313,9 +313,11 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
 
     Args:
         data: Dataset in formats:
+
             - pd.DataFrame
             - dict of np.ndarray
             - path to csv, feather, parquet
+
         features_names: Optional features names if np.ndarray
         n_jobs: number of processes to read file
         read_csv_params: params to read csv file

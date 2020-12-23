@@ -89,6 +89,7 @@ class PipelineTimer(Timer):
         self._rate_overhead = overhead
         self._overhead = overhead * self.timeout
         self.run_info = {}
+        self.run_scores = {}
         self._mode = mode
         self.tuning_rate = tuning_rate
         self.child_out_of_time = False
@@ -178,8 +179,10 @@ class TaskTimer(Timer):
 
         if self.key in self.pipe_timer.run_info:
             self.pipe_timer.run_info[self.key].append(self.time_spent)
+            self.pipe_timer.run_scores[self.key].append(self.score)
         else:
             self.pipe_timer.run_info[self.key] = [self.time_spent]
+            self.pipe_timer.run_scores[self.key] = [self.score]
 
     def get_run_results(self) -> Union[None, np.ndarray]:
         """Get timer history.
@@ -191,8 +194,17 @@ class TaskTimer(Timer):
         """
         if self.key in self.pipe_timer.run_info:
             return self.pipe_timer.run_info[self.key]
-        else:
-            return None
+
+    def get_run_scores(self) -> Union[None, np.ndarray]:
+        """Get timer scores.
+
+        Returns:
+            `None` if there is no scores,
+             or array with scores of runs.
+
+        """
+        if self.key in self.pipe_timer.run_scores:
+            return self.pipe_timer.run_scores[self.key]
 
     def estimate_folds_time(self, n_folds: int = 1) -> Optional[float]:
         """Estimate time for n_folds.
@@ -204,15 +216,29 @@ class TaskTimer(Timer):
             Estimated time needed to run all n_folds.
 
         """
-        run_results = self.get_run_results()
+        run_results, run_scores = self.get_run_results(), self.get_run_scores()
         if run_results is None:
-            return None
+            if self._mode > 0:
+                return None
+            # case - at least one algo runs before and timer mode set to 0 (conservative mode)
+            total_run_info, total_run_scores = [], []
+            for k in self.pipe_timer.run_info:
+                total_run_info.extend(self.pipe_timer.run_info[k])
+                total_run_scores.extend(self.pipe_timer.run_scores[k])
 
+            if len(total_run_info) == 0:
+                return None
+
+            single_run_est = np.array(total_run_info).sum() / np.array(total_run_scores).sum() * self.score
+            return single_run_est * n_folds
+
+        # case - algo runs at least ones
         if self._mode > 0:
-            single_run_est = np.max(run_results)
+            single_run_est = np.max(np.array(run_results) / np.array(run_scores))
         else:
-            single_run_est = run_results.mean()
+            single_run_est = np.mean(np.array(run_results) / np.array(run_scores))
 
+        single_run_est = single_run_est * self.score
         return single_run_est * n_folds
 
     def estimate_tuner_time(self, n_folds: int = 1) -> float:

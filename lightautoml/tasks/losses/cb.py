@@ -9,7 +9,17 @@ from .base import Loss
 
 
 @record_history(enabled=False)
-def cb_str_loss_wrapper(name, **params):
+def cb_str_loss_wrapper(name: str, **params: Optional[Dict]):
+    """CatBoost loss name wrapper, if it has keyword args.
+
+    Args:
+        name: One of CatBoost loss names.
+        **params: Additional parameters.
+
+    Returns:
+        Wrapped CatBoost loss name.
+
+    """
     return name + ':' + ';'.join([k + '=' + str(v) for (k, v) in params.items()])
 
 
@@ -41,13 +51,16 @@ _cb_loss_params_mapping = {
     }
 }
 
-_cb_metrics_dict = {
+_cb_binary_metrics_dict = {
     'auc': 'AUC',
+    'logloss': 'Logloss',
+    'accuracy': 'Accuracy',
+}
+
+_cb_reg_metrics_dict = {
     'mse': 'RMSE',
     'mae': 'MAE',
     'r2': 'R2',
-    'accuracy': 'Accuracy',
-    'logloss': 'Logloss',
     'rmsle': 'MSLE',
     'mape': 'MAPE',
     'quantile': 'Quantile',
@@ -56,12 +69,21 @@ _cb_metrics_dict = {
 }
 
 _cb_multiclass_metrics_dict = {
+    'auc': 'AUC:type=Mu', # for overfitting detector
+    'auc_mu': 'AUC:type=Mu',
     'accuracy': 'Accuracy',
     'crossentropy': 'MultiClass',
     'f1_macro': 'TotalF1:average=Macro',
     'f1_micro': 'TotalF1:average=Micro',
     'f1_weighted': 'TotalF1:average=Weighted'
 }
+
+_cb_metrics_dict = {
+    'binary': _cb_binary_metrics_dict,
+    'reg': _cb_reg_metrics_dict,
+    'multiclass': _cb_multiclass_metrics_dict
+}
+
 
 _cb_metric_params_mapping = {
     'quantile': {
@@ -135,18 +157,21 @@ class CBLoss(Loss):
         self.metric_name = None
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None):
+                            metric_params: Optional[Dict] = None, task_name: str = None):
         """
         Callback metric setter.
 
         Args:
-            metric: callback metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric: Callback metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
+            task_name: Name of task. For now it omitted.
 
         """
         # TODO: for what cb_utils
         # How to say that this metric is special class if there any task type?
+
+        assert task_name in ['binary', 'reg', 'multiclass'], 'Unknown task name: {}'.format(task_name)
 
         self.metric_params = {}
         if metric_params is not None:
@@ -154,14 +179,13 @@ class CBLoss(Loss):
 
         if type(metric) is str:
             self.metric = None
-            if metric in _cb_metrics_dict:
-                if metric in _cb_metric_params_mapping:
-                    metric_params = {_cb_metric_params_mapping[metric][k]: v for (k, v) in self.metric_params.items()}
-                    self.metric_name = cb_str_loss_wrapper(_cb_metrics_dict[metric], **metric_params)
-                else:
-                    self.metric_name = _cb_metrics_dict[metric]
-            elif metric in _cb_multiclass_metrics_dict:
-                self.metric_name = _cb_multiclass_metrics_dict[metric]
+            _metric_dict = _cb_metrics_dict[task_name]
+            if metric in _cb_metric_params_mapping:
+                metric_params = {_cb_metric_params_mapping[metric][k]: v for (k, v) in self.metric_params.items()}
+                self.metric_name = cb_str_loss_wrapper(_metric_dict[metric], **metric_params)
+            else:
+                self.metric_name = _metric_dict[metric]
+
         else:
             # TODO: Check it later
             self.metric_name = self.fobj_name

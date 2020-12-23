@@ -246,6 +246,7 @@ class TORCHLoss(Loss):
 
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None):
         """
+
         Args:
             loss: name or callable objective function.
             loss_params: additional loss parameters.

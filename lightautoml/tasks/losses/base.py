@@ -5,13 +5,24 @@ from typing import Callable, Tuple, Union, Optional, Dict, Any
 
 from log_calls import record_history
 
-from lightautoml.tasks.utils import infer_gib
-from ..common_metric import valid_str_metric_names, valid_str_multiclass_metric_names
+from ..utils import infer_gib
+from ..common_metric import _valid_str_metric_names
 
 
 @record_history(enabled=False)
 class MetricFunc:
+    """
+    Wrapper for metric.
+    """
     def __init__(self, metric_func, m, bw_func):
+        """
+
+        Args:
+            metric_func: Callable metric function.
+            m: Multiplier for metric value.
+            bw_func: Backward function.
+
+        """
         self.metric_func = metric_func
         self.m = m
         self.bw_func = bw_func
@@ -36,8 +47,8 @@ class Loss:
         """Forward transformation.
 
         Args:
-            target: true target values.
-            weights: item weights.
+            target: Ground truth target values.
+            weights: Item weights.
 
         Returns:
             Tuple (target, weights) without transformation.
@@ -50,10 +61,11 @@ class Loss:
         """Backward transformation for predicted values.
 
         Args:
-            pred: predicted target values.
+            pred: Predicted target values.
 
         Returns:
-            pred without transformation.
+            Pred without transformation.
+
         """
         return pred
 
@@ -62,7 +74,7 @@ class Loss:
         """Forward transformation for target values and item weights.
 
         Returns:
-            callable transformation.
+            Callable transformation.
 
         """
         return self._fw_func
@@ -72,7 +84,7 @@ class Loss:
         """Backward transformation for predicted values.
 
         Returns:
-            callable transformation.
+            Callable transformation.
 
         """
         return self._bw_func
@@ -82,12 +94,12 @@ class Loss:
         """Customize metric.
 
         Args:
-            metric_func: callable metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric_func: Callable metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
 
         Returns:
-            callable metric.
+            Callable metric.
 
         """
         if greater_is_better is None:
@@ -101,26 +113,33 @@ class Loss:
         return MetricFunc(metric_func, m, self._bw_func)
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None):
+                            metric_params: Optional[Dict] = None, task_name: Optional[Dict] = None):
         """Callback metric setter.
 
         Args:
-            metric: callback metric
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric: Callback metric
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
+            task_name: Name of task.
+
+        Note:
+            Value of ``task_name`` should be one of following options:
+
+            -  `'binary'`
+            - `'reg'`
+            - `'multiclass'`
 
         """
+
+        assert task_name in ['binary', 'reg', 'multiclass'], 'Incorrect task name: {}'.format(task_name)
         self.metric = metric
 
         if metric_params is None:
             metric_params = {}
 
         if type(metric) is str:
-            try:
-                self.metric_func = self.metric_wrapper(valid_str_metric_names[metric], greater_is_better, metric_params)
-            except KeyError:
-                self.metric_func = self.metric_wrapper(valid_str_multiclass_metric_names[metric],
-                                                       greater_is_better, metric_params)
+            metric_dict = _valid_str_metric_names[task_name]
+            self.metric_func = self.metric_wrapper(metric_dict[metric], greater_is_better, metric_params)
             self.metric_name = metric
         else:
             self.metric_func = self.metric_wrapper(metric, greater_is_better, metric_params)

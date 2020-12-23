@@ -34,23 +34,22 @@ from ...tasks import Task
 _base_dir = os.path.dirname(__file__)
 
 
-# set initial runtime rate guess for first level models
-
 
 @record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
-    """Classic preset - work with tabular data.
-
+    """
+    Classic preset - work with tabular data.
     Supported data roles - numbers, dates, categories
     Limitations:
 
         - no memory management
         - no text support
 
-    GPU support in catboost/lightgbm(if installed for gpu) training
+    GPU support in catboost/lightgbm(if installed for gpu) training.
     """
     _default_config_path = 'tabular_config.yml'
 
+    # set initial runtime rate guess for first level models
     _time_scores = {
 
         'lgb': 1,
@@ -105,6 +104,7 @@ class TabularAutoML(AutoMLPreset):
             linear_l2_params: params of linear model.
             gbm_pipeline_params: params of feature generation for boosting models.
             linear_pipeline_params: params of feature generation for linear models.
+
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
 
@@ -173,6 +173,8 @@ class TabularAutoML(AutoMLPreset):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
+
         self.cb_params['default_params']['thread_count'] = min(self.cb_params['default_params']['thread_count'], cpu_cnt)
         self.lgb_params['default_params']['num_threads'] = min(self.lgb_params['default_params']['num_threads'], cpu_cnt)
         self.reader_params['n_jobs'] = min(self.reader_params['n_jobs'], cpu_cnt)

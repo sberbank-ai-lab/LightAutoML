@@ -166,6 +166,7 @@ class TabularCVAutoML(TabularAutoML):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
 
         if 'n_jobs' in self.autocv_features:
             self.autocv_features['n_jobs'] = min(self.autocv_features['n_jobs'], cpu_cnt)

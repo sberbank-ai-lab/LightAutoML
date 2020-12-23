@@ -26,17 +26,17 @@ TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
-
     default_params:
-        - all available parameters listed in lightgbm documentation:
+        all available parameters listed in CatBoost documentation:
+
         - https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
 
-    freeze_defaults:
+    ``freeze_defaults``:
 
-        - ``True`` :  params may be rewrited depending on dataset.
+        - ``True`` :  params may be rewritten depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: Timer instance or None
+    ``timer``: ``Timer`` instance or ``None``.
 
     """
     _name: str = 'CatBoost'
@@ -103,10 +103,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Get model parameters depending on input dataset parameters.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv iterator.
 
         Returns:
-            parameters of model.
+            Parameters of model.
 
         """
 
@@ -195,12 +195,12 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Sample hyperparameters from suggested.
 
         Args:
-            trial: optuna trial object.
-            suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimation.
+            trial: Optuna trial object.
+            suggested_params: Dict with parameters.
+            estimated_n_trials: Maximum number of hyperparameter estimation.
 
         Returns:
-            dict with sampled hyperparameters.
+            Dict with sampled hyperparameters.
 
         """
 
