@@ -29,9 +29,10 @@ author = 'Sberbank AI Lab'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',  # will be used for tables
-    'sphinx.ext.viewcode',  # for [source] button
+    'sphinx.ext.autosummary', # will be used for tables
+    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon', # structure
+    'sphinx.ext.viewcode', # for [source] button
     'sphinx_autodoc_typehints',
     'nbsphinx',
     'nbsphinx_link'
@@ -141,7 +142,16 @@ napoleon_use_keyword = True
 napoleon_use_admonition_for_examples = True
 
 # Autosummary true if you want to generate it from very beginning
-autosummary_generate = False
+autosummary_generate = True
+
+set_type_checking_flag = True
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'torch': ('https://pytorch.org/docs/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+}
 
 def setup(app):
     app.add_css_file('style.css')  # customizing default theme
