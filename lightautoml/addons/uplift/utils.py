@@ -34,6 +34,7 @@ def create_linear_automl(base_task: Task, n_folds: int = 5, random_state: int = 
 
     return automl
 
+
 @record_history(enabled=False)
 def _get_treatment_role(roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Tuple[Union[TreatmentRole, str],
                                                                                                       str]:
@@ -61,6 +62,7 @@ def _get_treatment_role(roles: Dict[Union[ColumnRole, str], Union[str, Sequence[
         raise RuntimeError('Treatment role is absent')
 
     return treatment_role, treatment_col
+
 
 @record_history(enabled=False)
 def _get_target_role(roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Tuple[Union[TargetRole, str], str]:

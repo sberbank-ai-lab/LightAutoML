@@ -55,11 +55,11 @@ def test_uplift_modeling():
     uplift_pred, treatment_pred, control_pred = tlearner.predict(test)
     uplift_pred = uplift_pred.ravel()
 
-    auc_algo = calculate_uplift_auc(test_target, uplift_pred, test_treatment)
+    uplift_auc_algo = calculate_uplift_auc(test_target, uplift_pred, test_treatment)
     auc_base, auc_perfect = calculate_min_max_uplift_auc(test_target, test_treatment)
 
-    auc_treatment = roc_auc_score(test_target[test_treatment == 1], treatment_pred[test_treatment == 1])
-    auc_control = roc_auc_score(test_target[test_treatment == 0], control_pred[test_treatment == 0])
+    roc_auc_treatment = roc_auc_score(test_target[test_treatment == 1], treatment_pred[test_treatment == 1])
+    roc_auc_control = roc_auc_score(test_target[test_treatment == 0], control_pred[test_treatment == 0])
 
     # Custom base algorithm
     xlearner = meta_learners.XLearner(outcome_learners=[TabularAutoML(task=Task('binary'), timeout=10)])
@@ -68,4 +68,4 @@ def test_uplift_modeling():
     uplift_pred, treatment_pred, control_pred = xlearner.predict(test)
     uplift_pred = uplift_pred.ravel()
 
-    auc_algo = calculate_uplift_auc(test_target, uplift_pred, test_treatment, 'adj_qini')
+    uplift_auc_algo = calculate_uplift_auc(test_target, uplift_pred, test_treatment, 'adj_qini')

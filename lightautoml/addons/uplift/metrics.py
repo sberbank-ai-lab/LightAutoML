@@ -17,8 +17,8 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
     Method return curve's coordinates if the model is a perfect.
     Perfect model ranking:
         1) Treatment = 1, Target = 1
-        2) Treatment = 1, Target = 0
-        3) Treatment = 0, Target = 0
+        2) Treatment = 0, Target = 0
+        3) Treatment = 1, Target = 0
         4) Treatment = 0, Target = 1
 
     Args:
@@ -31,8 +31,8 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
     """
     assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
 
-    perfect_control_score = -((treatment == 0).astype(int) * (y_true == 1).astype(int))
-    perfect_treatment_score = (treatment == 1).astype(int) * (y_true == 1).astype(int) + treatment
+    perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
+    perfect_treatment_score = ((treatment == 1).astype(int) * 2 * (y_true == 1).astype(int))
 
     perfect_uplift = perfect_treatment_score + perfect_control_score
 
@@ -59,8 +59,6 @@ def _get_uplift_curve(y_treatment: np.ndarray, y_control: np.ndarray, n_treatmen
     if mode == "qini":
         curve_values = y_treatment / n_treatment[-1] - y_control / n_control[-1]
     elif mode == "cum_gain":
-        # treatment_target_rate = np.divide(y_treatment, n_treatment, out=np.zeros_like(n_treatment), where=n_treatment != 0)
-        # control_target_rate = np.divide(y_control, n_control, out=np.zeros_like(y_control), where=n_control != 0)
         treatment_target_rate = np.nan_to_num(y_treatment / n_treatment, 0.0)
         control_target_rate = np.nan_to_num(y_control / n_control, 0.0)
         curve_values = treatment_target_rate - control_target_rate
@@ -69,7 +67,6 @@ def _get_uplift_curve(y_treatment: np.ndarray, y_control: np.ndarray, n_treatmen
     elif mode == "adj_qini":
         normed_factor = np.nan_to_num(n_treatment / n_control, 0.0)
         normed_y_control = y_control * normed_factor
-        # normed_control = np.divide(y_control * n_treatment, n_control, out=np.zeros_like(n_control), where=n_control != 0)
         curve_values = (y_treatment - normed_y_control) / n_treatment[-1]
 
     return curve_values
@@ -77,11 +74,11 @@ def _get_uplift_curve(y_treatment: np.ndarray, y_control: np.ndarray, n_treatmen
 
 @record_history(enabled=False)
 def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray,
-                                   mode: str = 'qini') -> Tuple[np.ndarray, np.ndarray]:
+                                   mode: str = 'adj_qini') -> Tuple[np.ndarray, np.ndarray]:
     """Calculate uplift curve
 
     Args:
-        y_trie: Target values
+        y_true: Target values
         uplift: Prediction of models
         treatment: Treatment column
         mode: Name of available metrics
@@ -120,14 +117,15 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
 
 
 @record_history(enabled=False)
-def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, mode: str = 'cum_gain'):
+def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, mode: str = 'adj_qini', normed: bool = True):
     """Calculate area under uplift curve
 
     Args:
-        y_trie: Target values
+        y_true: Target values
         uplift_pred: Prediction of meta model
         treatment: Treatment column
         mode: Name of available metrics
+        normed: AUC divided by the maximum AUC
 
     Returns:
         auc_score: Area under model uplift curve
@@ -135,15 +133,21 @@ def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment:
     """
     xs, ys = calculate_graphic_uplift_curve(y_true, uplift_pred, treatment, mode)
 
-    return auc(xs, ys)
+    uplift_auc = auc(xs, ys)
+
+    if normed:
+        _, max_auc = calculate_min_max_uplift_auc(y_true, treatment, mode)
+        uplift_auc /= max_auc
+
+    return uplift_auc
 
 
 @record_history(enabled=False)
-def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode: str = 'cum_gain'):
+def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode: str = 'adj_qini'):
     """Calculate AUC uplift curve for `base` and `perfect` models
 
     Args:
-        y_trie: Target values
+        y_true: Target values
         treatment: Treatment column
         mode: Name of available metrics
 
