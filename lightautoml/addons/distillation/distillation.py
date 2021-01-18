@@ -126,7 +126,7 @@ class Distiller:
 
         self.models_scores = models_scores
 
-        return self.students[np.argmax(models_scores[metric]).data]
+        return self.students[np.argmax(models_scores[metric])]
 
     def eval_metrics(self, data, metrics=None):
         """Compute students' quality by calculating provided metrics.
