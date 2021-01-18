@@ -140,6 +140,11 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# catboost logs
+catboost_info
+
 .idea/
 lama_venv/
 poetry.lock
+distillation_sbx.ipynb
+.vscode
