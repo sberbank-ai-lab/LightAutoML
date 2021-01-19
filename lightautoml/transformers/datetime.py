@@ -103,7 +103,7 @@ class BaseDiff(LAMLTransformer):
         Args:
             base_names: Base date names.
             diff_names: Difference date names.
-            basic_interval: time unit.
+            basic_interval: Time unit.
 
         """
         self.base_names = base_names
@@ -136,6 +136,7 @@ class BaseDiff(LAMLTransformer):
 
         Returns:
             NumpyDataset of numeric features.
+
         """
         # checks if exist
         super().transform(dataset)
@@ -180,7 +181,7 @@ class DateSeasons(LAMLTransformer):
         """
 
         Args:
-            output_role: which role to assign for input feautres.
+            output_role: Which role to assign for input feautres.
 
         """
         self.output_role = output_role

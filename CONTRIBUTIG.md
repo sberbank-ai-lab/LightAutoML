@@ -7,30 +7,124 @@
 ## Contributing to LightAutoML
 
 Thank you for your interest in contribution to LightAutoML! Before you begin writing code, it is
-important that you share your intention to contribute with dev.team
+important that you share your intention to contribute with developers team.
 
-Once you implement and test your feature or bug-fix, please submit a Pull Request to https://github.com/sberbank-ai-lab/LightAutoML
+- First please look for discussions on this topic in [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues)
+before implementing anything inside the project.
+- Pick an issue and comment that you would like to work on it.
+- If there is no discussion on this topic, create one. 
+  Please, include as much information as you can,
+  any accompanying data (your tests, may be articles),
+  and may be your proposed solution. 
+- If you need more details, please ask we will provide it ASAP.
+
+Once you implement and test your feature or bug-fix, please submit
+a Pull Request to https://github.com/sberbank-ai-lab/LightAutoML.
+
+## Codebase structure
+
+- [docs](docs) - For documenting we use [Sphinx](https://www.sphinx-doc.org/).
+  It provides easy to use auto-documenting via docstrings.
+  - [Tutorials](docs/notebooks) - Notebooks with tutorials.
+    
+- [lightautoml](lightautoml) - The code of LightAutoML library.
+    - [addons](lightautoml/addons) - Extensions of core functionality.
+    - [automl](lightautoml/automl) - The main module, which includes the AutoML class,
+      blenders and ready-made presets.
+    - [dataset](lightautoml/dataset) - The internal interface for working with data.
+    - [image](lightautoml/image) - The internal interface for working with image data.
+    - [ml_algo](lightautoml/ml_algo) - Modules with machine learning algorithms
+      and hyperparameters tuning tools.
+    - [pipelines](lightautoml/pipelines) - Pipelines for different tasks (feature processing & selection).
+    - [reader](lightautoml/reader) - Utils for training and analysing data.
+    - [report](lightautoml/report) - Report generators and templates.
+    - [tasks](lightautoml/tasks) - Define the task to solve its loss, metric.
+    - [text](lightautoml/text) - The internal interface for working with text data.
+    - [transformers](lightautoml/transformers) - Feature transformations.
+    - [utils](lightautoml/utils) - Common util tools (Timer, Profiler, Logging).
+    - [validation](lightautoml/validation) - Validation module.
+    
 
 ## Developing LightAutoML
 
-A full set of instructions on installing LightAutoML from source is in: [README.md](https://github.com/sberbank-ai-lab/LightAutoML/README.md)
+### Installation
+
+If you are installing from the source, you will need Python 3.6.12 or later.
+We recommend you to install an [Anaconda](https://www.anaconda.com/products/individual#download-section)
+to work with environments. 
+
+
+1. Once you install Anaconda, you need to set your own environment:
+```bash
+conda create -n Pyth36 python=3.6
+conda activate Pyth36
+```
+
+2. To clone the project to your own local machine:
+```bash
+git clone https://github.com/sberbank-ai-lab/LightAutoML
+cd LightAutoML
+```
+
+3. Install LightAutoML in develop mode:
+```bash
+./build_package.sh
+source ./lama_venv/bin/activate
+poetry install
+```
+
+After that there is ```lama_venv``` environment, where you can test and implement your own code.
+So, you don't need to rebuild all project every time.
+
+### Testing
+
+Before PR, please check your code by:
+
+```bash
+bash test_package.sh
+```
+It takes all ```demo*.py``` and use ```pytest``` to run it. Please, add your own tests.
 
 ## Style Guide
 
-Will be added.
+We use [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 
 ## Documentation
+
+
+
+### Building Documentation:
+
+To build the documentation:
+
+1. Clone repository to your device.
+
+2. Make environment and install requirements
+
+```bash
+python3 -m venv docs_venv
+source docs_venv/bin/activate
+cd docs
+pip install -r requirements.txt
+pip install sphinx-rtd-theme
+```
+3. Generate HTML documentation files. The generated files will be in `docs/_build/html`
+```bash
+cd docs
+make clean html
+```
+
 
 ### Writing Documentation
 
 There are some rules, that docstrings should fit.
 
-1. LightAutoML uses Google-style for formatting docstrings. Length of line inside docstring must be limited to
+1. LightAutoML uses [Google-style docstring formatting](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). Length of line inside docstring must be limited to
    80 characters to fit into Jupyter documentation popups.
    
 2. Every non one-line docstring should have a paragraph at its end, regardless of where it will be used:
    in the documentation for a class, module, function, class method etc.
-   One-liners shouldn`t have a paragraph at its end.
+   One-liners shouldn't have a paragraph at its end.
    Also, if you don't have special fields like Note, Warning you may don't add a paragraph at its end.
    
 3. Once you added some module to LightAutoML, you should add some info about it at the beginning of the module.
@@ -131,6 +225,8 @@ from typing import List, Union
 import numpy as np
 import torch
 
+### <...>
+
 class ExampleClass:
     """The summary line for a class that fits only one line.
     
@@ -142,7 +238,7 @@ class ExampleClass:
     Properties created with the ``@property`` decorator should be documented
     in the property's getter method. Use arrow to set the return type.
     
-    On the stage before __init__ we don't now anything about `Attributes`,
+    On the stage before __init__ we don't know anything about `Attributes`,
     so please, add description about it's types.
     
     Attributes:
@@ -200,8 +296,13 @@ class ExampleClass:
         Long description.
         
         .. warning:
-            This method do something. May be undefined-behaviour.
-            
+            This method do somethinpip install sphinx-rtd-themeg. May be undefined-behaviour.
+        
+        Args:
+            param1: Some description of param1.
+            param2: Some description of param2. Default value
+               will be contained in signature of function.
+        
         Returns:
             Array with `1`, `2`, `3`.
             
@@ -213,10 +314,9 @@ class ExampleClass:
     
     
     def __special__(self):
-        """By default we aren`t include dndered members.
+        """By default we aren`t include dundered members.
         
         Also there may be no docstring.
-        
         """
         
     def _private(self):
@@ -240,38 +340,32 @@ class ExampleClass:
 
 ```
 
-7. Some tips about typing.
+[comment]: <> (7. Some tips about typing.)
 
-```python3
+[comment]: <> (```python3)
 
-### Please don't use TYPE_CHECKING option
-# from typing import TYPE_CHECKING
+[comment]: <> (### Please don't use TYPE_CHECKING option)
 
-from typing import Union, List, Optional
+[comment]: <> (# from typing import TYPE_CHECKING)
 
-SomeType = 
+[comment]: <> (from typing import Union, List, Optional, TypeVar)
 
 
-```
 
-### Building Documentation:
 
-To build the documentation:
+[comment]: <> (```)
 
-1. Clone repository to your device.
 
-2. Make environment and install requirements
 
-```bash
-python3 -m venv docs_venv
-source docs_venv/bin/activate
-cd docs
-pip3 install -r requirements.txt
-pip3 install sphinx-rtd-theme
-```
-3. Generate HTML documentation files. The generated files will be in `docs/_build/html`
-```bash
-cd docs
-make clean html
-```
+### Adding new submodules
+
+For the description of the module to be included in the documentation,
+you should set the variable ```autosummary_generate = True``` in ```docs/conf.py```
+before generating the documentation. This will generate a draft
+of the documentation for your code.
+
+### Adding Tutorials
+
+We use ```nbsphinx``` Sphinx extension for tutorials. Examples, you can find in ```docs/notebooks```.
+Please put your tutorial in this folder and after add it in ```docs/Tutorials.rst```.
 

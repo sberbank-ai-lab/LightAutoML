@@ -68,10 +68,10 @@ class MLAlgo(ABC):
         """Init params depending on input data.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv iterator.
 
         Returns:
-            dict with model hyperparameters.
+            Dict with model hyperparameters.
 
         """
         return self.params
@@ -81,10 +81,11 @@ class MLAlgo(ABC):
         """
 
         Args:
-            default_params: algo hyperparams.
+            default_params: Algo hyperparams.
             freeze_defaults:
                 - ``True`` :  params may be rewrited depending on dataset.
-                - ``False``:  params may be changed only manually or with tuning.
+                - ``False``:  params may be changed only manually
+                  or with tuning.
             timer: ``Timer`` instance or `None`
 
         """
@@ -112,7 +113,7 @@ class MLAlgo(ABC):
         Fit new algo on iterated datasets and predict on valid parts.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv iterator.
 
         """
         # self._features = train_valid_iterator.features
@@ -125,17 +126,18 @@ class MLAlgo(ABC):
             test: ``LAMLDataset`` on test.
 
         Returns:
-            dataset with predicted values.
+            Dataset with predicted values.
+
         """
 
     def score(self, dataset: LAMLDataset) -> float:
         """Score prediction on dataset with defined metric.
 
         Args:
-            dataset: dataset with ground truth and predictions.
+            dataset: Dataset with ground truth and predictions.
 
         Returns:
-            metric value.
+            Metric value.
 
         """
         assert self.task is not None, 'No metric defined. Should be fitted on dataset first.'
@@ -147,7 +149,7 @@ class MLAlgo(ABC):
         """Set prefix to separate models from different levels/pipelines.
 
         Args:
-            prefix: str that used as prefix.
+            prefix: Str that used as prefix.
             
         """
         self._name = '_'.join([prefix, self._name])
@@ -168,11 +170,11 @@ class TabularMLAlgo(MLAlgo):
         """Insert predictions to dataset with. Inplace transformation.
 
         Args:
-            dataset: NumpyDataset to transform.
-            preds_arr: array with predicted values.
+            dataset: Dataset to transform.
+            preds_arr: Array with predicted values.
 
         Returns:
-            transformed dataset.
+            Transformed dataset.
 
         """
 
@@ -190,7 +192,7 @@ class TabularMLAlgo(MLAlgo):
             valid: NumpyDataset to validate.
 
         Returns:
-            target predictions for valid dataset.
+            Target predictions for valid dataset.
 
         """
         raise NotImplementedError
@@ -198,14 +200,16 @@ class TabularMLAlgo(MLAlgo):
     def fit_predict(self, train_valid_iterator: TrainValidIterator) -> NumpyDataset:
         """Fit and then predict accordig the strategy that uses train_valid_iterator.
 
-        If item uses more then one time it will predict mean value of predictions.
-        If the element is not used in training then the prediction will be ``np.nan`` for this item
+        If item uses more then one time it will
+        predict mean value of predictions.
+        If the element is not used in training then
+        the prediction will be ``np.nan`` for this item
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv iterator.
 
         Returns:
-            dataset with predicted values.
+            Dataset with predicted values.
 
         """
         logger.info('Start fitting {} ...'.format(self._name))
@@ -265,11 +269,11 @@ class TabularMLAlgo(MLAlgo):
         """Implements prediction on single fold.
 
         Args:
-            model: model uses to predict.
+            model: Model uses to predict.
             dataset: ``NumpyDataset`` used for prediction.
 
         Returns:
-            predictions for input dataset.
+            Predictions for input dataset.
 
         """
         raise NotImplementedError
@@ -281,7 +285,7 @@ class TabularMLAlgo(MLAlgo):
             dataset: ``NumpyDataset`` used for prediction.
 
         Returns:
-            dataset with predicted values.
+            Dataset with predicted values.
 
         """
         assert self.models != [], 'Should be fitted first.'

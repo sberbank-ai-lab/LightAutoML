@@ -155,7 +155,8 @@ class NestedTabularMLPipeline(MLPipeline):
     Limitations:
 
         - only for TabularMLAlgo
-        - nested trained only MLAlgo. FeaturesPipelines and SelectionPipelines are trained as usual
+        - nested trained only MLAlgo. FeaturesPipelines and
+          SelectionPipelines are trained as usual.
 
     """
 
@@ -170,14 +171,19 @@ class NestedTabularMLPipeline(MLPipeline):
 
         Args:
             ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner).
-            force_calc: flag if single fold of ml_algo should be calculated anyway.
-            pre_selection: initial feature selection. If ``None`` there is no initial selection.
-            features_pipeline: composition of feature transforms.
-            post_selection: post feature selection. If ``None`` there is no post selection.
-            cv: nested folds cv split.
-            n_folds: limit of valid iterations from cv.
-            inner_tune: should we refit tuner each inner cv run or tune ones on outer cv.
-            refit_tuner: should we refit tuner each inner loop with inner_tune==True.
+            force_calc: Flag if single fold of ml_algo
+              should be calculated anyway.
+            pre_selection: Initial feature selection.
+              If ``None`` there is no initial selection.
+            features_pipeline: Composition of feature transforms.
+            post_selection: Post feature selection.
+              If ``None`` there is no post selection.
+            cv: Nested folds cv split.
+            n_folds: Limit of valid iterations from cv.
+            inner_tune: Should we refit tuner each inner
+              cv run or tune ones on outer cv.
+            refit_tuner: Should we refit tuner each inner
+              loop with inner_tune==True.
 
         """
         if cv > 1:

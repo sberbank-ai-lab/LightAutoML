@@ -27,11 +27,15 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 class FeaturesPipeline:
     """Abstract class.
 
-    Analyze train dataset and create composite transformer based on subset of features.
-    Instance can be interpreted like Transformer (look for transformers.base.LAMLTransformer)
+    Analyze train dataset and create composite transformer
+    based on subset of features.
+    Instance can be interpreted like Transformer
+    (look for transformers.base.LAMLTransformer)
     with delayed initialization (based on dataset metadata)
-    Main method, user should define in custom pipeline is .create_pipeline. For ex. look at lgb_pipeline.LGBSimpleFeatures
-    After FeaturePipeline instance is created, it is used like transformer with .fit_transform and .transform method.
+    Main method, user should define in custom pipeline is .create_pipeline.
+    For ex. look at lgb_pipeline.LGBSimpleFeatures
+    After FeaturePipeline instance is created, it is used like transformer
+    with .fit_transform and .transform method.
 
     """
 
@@ -160,7 +164,8 @@ class EmptyFeaturePipeline(FeaturesPipeline):
             train: LAMLDataset with train data.
 
         Returns:
-            composite transformer (pipeline) that do nothing.
+            Composite transformer (pipeline) that do nothing.
+
         """
         return LAMLTransformer()
 
@@ -169,7 +174,8 @@ class EmptyFeaturePipeline(FeaturesPipeline):
 class TabularDataFeatures:
     """Helper class contains basic features transformations for tabular data.
 
-    This method can de shared by all tabular feature pipelines, to simplify .create_automl definition
+    This method can de shared by all tabular feature pipelines,
+    to simplify .create_automl definition
     """
 
     def __init__(self, **kwargs: Any):
@@ -268,8 +274,8 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
-            prob:
+            feats_to_select: Features to handle. If none - default filter.
+            prob: Probability flag.
 
         Returns:
             Transformer.
@@ -300,7 +306,7 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
+            feats_to_select: Features to handle. If none - default filter.
 
         Returns:
             Transformer.
@@ -326,7 +332,7 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
+            feats_to_select: Features to handle. If none - default filter.
 
         Returns:
             Transformer.
@@ -351,7 +357,7 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
+            feats_to_select: Features to handle. If none - default filter.
 
         Returns:
             Transformer.
@@ -401,7 +407,7 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter
+            feats_to_select: features to hanlde. If none - default filter.
 
         Returns:
             Transformer.
@@ -463,10 +469,11 @@ class TabularDataFeatures:
 
         Args:
             train: LAMLDataset with train data.
-            feats: features names list to calc.
+            feats: Features names list to calc.
 
         Returns:
             Series.
+
         """
 
         uns = []
@@ -485,12 +492,14 @@ class TabularDataFeatures:
     def get_top_categories(self, train: NumpyOrPandas, top_n: int = 5) -> List[str]:
         """Get top categories by importance.
 
-        If feature importance is not defined, or feats has same importance - sort it by unique values counts
-        In second case init param ascending_by_cardinality defines how - asc or desc
+        If feature importance is not defined,
+        or feats has same importance - sort it by unique values counts.
+        In second case init param ascending_by_cardinality
+        defines how - asc or desc.
 
         Args:
             train: LAMLDataset with train data.
-            top_n: top categories.
+            top_n: Top categories.
 
         Returns:
             List.

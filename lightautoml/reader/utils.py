@@ -15,14 +15,14 @@ def set_sklearn_folds(task: Task, target: np.ndarray, cv: Union[Callable, int] =
     """Determines the cross-validation splitting strategy.
 
     Args:
-        task: if 'binary' or 'multiclass' used stratified cv.
-        target: target values.
-        cv: int - specifes number of folds.
-        random_state: determines random number generation.
-        group: for group k-folding.
+        task: If 'binary' or 'multiclass' used stratified cv.
+        target: Target values.
+        cv: Specifies number of folds.
+        random_state: Determines random number generation.
+        group: For group k-folding.
 
     Returns:
-        array with fold indices.
+        Array with fold indices.
 
     """
     if type(cv) is int:

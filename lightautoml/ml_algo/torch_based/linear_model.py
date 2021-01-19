@@ -22,10 +22,10 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
     """Convert scipy sparse matrix to torch sparse tensor.
 
     Args:
-        matrix: matrix to convert.
+        matrix: Matrix to convert.
 
     Returns:
-        matrix in torch.Tensor format.
+        Matrix in torch.Tensor format.
 
     """
     matrix = sparse.coo_matrix(matrix, dtype=np.float32)
@@ -44,9 +44,9 @@ class CatLinear(nn.Module):
     def __init__(self, numeric_size: int = 0, embed_sizes: Sequence[int] = (), output_size: int = 1):
         """
         Args:
-            numeric_size: number of numeric features.
-            embed_sizes: embedding sizes.
-            output_size: size of output layer.
+            numeric_size: Number of numeric features.
+            embed_sizes: Embedding sizes.
+            output_size: Size of output layer.
 
         """
         super().__init__()
@@ -67,8 +67,8 @@ class CatLinear(nn.Module):
         """Forward-pass.
 
         Args:
-            numbers: input numeric features.
-            categories: input categorical features.
+            numbers: Input numeric features.
+            categories: Input categorical features.
 
         """
         x = self.bias
@@ -94,8 +94,8 @@ class CatLogisticRegression(CatLinear):
         """Forward-pass. Sigmoid func at the end of linear layer.
 
         Args:
-            numbers: input numeric features.
-            categories: input categorical features.
+            numbers: Input numeric features.
+            categories: Input categorical features.
 
         """
         x = super().forward(numbers, categories)
@@ -133,7 +133,7 @@ class CatMulticlass(CatLinear):
 class TorchBasedLinearEstimator:
     """Linear model based on torch L-BFGS solver.
 
-    Accepts Numeric + Label Encoded categories or Numeric sparse input
+    Accepts Numeric + Label Encoded categories or Numeric sparse input.
     """
 
     def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
@@ -142,16 +142,16 @@ class TorchBasedLinearEstimator:
                  loss=Optional[Callable], metric=Optional[Callable]):
         """
         Args:
-            data_size: not used.
-            categorical_idx: indices of categorical features.
-            embed_sizes: categorical embedding sizes.
-            output_size: size of output layer.
-            cs: regularization coefficients.
-            max_iter: maximum iterations of L-BFGS.
-            tol: the tolerance for the stopping criteria.
-            early_stopping: maximum rounds without improving.
-            loss: loss function. Format: loss(preds, true) -> loss_arr, assume reduction='none'.
-            metric: metric function. Format: metric(y_true, y_preds, sample_weight = None) -> float (greater_is_better).
+            data_size: Not used.
+            categorical_idx: Indices of categorical features.
+            embed_sizes: Categorical embedding sizes.
+            output_size: Size of output layer.
+            cs: Regularization coefficients.
+            max_iter: Maximum iterations of L-BFGS.
+            tol: Tolerance for the stopping criteria.
+            early_stopping: Maximum rounds without improving.
+            loss: Loss function. Format: loss(preds, true) -> loss_arr, assume ```reduction='none'```.
+            metric: Metric function. Format: metric(y_true, y_preds, sample_weight = None) -> float (greater_is_better).
 
         """
         self.data_size = data_size
@@ -172,7 +172,7 @@ class TorchBasedLinearEstimator:
         """Prepare data based on input type.
 
         Args:
-            data: data to prepare.
+            data: Data to prepare.
 
         Returns:
             Tuple (numeric_features, cat_features).
@@ -229,11 +229,11 @@ class TorchBasedLinearEstimator:
         """Optimize single model.
 
         Args:
-            data: numeric data to train.
-            data_cat: categorical data to train.
-            y: target values.
-            weights: item weights.
-            c: regularization coefficient.
+            data: Numeric data to train.
+            data_cat: Categorical data to train.
+            y: Target values.
+            weights: Item weights.
+            c: Regularization coefficient.
 
         """
         self.model.train()
@@ -265,13 +265,14 @@ class TorchBasedLinearEstimator:
         """Weighted loss_fn wrapper.
 
         Args:
-            y_true: true target values.
-            y_pred: predicted target values.
-            weights: item weights.
-            c: regulariation coefficients.
+            y_true: True target values.
+            y_pred: Predicted target values.
+            weights: Item weights.
+            c: Regularization coefficients.
 
         Returns:
-            loss+regularization value.
+            Loss+Regularization value.
+
         """
         # weighted loss
         loss = self.loss(y_true, y_pred, sample_weight=weights)
@@ -291,12 +292,12 @@ class TorchBasedLinearEstimator:
         """Fit method.
 
         Args:
-            data: data to train.
-            y: train target values.
-            weights: train items weights.
-            data_val: data to validate.
-            y_val: valid target values.
-            weights_val: validation item weights.
+            data: Data to train.
+            y: Train target values.
+            weights: Train items weights.
+            data_val: Data to validate.
+            y_val: Valid target values.
+            weights_val: Validation item weights.
 
         Returns:
             self.
@@ -346,11 +347,11 @@ class TorchBasedLinearEstimator:
         """Get predicts to evaluate performance of model.
 
         Args:
-            data: numeric data.
-            data_cat: categorical data.
+            data: Numeric data.
+            data_cat: Categorical data.
 
         Returns:
-            predicted target values.
+            Predicted target values.
 
         """
         with torch.set_grad_enabled(False):
@@ -363,10 +364,10 @@ class TorchBasedLinearEstimator:
         """Inference phase.
 
         Args:
-            data: data to test.
+            data: Data to test.
 
         Returns:
-            predicted target values.
+            Predicted target values.
 
         """
         data, data_cat = self._prepare_data(data)

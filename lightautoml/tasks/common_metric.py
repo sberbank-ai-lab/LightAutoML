@@ -253,7 +253,7 @@ class F1Factory:
 class BestClassBinaryWrapper:
     """Metric wrapper to get best class prediction instead of probs.
 
-    There is cut-off for prediction by 0.5.
+    There is cut-off for prediction by ``0.5``.
 
     """
 
@@ -262,7 +262,8 @@ class BestClassBinaryWrapper:
 
         Args:
             func: Metric function. Function format:
-                func(y_pred, y_true, weights, **kwargs).
+               func(y_pred, y_true, weights, \*\*kwargs).
+
         """
         self.func = func
 
@@ -285,7 +286,7 @@ class BestClassMulticlassWrapper:
 
         Args:
             func: Metric function. Function format:
-                func(y_pred, y_true, weights, **kwargs)
+               func(y_pred, y_true, weights, \*\*kwargs)
 
         """
         self.func = func

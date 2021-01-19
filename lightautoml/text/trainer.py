@@ -30,11 +30,11 @@ def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch
     """Change optimizer device.
 
     Args:
-        optim: optimizer.
-        device: to device.
+        optim: Optimizer.
+        device: To device.
 
     Returns:
-        optimizer on selected device.
+        Optimizer on selected device.
 
     """
 
@@ -54,11 +54,11 @@ class SnapshotEns:
         """Class for SE, SWA and early stopping.
 
         Args:
-            device: torch device.
-            k: number of snapshots / checkpoint for swa.
-            early_stopping: use early stopping.
-            patience: patience before early stopping.
-            swa: use stochastic weight averaging.
+            device: Torch device.
+            k: Number of snapshots / checkpoint for swa.
+            early_stopping: Use early stopping.
+            patience: Patience before early stopping.
+            swa: Use stochastic weight averaging.
 
         """
         self.best_loss = np.array([np.inf] * k)
@@ -75,8 +75,8 @@ class SnapshotEns:
         """Update current state.
 
         Args:
-            model: torch model.
-            loss: loss value, lower is better.
+            model: Torch model.
+            loss: Loss value, lower is better.
 
         """
         if np.any(self.best_loss > loss):
@@ -97,10 +97,10 @@ class SnapshotEns:
         Final prediction is a result of averaging predictions from snapshots.
 
         Args:
-            data: dict with model data.
+            data: Dict with model data.
 
         Returns:
-            torch tensor snapshot ensemble prediction.
+            Torch tensor snapshot ensemble prediction.
 
         """
 
@@ -119,10 +119,10 @@ class SnapshotEns:
         Final result is a result of averaging losses from snapshots.
 
         Args:
-            data: dict with model data.
+            data: Dict with model data.
 
         Returns:
-            torch tensor snapshot ensemble loss.
+            Torch tensor snapshot ensemble loss.
 
         """
         preds = 0
@@ -144,8 +144,8 @@ class SnapshotEns:
         """Set model weights as SWA or from best state.
 
         Args:
-            model: torch model.
-            best: save only best model.
+            model: Torch model.
+            best: Save only best model.
 
         """
         n = 1 if best else min(self.k, sum(self.best_loss != np.inf))
@@ -175,7 +175,7 @@ class SnapshotEns:
         """Set best model params and clean cache.
 
         Args:
-            model: torch model.
+            model: Torch model.
 
         """
         self._sort()
@@ -191,7 +191,7 @@ class SnapshotEns:
         """State SE dict.
 
         Returns:
-            dict with SE state.
+            Dict with SE state.
 
         """
         models_dict = {'best_loss': self.best_loss}
@@ -207,8 +207,8 @@ class SnapshotEns:
         """Load SE state.
 
         Args:
-            model: torch model.
-            weights: state dict with weights.
+            model: Torch model.
+            weights: State dict with weights.
 
         """
         self.best_loss = weights.pop('best_loss')
@@ -238,22 +238,23 @@ class Trainer:
         Use DataParallel if device_ids is not None.
 
         Args:
-            net: uninitialized torch model.
-            net_params: dict with model params.
-            opt: uninitialized torch optimizer.
-            opt_params: dict with optim params.
-            n_epochs: number of training epochs.
-            device: torch device.
-            device_ids: ids of used gpu devices or None.
-            metric: callable metric for validation.
-            snap_params: dict with SE parameters.
-            is_snap: use snapshots.
-            sch: uninitialized torch scheduler.
-            scheduler_params: dict with scheduler params.
-            verbose: verbose every N epochs.
-            verbose_inside: number of steps between verbose inside epoch or None.
-            apex: use apex (lead to GPU memory leak among folds).
-            pretrained_path: path to the pretrained model weights.
+            net: Uninitialized torch model.
+            net_params: Dict with model params.
+            opt: Uninitialized torch optimizer.
+            opt_params: Dict with optim params.
+            n_epochs: Number of training epochs.
+            device: Torch device.
+            device_ids: Ids of used gpu devices or None.
+            metric: Callable metric for validation.
+            snap_params: Dict with SE parameters.
+            is_snap: Use snapshots.
+            sch: Uninitialized torch scheduler.
+            scheduler_params: Dict with scheduler params.
+            verbose: Verbose every N epochs.
+            verbose_inside: Number of steps between verbose
+              inside epoch or None.
+            apex: Use apex (lead to GPU memory leak among folds).
+            pretrained_path: Path to the pretrained model weights.
 
         """
         self.net = net
@@ -312,7 +313,7 @@ class Trainer:
         """Load all models state.
 
         Args:
-            path: path to state dict or state dict.
+            path: Path to state dict or state dict.
 
         """
 
@@ -348,10 +349,10 @@ class Trainer:
         Switch all models on cpu before saving state.
 
         Args:
-            path: path to save state dict.
+            path: Path to save state dict.
 
         Returns:
-            checkpoint if path is not None.
+            Checkpoint if path is not None.
 
         """
 
@@ -379,10 +380,10 @@ class Trainer:
         """Fit model.
 
         Args:
-            dataloaders: dict with torch dataloaders.
+            dataloaders: Dict with torch dataloaders.
 
         Returns:
-            validation prediction.
+            Validation prediction.
 
         """
 
@@ -431,10 +432,10 @@ class Trainer:
         """Training loop.
 
         Args:
-            dataloaders: dict with torch dataloaders.
+            dataloaders: Dict with torch dataloaders.
 
         Returns:
-            loss.
+            Loss.
 
         """
 
@@ -482,12 +483,12 @@ class Trainer:
         """Testing loop.
 
         Args:
-            dataloader: torch dataloader.
-            stage: train, val or test.
-            snap: use snapshots.
+            dataloader: Torch dataloader.
+            stage: Train, val or test.
+            snap: Use snapshots.
 
         Returns:
-            loss, (target, oof).
+            Loss, (Target, OOF).
 
         """
         loss_log = []
@@ -534,11 +535,11 @@ class Trainer:
         """Predict model.
 
         Args:
-            dataloader: torch dataloader.
-            stage: train, val or test.
+            dataloader: Torch dataloader.
+            stage: Train, val or test.
 
         Returns:
-            prediction.
+            Prediction.
 
         """
 

@@ -8,7 +8,7 @@ from log_calls import record_history
 from pandas import DataFrame
 
 from .base import upd_params
-from .tabular_presets import TabularAutoML, ReadableToDf, NumpyDataset
+from .tabular_presets import TabularAutoML, NumpyDataset
 from ..blend import WeightedBlender
 from ...ml_algo.boost_cb import BoostCB
 from ...ml_algo.boost_lgbm import BoostLGBM
@@ -22,6 +22,8 @@ from ...pipelines.ml.nested_ml_pipe import NestedTabularMLPipeline
 from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
+from ...reader.tabular_batch_generator import ReadableToDf
+
 
 _base_dir = os.path.dirname(__file__)
 # set initial runtime rate guess for first level models
@@ -42,9 +44,9 @@ _time_scores = {
 class TabularCVAutoML(TabularAutoML):
     """Classic preset - work with tabular and image data.
 
-    Supported data roles - numbers, dates, categories, images
-    Limitations - no memory management
-    GPU support in catboost/lightgbm(if installed for gpu)
+    Supported data roles - numbers, dates, categories, images.
+    Limitations - no memory management.
+    GPU support in catboost/lightgbm(if installed for gpu).
 
     """
     _default_config_path = 'image_config.yml'
@@ -81,32 +83,38 @@ class TabularCVAutoML(TabularAutoML):
         """
 
         Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
-        If you need to change just few params, it's possible to pass it as dict of dicts, like json
-        To get available params please look on default config template. Also you can find there param description
-        To generate config template call TabularNLPAutoML.get_config(config_path.yml)
+        If you need to change just few params,
+        it's possible to pass it as dict of dicts, like json.
+        To get available params please look on default config template.
+        Also you can find there param description.
+        To generate config template
+        call ```TabularNLPAutoML.get_config(config_path.yml)```.
 
         Args:
             task: Task to solve.
-            timeout: timeout in seconds.
-            memory_limit: memory limit that are passed to each automl.
-            cpu_limit: cpu limit that that are passed to each automl.
-            gpu_ids: gpu_ids that are passed to each automl.
-            verbose: verbosity level that are passed to each automl.
-            timing_params: timing param dict. Optional.
-            config_path: path to config file.
-            general_params: general param dict
-            reader_params: reader param dict.
-            read_csv_params: params to pass pandas.read_csv (case of train/predict from file).
-            nested_cv_params: param dict for nested cross-validation.
-            tuning_params: params of Optuna tuner.
-            selection_params: params of feature selection.
-            lgb_params: params of lightgbm model.
-            cb_params: params of catboost model.
-            linear_l2_params: params of linear model.
-            gbm_pipeline_params: params of feature generation for boosting models.
-            linear_pipeline_params: params of feature generation for linear models.
-            cv_simple_features: params of color histogram features.
-            autocv_features: params of image embeddings features.
+            timeout: Timeout in seconds.
+            memory_limit: Memory limit that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+            verbose: Verbosity level that are passed to each automl.
+            timing_params: Timing param dict. Optional.
+            config_path: Path to config file.
+            general_params: General param dict
+            reader_params: Reader param dict.
+            read_csv_params: Params to pass pandas.read_csv
+              (case of train/predict from file).
+            nested_cv_params: Param dict for nested cross-validation.
+            tuning_params: Params of Optuna tuner.
+            selection_params: Params of feature selection.
+            lgb_params: Params of lightgbm model.
+            cb_params: Params of catboost model.
+            linear_l2_params: Params of linear model.
+            gbm_pipeline_params: Params of feature generation
+              for boosting models.
+            linear_pipeline_params: Params of feature generation
+              for linear models.
+            cv_simple_features: Params of color histogram features.
+            autocv_features: Params of image embeddings features.
 
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
@@ -285,18 +293,21 @@ class TabularCVAutoML(TabularAutoML):
         Additional features - working with different data formats.  Supported now:
 
             - path to .csv, .parquet, .feather files
-            - np.ndarray, or dict of np.ndarray, ex. {'data': X ..}. In this case roles are optional, but
-                train_features and valid_features required
+            - np.ndarray, or dict of np.ndarray, ex. {'data': X ..}.
+              In this case roles are optional, but train_features
+              and valid_features required.
             - pd.DataFrame
 
-        parallel inference - you can pass n_jobs to speedup prediction (requires more RAM)
-        batch_inference - you can pass batch_size to decrease RAM usage (may be longer)
+        parallel inference - you can pass n_jobs to speedup
+          prediction (requires more RAM).
+        batch_inference - you can pass batch_size
+          to decrease RAM usage (may be longer).
 
         Args:
-            data: dataset to perform inference.
-            features_names: optional features names, if cannot be inferred from train_data.
-            batch_size: batch size or None.
-            n_jobs: n_jobs, default 1.
+            data: Dataset to perform inference.
+            features_names: Optional features names, if cannot be inferred from train_data.
+            batch_size: Batch size or None.
+            n_jobs: Number of jobs.
 
         Returns:
             Dataset.

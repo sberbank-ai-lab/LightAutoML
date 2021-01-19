@@ -37,8 +37,9 @@ class AutoMLPreset(AutoML):
 
     It's almost like AutoML, but with delayed initialization.
     Initialization starts on fit, some params are inferred from data
-    Preset should be defined via .create_automl method. Params should be set via yaml config
-    Most usefull case - end-to-end model development, ex:
+    Preset should be defined via .create_automl method.
+    Params should be set via yaml config
+    Most usefull case - end-to-end model development.
 
     Example:
 
@@ -54,20 +55,23 @@ class AutoMLPreset(AutoML):
                  config_path: Optional[str] = None, **kwargs: Any):
         """
 
-        Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
-        If you need to change just few params, it's possible to pass it as dict of dicts, like json
-        To get available params please look on default config template. Also you can find there param description
-        To generate config template call SomePreset.get_config(config_path.yml)
+        Commonly _params kwargs (ex. timing_params) set via
+        config file (config_path argument).
+        If you need to change just few params,
+        it's possible to pass it as dict of dicts, like json.
+        To get available params please look on default config template.
+        Also you can find there param description.
+        To generate config template call SomePreset.get_config(config_path.yml).
 
         Args:
             task: Task to solve.
-            timeout: timeout in seconds.
-            memory_limit: memory limit that are passed to each automl.
-            cpu_limit: cpu limit that that are passed to each automl.
-            gpu_ids: gpu_ids that are passed to each automl.
-            verbose: verbosity level that are passed to each automl.
-            timing_params: timing param dict. Optional.
-            config_path: path to config file.
+            timeout: Timeout in seconds.
+            memory_limit: Memory limit that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+            verbose: Verbosity level that are passed to each automl.
+            timing_params: Timing param dict. Optional.
+            config_path: Path to config file.
             **kwargs:
 
         """
@@ -125,7 +129,8 @@ class AutoMLPreset(AutoML):
     def create_automl(self, **fit_args):
         """Abstract method - how to build automl.
 
-        Here you should create all automl components, like readers, levels, timers, blenders.
+        Here you should create all automl components,
+        like readers, levels, timers, blenders.
         Method ._initialize should be called in the end to create automl.
 
         Args:
@@ -143,10 +148,12 @@ class AutoMLPreset(AutoML):
         Args:
             train_data:  dataset to train.
             roles: roles dict.
-            train_features: optional features names, if cannot be inferred from train_data.
-            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance.
+            train_features: optional features names,
+              if cannot be inferred from train_data.
+            cv_iter: custom cv iterator. Ex. ```TimeSeriesIterator``` instance.
             valid_data: optional validation dataset.
-            valid_features: optional validation dataset features if cannot be inferred from valid_data.
+            valid_features: optional validation dataset features if cannot be
+              inferred from valid_data.
 
         Returns:
             LAMLDataset of predictions. Call .data to get predictions array.

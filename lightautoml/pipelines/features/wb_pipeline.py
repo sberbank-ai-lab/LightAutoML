@@ -14,7 +14,7 @@ from ...transformers.base import LAMLTransformer, UnionTransformer, ColumnsSelec
 class WBFeatures(FeaturesPipeline, TabularDataFeatures):
     """Simple whitebox pipeline.
 
-    Just handles dates, other are handled inside whitebox
+    Just handles dates, other are handled inside whitebox.
     """
 
     def create_pipeline(self, train: PandasDataset) -> LAMLTransformer:

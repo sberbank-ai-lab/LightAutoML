@@ -27,7 +27,7 @@ class LAMLTransformer:
         """Get name of the features, that will be generated after transform.
 
         Returns:
-            list of new names.
+            List of new names.
 
         """
         if '_features' not in self.__dict__:
@@ -43,7 +43,7 @@ class LAMLTransformer:
         """Write input feature names.
 
         Args:
-            val: sequence of input features names.
+            val: Sequence of input features names.
 
         """
         self._features = deepcopy(val)
@@ -107,7 +107,7 @@ class SequentialTransformer(LAMLTransformer):
         """
 
         Args:
-            transformer_list: sequence of transformers.
+            transformer_list: Sequence of transformers.
 
         """
         self.transformer_list = transformer_list
@@ -116,7 +116,7 @@ class SequentialTransformer(LAMLTransformer):
         """Fit not supported. Needs output to fit next transformer.
 
         Args:
-            dataset: dataset to fit.
+            dataset: Dataset to fit.
 
         """
         raise NotImplementedError('Sequential supports only fit_transform.')
@@ -162,8 +162,8 @@ class UnionTransformer(LAMLTransformer):
         """
 
         Args:
-            transformer_list: sequence of transformers.
-            n_jobs: number of processes to run fit and transform.
+            transformer_list: Sequence of transformers.
+            n_jobs: Number of processes to run fit and transform.
 
         """
         # TODO: Add multiprocessing version here
@@ -337,7 +337,7 @@ class ColumnsSelector(LAMLTransformer):
         """
 
         Args:
-            keys: columns names.
+            keys: Columns names.
 
         """
         self.keys = keys
@@ -346,7 +346,7 @@ class ColumnsSelector(LAMLTransformer):
         """Empty fit method - just set features.
 
         Args:
-            dataset: input LAMLDataset.
+            dataset: Input LAMLDataset.
 
         Returns:
             self.
@@ -505,7 +505,7 @@ class ConvertDataset(LAMLTransformer):
         """
 
         Args:
-            dataset_type: type to which to convert.
+            dataset_type: Type to which to convert.
 
         """
         self.dataset_type = dataset_type
@@ -517,7 +517,7 @@ class ConvertDataset(LAMLTransformer):
             dataset: LAMLDataset to convert.
 
         Returns:
-            converted LAMLDataset.
+            Converted LAMLDataset.
 
         """
         return self.dataset_type.from_dataset(dataset)
@@ -530,7 +530,7 @@ class ChangeRoles(LAMLTransformer):
     def __init__(self, roles: Roles):
         """
         Args:
-            roles: new roles for dataset.
+            roles: New roles for dataset.
 
         """
         self.roles = roles
@@ -539,10 +539,10 @@ class ChangeRoles(LAMLTransformer):
         """Paste new roles into dataset.
 
         Args:
-            dataset: dataset to transform.
+            dataset: Dataset to transform.
 
         Returns:
-            new dataset.
+            New dataset.
 
         """
         data, features, roles = dataset.data, dataset.features, dataset.roles

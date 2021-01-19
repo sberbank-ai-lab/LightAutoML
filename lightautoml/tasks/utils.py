@@ -14,10 +14,10 @@ def infer_gib(metric: Callable) -> bool:
         metric: Score or loss function.
 
     Returns:
-        True if grater is better.
+        ```True``` if grater is better.
 
     Raises:
-        AssertionError: if there is no way to order the predictions.
+        AssertionError: If there is no way to order the predictions.
 
     """
     label = np.array([0, 1])
@@ -38,13 +38,13 @@ def infer_gib_multiclass(metric: Callable) -> bool:
 
     Args:
         metric: Metric function. It must take two
-            arguments y_true, y_pred.
+          arguments y_true, y_pred.
 
     Returns:
-         True if grater is better.
+        ```True``` if grater is better.
 
     Raises:
-        AssertionError: if there is no way to order the predictions.
+        AssertionError: If there is no way to order the predictions.
 
     """
     label = np.array([0, 1, 2])

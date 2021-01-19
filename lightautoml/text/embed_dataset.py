@@ -15,9 +15,9 @@ class BertDataset:
         """Class for preparing transformers input.
 
         Args:
-            sentences: list of tokenized sentences.
-            max_length: max sentence length.
-            model_name: name of transformer model.
+            sentences: List of tokenized sentences.
+            max_length: Max sentence length.
+            model_name: Name of transformer model.
 
         """
         self.sentences = sentences
@@ -44,10 +44,12 @@ class EmbedDataset:
         """Class for transforming list of tokens to dict of embeddings and sentence length.
 
         Args:
-            sentences: list of tokenized sentences.
-            embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}.
-            max_length: max sentence length.
-            param embed_size: size of embedding.
+            sentences: List of tokenized sentences.
+            embedding_model: word2vec, fasstext, etc.
+              Should have dict interface {<word>: <embedding>}.
+            max_length: Max sentence length.
+            embed_size: Size of embedding.
+            **kwargs: Not used.
 
         """
         self.sentences = sentences

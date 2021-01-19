@@ -23,8 +23,9 @@ class LGBSimpleFeatures(FeaturesPipeline):
     """Creates simple pipeline for tree based models.
 
     Simple but is ok for select features
-    Numeric stay as is, Datetime transforms to numeric, Categorical label encoding
-    Maps input to output features exactly one-to-one
+    Numeric stay as is, Datetime transforms to numeric,
+    Categorical label encoding
+    Maps input to output features exactly one-to-one.
     """
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
@@ -98,10 +99,12 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
 
         Args:
             feats_imp: features importances mapping.
-            top_intersections: max number of categories to generate intersections.
+            top_intersections: max number of categories
+              to generate intersections.
             max_intersection_depth: max depth of cat intersection.
             subsample: subsample: subsample to calc data statistics.
-            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high.
+            multiclass_te_co: cutoff if use target encoding in cat
+              handling on multiclass task if n_class is high.
             auto_unique_co: switch to target encoding if high cardinality.
 
         """

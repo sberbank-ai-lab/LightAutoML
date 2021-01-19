@@ -21,9 +21,9 @@ def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
 
     Args:
         ml_algo: ML algorithm that will be tuned.
-        params_tuner: tuner object.
-        train_valid: classic cv iterator.
-        force_calc: flag if single fold of ml_algo should be calculated anyway.
+        params_tuner: Tuner object.
+        train_valid: Classic cv iterator.
+        force_calc: Flag if single fold of ml_algo should be calculated anyway.
 
     Returns:
         Tuple (BestMlAlgo, predictions).

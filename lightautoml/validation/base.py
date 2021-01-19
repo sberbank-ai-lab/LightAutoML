@@ -64,10 +64,10 @@ class TrainValidIterator:
         """Apply features pipeline on train data.
 
         Args:
-            features_pipeline: composite transformation of features.
+            features_pipeline: Composite transformation of features.
 
         Returns:
-            copy of object with transformed features.
+            Copy of object with transformed features.
 
         """
         train_valid = copy(self)
@@ -83,10 +83,10 @@ class TrainValidIterator:
         If fitted, check if it's ok to apply.
 
         Args:
-            selector: uses for feature selection.
+            selector: Uses for feature selection.
 
         Returns:
-            dataset with selected features.
+            Dataset with selected features.
 
         """
         if not selector.is_fitted:
@@ -126,7 +126,7 @@ class DummyIterator(TrainValidIterator):
         """Simple iterable object.
 
         Returns:
-            iterable object for dataset, where for validation also uses train.
+            Iterable object for dataset, where for validation also uses train.
 
         """
         return [(None, self.train, self.train)]
@@ -144,7 +144,7 @@ class DummyIterator(TrainValidIterator):
         """Convert iterator to HoldoutIterator.
 
         Returns:
-            iterator: holdout iterator with 'train == valid'
+            iterator: Holdout iterator with 'train == valid'
 
         """
         return HoldoutIterator(self.train, self.train)
@@ -178,7 +178,7 @@ class HoldoutIterator(TrainValidIterator):
         """Simple iterable object.
 
         Returns:
-            iterable object for train validation dataset.
+            Iterable object for train validation dataset.
 
         """
         return iter([(None, self.train, self.valid)])
@@ -196,7 +196,7 @@ class HoldoutIterator(TrainValidIterator):
         """Inplace apply features pipeline to iterator components.
 
         Args:
-            features_pipeline: features pipeline to apply.
+            features_pipeline: Features pipeline to apply.
 
         Returns:
             new iterator.
@@ -211,10 +211,10 @@ class HoldoutIterator(TrainValidIterator):
         """Same as for basic class, but also apply to validation.
 
         Args:
-            selector: uses for feature selection.
+            selector: Uses for feature selection.
 
         Returns:
-            new iterator.
+            New iterator.
 
         """
         train_valid = cast('HoldoutIterator', super().apply_selector(selector))
@@ -264,7 +264,7 @@ class CustomIterator(TrainValidIterator):
         """Create generator of train/valid datasets.
 
         Returns:
-            data generator.
+            Data generator.
 
         """
         generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator)
@@ -286,7 +286,7 @@ class CustomIterator(TrainValidIterator):
         Use first train/valid split for HoldoutIterator creation.
 
         Returns:
-            new HoldoutIterator.
+            New HoldoutIterator.
 
         """
         for (tr_idx, val_idx) in self.iterator:

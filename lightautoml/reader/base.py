@@ -35,8 +35,10 @@ UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, User
 @record_history(enabled=False)
 class Reader:
     """
-    Abstract class for analyzing input data and creating inner LAMLDataset from raw data
-    Takes data in different formats as input, drop obviously useless features, estimates avaliable size and returns dataset
+    Abstract class for analyzing input data and creating inner
+    LAMLDataset from raw data.
+    Takes data in different formats as input, drop obviously useless features,
+    estimates avaliable size and returns dataset.
     """
 
     def __init__(self, task: Task, *args: Any, **kwargs: Any):
@@ -87,8 +89,8 @@ class Reader:
         """Updates the list of used features.
 
         Args:
-            add: list of feature names to add or None.
-            remove: list of feature names to remove or None.
+            add: List of feature names to add or None.
+            remove: List of feature names to remove or None.
 
         """
         curr_feats = set(self.used_features)
@@ -105,11 +107,11 @@ class Reader:
         Note - for now only Pandas reader exists, made for future plans.
 
         Args:
-            reader: source reader.
-            **kwargs: ignored as in the class itself.
+            reader: Source reader.
+            **kwargs: Ignored as in the class itself.
 
         Returns:
-            new reader.
+            New reader.
 
         """
         new_reader = cls(reader.task, **kwargs)
@@ -127,11 +129,11 @@ class PandasToPandasReader(Reader):
     Reader to convert pd.DataFrame to AutoML's PandasDataset.
     Stages:
 
-        - drop obviously useless features.
-        - convert roles dict from user format to automl format.
-        - simple role guess for features without input role.
-        - create cv folds.
-        - create initial PandasDataset.
+        - Drop obviously useless features.
+        - Convert roles dict from user format to automl format.
+        - Simple role guess for features without input role.
+        - Create cv folds.
+        - Create initial PandasDataset.
         - Optional: advanced guessing of role and handling types.
 
     """
@@ -148,24 +150,24 @@ class PandasToPandasReader(Reader):
 
         Args:
             task: Task object.
-            samples: number of elements used when checking role type.
-            max_nan_rate: float.
-            max_constant_rate: float.
-            cv: int.
-            random_state: int.
+            samples: Number of elements used when checking role type.
+            max_nan_rate: Maximum nan-rate.
+            max_constant_rate: Maximum constant rate.
+            cv: CV Folds.
+            random_state: Random seed.
             roles_params: dict of params of features roles. \
                 Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
                 It's optional and commonly comes from config
-            n_jobs: int number of processes.
-            advanced_roles: param of roles guess (experimental, do not change).
-            numeric_unqiue_rate: param of roles guess (experimental, do not change).
-            max_to_3rd_rate: param of roles guess (experimental, do not change).
-            binning_enc_rate: param of roles guess (experimental, do not change).
-            raw_decr_rate: param of roles guess (experimental, do not change).
-            max_score_rate: param of roles guess (experimental, do not change).
-            abs_score_val: param of roles guess (experimental, do not change).
-            drop_score_co: param of roles guess (experimental, do not change).
-            **kwargs:
+            n_jobs: Int number of processes.
+            advanced_roles: Param of roles guess (experimental, do not change).
+            numeric_unqiue_rate: Param of roles guess (experimental, do not change).
+            max_to_3rd_rate: Param of roles guess (experimental, do not change).
+            binning_enc_rate: Param of roles guess (experimental, do not change).
+            raw_decr_rate: Param of roles guess (experimental, do not change).
+            max_score_rate: Param of roles guess (experimental, do not change).
+            abs_score_val: Param of roles guess (experimental, do not change).
+            drop_score_co: Param of roles guess (experimental, do not change).
+            **kwargs: For now not used.
 
         """
         super().__init__(task)

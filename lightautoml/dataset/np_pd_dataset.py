@@ -100,7 +100,6 @@ class NumpyDataset(LAMLDataset):
     def _check_dtype(self):
         """Check if dtype in .set_data is ok and cast if not.
 
-
         Raises:
             AttributeError: if there is non-numeric type in dataset.
 

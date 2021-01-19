@@ -24,7 +24,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
 
-    default_params: all available parameters listed in lightgbm documentation:
+    default_params: All available parameters listed in lightgbm documentation:
         - https://lightgbm.readthedocs.io/en/latest/Parameters.html
 
     freeze_defaults:
@@ -100,10 +100,11 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Get model parameters depending on dataset parameters.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv iterator.
 
         Returns:
-            parameters of model.
+            Parameters of model.
+
         """
 
         # TODO: use features_num
@@ -179,9 +180,9 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Sample hyperparameters from suggested.
 
         Args:
-            trial: optuna trial object.
-            suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimations.
+            trial: Optuna trial object.
+            suggested_params: Dict with parameters.
+            estimated_n_trials: Maximum number of hyperparameter estimations.
 
         Returns:
             dict with sampled hyperparameters.
@@ -264,10 +265,10 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         Args:
             model: Lightgbm object.
-            dataset: test dataset.
+            dataset: Test dataset.
 
         Return:
-            predicted target values.
+            Predicted target values.
 
         """
         pred = self.task.losses['lgb'].bw_func(model.predict(dataset.data))
@@ -294,7 +295,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Just to be compatible with ImportanceEstimator.
 
         Args:
-            train_valid: classic cv iterator.
+            train_valid: Classic cv iterator.
 
         """
         self.fit_predict(train_valid)

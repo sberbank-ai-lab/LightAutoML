@@ -27,7 +27,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
     default_params:
-        all available parameters listed in CatBoost documentation:
+        All available parameters listed in CatBoost documentation:
 
         - https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
 
@@ -343,7 +343,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     def get_features_score(self) -> Series:
         """Computes feature importance.
 
-        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange) , per all models.
+        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange), per all models.
 
         Returns:
             Series with feature importances.

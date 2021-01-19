@@ -23,12 +23,12 @@ class UniversalDataset:
         """Class for preparing input for DL model with mixed data.
 
         Args:
-            data: dict with data.
-            y: array of target variable.
-            w: optional array of observation weight.
-            tokenizer: transformers tokenizer.
-            max_length: max sentence length.
-            stage: name of current training / inference stage.
+            data: Dict with data.
+            y: Array of target variable.
+            w: Optional array of observation weight.
+            tokenizer: Transformers tokenizer.
+            max_length: Max sentence length.
+            stage: Name of current training / inference stage.
 
         """
         self.data = data
@@ -66,8 +66,8 @@ class Clump(nn.Module):
         """Class for preparing input for DL model with mixed data.
 
         Args:
-            min_v: min value.
-            max_v: max value.
+            min_v: Min value.
+            max_v: Max value.
 
         """
         super(Clump, self).__init__()
@@ -90,17 +90,21 @@ class TextBert(nn.Module):
         """Class for working with text data based on HuggingFace transformers.
 
         Args:
-            model_name: transformers model name.
-            pooling: pooling type.
+            model_name: Transformers model name.
+            pooling: Pooling type.
 
         Note:
             There are different pooling types:
 
-                - cls: use CLS token for sentence embedding from last hidden state.
-                - max: maximum on seq_len dimension for non masked inputs from last hidden state.
-                - mean: mean on seq_len dimension for non masked inputs from last hidden state.
-                - sum: sum on seq_len dimension for non masked inputs from last hidden state.
-                - none: without pooling for seq2seq models
+                - cls: Use CLS token for sentence embedding
+                  from last hidden state.
+                - max: Maximum on seq_len dimension for non masked
+                  inputs from last hidden state.
+                - mean: Mean on seq_len dimension for non masked
+                  inputs from last hidden state.
+                - sum: Sum on seq_len dimension for non masked
+                  inputs from last hidden state.
+                - none: Without pooling for seq2seq models.
 
         """
         super(TextBert, self).__init__()
@@ -144,10 +148,11 @@ class CatEmbedder(nn.Module):
         """Class for working with category data using embedding layer.
 
         Args:
-            cat_dims: sequence with number of unique categories for category features.
-            emb_dropout: dropout probability.
-            emb_ratio: ratio for embedding size = (x + 1) // emb_ratio.
-            max_emb_size: max embedding size.
+            cat_dims: Sequence with number of unique categories
+              for category features.
+            emb_dropout: Dropout probability.
+            emb_ratio: Ratio for embedding size = (x + 1) // emb_ratio.
+            max_emb_size: Max embedding size.
 
         """
         super(CatEmbedder, self).__init__()
@@ -162,7 +167,7 @@ class CatEmbedder(nn.Module):
         """Output shape.
 
         Returns:
-            int with module output shape.
+            Int with module output shape.
 
         """
         return self.no_of_embs
@@ -181,8 +186,8 @@ class ContEmbedder(nn.Module):
         """Class for working with numeric data.
 
         Args:
-            num_dims: sequence with number of numeric features.
-            input_bn: use 1d batch norm for input data.
+            num_dims: Sequence with number of numeric features.
+            input_bn: Use 1d batch norm for input data.
 
         """
         super(ContEmbedder, self).__init__()
@@ -220,16 +225,16 @@ class TorchUniversalModel(nn.Module):
         """Class for preparing input for DL model with mixed data.
 
         Args:
-            loss: callable torch loss with order of arguments (y_true, y_pred).
+            loss: Callable torch loss with order of arguments (y_true, y_pred).
             task: Task object.
-            n_out: number of output dimensions.
-            cont_embedder: torch module for numeric data.
-            cont_params: dict with numeric model params.
-            cat_embedder: torch module for category data.
-            cat_params: dict with category model params.
-            text_embedder: torch module for text data.
-            text_params: dict with text model params.
-            bias: array with last hidden linear layer bias.
+            n_out: Number of output dimensions.
+            cont_embedder: Torch module for numeric data.
+            cont_params: Dict with numeric model params.
+            cat_embedder: Torch module for category data.
+            cat_params: Dict with category model params.
+            text_embedder: Torch module for text data.
+            text_params: Dict with text model params.
+            bias: Array with last hidden linear layer bias.
 
         """
         super(TorchUniversalModel, self).__init__()

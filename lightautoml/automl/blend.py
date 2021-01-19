@@ -57,7 +57,7 @@ class Blender:
 
     def _fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
                      ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
-        """Defeines how to fit, predict and prune - Abstract.
+        """Defines how to fit, predict and prune - Abstract.
 
         Args:
             predictions: dataset.
@@ -103,7 +103,7 @@ class Blender:
             predictions: Sequence of datasets with predictions.
 
         Returns:
-            Splited predictions, model indices, pipe indices.
+            Split predictions, model indices, pipe indices.
 
         """
         splitted_preds = []

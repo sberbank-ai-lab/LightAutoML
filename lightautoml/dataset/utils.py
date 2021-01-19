@@ -22,7 +22,7 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
         init_roles: Mapping between roles and feature names.
 
     Returns:
-        Roles dict in format key -- str feature name, value - instance of ColumnRole.
+        Roles dict in format key -- str feature name, value - instance of ```ColumnRole```.
 
     """
     roles = {}

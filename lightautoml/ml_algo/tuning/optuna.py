@@ -30,12 +30,12 @@ class OptunaTunableMixin(ABC):
         """Sample hyperparameters from suggested.
 
         Args:
-            trial: optuna trial object.
-            suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimations.
+            trial: Optuna trial object.
+            suggested_params: Dict with parameters.
+            estimated_n_trials: Maximum number of hyperparameter estimations.
 
         Returns:
-            dict with sampled hyperparameters.
+            Dict with sampled hyperparameters.
 
         """
 
@@ -46,9 +46,9 @@ class OptunaTunableMixin(ABC):
         """
 
         Args:
-            estimated_n_trials: maximum number of hyperparameter estimations.
-            trial: optuna trial object.
-            train_valid_iterator: iterator used for getting parameters depending on dataset.
+            estimated_n_trials: Maximum number of hyperparameter estimations.
+            trial: Optuna trial object.
+            train_valid_iterator: Iterator used for getting parameters depending on dataset.
 
         """
 
@@ -63,11 +63,11 @@ class OptunaTunableMixin(ABC):
         """Get objective.
 
         Args:
-            estimated_n_trials: maximum number of hyperparameter estimations.
-            train_valid_iterator: used for getting parameters depending on dataset.
+            estimated_n_trials: Maximum number of hyperparameter estimations.
+            train_valid_iterator: Used for getting parameters depending on dataset.
 
         Returns:
-            callable objective.
+            Callable objective.
 
         """
         assert isinstance(self, MLAlgo)
@@ -104,11 +104,11 @@ class OptunaTuner(ParamsTuner):
         """
 
         Args:
-            timeout: maximum learning time.
-            n_trials: maximum number of trials.
-            direction: direction of optimization. Set ``minimize`` for minimization and ``maximize`` for maximization.
-            fit_on_holdout: will be used holdout cv iterator.
-            random_state: seed for optuna sampler.
+            timeout: Mximum learning time.
+            n_trials: Maximum number of trials.
+            direction: Direction of optimization. Set ``minimize`` for minimization and ``maximize`` for maximization.
+            fit_on_holdout: Will be used holdout cv iterator.
+            random_state: Seed for optuna sampler.
 
         """
 
@@ -160,8 +160,8 @@ class OptunaTuner(ParamsTuner):
             """Callback for number of iteration with time cut-off.
 
             Args:
-                study: optuna study object.
-                trial: optuna trial object.
+                study: Optuna study object.
+                trial: Optuna trial object.
             """
             ml_algo.mean_trial_time = study.trials_dataframe()['duration'].mean().total_seconds()
             self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
