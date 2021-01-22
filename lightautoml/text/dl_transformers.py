@@ -158,11 +158,11 @@ def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     """Compute positional embedding matrix.
 
     Args:
-        n_pos: len of sequence.
-        embed_size: size of output sentence embedding.
+        n_pos: Len of sequence.
+        embed_size: Size of output sentence embedding.
 
     Returns:
-        torch tensor with all positional embeddings.
+        Torch tensor with all positional embeddings.
 
     """
     position_enc = np.array([
@@ -188,19 +188,26 @@ class BOREP(nn.Module):
         Args:
             embed_size: Size of word embeddings.
             proj_size: Size of output sentence embedding.
-            pooling: Str with pooling type:
-                - max: Maximum on seq_len dimension for non masked inputs.
-                - mean: Mean on seq_len dimension for non masked inputs.
-                - sum: Sum on seq_len dimension for non masked inputs.
+            pooling: Pooling type.
             max_length: Maximum length of sentence.
-            init: Type of weight initialization:
-                - orthogonal: Orthogonal init.
-                - normal: Normal with std 0.1.
-                - uniform: Uniform from -0.1 to 0.1.
-                - kaiming: Uniform kaiming init.
-                - xavier: Uniform xavier init.
+            init: Type of weight initialization.
             pos_encoding: Add positional embedding.
             **kwargs: Ignored params.
+
+        Note:
+            There are several pooling types:
+
+                - `'max'`: Maximum on seq_len dimension for non masked inputs.
+                - `'mean'`: Mean on seq_len dimension for non masked inputs.
+                - `'sum'`: Sum on seq_len dimension for non masked inputs.
+
+            For init parameter there are several options:
+
+                - `'orthogonal'`: Orthogonal init.
+                - `'normal'`: Normal with std 0.1.
+                - `'uniform'`: Uniform from -0.1 to 0.1.
+                - `'kaiming'`: Uniform kaiming init.
+                - `'xavier'`: Uniform xavier init.
 
         """
         super(BOREP, self).__init__()
@@ -273,12 +280,16 @@ class RandomLSTM(nn.Module):
         Args:
             embed_size: Size of word embeddings.
             hidden_size: Size of hidden dimensions of LSTM.
-            pooling: Str with pooling type:
-                - max: Maximum on seq_len dimension for non masked inputs.
-                - mean: Mean on seq_len dimension for non masked inputs.
-                - sum: Sum on seq_len dimension for non masked inputs.
+            pooling: Pooling type.
             num_layers: Number of lstm layers.
             **kwargs: Ignored params.
+
+        Note:
+            There are several pooling types:
+
+                - `'max'`: Maximum on seq_len dimension for non masked inputs.
+                - `'mean'`: Mean on seq_len dimension for non masked inputs.
+                - `'sum'`: Sum on seq_len dimension for non masked inputs.
 
         """
         super(RandomLSTM, self).__init__()
@@ -329,17 +340,21 @@ class BertEmbedder(nn.Module):
 
         Args:
             model_name: Name of transformers model.
-            pooling: Str with pooling type:
-                - cls: Use CLS token for sentence embedding
-                  from last hidden state.
-                - max: Maximum on seq_len dimension
-                  for non masked inputs from last hidden state.
-                - mean: Mean on seq_len dimension for non masked
-                  inputs from last hidden state.
-                - sum: Sum on seq_len dimension for non masked inputs
-                  from last hidden state.
-                - none: Don't use pooling (for RandomLSTM pooling strategy).
+            pooling: Pooling type.
             **kwargs: Ignored params.
+
+        Note:
+            There are several pooling types:
+
+                - `'cls'`: Use CLS token for sentence embedding
+                  from last hidden state.
+                - `'max'`: Maximum on seq_len dimension
+                  for non masked inputs from last hidden state.
+                - `'mean'`: Mean on seq_len dimension for non masked
+                  inputs from last hidden state.
+                - `'sum'`: Sum on seq_len dimension for non masked inputs
+                  from last hidden state.
+                - `'none'`: Don't use pooling (for RandomLSTM pooling strategy).
 
         """
         super(BertEmbedder, self).__init__()

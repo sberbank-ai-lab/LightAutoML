@@ -4,7 +4,7 @@ __all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'image', 'reader', 'tran
 
 # todo: fix version problem
 # todo: fix profiler
-# todo: check docstrings
+
 
 # try:
 #     import importlib.metadata as importlib_metadata

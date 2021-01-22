@@ -23,8 +23,8 @@ sys.path.insert(0, LIB_PATH)
 
 
 project = 'LightAutoML'
-copyright = '%s, Sberbank AI Lab' % str(datetime.datetime.now().year)
-author = 'Sberbank AI Lab'
+copyright = '%s, Sber AI Lab' % str(datetime.datetime.now().year)
+author = 'Sber AI Lab'
 
 
 extensions = [
@@ -33,26 +33,29 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon', # structure
     'sphinx.ext.viewcode', # for [source] button
-    'sphinx_autodoc_typehints',
+    # 'sphinx_autodoc_typehints',
     'nbsphinx',
     'nbsphinx_link'
 ]
 
 
 exclude_patterns = [
-    'build/*',
-    '_book/*'
+    '_build/*',
 ]
 
 # Delete external references
-autodoc_mock_imports = ['numpy', 'pandas', 'catboost',
+autosummary_mock_imports = ['numpy', 'pandas', 'catboost',
                         'scipy', 'sklearn', 'torch',
                         'lightgbm', 'networkx', 'holidays',
                         'joblib', 'yaml', 'gensim',
                         'optuna', 'PIL', 'cv2', 'albumentations',
                         'efficientnet_pytorch', 'tqdm',
                         'nltk', 'transformers', 'autowoe',
-                        'matplotlib', 'seaborn', 'json2html']
+                        'matplotlib', 'seaborn', 'json2html',
+                        ]
+
+
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -67,7 +70,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
 html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -86,22 +88,14 @@ nbsphinx_execute = 'never'
 EXCLUDED_MEMBERS = ','.join(['get_own_record_history_wrapper',
                              'get_record_history_wrapper',
                              'record_history_omit',
-                             'record_history_only',
-                             # '__repr__', '__len__',
-                             # '__getitem__', '__setitem__',
-                             #  '__iter__', '__next__'
-                             ])
+                             'record_history_only'])
 
-# function names that will be included in documentation by force
-# SPECIAL_MEMBERS = ','.join(['__init__'])
 
 autodoc_default_options = {
     'ignore-module-all': True,
     'undoc-members': False,
     'members': True,
-    # "inherited-members": True,
     'show-inheritance': True,
-    # 'special-members': SPECIAL_MEMBERS,
     'exclude-members': EXCLUDED_MEMBERS
 }
 
@@ -153,5 +147,27 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
 }
 
+autodoc_type_aliases = {
+    'Roles': 'lightautoml.dataset.roles.ColumnRole',
+    # todo
+}
+
+
+def skip_member(app, what, name, obj, skip, options):
+    if obj.__doc__ is None:
+        return True
+    elif what == 'module' and name == 'guess_roles':
+        return True
+    else:
+        return None
+
+
 def setup(app):
     app.add_css_file('style.css')  # customizing default theme
+    app.connect('autodoc-skip-member', skip_member)
+
+
+
+# bug of my life...
+# omg omg...
+# really interesting if u have like autosummary_mock_imports, autodoc_mock_imports -- fuck.

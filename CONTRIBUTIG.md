@@ -1,8 +1,10 @@
 # Table of contents
 
 - [Contributing to LightAutoML](#contriburing-to-lightautoml)
+- [Codebase Structure](#codebase-structure)
+- [Developing LightAutoML](#developing-lightautoml)
 - [Writing Documentation](#writing-documentation)
-- [Style Guide](#style-guide) 
+- [Style Guide](#style-guide)
 
 ## Contributing to LightAutoML
 
@@ -75,19 +77,21 @@ poetry install
 
 After that there is ```lama_venv``` environment, where you can test and implement your own code.
 So, you don't need to rebuild all project every time.
+Each change in the code will be reflected in the library inside the environment.
 
 ### Testing
 
-Before PR, please check your code by:
-
+Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests.
+For this purpose we have script, that takes all ```demo*``` files from [tests](tests) and run ```pytest``` on them.
+To run it:
 ```bash
-bash test_package.sh
+./test_package.sh
 ```
-It takes all ```demo*.py``` and use ```pytest``` to run it. Please, add your own tests.
+
 
 ## Style Guide
 
-We use [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+We try to stick to the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 
 ## Documentation
 
@@ -98,8 +102,14 @@ We use [Google Python Style Guide](https://google.github.io/styleguide/pyguide.h
 To build the documentation:
 
 1. Clone repository to your device.
+```
+git clone https://github.com/sberbank-ai-lab/LightAutoML
+cd LightAutoML
 
-2. Make environment and install requirements
+```
+
+
+2. Make environment and install requirements. 
 
 ```bash
 python3 -m venv docs_venv
@@ -108,7 +118,10 @@ cd docs
 pip install -r requirements.txt
 pip install sphinx-rtd-theme
 ```
-3. Generate HTML documentation files. The generated files will be in `docs/_build/html`
+It creates environment like on [Read-The-Docs](https://readthedocs.org/) without any additional requirements,
+like PyTorch, CatBoost, because they are unnecessary for building documentation.
+
+3. Generate HTML documentation files. The generated files will be in `docs/_build/html`.
 ```bash
 cd docs
 make clean html
@@ -124,12 +137,11 @@ There are some rules, that docstrings should fit.
    
 2. Every non one-line docstring should have a paragraph at its end, regardless of where it will be used:
    in the documentation for a class, module, function, class method etc.
-   One-liners shouldn't have a paragraph at its end.
-   Also, if you don't have special fields like Note, Warning you may don't add a paragraph at its end.
+   One-liners may have no paragraph at its end.
    
 3. Once you added some module to LightAutoML, you should add some info about it at the beginning of the module.
    Example of this you can find in `docs/mock_docs.py`.
-   Also, if you use submodules, please add description to `__init__.py`
+   Also, if you use submodules, please add description to `__init__.py` (it is usefull for Sphinx's autosummary).
 
 4. There is an example for documenting standalone functions.
 
@@ -337,23 +349,62 @@ class ExampleClass:
             
         """
         print(param1)
-
 ```
 
-[comment]: <> (7. Some tips about typing.)
+7. If you have a parameter that can take a finite number of values,
+   if possible, describe each of them in the Note section.
+   
+```python3
 
-[comment]: <> (```python3)
-
-[comment]: <> (### Please don't use TYPE_CHECKING option)
-
-[comment]: <> (# from typing import TYPE_CHECKING)
-
-[comment]: <> (from typing import Union, List, Optional, TypeVar)
+import random
 
 
+class A:
+    """
+    Some description.
+    
+    Some long description.
+    
+    Attributes:
+        attr1 (:obj:`int`): Description of `attr1`.
+        attr2 (:obj:`int`): Description of `attr2`.
+        
+    """
+    def __init__(self, weight_initialization: str = 'none'):
+        """
+        
+        Args:
+            weight_initialization: Initialization type.
+        
+        Note:
+            There are several initialization types:
+            
+                - '`zeros`': fill ``attr1``
+                  and ``attr2`` with zeros.
+                - '`ones`': fill ``attr1``
+                  and ``attr2`` with ones.
+                - '`none`': fill ``attr1``
+                  and ``attr2`` with random int in `\[0, 100\]`.
+        
+        Raises:
+            ValueError: If the entered initialization type is not supported.
+                
+        """
+        if weight_initialization not in ['zeros', 'ones', 'none']:
+            raise ValueError(
+                f'{weight_initialization} - Unsupported weight initialization.')
+        
+        if weight_initialization == 'zeros':    
+            attr1 = 0
+            attr2 = 0
+        elif weight_initialization == 'ones':
+            attr1 = 1
+            attr2 = 1
+        else:
+            attr1 = random.randint(0, 100)
+            attr2 = random.randint(0, 100)
+```
 
-
-[comment]: <> (```)
 
 
 
@@ -362,7 +413,7 @@ class ExampleClass:
 For the description of the module to be included in the documentation,
 you should set the variable ```autosummary_generate = True``` in ```docs/conf.py```
 before generating the documentation. This will generate a draft
-of the documentation for your code.
+of the documentation for your code. 
 
 ### Adding Tutorials
 

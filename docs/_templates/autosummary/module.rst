@@ -7,6 +7,7 @@
    .. rubric:: {{ _('Module Attributes') }}
 
    .. autosummary::
+      :nosignatures:
    {% for item in attributes %}
       {{ item }}
    {%- endfor %}
@@ -18,6 +19,7 @@
    .. rubric:: {{ _('Functions') }}
 
    .. autosummary::
+      :nosignatures:
    {% for item in functions %}
       {{ item }}
    {%- endfor %}
@@ -29,6 +31,7 @@
    .. rubric:: {{ _('Classes') }}
 
    .. autosummary::
+      :nosignatures:
    {% for item in classes %}
       {{ item }}
    {%- endfor %}

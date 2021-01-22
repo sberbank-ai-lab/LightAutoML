@@ -89,12 +89,12 @@ class TabularNLPAutoML(TabularAutoML):
         """
 
         Commonly _params kwargs (ex. timing_params) set via
-          config file (config_path argument).
+        config file (config_path argument).
         If you need to change just few params, it's possible to pass
-          it as dict of dicts, like json
+        it as dict of dicts, like json.
         To get available params please look on default config template.
-        Also you can find there param description
-        To generate config template call TabularNLPAutoML.get_config(config_path.yml)
+        Also you can find there param description.
+        To generate config template call TabularNLPAutoML.get_config(config_path.yml).
 
         Args:
             task: Task to solve.

@@ -1,4 +1,8 @@
-"""Validation utils."""
+"""Validation utils."""- orthogonal: Orthogonal init.
+                - normal: Normal with std 0.1.
+                - uniform: Uniform from -0.1 to 0.1.
+                - kaiming: Uniform kaiming init.
+                - xavier: Uniform xavier init.
 
 from typing import Optional, Callable, cast, Union
 
@@ -18,9 +22,9 @@ def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] 
     """Creates train-validation iterator.
 
     If train is one of common datasets types
-      (``PandasDataset``, ``NumpyDataset``, ``CSRSparseDataset``) \
-      the :func:`lightautoml.validation.np_iterators.get_numpy_iterator`
-      will be used.
+    (``PandasDataset``, ``NumpyDataset``, ``CSRSparseDataset``)
+    the :func:`lightautoml.validation.np_iterators.get_numpy_iterator`
+    will be used.
     Else if validation dataset is defined, the holdout-iterator will be used.
     Else the dummy iterator will be used.
 
