@@ -1,63 +1,48 @@
-{{ fullname | escape | underline}}
+.. role:: hidden
+    :class: hidden-section
+
+{{ name | underline }}
 
 .. automodule:: {{ fullname }}
 
-   {% block attributes %}
-   {% if attributes %}
-   .. rubric:: {{ _('Module Attributes') }}
+    {% block classes %}
+    {% if classes %}
+    .. rubric:: {{ _('Classes') }}
 
-   .. autosummary::
-      :nosignatures:
-   {% for item in attributes %}
-      {{ item }}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
+    .. autosummary::
+        :toctree: generated
+        :nosignatures:
+        :template: classtemplate.rst
+    {% for item in classes %}
+        {{ item }}
+    {%- endfor %}
+    {% endif %}
+    {% endblock %}
 
-   {% block functions %}
-   {% if functions %}
-   .. rubric:: {{ _('Functions') }}
+    {% block functions %}
+    {% if functions %}
+    .. rubric:: {{ _('Functions') }}
 
-   .. autosummary::
-      :nosignatures:
-   {% for item in functions %}
-      {{ item }}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
+    .. autosummary::
+        :toctree: generated
+        :nosignatures:
+        :template: functiontemplate.rst
+    {% for item in functions %}
+        {{ item }}
+    {%- endfor %}
+    {% endif %}
+    {% endblock %}
 
-   {% block classes %}
-   {% if classes %}
-   .. rubric:: {{ _('Classes') }}
-
-   .. autosummary::
-      :nosignatures:
-   {% for item in classes %}
-      {{ item }}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
-
-   {% block exceptions %}
-   {% if exceptions %}
-   .. rubric:: {{ _('Exceptions') }}
-
-   .. autosummary::
-   {% for item in exceptions %}
-      {{ item }}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
 
 {% block modules %}
 {% if modules %}
-.. rubric:: Modules
+.. rubric:: {{ _('Modules') }}
 
 .. autosummary::
-   :toctree:
-   :recursive:
+    :toctree:
+    :recursive:
 {% for item in modules %}
-   {{ item }}
+    {{ item }}
 {%- endfor %}
 {% endif %}
 {% endblock %}

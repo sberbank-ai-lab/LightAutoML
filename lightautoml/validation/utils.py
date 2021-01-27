@@ -1,8 +1,4 @@
-"""Validation utils."""- orthogonal: Orthogonal init.
-                - normal: Normal with std 0.1.
-                - uniform: Uniform from -0.1 to 0.1.
-                - kaiming: Uniform kaiming init.
-                - xavier: Uniform xavier init.
+"""Validation utils."""
 
 from typing import Optional, Callable, cast, Union
 
@@ -29,7 +25,7 @@ def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] 
     Else the dummy iterator will be used.
 
     Args:
-        train:``LAMLDataset`` to train.
+        train: ``LAMLDataset`` to train.
         valid: Optional ``LAMLDataset`` for validate.
         n_folds: maximum number of folds to iterate.
           If ``None`` - iterate through all folds.

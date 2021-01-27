@@ -54,18 +54,3 @@ class MyClass:
 #     tutorials/tutor_1.ipynb
 #     tutorials/tutor_2.ipynb
 #     tutorials/tutor_3.ipynb
-
-
-
-# addons
-#     dataset
-#     reader
-#     tasks
-#     report
-#     image
-#     text
-#     validation
-#     utils
-#     transformers
-#     pipelines
-#     ml_algo

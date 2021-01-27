@@ -11,17 +11,23 @@
 Thank you for your interest in contribution to LightAutoML! Before you begin writing code, it is
 important that you share your intention to contribute with developers team.
 
-- First please look for discussions on this topic in [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues)
+- First, please look for discussions on this topic in [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues)
 before implementing anything inside the project.
-- Pick an issue and comment that you would like to work on it.
+- Pick an issue and comment, that you would like to work on it.
 - If there is no discussion on this topic, create one. 
   Please, include as much information as you can,
-  any accompanying data (your tests, may be articles),
+  any accompanying data (your tests, expected behaviour, articles),
   and may be your proposed solution. 
 - If you need more details, please ask we will provide it ASAP.
 
 Once you implement and test your feature or bug-fix, please submit
 a Pull Request to https://github.com/sberbank-ai-lab/LightAutoML.
+
+When adding functionality, please add examples that will fully explain it.
+Examples can be added in several ways:
+- [Inside the documentation](#writing-documentation) 
+- [Jupyter notebooks](#adding-tutorials)
+- [Your own tests](#testing)
 
 ## Codebase structure
 
@@ -56,7 +62,7 @@ We recommend you to install an [Anaconda](https://www.anaconda.com/products/indi
 to work with environments. 
 
 
-1. Once you install Anaconda, you need to set your own environment:
+1. Once you install Anaconda, you need to set your own environment. For example:
 ```bash
 conda create -n Pyth36 python=3.6
 conda activate Pyth36
@@ -75,19 +81,19 @@ source ./lama_venv/bin/activate
 poetry install
 ```
 
-After that there is ```lama_venv``` environment, where you can test and implement your own code.
+After that there is `lama_venv` environment, where you can test and implement your own code.
 So, you don't need to rebuild all project every time.
 Each change in the code will be reflected in the library inside the environment.
 
 ### Testing
 
 Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests.
-For this purpose we have script, that takes all ```demo*``` files from [tests](tests) and run ```pytest``` on them.
+For this purpose we have script, that takes all `demo*` files from [tests](tests) and run `pytest` on them.
 To run it:
 ```bash
 ./test_package.sh
 ```
-
+Also if you develop new functionality, please add your own tests.
 
 ## Style Guide
 
@@ -96,6 +102,14 @@ We try to stick to the [Google Python Style Guide](https://google.github.io/styl
 ## Documentation
 
 
+Before writing the documentation, you should collect it to make sure that the code
+you wrote doesn't break the rest of the documentation. The library might work,
+but the documentation might not be. It is built on the Read the Docs service,
+which uses its own virtual environment, which contains only part
+of the LightAutoML library dependencies. This is done to make
+the documentation more lightweight.
+
+By default, functions, that have no description will be mock from overall documentation.
 
 ### Building Documentation:
 
@@ -105,7 +119,6 @@ To build the documentation:
 ```
 git clone https://github.com/sberbank-ai-lab/LightAutoML
 cd LightAutoML
-
 ```
 
 
@@ -225,7 +238,10 @@ def generator_func(n: int):
         [0, 1, 2, 3]
     
     """
-
+    x = 0
+    while x < n:
+        yield x
+        x += 1
 ```
 6. Documenting classes.
 ```python3
@@ -330,12 +346,14 @@ class ExampleClass:
         
         Also there may be no docstring.
         """
+        pass
         
     def _private(self):
         """By default we aren`t include private members.
         
         Also there may be no docstring.
         """
+        pass
         
     @staticmethod
     def static_method(param1: int):
@@ -411,12 +429,12 @@ class A:
 ### Adding new submodules
 
 For the description of the module to be included in the documentation,
-you should set the variable ```autosummary_generate = True``` in ```docs/conf.py```
+you should set the variable `autosummary_generate = True` in `docs/conf.py`
 before generating the documentation. This will generate a draft
 of the documentation for your code. 
 
 ### Adding Tutorials
 
-We use ```nbsphinx``` Sphinx extension for tutorials. Examples, you can find in ```docs/notebooks```.
-Please put your tutorial in this folder and after add it in ```docs/Tutorials.rst```.
+We use [nbsphinx](https://nbsphinx.readthedocs.io/) extension for tutorials. Examples, you can find in `docs/notebooks`.
+Please put your tutorial in this folder and after add it in `docs/Tutorials.rst`.
 

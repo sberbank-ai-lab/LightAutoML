@@ -12,32 +12,30 @@
 #
 import os
 import sys
-import sphinx
 import datetime
-from docutils.parsers.rst import Directive
 
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir)
 sys.path.insert(0, LIB_PATH)
 
-
 project = 'LightAutoML'
 copyright = '%s, Sber AI Lab' % str(datetime.datetime.now().year)
 author = 'Sber AI Lab'
 
+os.environ['DOCUMENTATION_ENV'] = 'True'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary', # will be used for tables
+    'sphinx.ext.autosummary',  # will be used for tables
     'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon', # structure
-    'sphinx.ext.viewcode', # for [source] button
-    # 'sphinx_autodoc_typehints',
-    'nbsphinx',
-    'nbsphinx_link'
-]
+    'sphinx.ext.napoleon',  # structure
+    'sphinx.ext.viewcode',  # for [source] button
 
+    'nbsphinx',
+    # 'nbsphinx_link',
+    'sphinx_autodoc_typehints'
+]
 
 exclude_patterns = [
     '_build/*',
@@ -45,17 +43,14 @@ exclude_patterns = [
 
 # Delete external references
 autosummary_mock_imports = ['numpy', 'pandas', 'catboost',
-                        'scipy', 'sklearn', 'torch',
-                        'lightgbm', 'networkx', 'holidays',
-                        'joblib', 'yaml', 'gensim',
-                        'optuna', 'PIL', 'cv2', 'albumentations',
-                        'efficientnet_pytorch', 'tqdm',
-                        'nltk', 'transformers', 'autowoe',
-                        'matplotlib', 'seaborn', 'json2html',
-                        ]
-
-
-
+                            'scipy', 'sklearn', 'torch',
+                            'lightgbm', 'networkx', 'holidays',
+                            'joblib', 'yaml', 'gensim',
+                            'optuna', 'PIL', 'cv2', 'albumentations',
+                            'efficientnet_pytorch', 'tqdm',
+                            'nltk', 'transformers', 'autowoe',
+                            'matplotlib', 'seaborn', 'json2html',
+                            ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,7 +59,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -76,7 +70,6 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
 
 # code style
 pygments_style = 'default'
@@ -90,11 +83,8 @@ EXCLUDED_MEMBERS = ','.join(['get_own_record_history_wrapper',
                              'record_history_omit',
                              'record_history_only'])
 
-
 autodoc_default_options = {
     'ignore-module-all': True,
-    'undoc-members': False,
-    'members': True,
     'show-inheritance': True,
     'exclude-members': EXCLUDED_MEMBERS
 }
@@ -103,7 +93,7 @@ autodoc_default_options = {
 autodoc_member_order = 'bysource'
 
 # typing, use in signature
-autodoc_typehints = 'signature'
+autodoc_typehints = 'none'
 
 # to omit some __init__ methods in classes where it not defined
 autoclass_content = 'class'
@@ -140,6 +130,8 @@ autosummary_generate = True
 
 set_type_checking_flag = True
 
+always_document_param_types = False
+
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable', None),
@@ -148,26 +140,17 @@ intersphinx_mapping = {
 }
 
 autodoc_type_aliases = {
-    'Roles': 'lightautoml.dataset.roles.ColumnRole',
-    # todo
+    'RoleType': 'lightautoml.dataset.roles.ColumnRole',
+    'NpDataset': 'lightautoml.text.utils.NpDataset',
 }
 
 
 def skip_member(app, what, name, obj, skip, options):
     if obj.__doc__ is None:
         return True
-    elif what == 'module' and name == 'guess_roles':
-        return True
-    else:
-        return None
+    return None
 
 
 def setup(app):
     app.add_css_file('style.css')  # customizing default theme
     app.connect('autodoc-skip-member', skip_member)
-
-
-
-# bug of my life...
-# omg omg...
-# really interesting if u have like autosummary_mock_imports, autodoc_mock_imports -- fuck.
