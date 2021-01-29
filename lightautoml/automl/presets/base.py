@@ -33,12 +33,12 @@ def upd_params(old: dict, new: dict) -> dict:
 
 @record_history(enabled=False)
 class AutoMLPreset(AutoML):
-    """ Basic class for automl preset.
+    """Basic class for automl preset.
 
     It's almost like AutoML, but with delayed initialization.
-    Initialization starts on fit, some params are inferred from data
-    Preset should be defined via .create_automl method.
-    Params should be set via yaml config
+    Initialization starts on fit, some params are inferred from data.
+    Preset should be defined via ``.create_automl`` method.
+    Params should be set via yaml config.
     Most usefull case - end-to-end model development.
 
     Example:
@@ -61,7 +61,8 @@ class AutoMLPreset(AutoML):
         it's possible to pass it as dict of dicts, like json.
         To get available params please look on default config template.
         Also you can find there param description.
-        To generate config template call SomePreset.get_config(config_path.yml).
+        To generate config template
+        call ``SomePreset.get_config('config_path.yml')``.
 
         Args:
             task: Task to solve.
@@ -70,9 +71,9 @@ class AutoMLPreset(AutoML):
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
             verbose: Verbosity level that are passed to each automl.
-            timing_params: Timing param dict. Optional.
+            timing_params: Timing param dict.
             config_path: Path to config file.
-            **kwargs:
+            **kwargs: Not used.
 
         """
         self._set_config(config_path)
@@ -111,7 +112,7 @@ class AutoMLPreset(AutoML):
         """Create new config template.
 
         Args:
-            path: path to config.
+            path: Path to config.
 
         Returns:
             Config.
@@ -131,10 +132,10 @@ class AutoMLPreset(AutoML):
 
         Here you should create all automl components,
         like readers, levels, timers, blenders.
-        Method ._initialize should be called in the end to create automl.
+        Method ``._initialize`` should be called in the end to create automl.
 
         Args:
-            **fit_args: params that are passed to .fit_predict method.
+            **fit_args: params that are passed to ``.fit_predict`` method.
 
         """
         raise NotImplementedError
@@ -143,20 +144,21 @@ class AutoMLPreset(AutoML):
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
                     valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
-        """
+        """Fit on input data and make prediction on validation part.
 
         Args:
-            train_data:  dataset to train.
-            roles: roles dict.
-            train_features: optional features names,
-              if cannot be inferred from train_data.
-            cv_iter: custom cv iterator. Ex. ```TimeSeriesIterator``` instance.
-            valid_data: optional validation dataset.
-            valid_features: optional validation dataset features if cannot be
-              inferred from valid_data.
+            train_data: Dataset to train.
+            roles: Roles dict.
+            train_features: Features names,
+              if can't be inferred from `train_data`.
+            cv_iter: Custom cv-iterator. For example,
+              :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`.
+            valid_data: Optional validation dataset.
+            valid_features: Optional validation dataset features if can't be
+              inferred from `valid_data`.
 
         Returns:
-            LAMLDataset of predictions. Call .data to get predictions array.
+            Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
         self.create_automl(train_data=train_data,

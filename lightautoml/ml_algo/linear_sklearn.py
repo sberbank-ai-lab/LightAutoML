@@ -25,16 +25,18 @@ class LinearLBFGS(TabularMLAlgo):
 
 
     default_params:
+
         - cs: List of regularization coefficients.
         - max_iter: Maximum iterations of L-BFGS.
         - tol: The tolerance for the stopping criteria.
         - early_stopping: Maximum rounds without improving.
 
     freeze_defaults:
+
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: Timer instance or None.
+    timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'LinearL2'
@@ -82,8 +84,8 @@ class LinearLBFGS(TabularMLAlgo):
         """Train on train dataset and predict on holdout dataset.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Target predictions for valid dataset.
@@ -163,7 +165,7 @@ class LinearL1CD(TabularMLAlgo):
         """Get model parameters depending on dataset parameters.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Parameters of model.
@@ -201,8 +203,8 @@ class LinearL1CD(TabularMLAlgo):
         """Train on train dataset and predict on holdout dataset.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Target predictions for valid dataset.
@@ -300,7 +302,7 @@ class LinearL1CD(TabularMLAlgo):
 
         Args:
             model: Model uses to predict.
-            dataset: ``NumpyDataset`` used for prediction.
+            dataset: Dataset used for prediction.
 
         Returns:
             Predictions for input dataset.

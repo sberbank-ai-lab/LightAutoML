@@ -44,7 +44,7 @@ class ColorFeatures:
         """Compute normalized color histogram for one channel.
 
         Args:
-            img: Image with shape (h, w).
+            img: Image with shape ``(h, w)``.
 
         Returns:
             List of channel histogram values.
@@ -71,7 +71,7 @@ class ColorFeatures:
         """Calculate normalized color histogram for rgb or hsv image.
 
         Args:
-            img: Image with shape (h, w).
+            img: Image with shape ``(h, w)``.
 
         Returns:
             List of histogram values.
@@ -165,7 +165,7 @@ class EffNetImageEmbedder(nn.Module):
         """Calculate output embedding shape.
 
         Returns:
-            Int shape of embedding.
+            Shape of embedding.
 
         """
         return self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
@@ -180,7 +180,7 @@ class ImageDataset:
     """Image Dataset Class."""
 
     def __init__(self, data: Sequence[str], is_advprop: bool = True, loader: Callable = pil_loader):
-        """Pytorch Dataset for EffNetImageEmbedder.
+        """Pytorch Dataset for :class:`~lightautoml.image.EffNetImageEmbedder`.
 
         Args:
             data: Sequence of paths.
@@ -211,12 +211,12 @@ class DeepImageEmbedder(TransformerMixin):
 
     def __init__(self, device: torch.device = torch.device('cuda:0'), n_jobs=4, random_state=42, is_advprop=True,
                  model_name='efficientnet-b0', weights_path: Optional[str] = None, batch_size: int = 128, verbose: bool = True):
-        """Pytorch Dataset for EffNetImageEmbedder.
+        """Pytorch Dataset for :class:`~lightautoml.image.EffNetImageEmbedder`.
 
         Args:
             device: Torch device.
             n_jobs: Number of threads for dataloader.
-            random_state: Seed.
+            random_state: Random seed.
             is_advprop: Use adversarial training.
             model_name: Name of effnet model.
             weights_path: Path to saved weights.

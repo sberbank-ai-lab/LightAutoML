@@ -51,18 +51,18 @@ class TorchModel(TabularMLAlgo):
         - deterministic: CUDNN backend.
         - multigpu: Use Data Parallel.
         - path_to_save: Path to save model checkpoints,
-          None - stay in memory.
-        - random_state: Random state to take subsample..
+          ``None`` - stay in memory.
+        - random_state: Random state to take subsample.
         - verbose_inside: Number of steps between
-          verbose inside epoch or ```None```.
-        - verbose: Verbose every ```N``` epochs.
+          verbose inside epoch or ``None``.
+        - verbose: Verbose every N epochs.
 
     freeze_defaults:
 
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: ``Timer`` instance or ``None``.
+    timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'TorchNN'
@@ -174,7 +174,7 @@ class TorchModel(TabularMLAlgo):
         """Get model parameters depending on dataset parameters.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Parameters of model.
@@ -245,8 +245,8 @@ class TorchModel(TabularMLAlgo):
         """Implements training and prediction on single fold.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values).

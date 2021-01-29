@@ -49,7 +49,7 @@ def oof_task_check(dataset: LAMLDataset):
 
 @record_history(enabled=False)
 def multiclass_task_check(dataset: LAMLDataset):
-    """Check if all passed vars are categories
+    """Check if all passed vars are categories.
 
     Args:
         dataset: Input.
@@ -190,7 +190,7 @@ class LabelEncoder(LAMLTransformer):
 @record_history(enabled=False)
 class OHEEncoder(LAMLTransformer):
     """
-    Simple OneHotEncoder over label encoded categories
+    Simple OneHotEncoder over label encoded categories.
     """
     _fit_checks = (categorical_check, encoding_check)
     _transform_checks = ()
@@ -293,7 +293,8 @@ class OHEEncoder(LAMLTransformer):
 
 @record_history(enabled=False)
 class FreqEncoder(LabelEncoder):
-    """Labels are encoded with frequency in train data.
+    """
+    Labels are encoded with frequency in train data.
 
     Labels are integers from 1 to n. Unknown category encoded as 1.
     """

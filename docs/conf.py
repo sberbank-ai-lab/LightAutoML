@@ -133,10 +133,13 @@ set_type_checking_flag = True
 always_document_param_types = False
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable', None),
-    'torch': ('https://pytorch.org/docs/stable/', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'python':  ('https://docs.python.org/3', None),
+    'numpy':   ('https://numpy.org/doc/stable', None),
+    'torch':   ('https://pytorch.org/docs/stable/', None),
+    'scipy':   ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'pandas':  ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'sklearn': ('https://scikit-learn.org/stable/', None),
+    'PIL':     ('https://pillow.readthedocs.io/en/stable/', None)
 }
 
 autodoc_type_aliases = {

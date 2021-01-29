@@ -13,8 +13,8 @@ array_attr_roles = ('Target', 'Group', 'Folds', 'Weights')
 # valid_tasks = ('reg', 'binary', 'multiclass') # TODO: Add multiclass and multilabel. Refactor for some dataset and pipes needed
 # valid_tasks = ('reg', 'binary')
 
-RoleType = TypeVar("RoleType", bound=ColumnRole)
-RolesDict = Dict[str, RoleType]
+
+RolesDict = Dict[str, ColumnRole]
 IntIdx = Union[Sequence[int], int]
 RowSlice = Optional[Union[Sequence[int], Sequence[bool]]]
 ColSlice = Optional[Union[Sequence[str], str]]
@@ -29,7 +29,7 @@ class LAMLColumn:
 
         Args:
             data: 1d array like.
-            role: column role.
+            role: Column role.
 
         """
         self.data = data
@@ -57,14 +57,14 @@ class LAMLDataset:
 
     def __init__(self, data: Any, features: Optional[list], roles: Optional[RolesDict], task: Optional[Task] = None,
                  **kwargs: Any):
-        """Create dataset with given data, features, roles and special attributes like target, group etc.
+        """Create dataset with given data, features, roles and special attributes.
 
         Args:
             data: 2d array of data of special type for each dataset type.
-            features: List of feature names or None for empty data.
-            roles: Dict of features roles or None for empty data.
+            features: Feature names or None for empty data.
+            roles: Features roles or None for empty data.
             task: Task for dataset if train/valid.
-            **kwargs: Special named array like attributes (target, group etc..).
+            **kwargs: Special named array of attributes (target, group etc..).
 
         """
         if features is None:
@@ -98,11 +98,13 @@ class LAMLDataset:
     def __getitem__(self, k: Tuple[RowSlice, ColSlice]) -> Union['LAMLDataset', LAMLColumn]:
         """Select a subset of dataset.
 
-        Define how to slice a dataset in way dataset[[1, 2, 3...], ['feat_0', 'feat_1'...]].
-        Default behavior based on ._get_cols, ._get_rows, ._get_2d.
+        Define how to slice a dataset
+        in way ``dataset[[1, 2, 3...], ['feat_0', 'feat_1'...]]``.
+        Default behavior based on ``._get_cols``, ``._get_rows``, ``._get_2d``.
 
         Args:
-            k: tuple. First element optional integer columns indexes, second - optional feature name or list of features names.
+            k: First element optional integer columns indexes,
+              second - optional feature name or list of features names.
 
         """
         # TODO: Maybe refactor this part?
@@ -146,8 +148,9 @@ class LAMLDataset:
         """Inplace set values for single column (in default implementation).
 
         Args:
-            k: Str feature name.
-            val: LAMLColumn or 1d array like.
+            k: Feature name.
+            val: :class:`~lightautoml.dataset.base.LAMLColumn`
+              or 1d array like.
 
         """
         assert k in self.features, 'Can only replace existed columns in default implementations.'
@@ -165,10 +168,10 @@ class LAMLDataset:
         """Get item for key features as target/folds/weights etc.
 
         Args:
-            item: Attr name.
+            item: Attribute name.
 
         Returns:
-            Attr val.
+            Attribute value.
 
         """
         if item in valid_array_attributes:
@@ -180,7 +183,7 @@ class LAMLDataset:
         """Define how to get features names list.
 
         Returns:
-            List of features names.
+            Features names.
 
         """
         return list(self._features)
@@ -190,7 +193,7 @@ class LAMLDataset:
         """Define how to set features list.
 
         Args:
-            val: Features names list.
+            val: Features names.
 
         """
         self._features = copy(val)
@@ -200,17 +203,17 @@ class LAMLDataset:
         """Get data attribute.
 
         Returns:
-            Any, array like or `None`.
+            Any, array like or ``None``.
 
         """
         return self._data
 
     @data.setter
     def data(self, val: Any):
-        """Set data array or `None`.
+        """Set data array or ``None``.
 
         Args:
-            val: Some data or `None`.
+            val: Some data or ``None``.
 
         """
         self._data = val
@@ -241,7 +244,7 @@ class LAMLDataset:
         """Get inverse dict of feature roles.
 
         Returns:
-            dict, keys - instance of ColumnRole, values - list of str features names.
+            dict, keys - roles, values - features names.
 
         """
         inv_roles = {}
@@ -288,7 +291,7 @@ class LAMLDataset:
         """Inplace set data, features, roles for empty dataset.
 
         Args:
-            data: 2d array like or `None`.
+            data: 2d array like or ``None``.
             features: List of features names.
             roles: Roles dict.
 
@@ -301,8 +304,8 @@ class LAMLDataset:
         for check in self._data_checks:
             check(self)
 
-    def empty(self) -> "LAMLDataset":
-        """Get new dataset for the same task and the same targets, groups but with no features.
+    def empty(self) -> 'LAMLDataset':
+        """Get new dataset for same task and targets, groups, without features.
 
         Returns:
             New empty dataset.
@@ -352,7 +355,7 @@ class LAMLDataset:
     # static methods - how to make 1d slice, 2s slice, concat of feature matrix etc ...
     @staticmethod
     def _hstack(datasets: Sequence[Any]) -> Any:
-        """Abstract method - define how to do horizontal stack of feature arrays.
+        """Abstract method - define horizontal stack of feature arrays.
 
         Args:
             datasets: Sequence of feature arrays.
@@ -383,7 +386,7 @@ class LAMLDataset:
 
         Args:
             data: 2d feature array.
-            k: Sequence of int indexes or int.
+            k: Sequence indexes or single index.
 
         Returns:
             2d feature array.
@@ -410,11 +413,11 @@ class LAMLDataset:
 
     @staticmethod
     def _set_col(data: Any, k: int, val: Any):
-        """Abstract - how to set a value of single column by column name inplace.
+        """Abstract - set a value of single column by column name inplace.
 
         Args:
             data: 2d feature array.
-            k: column idx.
+            k: Column idx.
             val: 1d column value.
 
         """
@@ -424,13 +427,14 @@ class LAMLDataset:
     def concat(cls, datasets: Sequence['LAMLDataset']) -> 'LAMLDataset':
         """Concat multiple dataset.
 
-        Default behavior - takes empty dataset from datasets[0] and concat all features from others.
+        Default behavior - takes empty dataset from datasets[0]
+        and concat all features from others.
 
         Args:
             datasets: Sequence of datasets.
 
         Returns:
-            Resulting dataset.
+            Concated dataset.
 
         """
         for check in cls._concat_checks:
@@ -455,7 +459,7 @@ class LAMLDataset:
         """Inplace drop columns from dataset.
 
         Args:
-            droplist: Sequence of str features names.
+            droplist: Feature names.
 
         Returns:
             Dataset without columns.

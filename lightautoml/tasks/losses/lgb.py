@@ -89,6 +89,9 @@ _lgb_force_metric = {
 
 @record_history(enabled=False)
 class LGBFunc:
+    """
+    Wrapper of metric function for LightGBM.
+    """
     def __init__(self, metric_func, greater_is_better, bw_func):
         self.metric_func = metric_func
         self.greater_is_better = greater_is_better

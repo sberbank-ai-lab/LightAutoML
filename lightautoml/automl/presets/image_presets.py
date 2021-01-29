@@ -46,7 +46,7 @@ class TabularCVAutoML(TabularAutoML):
 
     Supported data roles - numbers, dates, categories, images.
     Limitations - no memory management.
-    GPU support in catboost/lightgbm(if installed for gpu).
+    GPU support in catboost/lightgbm (if installed for GPU).
 
     """
     _default_config_path = 'image_config.yml'
@@ -82,13 +82,14 @@ class TabularCVAutoML(TabularAutoML):
 
         """
 
-        Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
+        Commonly _params kwargs (ex. timing_params)
+        set via config file (config_path argument).
         If you need to change just few params,
         it's possible to pass it as dict of dicts, like json.
         To get available params please look on default config template.
         Also you can find there param description.
-        To generate config template
-        call ```TabularNLPAutoML.get_config(config_path.yml)```.
+        To generate config template call
+        :func:`TabularCVAutoML.get_config('config_path.yml')`.
 
         Args:
             task: Task to solve.
@@ -97,11 +98,11 @@ class TabularCVAutoML(TabularAutoML):
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
             verbose: Verbosity level that are passed to each automl.
-            timing_params: Timing param dict. Optional.
+            timing_params: Timing param dict.
             config_path: Path to config file.
             general_params: General param dict
             reader_params: Reader param dict.
-            read_csv_params: Params to pass pandas.read_csv
+            read_csv_params: Params to pass :func:`pandas.read_csv`
               (case of train/predict from file).
             nested_cv_params: Param dict for nested cross-validation.
             tuning_params: Params of Optuna tuner.
@@ -249,7 +250,14 @@ class TabularCVAutoML(TabularAutoML):
         return gbm_pipe
 
     def create_automl(self, **fit_args):
-        """Create basic automl instance."""
+        """Create basic automl instance.
+
+        See :meth:`lightautoml.automl.presets.base.AutoMLPreset.create_automl`.
+
+        Args:
+            **fit_args: params that are passed to ``.fit_predict`` method.
+
+        """
 
         train_data = fit_args['train_data']
         self.infer_auto_params(train_data)
@@ -288,29 +296,34 @@ class TabularCVAutoML(TabularAutoML):
 
     def predict(self, data: ReadableToDf, features_names: Optional[Sequence[str]] = None,
                 batch_size: Optional[int] = None, n_jobs: Optional[int] = 1) -> NumpyDataset:
-        """Almost same as AutoML .predict on new dataset, with additional features.
+        """Get dataset with predictions.
 
-        Additional features - working with different data formats.  Supported now:
+        Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
+        on new dataset, with additional features.
 
-            - path to .csv, .parquet, .feather files
-            - np.ndarray, or dict of np.ndarray, ex. {'data': X ..}.
-              In this case roles are optional, but train_features
-              and valid_features required.
-            - pd.DataFrame
+        Additional features - working with different data formats.
+        Supported now:
 
-        parallel inference - you can pass n_jobs to speedup
-          prediction (requires more RAM).
-        batch_inference - you can pass batch_size
-          to decrease RAM usage (may be longer).
+            - Path to `.csv`, `.parquet`, `.feather` files.
+            - ``np.ndarray``, or dict of ``np.ndarray``. For example,
+              ``{'data': X...}``. In this case roles are optional,
+              but `train_features` and `valid_features` required.
+            - ``pandas.DataFrame``.
+
+        Parallel inference - you can pass ``n_jobs`` to speedup
+        prediction (requires more RAM).
+        Batch_inference - you can pass ``batch_size``
+        to decrease RAM usage (may be longer).
 
         Args:
             data: Dataset to perform inference.
-            features_names: Optional features names, if cannot be inferred from train_data.
-            batch_size: Batch size or None.
+            features_names: Optional features names,
+              if cannot be inferred from `train_data`.
+            batch_size: Batch size or ``None``.
             n_jobs: Number of jobs.
 
         Returns:
-            Dataset.
+            Dataset with predictions.
 
         """
         return super().predict(data, features_names, batch_size)

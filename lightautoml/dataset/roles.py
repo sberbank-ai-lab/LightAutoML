@@ -15,8 +15,10 @@ Dtype = Union[Callable, type, str]
 class ColumnRole:
     """Abstract class for column role.
 
-    Role type defines column dtype, place of column in dataset and transformers
-    and set additional attributes which impacts on the way how it's handled.
+    Role type defines column dtype,
+    place of column in dataset and transformers
+    and set additional attributes which impacts
+    on the way how it's handled.
 
     """
     dtype = object
@@ -57,10 +59,10 @@ class ColumnRole:
         """Define how to compare - if reprs are equal (hashed).
 
         Args:
-            other: Another `ColumnRole`.
+            other: Another :class:`~lightautoml.dataset.roles.ColumnRole`.
 
         Returns:
-            `True` if equal. 
+            ``True`` if equal.
 
         """
         return self.__repr__() == other.__repr__()
@@ -131,8 +133,8 @@ class NumericRole(ColumnRole):
 
         Args:
             dtype: Variable type.
-            force_input: Select a feature for training regardless
-              of the selector results.
+            force_input: Select a feature for training,
+              regardless of the selector results.
             prob: If input number is probability.
 
         """
@@ -155,17 +157,17 @@ class CategoryRole(ColumnRole):
             dtype: Variable type.
             encoding_type: Encoding type.
             unknown: Cut-off freq to process rare categories as unseen.
-            force_input: Select a feature for training
+            force_input: Select a feature for training,
               regardless of the selector results.
         
         Note:
             Valid encoding_type:
 
-                - auto - default processing
-                - int - encode with int
-                - oof - out-of-fold target encoding
-                - freq - frequency encoding
-                - ohe - one hot encoding
+                - `'auto'` - default processing
+                - `'int'` - encode with int
+                - `'oof'` - out-of-fold target encoding
+                - `'freq'` - frequency encoding
+                - `'ohe'` - one hot encoding
             
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
@@ -190,7 +192,7 @@ class TextRole(ColumnRole):
 
         Args:
             dtype: Variable type.
-            force_input: Select a feature for training
+            force_input: Select a feature for training,
               regardless of the selector results.
 
         """
@@ -213,15 +215,17 @@ class DatetimeRole(ColumnRole):
         Args:
             dtype: Variable type.
             seasonality: Seasons to extract from date.
-              Valid are: 'y', 'm', 'd', 'wd', 'hour', 'min', 'sec', 'ms', 'ns'.
+              Valid are: 'y', 'm', 'd', 'wd', 'hour',
+              'min', 'sec', 'ms', 'ns'.
             base_date: Base date is used to calculate difference
-              with other dates, like age = report_dt - birth_dt.
+              with other dates, like `age = report_dt - birth_dt`.
             date_format: Format to parse date.
             unit: The unit of the arg denote the unit, pandas like, see more:
               https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
             origin: Define the reference date, pandas like, see more:
               https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
-            force_input: Select a feature for training regardless of the selector results.
+            force_input: Select a feature for training,
+              regardless of the selector results.
             base_feats: To calculate feats on base date.
             country: Datetime metadata to extract holidays.
             prov: Datetime metadata to extract holidays.
@@ -261,7 +265,7 @@ class TargetRole(ColumnRole):
         """Create target role with specific numeric dtype.
 
         Args:
-            dtype: dtype of target.
+            dtype: Dtype of target.
 
         """
         self.dtype = dtype

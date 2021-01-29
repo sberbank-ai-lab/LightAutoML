@@ -105,7 +105,7 @@ class CBLoss(Loss):
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None,
                  fw_func: Optional[Callable] = None, bw_func: Optional[Callable] = None):
         """
-        # TODO: docstring
+
         Args:
             loss: String with one of default losses.
 

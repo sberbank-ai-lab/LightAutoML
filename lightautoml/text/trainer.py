@@ -16,6 +16,7 @@ try:
     from apex import amp
 except:
     amp = None
+
 from log_calls import record_history
 
 from .utils import _dtypes_mapping

@@ -5,7 +5,7 @@
 
 {{ name | underline}}
 
-.. autoclass:: {{ name }}()
+.. autoclass:: {{ name }}
     :members:
 
 

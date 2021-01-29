@@ -68,7 +68,7 @@ class MLAlgo(ABC):
         """Init params depending on input data.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Dict with model hyperparameters.
@@ -86,7 +86,7 @@ class MLAlgo(ABC):
                 - ``True`` :  params may be rewrited depending on dataset.
                 - ``False``:  params may be changed only manually
                   or with tuning.
-            timer: ``Timer`` instance or `None`
+            timer: Timer for Algo.
 
         """
         self.task = None
@@ -113,7 +113,7 @@ class MLAlgo(ABC):
         Fit new algo on iterated datasets and predict on valid parts.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         """
         # self._features = train_valid_iterator.features
@@ -123,7 +123,7 @@ class MLAlgo(ABC):
         """Predict target for input data.
 
         Args:
-            test: ``LAMLDataset`` on test.
+            test: Dataset on test.
 
         Returns:
             Dataset with predicted values.
@@ -149,7 +149,7 @@ class MLAlgo(ABC):
         """Set prefix to separate models from different levels/pipelines.
 
         Args:
-            prefix: Str that used as prefix.
+            prefix: String with prefix.
             
         """
         self._name = '_'.join([prefix, self._name])
@@ -188,8 +188,8 @@ class TabularMLAlgo(MLAlgo):
         """Train on train dataset and predict on holdout dataset.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Target predictions for valid dataset.
@@ -203,10 +203,10 @@ class TabularMLAlgo(MLAlgo):
         If item uses more then one time it will
         predict mean value of predictions.
         If the element is not used in training then
-        the prediction will be ``np.nan`` for this item
+        the prediction will be ``numpy.nan`` for this item
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Dataset with predicted values.
@@ -270,7 +270,7 @@ class TabularMLAlgo(MLAlgo):
 
         Args:
             model: Model uses to predict.
-            dataset: ``NumpyDataset`` used for prediction.
+            dataset: Dataset used for prediction.
 
         Returns:
             Predictions for input dataset.
@@ -282,7 +282,7 @@ class TabularMLAlgo(MLAlgo):
         """Mean prediction for all fitted models.
 
         Args:
-            dataset: ``NumpyDataset`` used for prediction.
+            dataset: Dataset used for prediction.
 
         Returns:
             Dataset with predicted values.

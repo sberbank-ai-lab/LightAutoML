@@ -30,12 +30,13 @@ class FeaturesPipeline:
     Analyze train dataset and create composite transformer
     based on subset of features.
     Instance can be interpreted like Transformer
-    (look for transformers.base.LAMLTransformer)
+    (look for :class:`~lightautoml.transformers.base.LAMLTransformer`)
     with delayed initialization (based on dataset metadata)
-    Main method, user should define in custom pipeline is .create_pipeline.
-    For ex. look at lgb_pipeline.LGBSimpleFeatures
+    Main method, user should define in custom pipeline is ``.create_pipeline``.
+    For example, look at
+    :class:`~lightautoml.pipelines.ml.lgb_pipeline.LGBSimpleFeatures`.
     After FeaturePipeline instance is created, it is used like transformer
-    with .fit_transform and .transform method.
+    with ``.fit_transform`` and ``.transform`` method.
 
     """
 
@@ -55,7 +56,7 @@ class FeaturesPipeline:
         """Setter for input_features.
 
         Args:
-            val: list of str.
+            val: List of strings.
 
         """
         self._input_features = deepcopy(val)
@@ -75,10 +76,11 @@ class FeaturesPipeline:
         """Analyse dataset and create composite transformer.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
-            LAMLTransformer - composite transformer (pipeline).
+            Composite transformer (pipeline).
+
         """
         raise NotImplementedError
 
@@ -86,10 +88,10 @@ class FeaturesPipeline:
         """Create pipeline and then fit on train data and then transform.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
-            LAMLDataset - dataset with new features.
+            Dataset with new features.
 
         """
         # TODO: Think about input/output features attributes
@@ -102,10 +104,10 @@ class FeaturesPipeline:
         """Apply created pipeline to new data.
 
         Args:
-            test: LAMLDataset with new data.
+            test: Dataset with test data.
 
         Returns:
-            LAMLDataset - dataset with new features.
+            Dataset with new features.
 
         """
         return self._pipeline.transform(test)
@@ -161,10 +163,10 @@ class EmptyFeaturePipeline(FeaturesPipeline):
         """Create empty pipeline.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
-            Composite transformer (pipeline) that do nothing.
+            Composite transformer (pipeline), that do nothing.
 
         """
         return LAMLTransformer()
@@ -175,14 +177,15 @@ class TabularDataFeatures:
     """Helper class contains basic features transformations for tabular data.
 
     This method can de shared by all tabular feature pipelines,
-    to simplify .create_automl definition
+    to simplify ``.create_automl`` definition.
     """
 
     def __init__(self, **kwargs: Any):
         """Set default parameters for tabular pipeline constructor.
 
         Args:
-            *kwargs:
+            *kwargs: Additional parameters.
+
         """
         self.multiclass_te_co = 3
         self.top_intersections = 5
@@ -203,7 +206,7 @@ class TabularDataFeatures:
         """Get datetime columns to calculate features.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
             2 list of features names - base dates and common dates.
@@ -219,10 +222,10 @@ class TabularDataFeatures:
         """Difference for all datetimes with base date.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
-            LAMLTransformer or None if no required features.
+            Transformer or ``None`` if no required features.
 
         """
         base_dates, datetimes = self.get_cols_for_datetime(train)
@@ -241,11 +244,11 @@ class TabularDataFeatures:
         """Get season params from dates.
 
         Args:
-            train: LAMLDataset with train data.
-            outp_role: ColumnRole associated with output features.
+            train: Dataset with train data.
+            outp_role: Role associated with output features.
 
         Returns:
-            LAMLTransformer or None if no required features.
+            Transformer or ``None`` if no required features.
 
         """
         _, datetimes = self.get_cols_for_datetime(train)
@@ -273,8 +276,8 @@ class TabularDataFeatures:
         """Select numeric features.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: Features to handle. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: Features to handle. If ``None`` - default filter.
             prob: Probability flag.
 
         Returns:
@@ -305,8 +308,8 @@ class TabularDataFeatures:
         """Get frequency encoding part.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: Features to handle. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: Features to handle. If ``None`` - default filter.
 
         Returns:
             Transformer.
@@ -331,8 +334,8 @@ class TabularDataFeatures:
         """Get order encoded part.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: Features to handle. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: Features to handle. If ``None`` - default filter.
 
         Returns:
             Transformer.
@@ -356,8 +359,8 @@ class TabularDataFeatures:
         """Get label encoded categories data.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: Features to handle. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: Features to handle. If ``None`` - default filter.
 
         Returns:
             Transformer.
@@ -381,14 +384,14 @@ class TabularDataFeatures:
         cat_processing = SequentialTransformer(cat_processing)
         return cat_processing
 
-    def get_target_encoder(self, train: NumpyOrPandas) -> Optional[type]:
+    def get_target_encoder(self, train: NumpyOrPandas) -> Optional[TargetEncoder, MultiClassTargetEncoder]:
         """Get target encoder func for dataset.
 
         Args:
-            train: LAMLDataset with train data.
+            train: Dataset with train data.
 
         Returns:
-            Type.
+            Class
 
         """
         target_encoder = None
@@ -406,8 +409,8 @@ class TabularDataFeatures:
         """Get encoded quantiles of numeric features.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: features to hanlde. If ``None`` - default filter.
 
         Returns:
             Transformer.
@@ -432,8 +435,8 @@ class TabularDataFeatures:
         """Get transformer that implements categorical intersections.
 
         Args:
-            train: LAMLDataset with train data.
-            feats_to_select: features to hanlde. If none - default filter.
+            train: Dataset with train data.
+            feats_to_select: features to handle. If ``None`` - default filter.
 
         Returns:
             Transformer.
@@ -468,8 +471,8 @@ class TabularDataFeatures:
         """Get unique values cnt.
 
         Args:
-            train: LAMLDataset with train data.
-            feats: Features names list to calc.
+            train: Dataset with train data.
+            feats: Features names.
 
         Returns:
             Series.
@@ -494,12 +497,12 @@ class TabularDataFeatures:
 
         If feature importance is not defined,
         or feats has same importance - sort it by unique values counts.
-        In second case init param ascending_by_cardinality
+        In second case init param ``ascending_by_cardinality``
         defines how - asc or desc.
 
         Args:
-            train: LAMLDataset with train data.
-            top_n: Top categories.
+            train: Dataset with train data.
+            top_n: Number of top categories.
 
         Returns:
             List.

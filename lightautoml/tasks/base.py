@@ -121,7 +121,7 @@ class ArgsWrapper:
 
 @record_history(enabled=False)
 class SkMetric(LAMLMetric):
-    """Abstract class for scikit-learn compitable metric.
+    """Abstract class for scikit-learn compatible metric.
 
     Implements metric calculation in sklearn format on numpy/pandas datasets.
 

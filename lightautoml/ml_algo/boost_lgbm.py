@@ -23,8 +23,8 @@ logger = get_logger(__name__)
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
-
     default_params: All available parameters listed in lightgbm documentation:
+
         - https://lightgbm.readthedocs.io/en/latest/Parameters.html
 
     freeze_defaults:
@@ -32,7 +32,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         - ``True`` :  params may be rewritten depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: ``Timer`` instance or `None`
+    timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'LightGBM'
@@ -100,7 +100,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Get model parameters depending on dataset parameters.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Parameters of model.
@@ -236,8 +236,8 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Implements training and prediction on single fold.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values)
@@ -265,7 +265,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         Args:
             model: Lightgbm object.
-            dataset: Test dataset.
+            dataset: Test Dataset.
 
         Return:
             Predicted target values.
@@ -292,10 +292,10 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return Series(imp, index=self.features).sort_values(ascending=False)
 
     def fit(self, train_valid: TrainValidIterator):
-        """Just to be compatible with ImportanceEstimator.
+        """Just to be compatible with :class:`~lightautoml.pipelines.selection.base.ImportanceEstimator`.
 
         Args:
-            train_valid: Classic cv iterator.
+            train_valid: Classic cv-iterator.
 
         """
         self.fit_predict(train_valid)

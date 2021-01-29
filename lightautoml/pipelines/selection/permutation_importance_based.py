@@ -35,7 +35,7 @@ def _create_chunks_from_list(lst, n):
 
 @record_history(enabled=False)
 class NpPermutationImportanceEstimator(ImportanceEstimator):
-    """Permuation importance based estimator.
+    """Permutation importance based estimator.
 
     Importance calculate, using random permutation of items in single column for each feature.
 
@@ -103,8 +103,10 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
 class NpIterativeFeatureSelector(SelectionPipeline):
     """Select features sequentially using chunks to find the best combination of chunks.
 
-    The general idea of this algorithm is to sequentially check groups of features ordered by feature importances and
-    if the quality of the model becomes better, we select such group, if not - ignore group.
+    The general idea of this algorithm is to sequentially
+    check groups of features ordered by feature importances and
+    if the quality of the model becomes better,
+    we select such group, if not - ignore group.
     """
 
     def __init__(self, feature_pipeline: FeaturesPipeline,

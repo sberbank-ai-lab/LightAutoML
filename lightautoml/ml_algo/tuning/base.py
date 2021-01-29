@@ -41,7 +41,7 @@ class ParamsTuner(ABC):
 
         Args:
             ml_algo: ML algorithm.
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             (None, None) if ml_algo is fitted or models are not fitted during training,
@@ -61,7 +61,7 @@ class DefaultTuner(ParamsTuner):
         Default fit method - just save defaults.
 
         Args:
-            ml_algo: MLAlgo that is tuned.
+            ml_algo: Algorithm that is tuned.
             train_valid_iterator: Empty.
 
         Returns:s

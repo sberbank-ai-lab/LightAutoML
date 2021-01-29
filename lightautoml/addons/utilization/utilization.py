@@ -47,7 +47,7 @@ class MLAlgoForAutoMLWrapper(MLAlgo):
 
 @record_history(enabled=False)
 class MLPipeForAutoMLWrapper(MLPipeline):
-    """Wrapper to apply blender to list of automl's."""
+    """Wrapper to apply blender to list of automls."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -69,7 +69,7 @@ class MLPipeForAutoMLWrapper(MLPipeline):
 
 @record_history(enabled=False)
 class TimeUtilization:
-    """Class that helps to utilize given time to AutoMLPreset.
+    """Class that helps to utilize given time to :class:`~lightautoml.automl.presets.base.AutoMLPreset`.
 
     Useful to calc benchmarks and compete
     It takes list of config files as input and run it white time limit exceeded.
@@ -83,11 +83,12 @@ class TimeUtilization:
         >>> ensembled_automl = TimeUtilization(TabularAutoML, Task('binary'),
         >>>     timeout=3600, configs_list=['cfg0.yml', 'cfg1.yml'])
 
-        Then fit_predict and predict can be called like usual AutoML class.
+        Then ``.fit_predict`` and predict can be
+        called like usual :class:`~lightautoml.automl.base.AutoML` class.
 
     """
 
-    def __init__(self, automl_factory: Type[AutoMLPreset],
+    def __init__(self, automl_factory: AutoMLPreset,
                  task: Task,
                  timeout: int = 3600,
                  memory_limit: int = 16,
@@ -107,7 +108,7 @@ class TimeUtilization:
         """
 
         Args:
-            automl_factory: AutoMLPreset class variable.
+            automl_factory: One of presets.
             task: Task to solve.
             timeout: Timeout in seconds.
             memory_limit: Memory limit that are passed to each automl.
@@ -124,12 +125,12 @@ class TimeUtilization:
               Flag that defines if we should drop it from ensemble
             max_runs_per_config: Maximum number of multistart loops.
             random_state_keys: Params of config that used as
-              random state with initial values. If None - search for
-              random_state key in default config of preset.
+              random state with initial values. If ``None`` - search for
+              `random_state` key in default config of preset.
               If not found - assume, that seeds are not fixed
-              and each run is random by default
-              For ex. {'reader_params': {'random_state': 42}, 'gbm_params': {'default_params': {'seed': 42}}}
-            random_state: initial random_state value that will be
+              and each run is random by default. For example
+              ``{'reader_params': {'random_state': 42}, 'gbm_params': {'default_params': {'seed': 42}}}``
+            random_state: initial random seed, that will be
               set in case of search in config.
             **kwargs: Additional params.
 
@@ -209,20 +210,33 @@ class TimeUtilization:
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
                     valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
-        """Same as automl's fit predict.
+        """Fit and get prediction on validation dataset.
+
+        Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
+
+        Additional features - working with different data formats.
+        Supported now:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`.
+              For example, ``{'data': X...}``. In this case,
+              roles are optional, but `train_features`
+              and `valid_features` required.
+            - :class:`pandas.DataFrame`.
 
         Args:
-            train_data:  dataset to train.
-            roles: roles dict.
-            train_features: optional features names,
-              if cannot be inferred from train_data.
-            cv_iter: custom cv iterator. Ex. ```TimeSeriesIterator``` instance.
-            valid_data: optional validation dataset.
-            valid_features: optional validation dataset features
-              if cannot be inferred from valid_data.
+            train_data: Dataset to train.
+            roles: Roles dict.
+            train_features: Optional features names, if can't
+              be inferred from `train_data`.
+            cv_iter: Custom cv-iterator. For example,
+              :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`.
+            valid_data: Optional validation dataset.
+            valid_features: Optional validation dataset features
+              if cannot be inferred from `valid_data`.
 
         Returns:
-            Dataset.
+            Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
         timer = PipelineTimer(self.timeout, **self.timing_params).start()
@@ -296,15 +310,27 @@ class TimeUtilization:
         return val_pred
 
     def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, **kwargs) -> LAMLDataset:
-        """Same as automl's predict.
+        """Get dataset with predictions.
+
+        Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
+        on new dataset, with additional features.
+
+        Additional features - working with different data formats.
+        Supported now:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`. For example,
+              ``{'data': X...}``. In this case roles are optional,
+              but `train_features` and `valid_features` required.
+            - :class:`pandas.DataFrame`.
 
         Args:
-            data: dataset to perform inference.
-            features_names: optional features names,
-              if cannot be inferred from train_data.
+            data: Dataset to perform inference.
+            features_names: Optional features names,
+              if cannot be inferred from `train_data`.
 
         Returns:
-            Dataset.
+            Dataset with predictions.
 
         """
 
