@@ -23,8 +23,8 @@ def _create_chunks_from_list(lst, n):
     """Creates chunks of list.
 
     Args:
-        lst: list of elements.
-        n: size of chunk.
+        lst: List of elements.
+        n: Size of chunk.
 
     """
     chunks = []
@@ -37,7 +37,8 @@ def _create_chunks_from_list(lst, n):
 class NpPermutationImportanceEstimator(ImportanceEstimator):
     """Permutation importance based estimator.
 
-    Importance calculate, using random permutation of items in single column for each feature.
+    Importance calculate, using random permutation
+    of items in single column for each feature.
 
     """
 
@@ -56,9 +57,9 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
         """Find importances for each feature in dataset.
 
         Args:
-            train_valid: initial dataset iterator.
-            ml_algo: MlAlgo.
-            preds: predicted target values for validation dataset.
+            train_valid: Initial dataset iterator.
+            ml_algo: Algorithm.
+            preds: Predicted target values for validation dataset.
 
         """
 
@@ -118,12 +119,13 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         """
 
         Args:
-            feature_pipeline: composition of feature transforms.
+            feature_pipeline: Composition of feature transforms.
             ml_algo: Tuple (MlAlgo, ParamsTuner).
-            imp_estimator: feature importance estimator.
-            fit_on_holdout: if use the holdout iterator.
-            feature_group_size: chunk size.
-            max_features_cnt_in_result: lower bound of features after selection, if it is reached, it will stop.
+            imp_estimator: Feature importance estimator.
+            fit_on_holdout: If use the holdout iterator.
+            feature_group_size: Chunk size.
+            max_features_cnt_in_result: Lower bound of features after selection,
+              if it is reached, it will stop.
 
         """
         if not fit_on_holdout:
@@ -138,7 +140,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         """Select features iteratively by checking model quality for current selected feats and new group.
 
         Args:
-            train_valid: iterator for dataset.
+            train_valid: Iterator for dataset.
 
         """
 

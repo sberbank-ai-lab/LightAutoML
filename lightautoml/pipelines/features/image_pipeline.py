@@ -22,7 +22,7 @@ class ImageDataFeatures:
         """Set default parameters for image pipeline constructor.
 
         Args:
-            **kwargs: default parameters.
+            **kwargs: Default parameters.
 
         """
         self.hist_size = 30
@@ -47,7 +47,7 @@ class ImageDataFeatures:
 
 @record_history(enabled=False)
 class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
-    """Class contains simple color histrogram features for image data."""
+    """Class contains simple color histogram features for image data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
         transformers_list = []
@@ -70,7 +70,7 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
 
 @record_history(enabled=False)
 class ImageAutoFeatures(FeaturesPipeline, ImageDataFeatures):
-    """Class contains efficientnet embeddings features for image data."""
+    """Class contains efficient-net embeddings features for image data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
         transformers_list = []

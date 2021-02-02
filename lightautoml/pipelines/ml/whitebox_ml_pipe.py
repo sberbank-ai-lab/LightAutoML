@@ -15,7 +15,7 @@ TunedWB = Union[WbMLAlgo, Tuple[WbMLAlgo, ParamsTuner]]
 
 
 class WBPipeline(MLPipeline):
-    """Special pipeline to handle whitebox model."""
+    """Special pipeline to handle WhiteBox model."""
 
     @property
     def whitebox(self) -> WbMLAlgo:
@@ -25,19 +25,20 @@ class WBPipeline(MLPipeline):
         return self.ml_algos[0].models[0]
 
     def __init__(self, whitebox: TunedWB):
-        """Create whitebox MLPipeline.
+        """Create WhiteBox MLPipeline.
 
         Args:
-            whitebox: WbMLAlgo or tuple WbMLAlgo with params tuner.
+            whitebox: WhiteBox model.
+
         """
         super().__init__([whitebox], True, features_pipeline=WBFeatures())
         self._used_features = None
 
     def fit_predict(self, train_valid: TrainValidIterator) -> NumpyDataset:
-        """Fit whitebox.
+        """Fit WhiteBox.
 
         Args:
-            train_valid: TrainValidIterator.
+            train_valid: Classic cv-iterator.
 
         Returns:
             Dataset.
@@ -50,13 +51,13 @@ class WBPipeline(MLPipeline):
         return cast(NumpyDataset, val_pred)
 
     def predict(self, dataset: PandasDataset, report: bool = False) -> NumpyDataset:
-        """Predict whitebox.
+        """Predict WhiteBox.
 
-        Additional report param stands for whitebox report generation.
+        Additional report param stands for WhiteBox report generation.
 
         Args:
-            dataset: PandasDataset of input features.
-            report: generate report.
+            dataset: Dataset of text features.
+            report: Flag if generate report.
 
         Returns:
             Dataset.
@@ -97,4 +98,3 @@ class WBPipeline(MLPipeline):
         train_valid = train_valid.apply_feature_pipeline(self.features_pipeline)
         train_valid.apply_selector(self.post_selection)
 
-        return

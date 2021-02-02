@@ -4,8 +4,12 @@
 lightautoml.image
 =================
 
+Provides an internal interface for working with image features.
+
 Image Feature Extractors
 ------------------------
+
+Image feature extractors based on color histograms and CNN embeddings.
 
 .. currentmodule:: lightautoml.image.image
 
@@ -18,8 +22,8 @@ Image Feature Extractors
     EffNetImageEmbedder
 
 
-Torch Image Datasets
---------------------
+PyTorch Image Datasets
+------------------------
 
 .. currentmodule:: lightautoml.image.image
 
@@ -33,12 +37,11 @@ Torch Image Datasets
 
 
 Utils
------
+---------
 
 .. currentmodule:: lightautoml.image.utils
 
 .. autosummary::
-    .. autosummary::
     :toctree: ./generated
     :nosignatures:
     :template: functiontemplate.rst

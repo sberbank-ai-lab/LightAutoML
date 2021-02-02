@@ -5,6 +5,7 @@
 lightautoml.text
 ==============================
 
+Provides an internal interface for working with text features.
 
 Sentence Embedders
 ------------------------------

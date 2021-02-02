@@ -49,10 +49,10 @@ def get_columns_by_role(dataset: LAMLDataset, role_name: str, **kwargs: Any) -> 
     Search for columns with specific role and attributes when building pipeline.
 
     Args:
-        dataset: LAMLDataset to search.
-        role_name: Str name of features role.
+        dataset: Dataset to search.
+        role_name: Name of features role.
         **kwargs: Specific parameters values to search.
-          Example: search for categories with ohe processing only.
+          Example: search for categories with OHE processing only.
 
     Returns:
         List of str features names.

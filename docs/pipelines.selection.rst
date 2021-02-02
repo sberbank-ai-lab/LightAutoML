@@ -5,6 +5,8 @@
 lightautoml.pipelines.selection
 ===============================
 
+Feature selection module for ML pipelines.
+
 Base Classes
 -----------------
 

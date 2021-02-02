@@ -15,7 +15,7 @@ def set_sklearn_folds(task: Task, target: np.ndarray, cv: Union[Callable, int] =
     """Determines the cross-validation splitting strategy.
 
     Args:
-        task: If 'binary' or 'multiclass' used stratified cv.
+        task: If `'binary'` or `'multiclass'` used stratified cv.
         target: Target values.
         cv: Specifies number of folds.
         random_state: Determines random number generation.

@@ -5,6 +5,8 @@
 lightautoml.utils
 ==============================
 
+Common util tools.
+
 Profiler
 ------------------------------
 

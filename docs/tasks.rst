@@ -6,8 +6,8 @@ lightautoml.tasks
 ==============================
 
 
-Task
-------
+Task Class
+----------
 
 .. currentmodule:: lightautoml.tasks.base
 
@@ -18,21 +18,26 @@ Task
 
     Task
 
-Different Metric Handlers
---------------------------
 
-.. currentmodule:: lightautoml.tasks.base
-
-.. autosummary::
-    :toctree: ./generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    Task
 
 
 Common Metrics
 -----------------------
+
+Classes
+^^^^^^^^^^^
+
+.. currentmodule:: lightautoml.tasks.common_metric
+
+.. autosummary::
+    :toctree: ./generated
+    :nosignatures:
+    :template: classtemplate.rst
+
+    F1Factory
+    BestClassBinaryWrapper
+    BestClassMulticlassWrapper
+
 
 Functions
 ^^^^^^^^^^
@@ -53,16 +58,3 @@ Functions
     auc_mu
 
 
-Classes
-^^^^^^^
-
-.. currentmodule:: lightautoml.tasks.common_metric
-
-.. autosummary::
-    :toctree: ./generated
-    :nosignatures:
-    :template: classfunction.rst
-
-    F1Factory
-    BestClassBinaryWrapper
-    BestClassMulticlassWrapper

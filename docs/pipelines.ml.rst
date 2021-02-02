@@ -5,6 +5,8 @@
 lightautoml.pipelines.ml
 ==============================
 
+Pipelines that merge together single model training steps.
+
 Base Classes
 -----------------
 

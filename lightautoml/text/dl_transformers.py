@@ -330,7 +330,7 @@ class RandomLSTM(nn.Module):
 
 @record_history(enabled=False)
 class BertEmbedder(nn.Module):
-    """Class to compute HuggingFace transformers words or sentence embeddings."""
+    """Class to compute `HuggingFace <https://huggingface.co>`_ transformers words or sentence embeddings."""
 
     name = 'BertEmb'
     _poolers = {"cls", "max", "mean", "sum", "none"}

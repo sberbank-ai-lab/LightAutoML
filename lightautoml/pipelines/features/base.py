@@ -34,7 +34,7 @@ class FeaturesPipeline:
     with delayed initialization (based on dataset metadata)
     Main method, user should define in custom pipeline is ``.create_pipeline``.
     For example, look at
-    :class:`~lightautoml.pipelines.ml.lgb_pipeline.LGBSimpleFeatures`.
+    :class:`~lightautoml.pipelines.features.lgb_pipeline.LGBSimpleFeatures`.
     After FeaturePipeline instance is created, it is used like transformer
     with ``.fit_transform`` and ``.transform`` method.
 
@@ -157,7 +157,7 @@ class FeaturesPipeline:
 
 @record_history(enabled=False)
 class EmptyFeaturePipeline(FeaturesPipeline):
-    """Dummy feature pipeline - .fit_transform and transform do nothing."""
+    """Dummy feature pipeline - ``.fit_transform`` and transform do nothing."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
         """Create empty pipeline.
@@ -184,7 +184,7 @@ class TabularDataFeatures:
         """Set default parameters for tabular pipeline constructor.
 
         Args:
-            *kwargs: Additional parameters.
+            **kwargs: Additional parameters.
 
         """
         self.multiclass_te_co = 3
@@ -384,7 +384,7 @@ class TabularDataFeatures:
         cat_processing = SequentialTransformer(cat_processing)
         return cat_processing
 
-    def get_target_encoder(self, train: NumpyOrPandas) -> Optional[TargetEncoder, MultiClassTargetEncoder]:
+    def get_target_encoder(self, train: NumpyOrPandas) -> Optional[type]:
         """Get target encoder func for dataset.
 
         Args:

@@ -5,6 +5,8 @@
 lightautoml.validation
 ==============================
 
+The module provide classes and functions for model validation.
+
 Iterators
 ------------------------------
 

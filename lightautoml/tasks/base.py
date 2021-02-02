@@ -386,7 +386,7 @@ class Task:
     def get_dataset_metric(self) -> LAMLMetric:
         """Create metric for dataset.
 
-        Get LAMLMetric that is called on dataset.
+        Get metric that is called on dataset.
 
         Returns:
             Metric in scikit-learn compatible format.

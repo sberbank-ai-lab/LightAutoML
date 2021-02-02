@@ -113,6 +113,7 @@ class FillnaMedian(LAMLTransformer):
 
         Returns:
             self.
+
         """
         # set transformer names and add checks
         super().fit(dataset)
@@ -135,6 +136,7 @@ class FillnaMedian(LAMLTransformer):
 
         Returns:
             Numpy dataset with encoded labels.
+
         """
         # checks here
         super().transform(dataset)

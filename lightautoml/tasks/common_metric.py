@@ -220,7 +220,9 @@ def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
 
 @record_history(enabled=False)
 class F1Factory:
-    """Wrapper for f1_score function."""
+    """
+    Wrapper for :func:`~sklearn.metrics.f1_score` function.
+    """
 
     def __init__(self, average: str = 'micro'):
         """
@@ -249,7 +251,7 @@ class F1Factory:
         return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
 
 
-@record_history()
+@record_history(enabled=False)
 class BestClassBinaryWrapper:
     """Metric wrapper to get best class prediction instead of probs.
 
@@ -273,7 +275,7 @@ class BestClassBinaryWrapper:
         return self.func(y_true, y_pred, sample_weight=sample_weight, **kwargs)
 
 
-@record_history()
+@record_history(enabled=False)
 class BestClassMulticlassWrapper:
     """Metric wrapper to get best class prediction instead of probs for multiclass.
 

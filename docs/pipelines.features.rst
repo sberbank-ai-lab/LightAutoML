@@ -5,6 +5,8 @@
 lightautoml.pipelines.features
 ==============================
 
+Pipelines for features generation.
+
 Base Classes
 -----------------
 
@@ -22,7 +24,7 @@ Base Classes
 
 
 Feature Pipelines for Boosting Models
--------------------------------------
+-----------------------------------------
 
 .. currentmodule:: lightautoml.pipelines.features.lgb_pipeline
 

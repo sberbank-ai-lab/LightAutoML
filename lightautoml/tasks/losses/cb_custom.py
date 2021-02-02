@@ -17,8 +17,8 @@ class CBCustomMetric:
         """
 
         Args:
-            metric: callable metric.
-            greater_is_better: bool with metric direction.
+            metric: Callable metric.
+            greater_is_better: Bool with metric direction.
 
         """
         self.metric = metric

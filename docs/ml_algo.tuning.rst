@@ -4,6 +4,7 @@
 lightautoml.ml_algo.tuning
 ==========================
 
+Bunch of classes for hyperparameters tuning.
 
 Base Classes
 ------------------------

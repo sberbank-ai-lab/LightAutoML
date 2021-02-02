@@ -33,7 +33,7 @@ Examples can be added in several ways:
 
 - [docs](docs) - For documenting we use [Sphinx](https://www.sphinx-doc.org/).
   It provides easy to use auto-documenting via docstrings.
-  - [Tutorials](docs/notebooks) - Notebooks with tutorials.
+  - [Tutorials](docs/tutorials) - Notebooks with tutorials.
     
 - [lightautoml](lightautoml) - The code of LightAutoML library.
     - [addons](lightautoml/addons) - Extensions of core functionality.
@@ -145,29 +145,30 @@ make clean html
 
 There are some rules, that docstrings should fit.
 
-1. LightAutoML uses [Google-style docstring formatting](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). Length of line inside docstring must be limited to
+1. LightAutoML uses [Google-style docstring formatting](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+   Length of line inside docstring should be limited to
    80 characters to fit into Jupyter documentation popups.
    
 2. Every non one-line docstring should have a paragraph at its end, regardless of where it will be used:
    in the documentation for a class, module, function, class method etc.
-   One-liners may have no paragraph at its end.
+   One-liners or descriptions, that have no special directives (Args, Warning, Note, etc.) 
+   may have no paragraph at its end.
    
-3. Once you added some module to LightAutoML, you should add some info about it at the beginning of the module.
+3. Once you added some module to LightAutoML,
+   you should add some info about it at the beginning of the module.
    Example of this you can find in `docs/mock_docs.py`.
-   Also, if you use submodules, please add description to `__init__.py` (it is usefull for Sphinx's autosummary).
-
-4. There is an example for documenting standalone functions.
+   Also, if you use submodules, please add description to `__init__.py`
+   (it is usefull for Sphinx's autosummary).
+   
+4. Please use references to other submodules. You can do it by Sphinx directives.
+   For more information: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html
+5. There is an example for documenting standalone functions.
 
 ```python3
-
-### imports
-
 from typing import List, Union
 
 import numpy as np
 import torch
-
-### <...>
 
 def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
     """Short function description, terminated by dot.
@@ -192,15 +193,15 @@ def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
               Just link to function :func:`torch.cuda.current_device`.
             - Third option.
               Also third option.
-            - It will be good if you don`t use it in args.
+            - It will be good if you don't use it in args.
 
-    .. warning::
+    Warning:
         Some warning. Every block should be separated
         with other block with paragraph.
 
-    .. warning::
+    Warning:
         One more warning. Also notes and warnings
-        can be upper in the long description of function
+        can be upper in the long description of function.
         
     Example:
         
@@ -219,9 +220,8 @@ def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
     return [a, 2, 3]
 ```
 
-5. Docstring for generator function.
+6. Docstring for generator function.
 ```python3
-
 def generator_func(n: int):
     """Generator have a ``Yields`` section instead of ``Returns``.
     
@@ -243,17 +243,12 @@ def generator_func(n: int):
         yield x
         x += 1
 ```
-6. Documenting classes.
+7. Documenting classes.
 ```python3
-
-### imports
-
 from typing import List, Union
-
 import numpy as np
 import torch
 
-### <...>
 
 class ExampleClass:
     """The summary line for a class that fits only one line.
@@ -323,8 +318,8 @@ class ExampleClass:
         
         Long description.
         
-        .. warning:
-            This method do somethinpip install sphinx-rtd-themeg. May be undefined-behaviour.
+        Warning:
+            This method do something. May be undefined-behaviour.
         
         Args:
             param1: Some description of param1.
@@ -349,7 +344,7 @@ class ExampleClass:
         pass
         
     def _private(self):
-        """By default we aren`t include private members.
+        """By default we aren't include private members.
         
         Also there may be no docstring.
         """
@@ -369,11 +364,10 @@ class ExampleClass:
         print(param1)
 ```
 
-7. If you have a parameter that can take a finite number of values,
+8. If you have a parameter that can take a finite number of values,
    if possible, describe each of them in the Note section.
    
 ```python3
-
 import random
 
 
@@ -428,13 +422,17 @@ class A:
 
 ### Adding new submodules
 
-For the description of the module to be included in the documentation,
-you should set the variable `autosummary_generate = True` in `docs/conf.py`
-before generating the documentation. This will generate a draft
-of the documentation for your code. 
+If you add your own directory to LightAutoML, you should add a corresponding module as new `.rst`
+file to the `docs/`.  And also mention it in `docs/index.rst`.
+
+If you add your own module, class or function, then you will need
+to add it description to the corresponding `.rst` in `docs`.
+ 
 
 ### Adding Tutorials
 
-We use [nbsphinx](https://nbsphinx.readthedocs.io/) extension for tutorials. Examples, you can find in `docs/notebooks`.
-Please put your tutorial in this folder and after add it in `docs/Tutorials.rst`.
+We use [nbsphinx](https://nbsphinx.readthedocs.io/) extension for tutorials.
+Examples, you can find in `docs/notebooks`.
+Please, put your tutorial in this folder
+and after add it in `docs/Tutorials.rst`.
 

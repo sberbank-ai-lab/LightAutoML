@@ -5,6 +5,7 @@
 lightautoml.pipelines
 =====================
 
+Pipelines for solving different tasks.
 
 Utils
 -------

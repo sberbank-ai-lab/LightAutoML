@@ -5,6 +5,8 @@
 lightautoml.report
 ==================
 
+Report generators and templates.
+
 .. currentmodule:: lightautoml.report.report_deco
 
 .. autosummary::

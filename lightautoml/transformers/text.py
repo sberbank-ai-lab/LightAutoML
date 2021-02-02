@@ -73,7 +73,7 @@ def oof_task_check(dataset: LAMLDataset):
     """Check if task is binary or regression.
 
     Args:
-        dataset: LAMLDataset to check.
+        dataset: Dataset to check.
 
     """
     task = dataset.task
@@ -128,7 +128,7 @@ class TunableTransformer(LAMLTransformer):
         """Init params depending on input data.
 
         Returns:
-            dict with model hyperparameters.
+            Dict with model hyperparameters.
 
         """
         return self.params
@@ -174,12 +174,16 @@ class TfidfTextTransformer(TunableTransformer):
 
         Args:
             default_params: algo hyperparams.
-            freeze_defaults:
-                - ``True`` :  params may be rewritten depending on dataset.
-                - ``False``:  params may be changed only
-                  manually or with tuning.
-            subs: Subsample to calculate freqs. If None - full data.
+            freeze_defaults: Flag.
+            subs: Subsample to calculate freqs. If ``None`` - full data.
             random_state: Random state to take subsample.
+
+        Note:
+            The behaviour of `freeze_defaults`:
+
+            - ``True`` :  params may be rewritten depending on dataset.
+            - ``False``:  params may be changed only
+              manually or with tuning.
 
         """
         super().__init__(default_params, freeze_defaults)
@@ -192,10 +196,11 @@ class TfidfTextTransformer(TunableTransformer):
         """Get transformer parameters depending on dataset parameters.
 
         Args:
-            dataset: NumpyOrPandas.
+            dataset: Dataset used for model parmaeters initialization.
 
         Returns:
             Parameters of model.
+
         """
 
         # TODO: use features_num
@@ -546,7 +551,7 @@ class AutoNLPWrap(LAMLTransformer):
             transformer_params: Aggregating model parameters.
             embedding_model: Word level embedding model with dict
               interface or path to gensim fasttext model.
-            cache_dir: If none - do not cache transformed datasets.
+            cache_dir: If ``None`` - do not cache transformed datasets.
             bert_model: Name of HuggingFace transformer model.
             subs: Subsample to calculate freqs. If None - full data.
             multigpu: Use Data Parallel.

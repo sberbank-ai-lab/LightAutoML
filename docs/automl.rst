@@ -19,6 +19,8 @@ The main module, which includes the AutoML class, blenders and ready-made preset
 Presets
 -------
 
+Presets for end-to-end model training for special tasks.
+
 .. currentmodule:: lightautoml.automl.presets
 
 .. autosummary::

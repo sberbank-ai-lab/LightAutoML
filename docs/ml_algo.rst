@@ -4,6 +4,8 @@
 lightautoml.ml_algo
 ===================
 
+Models used for machine learning pipelines.
+
 Base Classes
 ------------------------
 

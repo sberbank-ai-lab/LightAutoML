@@ -5,6 +5,8 @@
 lightautoml.reader
 =====================
 
+Utils for reading, training and analysing data.
+
 Readers
 -------------
 

@@ -79,12 +79,12 @@ class FoldsIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> HoldoutIterator:
-        """Convert iterator to HoldoutIterator.
+        """Convert iterator to hold-out-iterator.
 
         Fold 0 is used for validation, everything else is used for training.
 
         Returns:
-            new HoldoutIterator.
+            new hold-out-iterator.
 
         """
         val_idx = (self.train.folds == 0)

@@ -289,17 +289,25 @@ def plot_confusion_matrix(data, path):
 
 class ReportDeco:
     """
-    Decorator to wrap automl class to generate html report on fit_predict and predict.
-    Usage: report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
-    then call report_automl.fit_predict... and report_automl.predict...
+    Decorator to wrap :class:`~lightautoml.automl.base.AutoML` class to generate html report on ``fit_predict`` and ``predict``.
+
+    Example:
+
+        >>> report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
+        >>> report_automl.fit_predict(train_data)
+        >>> report_automl.predict(test_data)
+
     Report will be generated at output_path/report_file_name automatically.
-    Attention: do not use it just to inference (if you don't need report), because:
 
-        - it needs target variable to calc performance metrics
-        - it takes additional time to generate report
-        - dump of decorated automl takes more memory to store
+    Warning:
+         Do not use it just to inference (if you don't need report), because:
 
-    To get unwrapped fitted instance to pickle and inferecne access report_automl.model attribute.
+            - It needs target variable to calc performance metrics.
+            - It takes additional time to generate report.
+            - Dump of decorated automl takes more memory to store.
+
+    To get unwrapped fitted instance to pickle
+    and inferecne access ``report_automl.model`` attribute.
 
     """
 
@@ -320,14 +328,15 @@ class ReportDeco:
     def __init__(self, *args, **kwargs):
         """
 
-        Valid kwargs are
+        Note:
+            Valid kwargs are:
 
-            - output_path: folder with report files.
-            - report_file_name: name of main report file.
+                - output_path: Folder with report files.
+                - report_file_name: Name of main report file.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         """
         if not kwargs:
@@ -446,16 +455,16 @@ class ReportDeco:
         return data
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped automl.fit_predict method.
+        """Wrapped ``automl.fit_predict`` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            oof predictions.
+            OOF predictions.
 
         """
         # TODO: parameters parsing in general case
@@ -767,23 +776,32 @@ _default_wb_report_params = {"automl_date_column": "",
 
 class ReportDecoWhitebox(ReportDeco):
     """
-    Special report wrapper for WhiteBoxPreset. Usage case is the same as main ReportDeco class.
-    It generates same report as ReportDeco, but with additional whitebox report part.
+    Special report wrapper for :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`.
+    Usage case is the same as main
+    :class:`~lightautoml.report.report_deco.ReportDeco` class.
+    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
+    but with additional whitebox report part.
 
     Difference:
 
-        - report_automl.predict gets additional report argument. It stands for updating whitebox report part.
-          Calling report_automl.predict(test_data, report=True) will update test part of whitebox report.
-          Calling report_automl.predict(test_data, report=False) will extend general report with.
-          new data and keeps whitebox part as is (much more faster).
-        - WhiteboxPreset should be created with parameter general_params={'report': True} to get white box report part.
-          if general_params set to {'report': False}, only standard ReportDeco part will be created (much fasted).
+        - report_automl.predict gets additional report argument.
+          It stands for updating whitebox report part.
+          Calling ``report_automl.predict(test_data, report=True)``
+          will update test part of whitebox report.
+          Calling ``report_automl.predict(test_data, report=False)``
+          will extend general report with.
+          New data and keeps whitebox part as is (much more faster).
+        - :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`
+          should be created with parameter ``general_params={'report': True}``
+          to get white box report part.
+          If ``general_params`` set to ``{'report': False}``,
+          only standard ReportDeco part will be created (much faster).
 
     """
 
     @property
     def model(self):
-        """Get unwrapped whitebox.
+        """Get unwrapped WhiteBox.
 
         Returns:
             model.
@@ -821,16 +839,16 @@ class ReportDecoWhitebox(ReportDeco):
         self.sections_order.append('whitebox')
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped automl.fit_predict method.
+        """Wrapped :meth:`AutoML.fit_predict` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            oof predictions.
+            OOF predictions.
 
         """
         predict_proba = super().fit_predict(*args, **kwargs)
@@ -844,16 +862,16 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
-        """Wrapped automl.predict method.
+        """Wrapped :meth:`AutoML.predict` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            predictions.
+            Predictions.
 
         """
         if len(args) >= 2:

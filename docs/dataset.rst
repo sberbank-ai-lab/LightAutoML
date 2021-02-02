@@ -4,6 +4,8 @@
 lightautoml.dataset
 ===================
 
+Provides an internal interface for working with data.
+
 Dataset Interfaces
 -------------------
 
@@ -22,6 +24,8 @@ Dataset Interfaces
 
 Roles
 -----------
+
+Role contains information about the column, which determines how it is processed.
 
 .. currentmodule:: lightautoml.dataset.roles
 
@@ -45,6 +49,8 @@ Roles
 
 Utils
 ------------
+
+Utilities for working with the structure of a dataset.
 
 .. currentmodule:: lightautoml.dataset.utils
 

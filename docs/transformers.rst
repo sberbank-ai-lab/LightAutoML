@@ -5,6 +5,7 @@
 lightautoml.transformers
 ==============================
 
+Basic feature generation steps and helper utils.
 
 Base Classes
 ------------------------------

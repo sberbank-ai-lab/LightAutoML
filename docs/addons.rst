@@ -4,6 +4,8 @@
 lightautoml.addons
 ==================
 
+Extensions of core functionality.
+
 Utilization
 -----------
 

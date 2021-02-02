@@ -108,14 +108,12 @@ class CBLoss(Loss):
 
         Args:
             loss: String with one of default losses.
-
-
-            loss_params: additional loss parameters. \
-                Format like in lightautoml.tasks.custom_metrics.
-            fw_func: forward transformation. \
-                Used for transformation of target and item weights.
-            bw_func: backward transformation. \
-                Used for predict values transformation.
+            loss_params: additional loss parameters.
+              Format like in :mod:`lightautoml.tasks.custom_metrics`.
+            fw_func: Forward transformation.
+              Used for transformation of target and item weights.
+            bw_func: Backward transformation.
+              Used for predict values transformation.
 
         """
         self.loss_params = {}

@@ -19,14 +19,15 @@ def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] 
 
     If train is one of common datasets types
     (``PandasDataset``, ``NumpyDataset``, ``CSRSparseDataset``)
-    the :func:`lightautoml.validation.np_iterators.get_numpy_iterator`
+    the :func:`~lightautoml.validation.np_iterators.get_numpy_iterator`
     will be used.
-    Else if validation dataset is defined, the holdout-iterator will be used.
+    Else if validation dataset is defined,
+    the holdout-iterator will be used.
     Else the dummy iterator will be used.
 
     Args:
-        train: ``LAMLDataset`` to train.
-        valid: Optional ``LAMLDataset`` for validate.
+        train: Dataset to train.
+        valid: Optional dataset for validate.
         n_folds: maximum number of folds to iterate.
           If ``None`` - iterate through all folds.
         cv_iter: Takes dataset as input and return

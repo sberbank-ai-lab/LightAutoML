@@ -22,20 +22,21 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 class LGBSimpleFeatures(FeaturesPipeline):
     """Creates simple pipeline for tree based models.
 
-    Simple but is ok for select features
-    Numeric stay as is, Datetime transforms to numeric,
-    Categorical label encoding
+    Simple but is ok for select features.
+    Numeric stay as is, Datetime transforms to numeric.
+    Categorical label encoding.
     Maps input to output features exactly one-to-one.
+
     """
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create tree pipeline.
 
         Args:
-            train: LAMLDataset with train features.
+            train: Dataset with train features.
 
         Returns:
-            composite datetime, categorical, numeric transformer (LAMLTransformer).
+            Composite datetime, categorical, numeric transformer.
 
         """
         # TODO: Transformer params to config
@@ -86,9 +87,9 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
 
     Includes:
 
-        - different cats and numbers handling according to role params.
-        - dates handling - extracting seasons and create datediffs.
-        - create categorical intersections.
+        - Different cats and numbers handling according to role params.
+        - Dates handling - extracting seasons and create datediffs.
+        - Create categorical intersections.
 
     """
 
@@ -98,14 +99,14 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         """
 
         Args:
-            feats_imp: features importances mapping.
-            top_intersections: max number of categories
+            feats_imp: Features importances mapping.
+            top_intersections: Max number of categories
               to generate intersections.
-            max_intersection_depth: max depth of cat intersection.
-            subsample: subsample: subsample to calc data statistics.
-            multiclass_te_co: cutoff if use target encoding in cat
-              handling on multiclass task if n_class is high.
-            auto_unique_co: switch to target encoding if high cardinality.
+            max_intersection_depth: Max depth of cat intersection.
+            subsample: Subsample to calc data statistics.
+            multiclass_te_co: Cutoff if use target encoding in cat
+              handling on multiclass task if number of classes is high.
+            auto_unique_co: Switch to target encoding if high cardinality.
 
         """
         super().__init__(multiclass_te_co=multiclass_te_co,
@@ -122,7 +123,7 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         """Create tree pipeline.
 
         Args:
-            train: LAMLDataset with train features.
+            train: Dataset with train features.
 
         Returns:
             Transformer.

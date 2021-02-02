@@ -12,19 +12,15 @@ from log_calls import record_history
 from pandas import DataFrame
 
 
-# ReadableToDf = TypeVar('ReadableToDf', str, np.ndarray, DataFrame, Dict[str, np.ndarray], 'Batch')
-
-
-
 @record_history(enabled=False)
 def get_filelen(fname: str) -> int:
     """Get length of csv file.
 
     Args:
-        fname: file name.
+        fname: File name.
 
     Returns:
-        int.
+        Length of file.
 
     """
     cnt_lines = -1
@@ -41,7 +37,7 @@ def get_batch_ids(arr, batch_size):
 
     Args:
         arr: Sequense.
-        batch_size: batch size.
+        batch_size: Batch size.
 
     Returns:
         Generator.
@@ -197,14 +193,15 @@ class Batch:
 
 class FileBatch(Batch):
     """
-    Batch of csv file
+    Batch of csv file.
     """
 
     @property
     def data(self) -> DataFrame:
-        """Get data from Batch object
+        """Get data from Batch object.
 
         Returns:
+            Read data.
 
         """
         data_part = read_csv_batch(self.file, cnt=self.cnt, offset=self.offset, **self.read_csv_params)
@@ -212,6 +209,14 @@ class FileBatch(Batch):
         return data_part
 
     def __init__(self, file, offset, cnt, read_csv_params):
+        """
+        Args:
+            file: File path.
+            offset: File start.
+            cnt: Number of rows to read.
+            read_csv_params: Additional params to :func:`pandas.read_csv`.
+
+        """
         self.file = file
         self.offset = offset
         self.cnt = cnt
@@ -221,15 +226,15 @@ class FileBatch(Batch):
 @record_history(enabled=False)
 class BatchGenerator:
     """
-    Abstract - generator of batches from data
+    Abstract - generator of batches from data.
     """
 
     def __init__(self, batch_size, n_jobs):
         """
 
         Args:
-            n_jobs: number of processes to handle
-            batch_size: batch size. Default is None, split by n_jobs.
+            n_jobs: Number of processes to handle.
+            batch_size: Batch size. Default is ``None``, split by `n_jobs`.
 
         """
         if n_jobs == -1:
@@ -248,16 +253,16 @@ class BatchGenerator:
 @record_history(enabled=False)
 class DfBatchGenerator(BatchGenerator):
     """
-    Batch generator from DataFrames.
+    Batch generator from :class:`~pandas.DataFrame`.
     """
 
     def __init__(self, data: DataFrame, n_jobs: int = 1, batch_size: Optional[int] = None):
         """
 
         Args:
-            data: pd.DataFrame.
+            data: Data used for generator.
             n_jobs: Number of processes to handle.
-            batch_size: Batch size. Default is None, split by n_jobs.
+            batch_size: Batch size. Default is ``None``, split by `n_jobs`.
             
         """
         super().__init__(batch_size, n_jobs)
@@ -283,16 +288,18 @@ class DfBatchGenerator(BatchGenerator):
 
 @record_history(enabled=False)
 class FileBatchGenerator(BatchGenerator):
-
+    """
+    Generator of batches from file.
+    """
     def __init__(self, file, n_jobs: int = 1, batch_size: Optional[int] = None, read_csv_params: dict = None):
         """
 
         Args:
             file: File path.
-            n_jobs: number of processes to handle.
-            batch_size: batch size. Default is None, split by n_jobs.
-            read_csv_params: params of reading csv file.
-              Look for pd.read_csv params.
+            n_jobs: Number of processes to handle.
+            batch_size: Batch size. Default is ``None``, split by `n_jobs`.
+            read_csv_params: Params of reading csv file.
+              Look for :func:`pandas.read_csv` params.
             
         """
         super().__init__(batch_size, n_jobs)
@@ -318,20 +325,26 @@ ReadableToDf = Union[str, np.ndarray, DataFrame, Dict[str, np.ndarray], Batch]
 @record_history(enabled=False)
 def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
               read_csv_params: Optional[dict] = None) -> Tuple[DataFrame, Optional[dict]]:
-    """Get pd.DataFrame from different data formats
+    """Get :class:`~pandas.DataFrame` from different data formats.
+
+    Note:
+        Supported now data formats:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`.
+              For example, ``{'data': X...}``. In this case,
+              roles are optional, but `train_features`
+              and `valid_features` required.
+            - :class:`pandas.DataFrame`.
 
     Args:
-        data: Dataset in formats:
-
-            - pd.DataFrame
-            - dict of np.ndarray
-            - path to csv, feather, parquet
-
-        features_names: Optional features names if np.ndarray
-        n_jobs: number of processes to read file
-        read_csv_params: params to read csv file
+        data: Readable to DataFrame data.
+        features_names: Optional features names if ``numpy.ndarray``.
+        n_jobs: Number of processes to read file.
+        read_csv_params: Params to read csv file.
 
     Returns:
+        Tuple with read data and new roles mapping.
 
     """
     if read_csv_params is None:
@@ -377,21 +390,27 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
 
 @record_history(enabled=False)
 def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
-               batch_size: Optional[int] = None, read_csv_params: Optional[dict] = None) -> Iterable:
+               batch_size: Optional[int] = None, read_csv_params: Optional[dict] = None) -> Iterable[BatchGenerator]:
     """Read data for inference by batches for simple tabular data
 
+    Note:
+        Supported now data formats:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`.
+              For example, ``{'data': X...}``. In this case,
+              roles are optional, but `train_features`
+              and `valid_features` required.
+            - :class:`pandas.DataFrame`.
+
     Args:
-        data: Dataset in formats:
-            - pd.DataFrame,
-            - dict of np.ndarray,
-            - path to csv, feather, parquet.
-        features_names: Optional features names if np.ndarray.
-        n_jobs: number of processes to read file and split data by batch if batch_size is None.
-        batch_size: batch size.
-        read_csv_params: params to read csv file.
+        data: Readable to DataFrame data.
+        features_names: Optional features names if ``numpy.ndarray``.
+        n_jobs: Number of processes to read file.
+        read_csv_params: Params to read csv file.
 
     Returns:
-        BatchGenerator.
+        Generator of batches.
 
     """
     if read_csv_params is None:

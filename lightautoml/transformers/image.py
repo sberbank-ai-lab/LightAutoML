@@ -27,10 +27,11 @@ NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 def path_check(dataset: LAMLDataset):
     """Check if all passed vars are path.
 
-    Raises AssertionError if non-path features are present.
-
     Args:
         dataset: LAMLDataset to check.
+
+    Raises:
+         AssertionError: If non-path features are present.
 
     """
     roles = dataset.roles
@@ -159,7 +160,7 @@ class AutoCVWrap(LAMLTransformer):
             model: Name of effnet model.
             weights_path: Path to saved weights.
             cache_dir: Path to cache directory or None.
-            subs: Subsample to fit transformer. If None - full data.
+            subs: Subsample to fit transformer. If ``None`` - full data.
             device: Torch device.
             n_jobs: Number of threads for dataloader.
             random_state: Random state to take subsample and set torch seed.
