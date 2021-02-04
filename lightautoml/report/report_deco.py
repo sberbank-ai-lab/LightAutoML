@@ -748,7 +748,7 @@ class ReportDeco:
             title=self.title,
             sections=sections_list
         )
-        with open(os.path.join(self.output_path, self.report_file_name), "w") as f:
+        with open(os.path.join(self.output_path, self.report_file_name), "w", encoding='utf-8') as f:
             f.write(report)
 
 
