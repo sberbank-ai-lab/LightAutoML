@@ -293,9 +293,9 @@ class SimpleRuTokenizer(BaseTokenizer):
             resulting string.
 
         """
-        snt = snt.replace('не ', 'не')
-        snt = snt.replace('ни ', 'ни')
-        return snt
+        snt = (' '+snt).replace(' не ', ' не')
+        snt = snt.replace(' ни ', ' ни')
+        return snt[1:]
 
 
 @record_history(enabled=False)
