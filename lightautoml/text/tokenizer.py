@@ -64,7 +64,7 @@ class BaseTokenizer:
             resulting list of tokens.
 
         """
-        return snt.split(' ')
+        return snt.split()
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
         """Clean list of sentence tokens.
@@ -236,7 +236,7 @@ class SimpleRuTokenizer(BaseTokenizer):
             resulting list of tokens.
 
         """
-        return snt.split(' ')
+        return snt.split()
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
         """Clean list of sentence tokens.
@@ -349,7 +349,7 @@ class SimpleEnTokenizer(BaseTokenizer):
             resulting list of tokens.
 
         """
-        return snt.split(' ')
+        return snt.split()
 
     def filter_tokens(self, snt: List[str]) -> List[str]:
         """Clean list of sentence tokens.
