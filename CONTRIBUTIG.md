@@ -8,17 +8,17 @@
 
 ## Contributing to LightAutoML
 
-Thank you for your interest in contribution to LightAutoML! Before you begin writing code, it is
-important that you share your intention to contribute with developers team.
+Thank you for your interest in contributing to LightAutoML! Before you begin writing code,
+it is important that you share your intention to contribute with the developers team.
 
 - First, please look for discussions on this topic in [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues)
 before implementing anything inside the project.
-- Pick an issue and comment, that you would like to work on it.
+- Pick an issue and comment that you would like to work on it.
 - If there is no discussion on this topic, create one. 
   Please, include as much information as you can,
-  any accompanying data (your tests, expected behaviour, articles),
-  and may be your proposed solution. 
-- If you need more details, please ask we will provide it ASAP.
+  any accompanying data (your tests, expected behavior, articles),
+  and maybe your proposed solution. 
+- If you need more details, please ask we will provide them ASAP.
 
 Once you implement and test your feature or bug-fix, please submit
 a Pull Request to https://github.com/sberbank-ai-lab/LightAutoML.
@@ -58,7 +58,7 @@ Examples can be added in several ways:
 ### Installation
 
 If you are installing from the source, you will need Python 3.6.12 or later.
-We recommend you to install an [Anaconda](https://www.anaconda.com/products/individual#download-section)
+We recommend you install an [Anaconda](https://www.anaconda.com/products/individual#download-section)
 to work with environments. 
 
 
@@ -81,8 +81,8 @@ source ./lama_venv/bin/activate
 poetry install
 ```
 
-After that there is `lama_venv` environment, where you can test and implement your own code.
-So, you don't need to rebuild all project every time.
+After that, there is `lama_venv` environment, where you can test and implement your own code.
+So, you don't need to rebuild the full project every time.
 Each change in the code will be reflected in the library inside the environment.
 
 ### Testing
@@ -131,7 +131,7 @@ cd docs
 pip install -r requirements.txt
 pip install sphinx-rtd-theme
 ```
-It creates environment like on [Read-The-Docs](https://readthedocs.org/) without any additional requirements,
+It creates an environment like on [Read-The-Docs](https://readthedocs.org/) without any additional requirements,
 like PyTorch, CatBoost, because they are unnecessary for building documentation.
 
 3. Generate HTML documentation files. The generated files will be in `docs/_build/html`.
@@ -146,13 +146,13 @@ make clean html
 There are some rules, that docstrings should fit.
 
 1. LightAutoML uses [Google-style docstring formatting](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
-   Length of line inside docstring should be limited to
-   80 characters to fit into Jupyter documentation popups.
+   The length of the line inside docstring should be limited
+   to 80 characters to fit into Jupyter documentation popups.
    
-2. Every non one-line docstring should have a paragraph at its end, regardless of where it will be used:
-   in the documentation for a class, module, function, class method etc.
-   One-liners or descriptions, that have no special directives (Args, Warning, Note, etc.) 
-   may have no paragraph at its end.
+2. Every non-one-line docstring should have a paragraph at its end, regardless of where it will be used:
+   in the documentation for a class, module, function, class
+   method, etc. One-liners or descriptions,
+   that have no special directives (Args, Warning, Note, etc.) may have no paragraph at its end.
    
 3. Once you added some module to LightAutoML,
    you should add some info about it at the beginning of the module.
