@@ -74,6 +74,13 @@ For more examples, in `tests` folder you can find different scenarios of LAMA us
 12. `demo11.py` - AutoML NLP preset usage for tabular datasets with text columns
 13. `demo12.py` - AutoML tabular preset usage with custom validation scheme and multiprocessed inference
 
+
+******
+# Contributing to LightAutoML
+
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](#CONTRIBUTING.md) to get started.
+
+
 *******
 # Questions / Issues / Suggestions 
 
