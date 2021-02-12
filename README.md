@@ -21,6 +21,8 @@ Currently we work with datasets, where **each row is an object with its specific
 - [LAMA framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
 - [LAMA practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
 
+See the [Documentation of LightAutoML](https://lightautoml.readthedocs.io/).
+
 *******
 # Installation
 ### Installation via pip from PyPI
