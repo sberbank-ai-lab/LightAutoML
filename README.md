@@ -78,7 +78,7 @@ For more examples, in `tests` folder you can find different scenarios of LAMA us
 ******
 # Contributing to LightAutoML
 
-If you are interested in contributing to LightAutoML, please read the [Contributing Guide](#CONTRIBUTING.md) to get started.
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](CONTRIBUTING.md) to get started.
 
 
 *******
