@@ -1,7 +1,7 @@
 """Classes for report generation and add-ons."""
 
 import os
-from copy import copy
+from copy import copy, deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +13,9 @@ from sklearn.metrics import roc_auc_score, precision_recall_fscore_support, roc_
     average_precision_score, explained_variance_score, mean_absolute_error, \
     mean_squared_error, median_absolute_error, r2_score, f1_score, precision_score, recall_score, confusion_matrix
 
+from lightautoml.addons.uplift.meta_learners import TLearner, XLearner
+from lightautoml.addons.uplift.utils import _get_treatment_role
+from lightautoml.addons.uplift import metrics as uplift_metrics
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -932,8 +935,6 @@ class ReportDecoWhitebox(ReportDeco):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         self._sections['whitebox'] = env.get_template(self._whitebox_section_path).render(content)
 
-<<<<<<< HEAD
-
 
 def plot_data_hist(data, title='title', bins=100, path=None):
     sns.set(style="whitegrid", font_scale=1.5)
@@ -961,14 +962,12 @@ class ReportDecoNLP(ReportDeco):
         # AutoML only
         self.task = self._model.task._name  # valid_task_names = ['binary', 'reg', 'multiclass']
 
-=======
-
 
 def get_uplift_data(test_target, uplift_pred, test_treatment, mode):
-    perfect = perfect_uplift_curve(test_target, test_treatment)
-    xs, ys = calculate_graphic_uplift_curve(test_target, uplift_pred, test_treatment, mode)
-    xs_perfect, ys_perfect = calculate_graphic_uplift_curve(test_target, perfect, test_treatment, mode)
-    uplift_auc = calculate_uplift_auc(test_target, uplift_pred, test_treatment, mode, normed=True)
+    perfect = uplift_metrics.perfect_uplift_curve(test_target, test_treatment)
+    xs, ys = uplift_metrics.calculate_graphic_uplift_curve(test_target, uplift_pred, test_treatment, mode)
+    xs_perfect, ys_perfect = uplift_metrics.calculate_graphic_uplift_curve(test_target, perfect, test_treatment, mode)
+    uplift_auc = uplift_metrics.calculate_uplift_auc(test_target, uplift_pred, test_treatment, mode, normed=True)
     return xs, ys, xs_perfect, ys_perfect, uplift_auc
 
 
@@ -1036,7 +1035,6 @@ class ReportDecoUplift(ReportDeco):
         self._model = model
         self._is_xlearner = isinstance(model, XLearner)
 
->>>>>>> ReportDecoUplift added
         # add informataion to report
         self._model_name = model.__class__.__name__
         self._model_parameters = json2html.convert(extract_params(model))
@@ -1049,7 +1047,7 @@ class ReportDecoUplift(ReportDeco):
 
         self._generate_model_section()
         self.generate_report()
-<<<<<<< HEAD
+
         return self
 
 
@@ -1110,7 +1108,7 @@ class ReportDecoUplift(ReportDeco):
                 nlp_subsections=self._nlp_subsections
             )
             self._sections['nlp'] = nlp_section
-=======
+
         return self
 
 
@@ -1246,7 +1244,7 @@ class ReportDecoUplift(ReportDeco):
 
     def _fit_tlearner(self, train_data, roles):
         treatment_role, _ = _get_treatment_role(roles)
-        new_roles = copy.deepcopy(roles)
+        new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
         # treatment
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
@@ -1264,7 +1262,7 @@ class ReportDecoUplift(ReportDeco):
 
     def _fit_xlearner(self, train_data, roles):
         treatment_role, _ = _get_treatment_role(roles)
-        new_roles = copy.deepcopy(roles)
+        new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
 
         self._model._fit_propensity_learner(train_data, roles)
@@ -1485,4 +1483,3 @@ class ReportDecoUplift(ReportDeco):
                 uplift_results=self._uplift_results
             )
             self._sections['uplift'] = results_section
->>>>>>> ReportDecoUplift added

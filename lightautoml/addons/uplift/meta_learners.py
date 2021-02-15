@@ -236,13 +236,14 @@ class XLearner(MetaLearner):
                 It can be: two models, one model or nothing.
                 If there is one model, then it will used for both groups.
                 If `None` then will be used model by default.
-            effect_learners:  Models predict treatment effect.
+            effect_learners:  Models predict treatment effect. (task must be 'reg')
                 It can be: two models, one model or nothing.
                 If there is one model, then it will used for both groups.
                 If `None` then will be used model by default.
             propensity_learner: Model predicts treatment group membership,
                 If `None` then will be used model by default
             base_task: Task - 'binary' or 'reg'
+
         """
         if (outcome_learners is None or len(outcome_learners) == 0) and base_task is None:
             raise RuntimeError('Must specify any of learners or "base_task"')
@@ -381,3 +382,158 @@ class XLearner(MetaLearner):
         uplift = propensity_score * uplift_treatment_pred + (1.0 - propensity_score) * uplift_control_pred
 
         return uplift, outcome_treatment_pred, outcome_control_pred
+
+
+@record_history(enabled=False)
+class RLearner(MetaLearner):
+    """RLearner
+
+    m(x) - the conditional mean outcome
+    e(x) - the propensity score
+    tau(x) - the treatment effect
+
+    .. math::
+        \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) + (W_i - e(X_i))\tau(X_i) \Big]^2
+
+    """
+    def __init__(self,
+                 propensity_learner: Optional[AutoML] = None,
+                 mean_outcome_learner: Optional[AutoML] = None,
+                 effect_learner: Optional[AutoML] = None,
+                 base_task: Optional[Task] = Task('binary')):
+        """
+        Args:
+            propensity_learner: AutoML model, if `None` then will be used model by default (task must be 'binary')
+            mean_outcome_learner: AutoML model, if `None` then will be used model by default
+            effect_learner: AutoML model, if `None` then will be used model by default (task must be 'reg')
+            base_task: task
+
+        """
+        assert propensity_learner is not None and propensity_learner.reader.task.name == 'binary',\
+            "Task of effect_learner must be 'reg'"
+        assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
+        assert effect_learner is not None and effect_learner.reader.task.name == 'reg', "Task of effect_learner must be 'reg'"
+
+        self.propensity_learner: AutoML
+        self.mean_outcome_learner: AutoML
+        self.effect_learner: AutoML
+        self.base_task = base_task
+
+        if propensity_learner is None:
+            self.propensity_learner = TabularAutoML(task='binary')
+        else:
+            self.propensity_learner = propensity_learner
+
+        if mean_outcome_learner is not None:
+            self.mean_outcome_learner = mean_outcome_learner
+        elif base_task is not None:
+            self.mean_outcome_learner = TabularAutoML(task=base_task)
+
+        if effect_learner is None:
+            self.effect_learner = TabularAutoML(task='reg')
+        else:
+            self.effect_learner = effect_learner
+
+    def fit(self, train_data: DataFrame, roles: Dict):
+        """Fit meta-learner
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+
+        """
+        propensity_pred = self._fit_predict_propensity_learner(train_data, roles)
+        mean_outcome_pred = self._fit_predict_mean_outcome_learner(train_data, roles)
+        self._fit_effect_learner(train_data, roles, propensity_pred, mean_outcome_pred)
+
+    def predict(self, data: Any) -> Tuple[np.ndarray, None, None]:
+        """Predict treatment effects
+
+        Args:
+            data: Dataset to perform inference.
+
+        Returns:
+            treatment_effect: Predictions of treatment effects
+            None: Plug
+            None: Plug
+
+        """
+        return self.effect_learner.predict(data).data.ravel(), None, None
+
+    def _fit_predict_propensity_learner(self, train_data: DataFrame, roles: Dict):
+        """Fit propensity score
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+
+        """
+        propensity_roles = copy.deepcopy(roles)
+
+        target_role, target_col = _get_target_role(roles)
+        propensity_roles.pop(target_role)
+
+        treatment_role, treatment_col = _get_treatment_role(roles)
+        propensity_roles.pop(treatment_role)
+        propensity_roles['target'] = treatment_col
+
+        train_cp = train_data.copy()
+        train_cp.drop(target_col, axis=1, inplace=True)
+
+        propensity_pred = self.propensity_learner.fit_predict(train_cp, propensity_roles).data.ravel()
+
+        return propensity_pred
+
+    def _fit_predict_mean_outcome_learner(self, train_data: DataFrame, roles: Dict):
+        """Fit mean outcome
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+
+        """
+        outcome_roles = copy.deepcopy(roles)
+
+        target_role, target_col = _get_target_role(roles)
+
+        treatment_role, treatment_col = _get_treatment_role(roles)
+        outcome_roles.pop(treatment_role)
+
+        train_cp = train_data.copy()
+        train_cp.drop(treatment_col, axis=1, inplace=True)
+
+        mean_outcome_pred = self.mean_outcome_learner.fit_predict(train_cp, outcome_roles).data.ravel()
+
+        return mean_outcome_pred
+
+    def _fit_effect_learner(self, train_data: DataFrame, roles: Dict, propensity_pred: np.ndarray,
+                            mean_outcome_pred: np.ndarray):
+        """Fit treatment effects
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+            propensity_pred: oof-prediction of propensity_learner
+            mean_outcome_pred: oof-prediction of mean_outcome_learner
+
+        """
+        epsi = 10 ** -5
+        effect_roles = copy.deepcopy(roles)
+
+        target_role, target_col = _get_target_role(roles)
+        train_target = train_data[target_col]
+
+        treatment_role, treatment_col = _get_treatment_role(roles)
+        train_treatment = train_data[treatment_col]
+        effect_roles.pop(treatment_role)
+
+        weights = train_treatment - propensity_pred + epsi
+
+        train_cp = train_data.copy()
+        train_cp.drop(treatment_col, axis=1, inplace=True)
+        train_cp[target_col] = (train_target - mean_outcome_pred) / weights
+        train_cp['__WEIGHTS__'] = weights ** 2
+
+        effect_roles['weights'] = '__WEIGHTS__'
+
+        self.effect_learner.fit_predict(train_cp, effect_roles)

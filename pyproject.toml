@@ -69,11 +69,11 @@ pytest = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
 IPython = "*"
+mypy = "*"
 nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
-
 
 
 [build-system]
