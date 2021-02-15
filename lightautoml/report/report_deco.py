@@ -1,7 +1,7 @@
 """Classes for report generation and add-ons."""
 
 import os
-from copy import copy
+from copy import copy, deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +13,9 @@ from sklearn.metrics import roc_auc_score, precision_recall_fscore_support, roc_
     average_precision_score, explained_variance_score, mean_absolute_error, \
     mean_squared_error, median_absolute_error, r2_score, f1_score, precision_score, recall_score, confusion_matrix
 
+from lightautoml.addons.uplift.meta_learners import TLearner, XLearner
+from lightautoml.addons.uplift.utils import _get_treatment_role
+from lightautoml.addons.uplift import metrics as uplift_metrics
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -619,7 +622,7 @@ class ReportDeco:
         # update model section
         self._generate_model_section()
 
-        # generate predict section    
+        # generate predict section
         self._generate_inference_section(data)
         self.generate_report()
         return test_preds
@@ -915,12 +918,12 @@ class ReportDecoWhitebox(ReportDeco):
         self._sections['whitebox'] = env.get_template(self._whitebox_section_path).render(content)
 
 
-        
+
 def get_uplift_data(test_target, uplift_pred, test_treatment, mode):
-    perfect = perfect_uplift_curve(test_target, test_treatment)
-    xs, ys = calculate_graphic_uplift_curve(test_target, uplift_pred, test_treatment, mode)
-    xs_perfect, ys_perfect = calculate_graphic_uplift_curve(test_target, perfect, test_treatment, mode)
-    uplift_auc = calculate_uplift_auc(test_target, uplift_pred, test_treatment, mode, normed=True)
+    perfect = uplift_metrics.perfect_uplift_curve(test_target, test_treatment)
+    xs, ys = uplift_metrics.calculate_graphic_uplift_curve(test_target, uplift_pred, test_treatment, mode)
+    xs_perfect, ys_perfect = uplift_metrics.calculate_graphic_uplift_curve(test_target, perfect, test_treatment, mode)
+    uplift_auc = uplift_metrics.calculate_uplift_auc(test_target, uplift_pred, test_treatment, mode, normed=True)
     return xs, ys, xs_perfect, ys_perfect, uplift_auc
 
 
@@ -952,15 +955,15 @@ def plot_uplift_curve(test_target, uplift_pred, test_treatment, path):
     axs[2].plot((0, xs[-1]), (0, ys[-1]), color='black', lw=1, linestyle='--', label='random model');
     axs[2].set_title('Uplift adj_qini, AUC={:.3f}'.format(uplift_auc));
     axs[2].legend(loc='lower right');
-    
+
     # plt.xlabel('Rate join samples');
     # plt.ylabel('Curve values');
     # lgd = plt.legend(bbox_to_anchor=(0.5, -0.15), loc='upper center', ncol=2);
     # plt.grid(color='gray', linestyle='-', linewidth=1);
     # plt.title('Uplift curve');
     plt.savefig(path, bbox_inches='tight');
-    
-    
+
+
 class ReportDecoUplift(ReportDeco):
     @property
     def reader(self):
@@ -968,26 +971,26 @@ class ReportDecoUplift(ReportDeco):
             return self._model.learners['outcome']['treatment'].reader # effect
         else:
             return self._model.treatment_learner.reader
-    
+
     @property
     def task(self):
         if self._is_xlearner:
             return 'reg'
         else:
             return self.reader.task._name
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._uplift_section_path = 'uplift_section.html'
         self._uplift_subsection_path = 'uplift_subsection.html'
         self.sections_order.append('uplift')
         self._uplift_results = []
-    
-    
+
+
     def __call__(self, model):
         self._model = model
         self._is_xlearner = isinstance(model, XLearner)
-        
+
         # add informataion to report
         self._model_name = model.__class__.__name__
         self._model_parameters = json2html.convert(extract_params(model))
@@ -1000,9 +1003,9 @@ class ReportDecoUplift(ReportDeco):
 
         self._generate_model_section()
         self.generate_report()
-        return self        
-    
-    
+        return self
+
+
     def fit(self, *args, **kwargs):
         """Wrapped automl.fit_predict method.
 
@@ -1031,9 +1034,9 @@ class ReportDecoUplift(ReportDeco):
         self._generate_train_set_section()
         self.generate_report()
 
-        
+
     def predict(self, test_data):
-        
+
         """Wrapped tlearner.predict method.
 
         Valid args, kwargs are the same as wrapped automl.
@@ -1046,21 +1049,21 @@ class ReportDecoUplift(ReportDeco):
 
         """
         self._n_test_sample += 1
-        
+
         # get predictions
         test_target = test_data[self._target].values
         test_treatment = test_data[self._treatment_col].values
         # test_data = test_data.drop([self._target, self._treatment_col], axis=1)
-        
+
         uplift, treatment_preds, control_preds = self._model.predict(test_data)
-        
+
         if self._n_test_sample >= 2:
             treatment_title = 'Treatment test {}'.format(self._n_test_sample)
             control_title = 'Control test {}'.format(self._n_test_sample)
         else:
             treatment_title = 'Treatment test'
             control_title = 'Control test'
-        
+
         # treatment data
         data = pd.DataFrame({'y_true': test_target[test_treatment == 1]})
         data['y_pred'] = treatment_preds[test_treatment == 1]
@@ -1069,7 +1072,7 @@ class ReportDecoUplift(ReportDeco):
         data = data[~data['y_pred'].isnull()]
         self._generate_test_subsection(data, 'treatment', treatment_title)
         self._generate_inference_section(data)
-        
+
         # control data
         data = pd.DataFrame({'y_true': test_target[test_treatment == 0]})
         data['y_pred'] = control_preds[test_treatment == 0]
@@ -1078,7 +1081,7 @@ class ReportDecoUplift(ReportDeco):
         data = data[~data['y_pred'].isnull()]
         self._generate_test_subsection(data, 'control', control_title)
         self._generate_inference_section(data)
-        
+
         # update model section
         self._generate_model_section()
 
@@ -1096,16 +1099,16 @@ class ReportDecoUplift(ReportDeco):
                           path=os.path.join(self.output_path, self._uplift_content['uplift_curve']))
         self._uplift_distribution(test_target, uplift, test_treatment, \
                                   path=os.path.join(self.output_path, self._uplift_content['uplift_distribution']))
-        
+
         self._uplift_content['test_data_overview'] = self._data_general_info(test_data, 'test')
-        
+
         self._generate_uplift_subsection()
         self._generate_uplift_section()
 
         self.generate_report()
         return uplift, treatment_preds, control_preds
-        
-    
+
+
     def _uplift_distribution(self, test_target, uplift, test_treatment, path):
         data = pd.DataFrame({'y_true': test_target, 'y_pred': uplift, 'treatment': test_treatment})
         data.sort_values('y_pred', ascending=True, inplace=True)
@@ -1119,7 +1122,7 @@ class ReportDecoUplift(ReportDeco):
         bins_table.columns = ['Bin number', 'Amount of objects', 'Min uplift', 'Mean uplift', 'Max uplift']
         bins_table['Uplift fact'] = uplift_fact
         self._uplift_content['uplift_bins_table'] = bins_table.to_html(index=False)
-        
+
         # uplift kde distribution
         sns.set(style="whitegrid", font_scale=1.5)
         fig, axs = plt.subplots(figsize=(16, 10))
@@ -1128,14 +1131,14 @@ class ReportDecoUplift(ReportDeco):
         axs.set_xlabel('Uplift value')
         axs.set_ylabel('Density')
         axs.set_title('Uplift distribution');
-        
+
         fig.savefig(path, bbox_inches='tight');
         plt.close()
 
-    
+
     def _fit_tlearner(self, train_data, roles):
         treatment_role, _ = _get_treatment_role(roles)
-        new_roles = copy.deepcopy(roles)
+        new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
         # treatment
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
@@ -1147,18 +1150,18 @@ class ReportDecoUplift(ReportDeco):
         control_target = control_train_data[self._target].values
         control_train_data.drop(self._treatment_col, axis=1, inplace=True)
         control_preds = self._model.control_learner.fit_predict(control_train_data, new_roles)
-        
+
         self._generate_fit_section(treatment_preds, control_preds, treatment_target, control_target)
 
-        
+
     def _fit_xlearner(self, train_data, roles):
         treatment_role, _ = _get_treatment_role(roles)
-        new_roles = copy.deepcopy(roles)
+        new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
-        
+
         self._model._fit_propensity_learner(train_data, roles)
         self._model._fit_outcome_learners(train_data, roles)
-        
+
         # treatment
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
         treatment_train_data.drop(self._treatment_col, axis=1, inplace=True)
@@ -1166,7 +1169,7 @@ class ReportDecoUplift(ReportDeco):
         treatment_train_data[self._target] = treatment_train_data[self._target] - outcome_pred
         treatment_target = treatment_train_data[self._target].values
         treatment_preds = self._model.learners['effect']['treatment'].fit_predict(treatment_train_data, new_roles)
-        
+
         # control
         control_train_data = train_data[train_data[self._treatment_col] == 0]
         control_train_data.drop(self._treatment_col, axis=1, inplace=True)
@@ -1175,22 +1178,22 @@ class ReportDecoUplift(ReportDeco):
         control_train_data[self._target] *= -1
         control_target = control_train_data[self._target].values
         control_preds = self._model.learners['effect']['control'].fit_predict(control_train_data, new_roles)
-        
+
         self._generate_fit_section(treatment_preds, control_preds, treatment_target, control_target)
 
-    
+
     def _generate_fit_section(self, treatment_preds, control_preds, treatment_target, control_target):
         self._generate_model_summary_table()
         # treatment model
         treatment_data = self._collect_data(treatment_preds, treatment_target)
         self._generate_training_subsection(treatment_data, 'treatment', 'Treatment train')
         self._generate_inference_section(treatment_data)
-        
+
         control_data = self._collect_data(control_preds, control_target)
         self._generate_training_subsection(control_data, 'control', 'Control train')
         self._generate_inference_section(control_data)
 
-        
+
     def _collect_data(self, preds, target):
         data = pd.DataFrame({'y_true': target})
         if self.task in 'multiclass':
@@ -1204,8 +1207,8 @@ class ReportDecoUplift(ReportDeco):
         # remove NaN in predictions:
         data = data[~data['y_pred'].isnull()]
         return data
-    
-    
+
+
     def _generate_model_summary_table(self):
         if self.task == 'binary':
             evaluation_parameters = ['AUC-score', \
@@ -1219,8 +1222,8 @@ class ReportDecoUplift(ReportDeco):
                                      'Mean squared error', \
                                      'R^2 (coefficient of determination)']
             self._model_summary = pd.DataFrame({'Evaluation parameter': evaluation_parameters})
-    
-    
+
+
     def _generate_training_subsection(self, data, prefix, title):
         self._inference_content = {}
         self._inference_content['title'] = title
@@ -1241,8 +1244,8 @@ class ReportDecoUplift(ReportDeco):
             self._inference_content['scatter_plot'] = prefix + '_scatter_plot.png'
             # graphics and metrics
             self._model_summary[title] = self._regression_details(data)
-        
-    
+
+
     def _generate_test_subsection(self, data, prefix, title):
         self._inference_content = {}
         self._inference_content['title'] = title
@@ -1265,7 +1268,7 @@ class ReportDecoUplift(ReportDeco):
             # graphics
             self._model_summary[title] = self._regression_details(data)
 
-    
+
     def _data_general_info(self, data, stage='train'):
         general_info = pd.DataFrame(columns=['Parameter', 'Value'])
         general_info.loc[0] = ('Number of records', data.shape[0])
@@ -1279,9 +1282,9 @@ class ReportDecoUplift(ReportDeco):
             dropped_list = [col for col in self.reader._dropped_features if col != self._target]
             general_info.loc[7] = ('Dropped features', len(dropped_list))
         return general_info.to_html(index=False, justify='left')
-    
-    
-    
+
+
+
     def _describe_roles(self, train_data):
 
         # detect feature roles
@@ -1342,7 +1345,7 @@ class ReportDecoUplift(ReportDeco):
             self._datetime_features_table = None
         else:
             self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify='left')
-    
+
     def _describe_dropped_features(self, train_data):
         self._max_nan_rate = self.reader.max_nan_rate
         self._max_constant_rate = self.reader.max_constant_rate
@@ -1361,12 +1364,12 @@ class ReportDecoUplift(ReportDeco):
             dropped_features_table = pd.DataFrame({'nan_rate': dropped_nan_ratio, 'constant_rate': dropped_most_occured})
             self._dropped_features_table = dropped_features_table.reset_index().rename(
                 columns={'index': 'Название переменной'}).to_html(index=False, justify='left')
-    
+
     def _generate_uplift_subsection(self):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         uplift_subsection = env.get_template(self._uplift_subsection_path).render(self._uplift_content)
         self._uplift_results.append(uplift_subsection)
-    
+
     def _generate_uplift_section(self):
         if self._model_results:
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
