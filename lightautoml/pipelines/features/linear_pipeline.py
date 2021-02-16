@@ -24,13 +24,13 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
 
     Includes:
 
-        - create categorical intersections.
-        - ohe or embed idx encoding for categories.
-        - other cats to numbers ways if defined in role params.
-        - standartization and nan handling for numbers.
-        - numbers discretization if needed.
-        - dates handling.
-        - handling probs (output of lower level models).
+        - Create categorical intersections.
+        - OHE or embed idx encoding for categories.
+        - Other cats to numbers ways if defined in role params.
+        - Standartization and nan handling for numbers.
+        - Numbers discretization if needed.
+        - Dates handling.
+        - Handling probs (output of lower level models).
 
     """
 
@@ -42,15 +42,18 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         """
 
         Args:
-            feats_imp: features importances mapping.
-            top_intersections: max number of categories to generate intersections.
-            max_bin_count: max number of bins to discretize numbers.
-            max_intersection_depth: max depth of cat intersection.
-            subsample: subsample to calc data statistics.
-            sparse_ohe: should we output sparse if ohe encoding was used during cat handling.
-            auto_unique_co: switch to target encoding if high cardinality.
-            output_categories: output encoded categories or embed idxs.
-            multiclass_te_co: cutoff if use target encoding in cat handling on multiclass task if n_class is high.
+            feats_imp: Features importances mapping.
+            top_intersections: Max number of categories
+              to generate intersections.
+            max_bin_count: Max number of bins to discretize numbers.
+            max_intersection_depth: Max depth of cat intersection.
+            subsample: Subsample to calc data statistics.
+            sparse_ohe: Should we output sparse if ohe encoding
+              was used during cat handling.
+            auto_unique_co: Switch to target encoding if high cardinality.
+            output_categories: Output encoded categories or embed idxs.
+            multiclass_te_co: Cutoff if use target encoding in cat handling
+              on multiclass task if number of classes is high.
 
         """
         assert max_bin_count is None or max_bin_count > 1, 'Max bin count should be >= 2 or None'
@@ -72,10 +75,10 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         """Create linear pipeline.
 
         Args:
-            train: LAMLDataset with train features.
+            train: Dataset with train features.
 
         Returns:
-            LAMLTransformer.
+            Transformer.
 
         """
         transformers_list = []

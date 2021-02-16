@@ -23,16 +23,28 @@ class AutoML:
 
     AutoML steps:
 
-        - read, analyze data and get inner LAMLDataset from input dataset: performed by reader
-        - create validation scheme
-        - compute passed ml pipelines from levels. Each element of levels is list of MLPipelines
-          prediction from current level are passed to next level pipelines as features
-        - time monitoring - check if we have enough time to calc new pipeline
-        - blend last level models and prune useless pipelines to speedup inference: performed by blender
-        - returns prediction on validation data. If crossvalidation scheme is used, out-of-fold prediction will returned
-          If validation data is passed - will return prediction on validation dataset
-          In case of cv scheme when some point of train data never was used as validation (ex. timeout exceeded
-          or custom cv iterator like TimeSeriesIterator was used) NaN for this point will be returned
+        - Read, analyze data and get inner
+          :class:`~lightautoml.dataset.base.LAMLDataset` from input
+          dataset: performed by reader.
+        - Create validation scheme.
+        - Compute passed ml pipelines from levels.
+          Each element of levels is list
+          of :class:`~lightautoml.pipelines.ml.base.MLPipelines`
+          prediction from current level are passed to next level
+          pipelines as features.
+        - Time monitoring - check if we have enough time to calc new pipeline.
+        - Blend last level models and prune useless pipelines
+          to speedup inference: performed by blender.
+        - Returns prediction on validation data.
+          If crossvalidation scheme is used,
+          out-of-fold prediction will returned.
+          If validation data is passed
+          it will return prediction on validation dataset.
+          In case of cv scheme when some point of train data
+          never was used as validation (ex. timeout exceeded
+          or custom cv iterator like
+          :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`
+          was used) NaN for this point will be returned.
 
     Example:
         Common usecase - create custom pipelines or presets.
@@ -50,16 +62,27 @@ class AutoML:
         """
 
         Args:
-            reader: instance of Reader class - object that creates LAMLDataset from input data.
-            levels: list of list of MLPipelines.
-            timer: instance of PipelineTimer. Default - unlimited timer.
-            blender: instance of Blender. By default - BestModelSelector.
-            skip_conn: True if we should pass first level input features to next levels.
-            verbose: verbosity level. Levels:
-                - 0 - no messages.
-                - 1 - warnings.
-                - 2 - info.
-                - 3 - debug.
+            reader: Instance of Reader class object that
+              creates :class:`~lightautoml.dataset.base.LAMLDataset`
+              from input data.
+            levels: List of list
+              of :class:`~lightautoml.pipelines.ml..base.MLPipelines`.
+            timer: Timer instance of
+              :class:`~lightautoml.utils.timer.PipelineTimer`.
+              Default - unlimited timer.
+            blender: Instance of Blender.
+              Default - :class:`~lightautoml.automl.blend.BestModelSelector`.
+            skip_conn: True if we should pass first level
+              input features to next levels.
+            verbose: Verbosity level.
+
+        Note:
+            There are several verbosity levels:
+
+                - `0`: No messages.
+                - `1`: Warnings.
+                - `2`: Info.
+                - `3`: Debug.
 
         """
         self._initialize(reader, levels, timer, blender, skip_conn, verbose)
@@ -69,12 +92,19 @@ class AutoML:
         """Same as __init__. Exists for delayed initialization in presets.
 
         Args:
-            reader: instance of Reader class - object that creates LAMLDataset from input data.
-            levels: list of list of MLPipelines.
-            timer: instance of PipelineTimer. Default - unlimited timer.
-            blender: instance of Blender. By default - BestModelSelector.
-            skip_conn: True if we should pass first level input features to next levels.
-            verbose: verbosity level. Default 2.
+            reader: Instance of Reader class object that
+              creates :class:`~lightautoml.dataset.base.LAMLDataset`
+              from input data.
+            levels: List of list
+              of :class:`~lightautoml.pipelines.ml..base.MLPipelines`.
+            timer: Timer instance of
+              :class:`~lightautoml.utils.timer.PipelineTimer`.
+              Default - unlimited timer.
+            blender: Instance of Blender.
+              Default - :class:`~lightautoml.automl.blend.BestModelSelector`.
+            skip_conn: True if we should pass first level
+              input features to next levels.
+            verbose: Verbosity level. Default 2.
 
         """
         logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
@@ -108,10 +138,13 @@ class AutoML:
         Args:
             train_data: Dataset to train.
             roles: Roles dict.
-            train_features: Optional features names, if cannot be inferred from train_data.
-            cv_iter: Custom cv iterator. Ex. `TimeSeriesIterator` instance.
+            train_features: Optional features names,
+              if cannot be inferred from train_data.
+            cv_iter: Custom cv iterator. For example,
+              :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`.
             valid_data: Optional validation dataset.
-            valid_features: Optional validation dataset features if cannot be inferred from valid_data.
+            valid_features: Optional validation dataset
+              features if can't be inferred from `valid_data`.
 
         Returns:
             Predicted values.
@@ -203,7 +236,8 @@ class AutoML:
 
         Args:
             data: Dataset to perform inference.
-            features_names: Optional features names, if cannot be inferred from train_data.
+            features_names: Optional features names,
+              if cannot be inferred from `train_data`.
 
         Returns:
             Dataset with predictions.
@@ -261,7 +295,7 @@ class AutoML:
         """Collect info about models in automl.
 
         Returns:
-            Dict of ``{'Model': n_runtimes}``.
+            Dict with models and its runtime numbers.
 
         """
         model_stats = {}

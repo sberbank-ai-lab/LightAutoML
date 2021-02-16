@@ -22,7 +22,8 @@ CustomIdxs = Iterable[Tuple[Sequence, Sequence]]
 class TrainValidIterator:
     """Abstract class to train/validation iteration.
 
-    Train/valid iterator - should implement __iter__ and __next__ for using in ml_pipeline.
+    Train/valid iterator:
+    should implement `__iter__` and `__next__` for using in ml_pipeline.
 
     """
 
@@ -40,8 +41,8 @@ class TrainValidIterator:
         """
 
         Args:
-            train: train dataset.
-            **kwargs: key-word parameters.
+            train: Train dataset.
+            **kwargs: Key-word parameters.
 
         """
         self.train = train
@@ -64,10 +65,10 @@ class TrainValidIterator:
         """Apply features pipeline on train data.
 
         Args:
-            features_pipeline: composite transformation of features.
+            features_pipeline: Composite transformation of features.
 
         Returns:
-            copy of object with transformed features.
+            Copy of object with transformed features.
 
         """
         train_valid = copy(self)
@@ -83,10 +84,10 @@ class TrainValidIterator:
         If fitted, check if it's ok to apply.
 
         Args:
-            selector: uses for feature selection.
+            selector: Uses for feature selection.
 
         Returns:
-            dataset with selected features.
+            Dataset with selected features.
 
         """
         if not selector.is_fitted:
@@ -108,7 +109,7 @@ class DummyIterator(TrainValidIterator):
         """Create iterator. WARNING: validation on train.
 
         Args:
-            train: train dataset.
+            train: Train dataset.
 
         """
         self.train = train
@@ -126,7 +127,7 @@ class DummyIterator(TrainValidIterator):
         """Simple iterable object.
 
         Returns:
-            iterable object for dataset, where for validation also uses train.
+            Iterable object for dataset, where for validation also uses train.
 
         """
         return [(None, self.train, self.train)]
@@ -141,10 +142,10 @@ class DummyIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
-        """Convert iterator to HoldoutIterator.
+        """Convert iterator to hold-out-iterator.
 
         Returns:
-            iterator: holdout iterator with 'train == valid'
+            iterator: Holdout iterator with ``'train == valid'``.
 
         """
         return HoldoutIterator(self.train, self.train)
@@ -158,8 +159,8 @@ class HoldoutIterator(TrainValidIterator):
         """Create iterator.
 
         Args:
-            train: LAMLDataset of train data.
-            valid: LAMLDataset of valid data.
+            train: Dataset of train data.
+            valid: Dataset of valid data.
 
         """
         self.train = train
@@ -178,7 +179,7 @@ class HoldoutIterator(TrainValidIterator):
         """Simple iterable object.
 
         Returns:
-            iterable object for train validation dataset.
+            Iterable object for train validation dataset.
 
         """
         return iter([(None, self.train, self.valid)])
@@ -196,10 +197,10 @@ class HoldoutIterator(TrainValidIterator):
         """Inplace apply features pipeline to iterator components.
 
         Args:
-            features_pipeline: features pipeline to apply.
+            features_pipeline: Features pipeline to apply.
 
         Returns:
-            new iterator.
+            New iterator.
 
         """
         train_valid = cast('HoldoutIterator', super().apply_feature_pipeline(features_pipeline))
@@ -211,10 +212,10 @@ class HoldoutIterator(TrainValidIterator):
         """Same as for basic class, but also apply to validation.
 
         Args:
-            selector: uses for feature selection.
+            selector: Uses for feature selection.
 
         Returns:
-            new iterator.
+            New iterator.
 
         """
         train_valid = cast('HoldoutIterator', super().apply_selector(selector))
@@ -237,13 +238,14 @@ class CustomIterator(TrainValidIterator):
     """Iterator that uses function to create folds indexes.
 
     Usefull for example - classic timeseries splits.
+
     """
 
     def __init__(self, train: LAMLDataset, iterator: CustomIdxs):
         """Create iterator.
 
         Args:
-            train: LAMLDataset of train data.
+            train: Dataset of train data.
             iterator: Callable(dataset) -> Iterator of train/valid indexes.
 
         """
@@ -264,7 +266,7 @@ class CustomIterator(TrainValidIterator):
         """Create generator of train/valid datasets.
 
         Returns:
-            data generator.
+            Data generator.
 
         """
         generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator)
@@ -275,18 +277,18 @@ class CustomIterator(TrainValidIterator):
         """Simple return train dataset.
 
         Returns:
-            LAMLDataset of train data.
+            Dataset of train data.
 
         """
         return self.train
 
     def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
-        """Convert iterator to HoldoutIterator.
+        """Convert iterator to hold-out-iterator.
 
-        Use first train/valid split for HoldoutIterator creation.
+        Use first train/valid split for :class:`~lightautoml.validation.base.HoldoutIterator` creation.
 
         Returns:
-            new HoldoutIterator.
+            New hold out iterator.
 
         """
         for (tr_idx, val_idx) in self.iterator:

@@ -9,10 +9,10 @@ def pil_loader(path: str) -> Image:
     """Load image from pathes.
 
     Args:
-        path: str image path.
+        path: Image path.
 
     Returns:
-        loaded PIL Image in rgb.
+        Loaded PIL Image in rgb.
 
     """
     with open(path, 'rb') as f:

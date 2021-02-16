@@ -89,6 +89,9 @@ _lgb_force_metric = {
 
 @record_history(enabled=False)
 class LGBFunc:
+    """
+    Wrapper of metric function for LightGBM.
+    """
     def __init__(self, metric_func, greater_is_better, bw_func):
         self.metric_func = metric_func
         self.greater_is_better = greater_is_better
@@ -126,19 +129,22 @@ class LGBLoss(Loss):
         """
 
         Args:
-            loss: Valid options are:
+            loss: Objective to optimize.
+            loss_params: additional loss parameters.
+              Format like in :mod:`lightautoml.tasks.custom_metrics`.
+            fw_func: forward transformation.
+              Used for transformation of target and item weights.
+            bw_func: backward transformation.
+              Used for predict values transformation.
 
-                - str: one of default losses \
-                     ('auc', 'mse', 'mae', 'logloss', 'accuray', 'r2', \
-                      'rmsle', 'mape', 'quantile', 'huber', 'fair') \
-                     or another lightgbm objectivite.
-                - callable: custom lightgbm style objective.
-            loss_params: additional loss parameters. \
-                Format like in lightautoml.tasks.custom_metrics.
-            fw_func: forward transformation. \
-                Used for transformation of target and item weights.
-            bw_func: backward transformation. \
-                Used for predict values transformation.
+        Note:
+            Loss can be one of the types:
+
+                - Str: one of default losses
+                  ('auc', 'mse', 'mae', 'logloss', 'accuray', 'r2',
+                  'rmsle', 'mape', 'quantile', 'huber', 'fair')
+                  or another lightgbm objective.
+                - Callable: custom lightgbm style objective.
 
         """
         if loss in _lgb_loss_mapping:
@@ -180,12 +186,12 @@ class LGBLoss(Loss):
         """Customize metric.
 
         Args:
-            metric_func: callable metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric_func: Callable metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
 
         Returns:
-            callable metric, that returns ('Opt metric', value, greater_is_better).
+            Callable metric, that returns ('Opt metric', value, greater_is_better).
 
         """
         if greater_is_better is None:

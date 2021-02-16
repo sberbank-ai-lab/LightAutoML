@@ -18,13 +18,24 @@ from ...ml_algo.utils import tune_and_fit_predict
 class MLPipeline:
     """Single ML pipeline.
 
-    Merge together stage of building ML model (every step, excluding model training, is optional):
+    Merge together stage of building ML model
+    (every step, excluding model training, is optional):
 
-        - pre selection: select features from input data. Performed by SelectionPipeline.
-        - features generation: build new features from selected. Performed by FeaturesPipelime.
-        - post selection: One more selection step - from created features. Performed by SelectionPipeline.
-        - hyperparams optimization for one or multiple ML models: Performed by ParamsTuner.
-        - train one or multiple ML models: Performed by MLAlgo. This step is the only required for at least 1 model.
+        - Pre selection: select features from input data.
+          Performed by
+          :class:`~lightautoml.pipelines.features.SelectionPipeline`.
+        - Features generation: build new features from selected.
+          Performed by
+          :class:`~lightautoml.pipelines.features.FeaturesPipeline`.
+        - Post selection: One more selection step - from created features.
+          Performed by
+          :class:`~lightautoml.pipelines.features.SelectionPipeline`.
+        - Hyperparams optimization for one or multiple ML models.
+          Performed by
+          :class:`~lightautoml.ml_algo.tuning.base.ParamsTuner`.
+        - Train one or multiple ML models:
+          Performed by :class:`~lightautoml.ml_algo.base.MLAlgo`.
+          This step is the only required for at least 1 model.
 
     """
 
@@ -42,11 +53,14 @@ class MLPipeline:
         """
 
         Args:
-            ml_algos:  Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner).
-            force_calc: flag if single fold of ml_algo should be calculated anyway.
-            pre_selection: initial feature selection. If ``None`` there is no initial selection.
-            features_pipeline: composition of feature transforms.
-            post_selection: post feature selection. If ``None`` there is no post selection.
+            ml_algos: Sequence of MLAlgo's or Pair - (MlAlgo, ParamsTuner).
+            force_calc: Flag if single fold of ml_algo
+              should be calculated anyway.
+            pre_selection: Initial feature selection.
+              If ``None`` there is no initial selection.
+            features_pipeline: Composition of feature transforms.
+            post_selection: Post feature selection.
+              If ``None`` there is no post selection.
 
         """
         if pre_selection is None:
@@ -89,10 +103,10 @@ class MLPipeline:
         """Fit on train/valid iterator and transform on validation part.
 
         Args:
-            train_valid: dataset iterator.
+            train_valid: Dataset iterator.
 
         Returns:
-            dataset with predictions of all models.
+            Dataset with predictions of all models.
 
         """
         self.ml_algos = []
@@ -125,10 +139,10 @@ class MLPipeline:
         """Predict on new dataset.
 
         Args:
-            dataset: dataset used for prediction.
+            dataset: Dataset used for prediction.
 
         Returns:
-            dataset with predictions of all trained models.
+            Dataset with predictions of all trained models.
 
         """
         dataset = self.pre_selection.select(dataset)
@@ -148,22 +162,23 @@ class MLPipeline:
     def upd_model_names(self, prefix: str):
         """Update prefix pipeline models names.
 
-        Used to fit inside AutoML where multiple models with same names may be trained.
+        Used to fit inside AutoML where multiple models
+        with same names may be trained.
 
         Args:
-            prefix: new prefix name.
+            prefix: New prefix name.
 
         """
         for n, mod in enumerate(self._ml_algos):
             mod.set_prefix(prefix)
 
     def prune_algos(self, idx: Sequence[int]):
-        """Prune model from pipeline
+        """Prune model from pipeline.
 
-        Used to fit blender - some models may be excluded from final ensemble
+        Used to fit blender - some models may be excluded from final ensemble.
 
         Args:
-            idx: selected algos.
+            idx: Selected algos.
 
         """
         self.ml_algos = [x for (n, x) in enumerate(self.ml_algos) if n not in idx]

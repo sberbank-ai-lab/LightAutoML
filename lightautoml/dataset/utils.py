@@ -16,13 +16,14 @@ from lightautoml.dataset.roles import ColumnRole
 def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, ColumnRole]:
     """Parser of roles.
     
-    Parse roles from old format numeric: [var1, var2 ...] to {var1:numeric, var2:numeric ...}.
+    Parse roles from old format numeric:
+    ``[var1, var2, ...]`` to ``{var1:numeric, var2:numeric, ...}``.
 
     Args:
         init_roles: Mapping between roles and feature names.
 
     Returns:
-        Roles dict in format key -- str feature name, value - instance of ColumnRole.
+        Roles dict in format key - feature names, value - roles.
 
     """
     roles = {}
@@ -99,7 +100,7 @@ def concatenate(datasets: Sequence[LAMLDataset]) -> LAMLDataset:
         datasets: Sequence of datasets.
 
     Returns:
-        LAMLDataset with concatenated features.
+        Dataset with concatenated features.
 
     """
     conc, klass = get_common_concat([ds for ds in datasets if ds is not None])

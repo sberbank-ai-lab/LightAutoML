@@ -57,9 +57,10 @@ class NumpyDataset(LAMLDataset):
         Note:
             There is different behavior for different type of val parameter:
 
-                - list, should be same len as data.shape[1]
-                - None - automatic set names like feat_0, feat_1 ...
-                - Prefix - automatic set names like Prefix_0, Prefix_1 ...
+                - list - should be same len as ``data.shape[1]``
+                - None - automatic set names like `feat_0`, `feat_1` ...
+                - `'Prefix'` - automatic set names
+                  to `Prefix_0`, `Prefix_1` ...
 
         """
         if type(val) is list:
@@ -78,15 +79,15 @@ class NumpyDataset(LAMLDataset):
         """Define how to set roles.
 
         Args:
-            val: valid are.
+            val: Roles.
 
         Note:
             There is different behavior for different type of val parameter:
 
-                - List, should be same len as data.shape[1].
-                - None - automatic set NumericRole(np.float32).
-                - ColumnRole - single role for all.
-                - dict.
+                - `List` - should be same len as ``data.shape[1]``.
+                - `None` - automatic set ``NumericRole(np.float32)``.
+                - ``ColumnRole`` - single role for all.
+                - ``dict``.
 
         """
         if type(val) is dict:
@@ -98,11 +99,10 @@ class NumpyDataset(LAMLDataset):
             self._roles = dict(((x, role) for x in self.features))
 
     def _check_dtype(self):
-        """Check if dtype in .set_data is ok and cast if not.
-
+        """Check if dtype in ``.set_data`` is ok and cast if not.
 
         Raises:
-            AttributeError: if there is non-numeric type in dataset.
+            AttributeError: If there is non-numeric type in dataset.
 
         """
         # dtypes = list(set(map(lambda x: x.dtype, self.roles.values())))
@@ -126,7 +126,7 @@ class NumpyDataset(LAMLDataset):
             features: Features names.
             roles: Roles specifier.
             task: Task specifier.
-            **kwargs: np.ndarray. Named attributes like target, group etc ..
+            **kwargs: Named attributes like target, group etc ..
 
         Note:
             For different type of parameter feature there is different behavior:

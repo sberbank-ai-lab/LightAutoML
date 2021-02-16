@@ -26,17 +26,16 @@ TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
-    default_params:
-        all available parameters listed in CatBoost documentation:
+    All available parameters listed in CatBoost documentation:
 
         - https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
 
-    ``freeze_defaults``:
+    freeze_defaults:
 
         - ``True`` :  params may be rewritten depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    ``timer``: ``Timer`` instance or ``None``.
+    ``timer``: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'CatBoost'
@@ -103,7 +102,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Get model parameters depending on input dataset parameters.
 
         Args:
-            train_valid_iterator: Classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             Parameters of model.
@@ -298,8 +297,8 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Implements training and prediction on single fold.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values).
@@ -326,10 +325,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         Args:
             model: CatBoost object.
-            dataset: test dataset.
+            dataset: Test dataset.
 
         Return:
-            predicted target values.
+            Predicted target values.
 
         """
 
@@ -343,7 +342,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     def get_features_score(self) -> Series:
         """Computes feature importance.
 
-        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange) , per all models.
+        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange), per all models.
 
         Returns:
             Series with feature importances.
@@ -361,10 +360,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return Series(imp, index=self.features).sort_values(ascending=False)
 
     def fit(self, train_valid: TrainValidIterator):
-        """Just to be compatible with ImportanceEstimator.
+        """Just to be compatible with :class:`~lightautoml.pipelines.selection.base.ImportanceEstimator`.
 
         Args:
-            train_valid: classic cv iterator.
+            train_valid: Classic cv-iterator.
 
         """
         self.fit_predict(train_valid)

@@ -37,13 +37,13 @@ class SKLoss(Loss):
         """
 
         Args:
-            loss: one of default loss function. \
-                Valid are: 'logloss', 'mse', 'crossentropy', 'rmsle'.
-            loss_params: addtional loss parameters.
-            fw_func: forward transformation. \
-                Used for transformation of target and item weights.
-            bw_func: backward transformation. \
-                Used for predict values transformation.
+            loss: One of default loss function.
+              Valid are: 'logloss', 'mse', 'crossentropy', 'rmsle'.
+            loss_params: Addtional loss parameters.
+            fw_func: Forward transformation.
+              Used for transformation of target and item weights.
+            bw_func: backward transformation.
+              Used for predict values transformation.
 
         """
         assert loss in ['logloss', 'mse', 'crossentropy', 'rmsle'], 'Not supported in sklearn in general case.'

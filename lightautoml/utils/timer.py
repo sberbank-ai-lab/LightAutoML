@@ -69,18 +69,25 @@ class PipelineTimer(Timer):
 
         Args:
             timeout: Maximum amount of time that AutoML can run.
-            overhead: (0, 1) - rate of time that will be used to early stop.
-                Ex. if set to 0.1 and timing mode is set to 2, timer will finish tasks after 0.9 of all time spent.
-            mode: Timing mode. Can be 0, 1 or 2. Keep in mind - all time limitations will
-                turn on after at least single model/single fold will be computed.
+            overhead: (0, 1) - Rate of time that will be used to early stop.
+              Ex. if set to `0.1` and timing mode is set to 2,
+              timer will finish tasks after `0.9` of all time spent.
+            mode: Timing mode. Can be 0, 1 or 2.
+              Keep in mind - all time limitations will
+              turn on after at least single model/single fold will be computed.
             tuning_rate: Approximate fraction of all time will be used for tuning.
 
         Note:
             Modes explanation:
 
-                - 0 - timer is used to estimate runtime but if something goes out of time - keep it run (Real life mode).
-                - 1 - timer is used to terminate tasks, but do it after real timeout (Trade off mode).
-                - 2 - timer is used to terminate tasks with the goal to be exactly in time (Benchmarking/competitions mode).
+                - 0 - timer is used to estimate runtime,
+                  but if something goes out of time,
+                  keep it run (Real life mode).
+                - 1 - timer is used to terminate tasks,
+                  but do it after real timeout (Trade off mode).
+                - 2 - timer is used to terminate tasks
+                  with the goal to be exactly
+                  in time (Benchmarking/competitions mode).
 
         """
         if timeout is not None:
@@ -114,7 +121,8 @@ class PipelineTimer(Timer):
 class TaskTimer(Timer):
     """Timer is used to control time over single ML task run.
 
-    It decides how much time is ok to spend on tuner and if we have enough time to calc more folds.
+    It decides how much time is ok to spend on tuner
+    and if we have enough time to calc more folds.
     """
 
     @property
@@ -132,11 +140,13 @@ class TaskTimer(Timer):
             pipe_timer: Global automl timer.
             key: String name that will be associated with this task.
             score: Time score for current task.
-                For ex. if you want to give more of total time to task set it > 1.
-            overhead: See overhead of PipelineTimer.
-            mode: See mode for PipelineTimer.
-            default_tuner_time_rate: If no timing history for the moment of estimating tuning time,
-                timer will use this rate of time_left.
+              For ex. if you want to give more
+              of total time to task set it > 1.
+            overhead: See overhead of :class:`~lightautoml.utils.timer.PipelineTimer`.
+            mode: See mode for :class:`~lightautoml.utils.timer.PipelineTimer`.
+            default_tuner_time_rate: If no timing history for the moment
+              of estimating tuning time,
+              timer will use this rate of `time_left`.
 
         """
         self.score = score
@@ -188,8 +198,7 @@ class TaskTimer(Timer):
         """Get timer history.
 
         Returns:
-            `None` if there is no history,
-             or array with history of runs.
+            ``None`` if there is no history, or array with history of runs.
 
         """
         if self.key in self.pipe_timer.run_info:
@@ -199,8 +208,7 @@ class TaskTimer(Timer):
         """Get timer scores.
 
         Returns:
-            `None` if there is no scores,
-             or array with scores of runs.
+            ``None`` if there is no scores, or array with scores of runs.
 
         """
         if self.key in self.pipe_timer.run_scores:
@@ -213,7 +221,7 @@ class TaskTimer(Timer):
             n_folds: Number of folds.
 
         Returns:
-            Estimated time needed to run all n_folds.
+            Estimated time needed to run all `n_folds`.
 
         """
         run_results, run_scores = self.get_run_results(), self.get_run_scores()
@@ -257,7 +265,7 @@ class TaskTimer(Timer):
         """Estimate time limit and send results to parent timer.
 
         Returns:
-            `True` if time limit exceeded.
+            ``True`` if time limit exceeded.
 
         """
         out_of_time = super().time_limit_exceeded()

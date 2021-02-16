@@ -11,16 +11,18 @@ from lightautoml.dataset.base import LAMLDataset
 def map_pipeline_names(input_names: Sequence[str], output_names: Sequence[str]) -> List[Optional[str]]:
     """Pipelines create name in the way 'prefix__feature_name'.
 
-    Multiple pipelines will create names in the way 'prefix1__prefix2__feature_name'.
+    Multiple pipelines will create names
+    in the way 'prefix1__prefix2__feature_name'.
     This function maps initial features names to outputs.
-    Result may be not exact in some rare cases, but it's ok for real pipelines.
+    Result may be not exact in some rare cases,
+    but it's ok for real pipelines.
 
     Args:
-        input_names: initial feature names.
-        output_names: output feature names.
+        input_names: Initial feature names.
+        output_names: Output feature names.
 
     Returns:
-        mapping between feature names.
+        Mapping between feature names.
 
     """
     # TODO: Add assert here
@@ -47,12 +49,13 @@ def get_columns_by_role(dataset: LAMLDataset, role_name: str, **kwargs: Any) -> 
     Search for columns with specific role and attributes when building pipeline.
 
     Args:
-        dataset: LAMLDataset to search.
-        role_name: str name of features role.
-        **kwargs: specific parameters values to search. Example: search for categories with ohe processing only.
+        dataset: Dataset to search.
+        role_name: Name of features role.
+        **kwargs: Specific parameters values to search.
+          Example: search for categories with OHE processing only.
 
     Returns:
-        list of str features names.
+        List of str features names.
 
     """
     features = []

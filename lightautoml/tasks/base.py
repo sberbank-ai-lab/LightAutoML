@@ -121,7 +121,7 @@ class ArgsWrapper:
 
 @record_history(enabled=False)
 class SkMetric(LAMLMetric):
-    """Abstract class for scikit-learn compitable metric.
+    """Abstract class for scikit-learn compatible metric.
 
     Implements metric calculation in sklearn format on numpy/pandas datasets.
 
@@ -386,7 +386,7 @@ class Task:
     def get_dataset_metric(self) -> LAMLMetric:
         """Create metric for dataset.
 
-        Get LAMLMetric that is called on dataset.
+        Get metric that is called on dataset.
 
         Returns:
             Metric in scikit-learn compatible format.

@@ -23,6 +23,16 @@ Encoder = Union[TargetEncoder, MultiClassTargetEncoder]
 
 @record_history(enabled=False)
 def ginic(actual: np.ndarray, pred: np.ndarray) -> float:
+    """Denormalized gini calculation.
+
+    Args:
+        actual: True values.
+        pred: Predicted values.
+
+    Returns:
+        Metric value.
+
+    """
     actual = np.asarray(actual)
     n = len(actual)
     a_s = actual[np.argsort(pred)]
@@ -33,6 +43,16 @@ def ginic(actual: np.ndarray, pred: np.ndarray) -> float:
 
 @record_history(enabled=False)
 def gini_normalizedc(a: np.ndarray, p: np.ndarray) -> float:
+    """Calculated normalized gini.
+
+    Args:
+        a: True values.
+        p: Predicted values.
+
+    Returns:
+        Metric value.
+
+    """
     return ginic(a, p) / ginic(a, a)
 
 
@@ -41,12 +61,12 @@ def gini_normalized(y_true: np.ndarray, y_pred: np.ndarray, empty_slice: Optiona
     """Calculate normalized gini index.
 
     Args:
-        y_true: np.ndarray.
-        y_pred: np.ndarray.
-        empty_slice: np.ndarray.
+        y_true: True values.
+        y_pred: Predicted values.
+        empty_slice: Mask.
 
     Returns:
-        gini.
+        Gini value.
 
     """
     # TODO: CHECK ABOUT ZERO TARGET SUM
@@ -89,7 +109,7 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
         train: Dataset.
 
     Returns:
-        tuple.
+        (Target values, Target encoder).
 
     """
     train = train.empty().to_numpy()
@@ -109,7 +129,6 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
 @record_history(enabled=False)
 def calc_ginis(data: np.ndarray, target: np.ndarray, empty_slice: Optional[np.ndarray] = None):
     """
-
 
     Args:
         data: np.ndarray.

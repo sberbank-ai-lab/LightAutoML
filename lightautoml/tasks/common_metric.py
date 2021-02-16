@@ -220,7 +220,9 @@ def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
 
 @record_history(enabled=False)
 class F1Factory:
-    """Wrapper for f1_score function."""
+    """
+    Wrapper for :func:`~sklearn.metrics.f1_score` function.
+    """
 
     def __init__(self, average: str = 'micro'):
         """
@@ -249,11 +251,11 @@ class F1Factory:
         return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
 
 
-@record_history()
+@record_history(enabled=False)
 class BestClassBinaryWrapper:
     """Metric wrapper to get best class prediction instead of probs.
 
-    There is cut-off for prediction by 0.5.
+    There is cut-off for prediction by ``0.5``.
 
     """
 
@@ -262,7 +264,8 @@ class BestClassBinaryWrapper:
 
         Args:
             func: Metric function. Function format:
-                func(y_pred, y_true, weights, **kwargs).
+               func(y_pred, y_true, weights, \*\*kwargs).
+
         """
         self.func = func
 
@@ -272,7 +275,7 @@ class BestClassBinaryWrapper:
         return self.func(y_true, y_pred, sample_weight=sample_weight, **kwargs)
 
 
-@record_history()
+@record_history(enabled=False)
 class BestClassMulticlassWrapper:
     """Metric wrapper to get best class prediction instead of probs for multiclass.
 
@@ -285,7 +288,7 @@ class BestClassMulticlassWrapper:
 
         Args:
             func: Metric function. Function format:
-                func(y_pred, y_true, weights, **kwargs)
+               func(y_pred, y_true, weights, \*\*kwargs)
 
         """
         self.func = func

@@ -25,10 +25,11 @@ date_attrs = {'y': 'year', 'm': 'month',
 def datetime_check(dataset: LAMLDataset):
     """Check if all passed vars are datetimes.
 
-    Raises AssertionError if non-datetime features are present.
-
     Args:
-        dataset: LAMLDataset to check.
+        dataset: Dataset to check.
+
+    Raises:
+        AssertionError: If non-datetime features are present.
 
     """
     roles = dataset.roles
@@ -41,7 +42,8 @@ def datetime_check(dataset: LAMLDataset):
 class TimeToNum(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
-    Datetime converted to difference with basic_date (basic_date == '2020-01-01').
+    Datetime converted to difference
+    with basic_date (``basic_date == '2020-01-01'``).
     """
     basic_time = '2020-01-01'
     basic_interval = 'D'
@@ -81,7 +83,7 @@ class TimeToNum(LAMLTransformer):
 @record_history(enabled=False)
 class BaseDiff(LAMLTransformer):
     """
-    Basic convertion strategy, used in selection one-to-one transformers.
+    Basic conversion strategy, used in selection one-to-one transformers.
     Datetime converted to difference with basic_date.
 
     """
@@ -103,7 +105,7 @@ class BaseDiff(LAMLTransformer):
         Args:
             base_names: Base date names.
             diff_names: Difference date names.
-            basic_interval: time unit.
+            basic_interval: Time unit.
 
         """
         self.base_names = base_names
@@ -114,7 +116,7 @@ class BaseDiff(LAMLTransformer):
         """Fit transformer and return it's instance.
 
         Args:
-            dataset: LAMLDataset to fit on.
+            dataset: Dataset to fit on.
 
         Returns:
             self.
@@ -136,6 +138,7 @@ class BaseDiff(LAMLTransformer):
 
         Returns:
             NumpyDataset of numeric features.
+
         """
         # checks if exist
         super().transform(dataset)
@@ -163,7 +166,7 @@ class BaseDiff(LAMLTransformer):
 @record_history(enabled=False)
 class DateSeasons(LAMLTransformer):
     """
-    Basic convertion strategy, used in selection one-to-one transformers.
+    Basic conversion strategy, used in selection one-to-one transformers.
     Datetime converted to difference with basic_date.
     """
 
@@ -180,7 +183,7 @@ class DateSeasons(LAMLTransformer):
         """
 
         Args:
-            output_role: which role to assign for input feautres.
+            output_role: Which role to assign for input features.
 
         """
         self.output_role = output_role

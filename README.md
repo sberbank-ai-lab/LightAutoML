@@ -21,6 +21,8 @@ Currently we work with datasets, where **each row is an object with its specific
 - [LAMA framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
 - [LAMA practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
 
+See the [Documentation of LightAutoML](https://lightautoml.readthedocs.io/).
+
 *******
 # Installation
 ### Installation via pip from PyPI
@@ -73,6 +75,13 @@ For more examples, in `tests` folder you can find different scenarios of LAMA us
 11. `demo10.py` - creation pipelines from blocks (including CatBoost) to build AutoML , solving multiclass classification task
 12. `demo11.py` - AutoML NLP preset usage for tabular datasets with text columns
 13. `demo12.py` - AutoML tabular preset usage with custom validation scheme and multiprocessed inference
+
+
+******
+# Contributing to LightAutoML
+
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](CONTRIBUTING.md) to get started.
+
 
 *******
 # Questions / Issues / Suggestions 

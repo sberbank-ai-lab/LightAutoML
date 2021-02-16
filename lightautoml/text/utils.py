@@ -25,10 +25,10 @@ def inv_sigmoid(x: np.ndarray) -> np.ndarray:
     """Inverse sigmoid transformation.
 
     Args:
-        x: input array.
+        x: Input array.
 
     Returns:
-        transformed array.
+        Transformed array.
 
     """
     return np.log(x / (1 - x))
@@ -39,10 +39,10 @@ def inv_softmax(x: np.ndarray) -> np.ndarray:
     """Variant of inverse softmax transformation with zero constant term.
 
     Args:
-        x: input array.
+        x: Input array.
 
     Returns:
-        transformed array.
+        Transformed array.
 
     """
     eps = 1e-7
@@ -57,10 +57,10 @@ def is_shuffle(stage: str) -> bool:
     """Whether shuffle input.
 
     Args:
-        stage: train, val, test.
+        stage: Train, val, test.
 
     Returns:
-        bool value.
+        Bool value.
 
     """
     is_sh = {'train': True, 'val': False, 'test': False}
@@ -72,7 +72,7 @@ def seed_everything(seed: int = 42, deterministic: bool = True):
     """Set random seed and cudnn params.
 
     Args:
-        seed: random state.
+        seed: Random state.
         deterministic: cudnn backend.
 
     """
@@ -90,11 +90,11 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
     """Parse devices and convert first to the torch device.
 
     Args:
-        dvs: list, string with device ids or torch.device.
-        is_dp: use data parallel - additionally returns device ids.
+        dvs: List, string with device ids or torch.device.
+        is_dp: Use data parallel - additionally returns device ids.
 
     Returns:
-        first torch device and list of gpu ids.
+        First torch device and list of gpu ids.
 
     """
     device = []
@@ -164,10 +164,10 @@ def single_text_hash(x: str) -> str:
     """Get text hash.
 
     Args:
-        x: text.
+        x: Text.
 
     Returns:
-        string text hash.
+        String text hash.
 
     """
     numhash = murmurhash3_32(x, seed=13)
@@ -180,10 +180,10 @@ def get_textarr_hash(x: Sequence[str]) -> str:
     """Get hash of array with texts.
 
     Args:
-        x: text array.
+        x: Text array.
 
     Returns:
-        hash of array.
+        Hash of array.
 
     """
     full_hash = single_text_hash(str(x))

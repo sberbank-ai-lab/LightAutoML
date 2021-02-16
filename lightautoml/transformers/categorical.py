@@ -40,7 +40,7 @@ def oof_task_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
     Args:
-        dataset: input.
+        dataset: Input.
 
     """
     task = dataset.task
@@ -49,10 +49,10 @@ def oof_task_check(dataset: LAMLDataset):
 
 @record_history(enabled=False)
 def multiclass_task_check(dataset: LAMLDataset):
-    """Check if all passed vars are categories
+    """Check if all passed vars are categories.
 
     Args:
-        dataset: input.
+        dataset: Input.
 
     Returns:
 
@@ -66,7 +66,7 @@ def encoding_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
     Args:
-        dataset: input.
+        dataset: Input.
 
     """
     roles = dataset.roles
@@ -96,8 +96,8 @@ class LabelEncoder(LAMLTransformer):
         """
 
         Args:
-            subs: subsample to calculate freqs. If None - full data.
-            random_state: random state to take subsample.
+            subs: Subsample to calculate freqs. If None - full data.
+            random_state: Random state to take subsample.
 
         """
         self.subs = subs
@@ -108,10 +108,10 @@ class LabelEncoder(LAMLTransformer):
         """Get df and sample.
 
         Args:
-            dataset: input dataset.
+            dataset: Input dataset.
 
         Returns:
-            subsample.
+            Subsample.
 
         """
         dataset = dataset.to_pandas()
@@ -190,7 +190,7 @@ class LabelEncoder(LAMLTransformer):
 @record_history(enabled=False)
 class OHEEncoder(LAMLTransformer):
     """
-    Simple OneHotEncoder over label encoded categories
+    Simple OneHotEncoder over label encoded categories.
     """
     _fit_checks = (categorical_check, encoding_check)
     _transform_checks = ()
@@ -205,9 +205,9 @@ class OHEEncoder(LAMLTransformer):
         """
 
         Args:
-            make_sparse: create sparse matrix.
-            total_feats_cnt: initial features number.
-            dtype: dtype of new features.
+            make_sparse: Create sparse matrix.
+            total_feats_cnt: Initial features number.
+            dtype: Dtype of new features.
 
         """
         self.make_sparse = make_sparse
@@ -293,7 +293,8 @@ class OHEEncoder(LAMLTransformer):
 
 @record_history(enabled=False)
 class FreqEncoder(LabelEncoder):
-    """Labels are encoded with frequency in train data.
+    """
+    Labels are encoded with frequency in train data.
 
     Labels are integers from 1 to n. Unknown category encoded as 1.
     """
@@ -343,8 +344,8 @@ class TargetEncoder(LAMLTransformer):
 
     Limitation:
 
-        - required .folds attribute in dataset - array of int from 0 to n_folds-1.
-        - working only after label encoding.
+        - Required .folds attribute in dataset - array of int from 0 to n_folds-1.
+        - Working only after label encoding.
 
     """
     _fit_checks = (categorical_check, oof_task_check, encoding_check)
@@ -365,11 +366,11 @@ class TargetEncoder(LAMLTransformer):
         """Score candidates alpha with logloss metric.
 
         Args:
-            candidates: candidate oof encoders.
-            target: target array.
+            candidates: Candidate oof encoders.
+            target: Target array.
 
         Returns:
-            index of best encoder.
+            Index of best encoder.
 
         """
         target = target[:, np.newaxis]
@@ -383,11 +384,11 @@ class TargetEncoder(LAMLTransformer):
         """Score candidates alpha with mse metric.
 
         Args:
-            candidates: candidate oof encoders.
-            target: target array.
+            candidates: Candidate oof encoders.
+            target: Target array.
 
         Returns:
-            index of best encoder.
+            Index of best encoder.
 
         """
         target = target[:, np.newaxis]
@@ -403,7 +404,8 @@ class TargetEncoder(LAMLTransformer):
         """Calc oof encoding and save encoding stats for new data.
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical label encoded features.
+            dataset: Pandas or Numpy dataset of
+              categorical label encoded features.
 
         Returns:
             NumpyDataset - target encoded features.
@@ -506,8 +508,8 @@ class MultiClassTargetEncoder(LAMLTransformer):
     
     Limitation:
     
-        - required .folds attribute in dataset - array of int from 0 to n_folds-1
-        - working only after label encoding
+        - Required .folds attribute in dataset - array of int from 0 to n_folds-1.
+        - Working only after label encoding
         
     """
     _fit_checks = (categorical_check, multiclass_task_check, encoding_check)
@@ -666,8 +668,9 @@ class CatIntersectstions(LabelEncoder):
         """Create label encoded intersection columns for categories.
 
         Args:
-            intersections: columns to create intersections. Default is None - all
-            max_depth: max intersection depth
+            intersections: Columns to create intersections.
+              Default is None - all.
+            max_depth: Max intersection depth.
 
         """
         super().__init__(subs, random_state)
@@ -679,11 +682,11 @@ class CatIntersectstions(LabelEncoder):
         """Make hash for category interactions.
 
         Args:
-            df: input DataFrame
-            cols: list of columns
+            df: Input DataFrame
+            cols: List of columns
 
         Returns:
-            hash np.ndarray.
+            Hash np.ndarray.
 
         """
         res = np.empty((df.shape[0],), dtype=np.int32)
@@ -698,10 +701,10 @@ class CatIntersectstions(LabelEncoder):
         """
 
         Args:
-            dataset: Pandas or Numpy dataset of categorical features
+            dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
-
+            Dataset.
         """
         dataset = dataset.to_pandas()
         df = dataset.data
@@ -725,6 +728,7 @@ class CatIntersectstions(LabelEncoder):
             dataset: Pandas or Numpy dataset of categorical features.
 
         Returns:
+            self.
 
         """
         # set transformer names and add checks
@@ -756,7 +760,8 @@ class CatIntersectstions(LabelEncoder):
 class OrdinalEncoder(LabelEncoder):
     """
     Encoding ordinal categories into numbers.
-    Number type categories passed as is, object type sorted in ascending lexicographical order.
+    Number type categories passed as is,
+    object type sorted in ascending lexicographical order.
     """
     _fit_checks = (categorical_check,)
     _transform_checks = ()

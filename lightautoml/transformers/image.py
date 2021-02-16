@@ -27,10 +27,11 @@ NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 def path_check(dataset: LAMLDataset):
     """Check if all passed vars are path.
 
-    Raises AssertionError if non-path features are present.
-
     Args:
         dataset: LAMLDataset to check.
+
+    Raises:
+         AssertionError: If non-path features are present.
 
     """
     roles = dataset.roles
@@ -51,10 +52,10 @@ class ImageFeaturesTransformer(LAMLTransformer):
         """Create normalized color histogram for rgb or hsv image.
 
         Args:
-            hist_size: number of bins for each channel.
-            is_hsv: convert image to hsv.
-            n_jobs: number of threads for multiprocessing.
-            loader: callable for reading image from path.
+            hist_size: Number of bins for each channel.
+            is_hsv: Convert image to hsv.
+            n_jobs: Number of threads for multiprocessing.
+            loader: Callable for reading image from path.
 
         """
         self.hist_size = hist_size
@@ -67,7 +68,7 @@ class ImageFeaturesTransformer(LAMLTransformer):
         """Features list.
 
         Returns:
-            list of features names.
+            List of features names.
 
         """
         return self._features
@@ -109,7 +110,7 @@ class ImageFeaturesTransformer(LAMLTransformer):
             dataset: Pandas or Numpy dataset of image paths.
 
         Returns:
-            dataset with encoded text.
+            Dataset with encoded text.
 
         """
         # checks here
@@ -144,7 +145,7 @@ class AutoCVWrap(LAMLTransformer):
         """Features list.
 
         Returns:
-            list of features names.
+            List of features names.
 
         """
         return self._features
@@ -156,17 +157,16 @@ class AutoCVWrap(LAMLTransformer):
         """
 
         Args:
-            model: name of effnet model.
-            weights_path: path to saved weights.
-            cache_dir: path to cache directory or None.
-            subs: subsample to fit transformer. If None - full data.
-
-            device: torch device.
-            n_jobs: number of threads for dataloader.
-            random_state: random state to take subsample and set torch seed.
-            is_advprop: use adversarial training.
-            batch_size: batch size for embedding model.
-            verbose: verbose data processing.
+            model: Name of effnet model.
+            weights_path: Path to saved weights.
+            cache_dir: Path to cache directory or None.
+            subs: Subsample to fit transformer. If ``None`` - full data.
+            device: Torch device.
+            n_jobs: Number of threads for dataloader.
+            random_state: Random state to take subsample and set torch seed.
+            is_advprop: Use adversarial training.
+            batch_size: Batch size for embedding model.
+            verbose: Verbose data processing.
 
         """
         self.embed_model = model
