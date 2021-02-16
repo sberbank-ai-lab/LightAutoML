@@ -16,10 +16,15 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
 
     Method return curve's coordinates if the model is a perfect.
     Perfect model ranking:
-        1) Treatment = 1, Target = 1
-        2) Treatment = 0, Target = 0
-        3) Treatment = 1, Target = 0
-        4) Treatment = 0, Target = 1
+        If type if 'y_true' is 'binary':
+            1) Treatment = 1, Target = 1
+            2) Treatment = 0, Target = 0
+            3) Treatment = 1, Target = 0
+            4) Treatment = 0, Target = 1
+
+        If type if 'y_true' is 'continuous':
+            1) Treatment = 1, Target discending sorted
+            2) Treatment = 0, Target ascending sorted
 
     Args:
         y_true: Target values
@@ -29,12 +34,26 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
         perfect curve
 
     """
-    assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
+    # assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
 
-    perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
-    perfect_treatment_score = ((treatment == 1).astype(int) * 2 * (y_true == 1).astype(int))
+    if type_of_target(y_true) == 'binary':
+        perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
+        perfect_treatment_score = ((treatment == 1).astype(int) * 2 * (y_true == 1).astype(int))
+        perfect_uplift = perfect_treatment_score + perfect_control_score
+    elif type_of_target(y_true) == 'continuous':
+        control_uplift, treatment_uplift = y_true[treatment == 0], y_true[treatment == 1]
 
-    perfect_uplift = perfect_treatment_score + perfect_control_score
+        # use indexes like scores
+        control_sorted_indexes, treatment_sorted_indexes = np.zeros_like(control_uplift), np.zeros_like(treatment_uplift)
+
+        control_sorted_indexes[control_uplift.argsort()] = np.arange(control_uplift.shape[0])
+        treatment_sorted_indexes[treatment_uplift.argsort()] = np.arange(treatment_uplift.shape[0])
+
+        perfect_uplift = np.zeros_like(y_true)
+        perfect_uplift[treatment == 0] = -control_sorted_indexes
+        perfect_uplift[treatment == 1] = treatment_sorted_indexes
+    else:
+        raise RuntimeError("Only 'binary' and 'continuous' targets are available")
 
     return perfect_uplift
 
@@ -87,7 +106,7 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
         xs, ys - curve's coordinates
 
     """
-    assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
+    # assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
     assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate uplift curve for constant predicts"
 
     sorted_indexes = np.argsort(uplift_pred)[::-1]

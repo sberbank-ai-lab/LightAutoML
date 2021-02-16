@@ -19,6 +19,9 @@ from .utils import create_linear_automl, _get_target_role, _get_treatment_role
 @record_history(enabled=False)
 class MetaLearner(metaclass=ABCMeta):
     """Base class for uplift meta-learner"""
+    def __init__(self, base_task: Task):
+        self.base_task = base_task
+
     @abstractmethod
     def fit(self, train_data: DataFrame, roles: Dict):
         pass
@@ -29,6 +32,14 @@ class MetaLearner(metaclass=ABCMeta):
 
     def _get_default_learner(self, task: Task):
         return create_linear_automl(task)
+
+    def _get_task(self, learner: AutoML) -> Task:
+        if isinstance(learner, TabularAutoML):
+            return learner.task
+        elif isinstance(learner, AutoML):
+            return learner.reader.task
+        else:
+            raise RuntimeError("Can't extract 'task' from learner")
 
 
 @record_history(enabled=False)
@@ -59,12 +70,14 @@ class TLearner(MetaLearner):
 
         if base_task is None and (treatment_learner is None or control_learner is None):
             if treatment_learner is not None:
-                base_task = treatment_learner.reader.task
+                base_task = self._get_task(treatment_learner)
             elif control_learner is not None:
-                base_task = control_learner.reader.task
+                base_task = self._get_task(control_learner)
 
-        self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(base_task)
-        self.control_learner = control_learner if control_learner is not None else self._get_default_learner(base_task)
+        super().__init__(base_task)
+
+        self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
+        self.control_learner = control_learner if control_learner is not None else self._get_default_learner(self.base_task)
 
     def fit(self, train_data: DataFrame, roles: Dict):
         """Fit meta-learner
@@ -134,27 +147,20 @@ class T2Learner(MetaLearner):
             control_learner: AutoML model, if `None` then will be used model by default
             base_task: task
         """
-        assert any(x is not None for x in [treatment_learner, control_learner, base_task]), (
-               'Must specify any of learners or "base_task"')
+        if base_task is None:
+            if treatment_learner is not None:
+                base_task = self._get_task(treatment_learner)
+            elif control_learner is not None:
+                base_task = self._get_task(control_learner)
+            else:
+                raise RuntimeError('Must specify any of learners or "base_task"')
+
+        super().__init__(base_task)
 
         self._n_uplift_iterator_folds = n_uplift_iterator_folds
 
-        if base_task is None:
-            if treatment_learner is not None:
-                if isinstance(treatment_learner, TabularAutoML):
-                    base_task = treatment_learner.task
-                else:
-                    base_task = treatment_learner.reader.task
-            else:
-                if isinstance(control_learner, TabularAutoML):
-                    base_task = control_learner
-                else:
-                    base_task = control_learner.reader.task
-
-        self.base_task = base_task
-
-        self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(base_task)
-        self.control_learner = control_learner if control_learner is not None else self._get_default_learner(base_task)
+        self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
+        self.control_learner = control_learner if control_learner is not None else self._get_default_learner(self.base_task)
 
     def fit(self, train_data: DataFrame, roles: Dict):
         """Fit meta-learner
@@ -248,6 +254,13 @@ class XLearner(MetaLearner):
         if (outcome_learners is None or len(outcome_learners) == 0) and base_task is None:
             raise RuntimeError('Must specify any of learners or "base_task"')
 
+        if outcome_learners is not None and len(outcome_learners) > 0:
+            super().__init__(self._get_task(outcome_learners[0]))
+        elif base_task is not None:
+            super().__init__(base_task)
+        else:
+            raise RuntimeError('Must specify any of learners or "base_task"')
+
         self.learners: Dict[str, Union[Dict[str, AutoML], AutoML]] = {'outcome': {}, 'effect': {}}
         if propensity_learner is None:
             self.learners['propensity'] = self._get_default_learner(Task('binary'))
@@ -255,8 +268,8 @@ class XLearner(MetaLearner):
             self.learners['propensity'] = propensity_learner
 
         if outcome_learners is None or len(outcome_learners) == 0:
-            self.learners['outcome']['control'] = self._get_default_learner(base_task)
-            self.learners['outcome']['treatment'] = self._get_default_learner(base_task)
+            self.learners['outcome']['control'] = self._get_default_learner(self.base_task)
+            self.learners['outcome']['treatment'] = self._get_default_learner(self.base_task)
         elif len(outcome_learners) == 1:
             self.learners['outcome']['control'] = outcome_learners[0]
             self.learners['outcome']['treatment'] = copy.deepcopy(outcome_learners[0])
@@ -409,15 +422,16 @@ class RLearner(MetaLearner):
             base_task: task
 
         """
-        assert propensity_learner is not None and propensity_learner.reader.task.name == 'binary',\
+        assert propensity_learner is not None and self._get_task(propensity_learner).name == 'binary',\
             "Task of effect_learner must be 'reg'"
         assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
-        assert effect_learner is not None and effect_learner.reader.task.name == 'reg', "Task of effect_learner must be 'reg'"
+        assert effect_learner is not None and self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
+
+        super().__init__(base_task)
 
         self.propensity_learner: AutoML
         self.mean_outcome_learner: AutoML
         self.effect_learner: AutoML
-        self.base_task = base_task
 
         if propensity_learner is None:
             self.propensity_learner = TabularAutoML(task='binary')
