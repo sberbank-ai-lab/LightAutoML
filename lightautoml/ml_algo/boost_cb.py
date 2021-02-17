@@ -280,7 +280,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             # copy was made in prev astype
             data.astype({x: 'category' for x in self._le_cat_features}, copy=False)
 
-        target, weights = self.task.losses['cb'].fw_func(dataset.target, dataset.weights)
+        if dataset.target is not None:
+            target, weights = self.task.losses['cb'].fw_func(dataset.target, dataset.weights)
+        else:
+            target, weights = dataset.target, dataset.weights
 
         pool = cb.Pool(
             data,
