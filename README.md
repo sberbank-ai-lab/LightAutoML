@@ -1,10 +1,10 @@
-# LightAutoML (LAMA) - automatic model creation framework
+# LightAutoML - automatic model creation framework
 
 [![Slack](https://lightautoml-slack.herokuapp.com/badge.svg)](https://lightautoml-slack.herokuapp.com)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lightautoml?color=green&label=PyPI%20downloads&logo=pypi&logoColor=orange&style=plastic)
 ![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 
-LightAutoML (LAMA) project from Sberbank AI Lab AutoML group is the framework for automatic classification and regression model creation.
+LightAutoML project from Sberbank AI Lab AutoML group is the framework for automatic classification and regression model creation.
 
 Current available tasks to solve:
 - binary classification
@@ -17,21 +17,22 @@ Currently we work with datasets, where **each row is an object with its specific
 
 **Authors**: Ryzhkov Alexander, Vakhrushev Anton, Simakov Dmitry, Bunakov Vasilii, Damdinov Rinchin, Shvets Pavel, Kirilin Alexander
 
-**LAMA video guides**:
-- [LAMA framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
-- [LAMA practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
+**LightAutoML video guides**:
+- [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) (Ryzhkov Alexander, Simakov Dmitry)
+- [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
+- [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
 
 See the [Documentation of LightAutoML](https://lightautoml.readthedocs.io/).
 
 *******
 # Installation
 ### Installation via pip from PyPI
-To install LAMA framework on your machine:
+To install LightAutoML framework on your machine:
 ```bash 
-pip install lightautoml
+pip install -U lightautoml
 ```
 ### Installation from sources with virtual environment creation
-If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
+If you want to create a specific virtual environment for LightAutoML, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LightAutoML inside:
 ```bash 
 bash build_package.sh
 ```
@@ -41,7 +42,7 @@ bash test_package.sh
 ```
 *******
 # Docs generation
-To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
+To generate documentation for LightAutoML framework, you can use command below (it uses virtual env created on installation step from sources):
 ```bash 
 bash build_docs.sh
 ```
@@ -61,7 +62,7 @@ Each tutorial has the step to enable Profiler and completes with Profiler run, w
 
 **Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command. 
 
-For more examples, in `tests` folder you can find different scenarios of LAMA usage:
+For more examples, in `tests` folder you can find different scenarios of LightAutoML usage:
 1. `demo0.py` - building ML pipeline from blocks and fit + predict the pipeline itself.
 2. `demo1.py` - several ML pipelines creation (using importances based cutoff feature selector) to build 2 level stacking using AutoML class
 3. `demo2.py` - several ML pipelines creation (using iteartive feature selection algorithm) to build 2 level stacking using AutoML class
@@ -89,4 +90,5 @@ If you are interested in contributing to LightAutoML, please read the [Contribut
 Write a message to us:
 - Alexander Ryzhkov (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
 - Anton Vakhrushev (_email_: AGVakhrushev@sberbank.ru)
+
 
