@@ -19,6 +19,9 @@ def test_uplift_modeling():
     np.random.seed(42)
     logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
 
+    TARGET_NAME = 'TARGET'
+    TREATMENT_NAME = 'CODE_GENDER'
+
     data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
 
     data['BIRTH_DATE'] = (np.datetime64('2018-01-01') + data['DAYS_BIRTH'].astype(np.dtype('timedelta64[D]'))).astype(str)
@@ -30,23 +33,19 @@ def test_uplift_modeling():
     data['constant'] = 1
     data['allnan'] = np.nan
 
-    data.drop(['DAYS_BIRTH', 'DAYS_EMPLOYED'], axis=1, inplace=True)
+    data['CODE_GENDER'] = (data['CODE_GENDER'] == 'M').astype(int)
 
-    # Create treatment column with synthetic values
-    data['TREATMENT'] = np.nan
-    data.loc[data['TARGET'] == 0, 'TREATMENT'] = np.random.randint(2, size=data.loc[data['TARGET'] == 0].shape[0])
-    data.loc[data['TARGET'] == 1, 'TREATMENT'] = \
-        np.random.choice([0, 1], data[data['TARGET'] == 1].shape[0], p=[0.3, 0.7])
+    data.drop(['DAYS_BIRTH', 'DAYS_EMPLOYED'], axis=1, inplace=True)
 
     train, test = train_test_split(data, test_size=2000, random_state=42, shuffle=True)
 
     roles = {
-        'target': 'TARGET',
-        'treatment': 'TREATMENT',
+        'target': TARGET_NAME,
+        'treatment': TREATMENT_NAME,
         DatetimeRole(base_date=True, seasonality=(), base_feats=False): 'report_dt'
     }
 
-    test_target, test_treatment = test['TARGET'].values.ravel(), test['TREATMENT'].values.ravel()
+    test_target, test_treatment = test[TARGET_NAME].values.ravel(), test[TREATMENT_NAME].values.ravel()
 
     # Default setting
     tlearner = meta_learners.TLearner(base_task=Task('binary'))
