@@ -423,7 +423,7 @@ class AutoUplift(BaseAutoUplift):
             control_model, treatment_model = 'Linear', 'Preset'
         elif treatment_rate < 0.5 - self._threshold_imbalance_treatment:
             is_imbalance_treatment = True
-            ordered_outcome_baselearners = [
+            ordered_outcome_learners = [
                 AutoMLParamWrapper(TabularAutoML, {'task': self.base_task, 'timeout': self._tabular_timeout}),
                 uplift_utils.create_linear_automl(base_task=Task('binary'))
             ]
