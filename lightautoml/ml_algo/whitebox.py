@@ -22,27 +22,31 @@ class WbMLAlgo(TabularMLAlgo):
 
     https://github.com/sberbank-ai-lab/AutoMLWhitebox
 
-
     default_params:
 
        - monotonic: bool
-           Global condition for monotonic constraints. If "True", then only
-           monotonic binnings will be built. You can pass values to the .fit
-           method that change this condition separately for each feature.
+           Global condition for monotonic constraints.
+           If ``True``, then only monotonic binnings will be built.
+           You can pass values to the ``.fit``
+           method that change this condition
+           separately for each feature.
        - max_bin_count: int
            Global limit for the number of bins. Can be specified for every
            feature in .fit
-       - select_type: None or int
-           The type to specify the primary feature selection. If the type is an integer,
-           then we select the number of features indicated by this number (with the best feature_importance).
-           If the value is "None", we leave only features with feature_importance greater than 0.
+       - select_type: ``None`` or ``int``
+           The type to specify the primary feature selection.
+           If the type is an integer, then we select the number
+           of features indicated by this number
+           (with the best `feature_importance`).
+           If the value is ``None``, we leave only features
+           with ``feature_importance`` greater than ``0``.
        - pearson_th:  0 < pearson_th < 1
            Threshold for feature selection by correlation. All features with
            the absolute value of correlation coefficient greater then
            pearson_th will be discarded.
        - auc_th: .5 < auc_th < 1
-           Threshold for feature selection by one-dimensional AUC. WoE with AUC < auc_th will
-           be discarded.
+           Threshold for feature selection by one-dimensional AUC.
+           WoE with AUC < auc_th will be discarded.
        - vif_th: vif_th > 0
            Threshold for feature selection by VIF. Features with VIF > vif_th
            are iteratively discarded one by one, then VIF is recalculated
@@ -56,22 +60,26 @@ class WbMLAlgo(TabularMLAlgo):
            valid values will be calculated as the sample size * th_const
        - force_single_split: bool
            In the tree parameters, you can set the minimum number of
-           observations in the leaf. Thus, for some features, splitting for 2 beans at least will be impossible. If you specify that
-           force_single_split = True, it means that 1 split will be created for the feature, if the minimum bin size is greater than th_const.
+           observations in the leaf. Thus, for some features,
+           splitting for 2 beans at least will be impossible.
+           If you specify that ``force_single_split = True``,
+           it means that 1 split will be created for the feature,
+           if the minimum bin size is greater than th_const.
        - th_nan: int >= 0
            Threshold, which determines that WoE values are calculated to NaN.
        - th_cat: int >= 0
            Threshold, which determines which categories are small.
        - woe_diff_th: float = 0.01
            The option to merge NaNs and rare categories with another bin,
-           if the difference in WoE is less than woe_diff_th
+           if the difference in WoE is less than woe_diff_th.
        - min_bin_size: int > 1, 0 < float < 1
            Minimum bin size when splitting.
        - min_bin_mults: list of floats > 1
            If minimum bin size is specified, you can specify a list to check
-           if large values work better, for example: [2, 4]
+           if large values work better, for example: [2, 4].
        - min_gains_to_split: list of floats >= 0
-           min_gain_to_split values that will be iterated to find the best split.
+           min_gain_to_split values that will be
+           iterated to find the best split.
        - auc_tol: 1e-5 <= auc_tol <=1e-2
            AUC tolerance. You can lower the auc_tol value from the maximum
            to make the model simpler.
@@ -96,13 +104,14 @@ class WbMLAlgo(TabularMLAlgo):
        - l1_exp_step: real > 1
            Grid scale in l1 regularization
        - population_size: None, int > 0
-           Feature selection type in the selector. If the value is "None" then L1 boost is used.
-           If "int" is specified, then a standard step will be used for
+           Feature selection type in the selector.
+           If the value is ``None`` then L1 boost is used.
+           If ``int`` is specified, then a standard step will be used for
            the number of random subsamples indicated by this value.
            Can be generalized to genetic algorithm.
        - feature_groups_count: int > 0
-           The number of groups in the genetic algorithm. Its effect is visible only when
-           population_size > 0
+           The number of groups in the genetic algorithm.
+           Its effect is visible only when population_size > 0
        - imp_type: str
            Feature importances type. Feature_imp and perm_imp are available.
            It is used to sort the features at the first and at the final
@@ -120,7 +129,7 @@ class WbMLAlgo(TabularMLAlgo):
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: Timer instance or None.
+    timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'WhiteBox'
@@ -189,8 +198,8 @@ class WbMLAlgo(TabularMLAlgo):
         """Implements training and prediction on single fold.
 
         Args:
-            train: PandasDataset to train.
-            valid: PandasDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values).
@@ -238,10 +247,10 @@ class WbMLAlgo(TabularMLAlgo):
 
         Args:
             model: WhiteBox model
-            dataset: test dataset.
+            dataset: Test dataset.
 
         Return:
-            predicted target values.
+            Predicted target values.
 
         """
         args = []
@@ -267,7 +276,7 @@ class WbMLAlgo(TabularMLAlgo):
 
         Args:
             dataset: Dataset.
-            report: Generate report.
+            report: Flag to generate report.
 
         Returns:
             Dataset with predictions.

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.7"
+version = "0.2.10"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -30,7 +30,7 @@ numpy = "*"
 scipy = "*"
 pandas = ">=1"
 scikit-learn = ">=0.22"
-lightgbm = ">=3.1"
+lightgbm = "^2.3"
 optuna = "*"
 torch = ">=1.6"
 holidays = "*"

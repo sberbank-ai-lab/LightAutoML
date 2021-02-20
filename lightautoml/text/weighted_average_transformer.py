@@ -27,13 +27,15 @@ class WeightedAverageTransformer(TransformerMixin):
         """Calculate sentence embedding as weighted average of word embeddings.
 
         Args:
-            embedding_model: word2vec, fasstext, etc... should have dict interface {<word>: <embedding>}.
-            embed_size: size of embedding.
-            weight_type: 'idf' for idf weights, 'sif' for smoothed inverse frequency weights, '1' for all weights are equal.
-            use_svd: substract projection onto first singular vector.
-            alpha: param for sif weights.
-            verbose: add prints.
-            **kwargs: unused arguments.
+            embedding_model: word2vec, fasstext, etc.
+              Should have dict interface {<word>: <embedding>}.
+            embed_size: Size of embedding.
+            weight_type: 'idf' for idf weights, 'sif' for
+              smoothed inverse frequency weights, '1' for all weights are equal.
+            use_svd: Substract projection onto first singular vector.
+            alpha: Param for sif weights.
+            verbose: Add prints.
+            **kwargs: Unused arguments.
 
         """
         super(WeightedAverageTransformer, self).__init__()
@@ -65,7 +67,7 @@ class WeightedAverageTransformer(TransformerMixin):
         """Output shape.
 
         Returns:
-            int with module output shape.
+            Int with module output shape.
 
         """
         return self.embed_size

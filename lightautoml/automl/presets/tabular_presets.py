@@ -1,6 +1,4 @@
-"""
-Tabular presets
-"""
+"""Tabular presets."""
 
 import os
 from copy import copy, deepcopy
@@ -34,23 +32,22 @@ from ...tasks import Task
 _base_dir = os.path.dirname(__file__)
 
 
-# set initial runtime rate guess for first level models
-
 
 @record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
-    """Classic preset - work with tabular data.
-
-    Supported data roles - numbers, dates, categories
+    """
+    Classic preset - work with tabular data.
+    Supported data roles - numbers, dates, categories.
     Limitations:
 
-        - no memory management
-        - no text support
+        - No memory management
+        - No text support
 
-    GPU support in catboost/lightgbm(if installed for gpu) training
+    GPU support in catboost/lightgbm (if installed for GPU) training.
     """
     _default_config_path = 'tabular_config.yml'
 
+    # set initial runtime rate guess for first level models
     _time_scores = {
 
         'lgb': 1,
@@ -80,31 +77,39 @@ class TabularAutoML(AutoMLPreset):
 
         """
 
-        Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
-        If you need to change just few params, it's possible to pass it as dict of dicts, like json
-        To get available params please look on default config template. Also you can find there param description
-        To generate config template call TabularAutoML.get_config(config_path.yml)
+        Commonly _params kwargs (ex. timing_params) set via
+        config file (config_path argument).
+        If you need to change just few params, it's possible
+        to pass it as dict of dicts, like json.
+        To get available params please look on default config template.
+        Also you can find there param description.
+        To generate config template call
+        :meth:`TabularAutoML.get_config('config_path.yml')`.
 
         Args:
             task: Task to solve.
-            timeout: timeout in seconds.
-            memory_limit: memory limit that are passed to each automl.
-            cpu_limit: cpu limit that that are passed to each automl.
-            gpu_ids: gpu_ids that are passed to each automl.
-            verbose: verbosity level that are passed to each automl.
-            timing_params: timing param dict. Optional.
-            config_path: path to config file.
-            general_params: general param dict.
-            reader_params: reader param dict.
-            read_csv_params: params to pass pandas.read_csv (case of train/predict from file).
-            nested_cv_params: param dict for nested cross-validation.
-            tuning_params: params of Optuna tuner.
-            selection_params: params of feature selection.
-            lgb_params: params of lightgbm model.
-            cb_params: params of catboost model.
-            linear_l2_params: params of linear model.
-            gbm_pipeline_params: params of feature generation for boosting models.
-            linear_pipeline_params: params of feature generation for linear models.
+            timeout: Timeout in seconds.
+            memory_limit: Memory limit that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+            verbose: Verbosity level that are passed to each automl.
+            timing_params: Timing param dict. Optional.
+            config_path: Path to config file.
+            general_params: General param dict.
+            reader_params: Reader param dict.
+            read_csv_params: Params to pass ``pandas.read_csv``
+              (case of train/predict from file).
+            nested_cv_params: Param dict for nested cross-validation.
+            tuning_params: Params of Optuna tuner.
+            selection_params: Params of feature selection.
+            lgb_params: Params of lightgbm model.
+            cb_params: Params of catboost model.
+            linear_l2_params: Params of linear model.
+            gbm_pipeline_params: Params of feature generation
+              for boosting models.
+            linear_pipeline_params: Params of feature generation
+              for linear models.
+
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
 
@@ -173,6 +178,8 @@ class TabularAutoML(AutoMLPreset):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
+        torch.set_num_threads(cpu_cnt)
+
         self.cb_params['default_params']['thread_count'] = min(self.cb_params['default_params']['thread_count'], cpu_cnt)
         self.lgb_params['default_params']['num_threads'] = min(self.lgb_params['default_params']['num_threads'], cpu_cnt)
         self.reader_params['n_jobs'] = min(self.reader_params['n_jobs'], cpu_cnt)
@@ -360,27 +367,33 @@ class TabularAutoML(AutoMLPreset):
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[ReadableToDf] = None,
                     valid_features: Optional[Sequence[str]] = None) -> NumpyDataset:
-        """Almost same as AutoML fit_predict.
+        """Fit and get prediction on validation dataset.
+
+        Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
+
+        Additional features - working with different data formats.
+        Supported now:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`.
+              For example, ``{'data': X...}``. In this case,
+              roles are optional, but `train_features`
+              and `valid_features` required.
+            - :class:`pandas.DataFrame`.
 
         Args:
-            train_data:  dataset to train.
-            roles: roles dict.
-            train_features: optional features names, if cannot be inferred from train_data.
-            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance.
-            valid_data: optional validation dataset.
-            valid_features: optional validation dataset features if cannot be inferred from valid_data.
+            train_data: Dataset to train.
+            roles: Roles dict.
+            train_features: Optional features names, if can't
+              be inferred from `train_data`.
+            cv_iter: Custom cv-iterator. For example,
+              :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`.
+            valid_data: Optional validation dataset.
+            valid_features: Optional validation dataset features
+              if cannot be inferred from `valid_data`.
 
         Returns:
-            LAMLDataset of predictions. Call .data to get predictions array.
-
-        Note:
-
-            Additional features - working with different data formats.  Supported now:
-
-            - path to .csv, .parquet, .feather files
-            - dict of np.ndarray, ex. {'data': X, 'target': Y ..}. In this case roles are optional, but
-              train_features and valid_features required
-            - pd.DataFrame
+            Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
         # roles may be none in case of train data is set {'data': np.ndarray, 'target': np.ndarray ...}
@@ -399,25 +412,31 @@ class TabularAutoML(AutoMLPreset):
 
     def predict(self, data: ReadableToDf, features_names: Optional[Sequence[str]] = None,
                 batch_size: Optional[int] = None, n_jobs: Optional[int] = 1) -> NumpyDataset:
-        """Almost same as AutoML .predict on new dataset, with additional features.
+        """Get dataset with predictions.
+
+        Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
+        on new dataset, with additional features.
+
+        Additional features - working with different data formats.
+        Supported now:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`. For example,
+              ``{'data': X...}``. In this case roles are optional,
+              but `train_features` and `valid_features` required.
+            - :class:`pandas.DataFrame`.
+
+        Parallel inference - you can pass ``n_jobs`` to speedup
+        prediction (requires more RAM).
+        Batch_inference - you can pass ``batch_size``
+        to decrease RAM usage (may be longer).
 
         Args:
-            data: dataset to perform inference.
-            features_names: optional features names, if cannot be inferred from train_data.
-            batch_size: batch size or None.
-            n_jobs: n_jobs, default 1.
-
-        Note:
-
-            Additional features - working with different data formats.  Supported now:
-
-                - path to .csv, .parquet, .feather files
-                - np.ndarray, or dict of np.ndarray, ex. {'data': X ..}. In this case roles are optional, but
-                    train_features and valid_features required
-                - pd.DataFrame
-
-            parallel inference - you can pass n_jobs to speedup prediction (requires more RAM)
-            batch_inference - you can pass batch_size to decrease RAM usage (may be longer)
+            data: Dataset to perform inference.
+            features_names: Optional features names,
+              if cannot be inferred from `train_data`.
+            batch_size: Batch size or ``None``.
+            n_jobs: Number of jobs.
 
         Returns:
             Dataset with predictions.
@@ -464,21 +483,22 @@ class TabularUtilizedAutoML(TimeUtilization):
                  random_state: int = 42,
                  **kwargs
                  ):
-        """Simplifies using TimeUtilization module for TabularAutoMLPreset.
+        """Simplifies using ``TimeUtilization`` module for ``TabularAutoMLPreset``.
 
         Args:
             task: Task to solve.
-            timeout: timeout in seconds.
-            memory_limit: memory limit that are passed to each automl.
-            cpu_limit: cpu limit that that are passed to each automl.
-            gpu_ids: gpu_ids that are passed to each automl.
-            verbose: verbosity level that are passed to each automl.
-            timing_params: timing_params level that are passed to each automl.
-            configs_list: list of str path to configs files.
-            drop_last: usually last automl will be stopped with timeout. Flag that defines
-                if we should drop it from ensemble.
-            max_runs_per_config: maximum number of multistart loops.
-            random_state: initial random_state value that will be set in case of search in config.
+            timeout: Timeout in seconds.
+            memory_limit: Memory limit that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+            verbose: Verbosity level that are passed to each automl.
+            timing_params: Timing params level that are passed to each automl.
+            configs_list: List of str path to configs files.
+            drop_last: Usually last automl will be stopped with timeout.
+              Flag that defines if we should drop it from ensemble.
+            max_runs_per_config: Maximum number of multistart loops.
+            random_state: Initial random seed that will be set
+              in case of search in config.
 
         """
         if configs_list is None:

@@ -26,8 +26,8 @@ _tokenizer_by_lang = {'ru': SimpleRuTokenizer,
 
 @record_history(enabled=False)
 class NLPDataFeatures:
-    """Class contains basic features transformations for text data.
-
+    """
+    Class contains basic features transformations for text data.
     """
     _lang = {'en', 'ru', 'multi'}
 
@@ -69,9 +69,20 @@ class NLPDataFeatures:
 
 @record_history(enabled=False)
 class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
-    """Class contains embedding features for text data."""
+    """
+    Class contains embedding features for text data.
+    """
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
+        """Create pipeline for textual data.
+
+        Args:
+            train: Dataset with train features.
+
+        Returns:
+            Transformer.
+
+        """
         transformers_list = []
         # process texts
         texts = get_columns_by_role(train, 'Text')
@@ -99,9 +110,20 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
 
 @record_history(enabled=False)
 class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
-    """Class contains tfidf features for text data."""
+    """
+    Class contains tfidf features for text data.
+    """
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
+        """Create pipeline for textual data.
+
+        Args:
+            train: Dataset with train features.
+
+        Returns:
+            Transformer.
+
+        """
         transformers_list = []
 
         # process texts
@@ -124,8 +146,19 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
 
 @record_history(enabled=False)
 class TextBertFeatures(FeaturesPipeline, NLPDataFeatures):
-
+    """
+    Features pipeline for BERT.
+    """
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
+        """Create pipeline for BERT.
+
+        Args:
+            train: Dataset with train data.
+
+        Returns:
+            Transformer.
+
+        """
         transformers_list = []
 
         # process texts

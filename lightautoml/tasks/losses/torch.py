@@ -12,7 +12,7 @@ from .base import Loss
 
 @record_history(enabled=False)
 class TorchLossWrapper(nn.Module):
-    """Cusomize PyTorch-based loss.
+    """Customize PyTorch-based loss.
 
     Args:
         func: loss to customize. Example: `torch.nn.MSELoss`.
@@ -246,6 +246,7 @@ class TORCHLoss(Loss):
 
     def __init__(self, loss: Union[str, Callable], loss_params: Optional[Dict] = None):
         """
+
         Args:
             loss: name or callable objective function.
             loss_params: additional loss parameters.

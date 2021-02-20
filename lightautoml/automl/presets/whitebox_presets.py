@@ -20,32 +20,35 @@ _base_dir = os.path.dirname(__file__)
 
 @record_history(enabled=False)
 class WhiteBoxPreset(AutoMLPreset):
-    """Special preset, that wraps AutoWoE algo - logistic regression over binned features (scorecard).
+    """Preset for AutoWoE - logistic regression over binned features (scorecard).
 
     Supported data roles - numbers, dates, categories.
 
     Limitations:
 
-        - simple time management
-        - no memory management
-        - working only with DataFrame
-        - no batch inference
-        - no text support
-        - no parallel execution
-        - no batch inference
-        - no gpu usage
-        - No cross-validation scheme. Supports only holdout validation (cv is created inside AutoWoE, but no oof pred returned)
+        - Simple time management.
+        - No memory management.
+        - Working only with :class:`pandas.DataFrame`.
+        - No batch inference.
+        - No text support.
+        - No parallel execution.
+        - No batch inference.
+        - No GPU usage.
+        - No cross-validation scheme. Supports only holdout validation
+          (cv is created inside AutoWoE, but no oof pred returned).
 
-    Common usecase - fit lightweight interpretable model for binary classification task.
+    Common usecase - fit lightweight interpretable model
+    for binary classification task.
 
     """
     _default_config_path = 'whitebox_config.yml'
 
     @property
     def whitebox(self):
-        """Get wrapped AutoWoE object
+        """Get wrapped AutoWoE object.
 
         Returns:
+            Model.
 
         """
         return self.levels[0][0].whitebox
@@ -61,24 +64,29 @@ class WhiteBoxPreset(AutoMLPreset):
                  whitebox_params: Optional[dict] = None):
         """
 
-        Commonly _params kwargs (ex. timing_params) set via config file (config_path argument).
-        If you need to change just few params, it's possible to pass it as dict of dicts, like json
-        To get available params please look on default config template. Also you can find there param description
-        To generate config template call WhiteBoxPreset.get_config(config_path.yml)
+        Commonly _params kwargs (ex. timing_params) set via
+        config file (config_path argument).
+        If you need to change just few params, it's possible to pass it
+        as dict of dicts, like json.
+        To get available params please look on default config template.
+        Also you can find there param description
+        To generate config template call
+        :func:`WhiteBoxPreset.get_config('config_path.yml')`.
 
         Args:
             task: Task to solve.
-            timeout: timeout in seconds.
-            memory_limit: memory limit that are passed to each automl.
-            cpu_limit: cpu limit that that are passed to each automl.
-            gpu_ids: gpu_ids that are passed to each automl.
-            verbose: verbosity level that are passed to each automl.
-            timing_params: timing param dict. Optional.
-            config_path: path to config file.
-            general_params: general param dict.
-            reader_params: reader param dict.
-            read_csv_params: params to pass pandas.read_csv (case of train/predict from file).
-            whitebox_params: params of whitebox algo (look at config file).
+            timeout: Timeout in seconds.
+            memory_limit: Memory limit that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+            verbose: Verbosity level that are passed to each automl.
+            timing_params: Timing param dict.
+            config_path: Path to config file.
+            general_params: General param dict.
+            reader_params: Reader param dict.
+            read_csv_params: Params to pass :func:`pandas.read_csv`
+              (case of train/predict from file).
+            whitebox_params: Params of WhiteBox algo (look at config file).
 
         """
         super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
@@ -107,13 +115,11 @@ class WhiteBoxPreset(AutoMLPreset):
         self.whitebox_params['verbose'] = self.verbose
 
     def create_automl(self, *args, **kwargs):
-        """Create basic WhiteBoxPreset instance from data.
+        """Create basic :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset` instance from data.
 
         Args:
-            *args: everything passed to .fit_predict.
-            **kwargs: everything passed to .fit_predict.
-
-        Returns:
+            *args: Not used.
+            **kwargs: everything passed to ``.fit_predict``.
 
         """
         self.infer_auto_params()
@@ -137,30 +143,33 @@ class WhiteBoxPreset(AutoMLPreset):
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None, valid_features: Optional[Sequence[str]] = None,
                     **fit_params) -> NumpyDataset:
-        """Almost same as AutoML fit_predict.
+        """Fit and get prediction on validation dataset.
+
+        Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
+
+        Additional features - working with different data formats.
+        Supported now:
+
+            - Path to ``.csv``, ``.parquet``, ``.feather`` files.
+            - :class:`~numpy.ndarray`, or dict of :class:`~numpy.ndarray`.
+              For example, ``{'data': X...}``. In this case,
+              roles are optional, but `train_features`
+              and `valid_features` required.
+            - :class:`pandas.DataFrame`.
 
         Args:
-            train_data:  dataset to train.
-            roles: roles dict.
-            train_features: optional features names, if cannot be inferred from train_data.
-            cv_iter: custom cv iterator. Ex. TimeSeriesIterator instance.
-                Note - whitebox expects custom iterator of len == 2.
-            valid_data: optional validation dataset.
-                Note - if no validation passed, prediction will be made on train sample (biased).
-            valid_features: optional validation dataset features if cannot be inferred from valid_data.
+            train_data: Dataset to train.
+            roles: Roles dict.
+            train_features: Optional features names, if can't
+              be inferred from `train_data`.
+            cv_iter: Custom cv-iterator. For example,
+              :class:`~lightautoml.validation.np_iterators.TimeSeriesIterator`.
+            valid_data: Optional validation dataset.
+            valid_features: Optional validation dataset features
+              if cannot be inferred from `valid_data`.
 
         Returns:
-            LAMLDataset of predictions. Call .data to get predictions array.
-
-
-        Note:
-
-            Additional features - working with different data formats.  Supported now:
-
-            - path to .csv, .parquet, .feather files
-            - dict of np.ndarray, ex. {'data': X, 'target': Y ..}. In this case roles are optional, but
-              train_features and valid_features required
-            - pd.DataFrame
+            Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
         assert cv_iter is None or len(cv_iter) == 2, 'Expect custom iterator with len 2'
@@ -176,14 +185,17 @@ class WhiteBoxPreset(AutoMLPreset):
 
     def predict(self, data: Any, features_names: Optional[Sequence[str]] = None,
                 report: bool = False) -> NumpyDataset:
-        """Almost same as AutoML .predict on new dataset, with additional features.
+        """Almost same as AutoML ``.predict`` with additional features.
 
-        Additional features - generate extended whitebox report=True passed to args.
+        Additional features - generate extended WhiteBox
+        ``report=True`` passed to args.
 
         Args:
-            data: dataset to perform inference.
-            features_names: optional features names, if cannot be inferred from train_data.
-            report: bool - if we need inner whitebox report update (True is slow). Only if general_params['report'] is True.
+            data: Dataset to perform inference.
+            features_names: Optional features names,
+              if can't be inferred from `train_data`.
+            report: Flag if we need inner WhiteBox report update
+              (``True`` is slow). Only if ``general_params['report'] = True``.
 
         Returns:
             Dataset with predictions.

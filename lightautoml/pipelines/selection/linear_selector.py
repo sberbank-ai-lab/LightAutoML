@@ -15,7 +15,8 @@ class HighCorrRemoval(SelectionPipeline):
     """Selector to remove highly correlated features.
 
     Del totally correlated feats to speedup L1 regression models.
-    For sparse data cosine will be used. It's not exact but ok for remove very high correlations.
+    For sparse data cosine will be used.
+    It's not exact, but ok for remove very high correlations.
 
     """
 
@@ -24,10 +25,10 @@ class HighCorrRemoval(SelectionPipeline):
         """
 
         Args:
-            corr_co: similarity threshold.
-            subsample: number (int) of samples, or frac (float) from full dataset.
-            random_state: seed for subsample.
-            **kwargs: addtional parameters. Used for initialiation of parent class.
+            corr_co: Similarity threshold.
+            subsample: Number (int) of samples, or frac (float) from full dataset.
+            random_state: Random seed for subsample.
+            **kwargs: Addtional parameters. Used for initialiation of parent class.
 
         """
 
@@ -40,10 +41,10 @@ class HighCorrRemoval(SelectionPipeline):
         """Select features to save in dataset during selection.
 
         Method is used to perform selection based on features correlation.
-        Should save _selected_features attribute in the end of working.
+        Should save ``_selected_features`` attribute in the end of working.
 
         Args:
-            train_valid: classic cv iterator.
+            train_valid: Classic cv-iterator.
 
         """
         train = train_valid.train.data

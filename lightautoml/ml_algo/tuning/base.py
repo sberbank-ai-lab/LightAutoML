@@ -24,7 +24,7 @@ class ParamsTuner(ABC):
         """Get best params.
 
         Returns:
-            dict with best fitted params.
+            Dict with best fitted params.
 
         """
         assert hasattr(self, '_best_params'), 'ParamsTuner should be fitted first'
@@ -41,7 +41,7 @@ class ParamsTuner(ABC):
 
         Args:
             ml_algo: ML algorithm.
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
             (None, None) if ml_algo is fitted or models are not fitted during training,
@@ -61,10 +61,10 @@ class DefaultTuner(ParamsTuner):
         Default fit method - just save defaults.
 
         Args:
-            ml_algo: MLAlgo that is tuned.
-            train_valid_iterator: empty.
+            ml_algo: Algorithm that is tuned.
+            train_valid_iterator: Empty.
 
-        Returns:
+        Returns:s
             Tuple (None, None).
         """
         self._best_params = ml_algo.init_params_on_input(train_valid_iterator=train_valid_iterator)

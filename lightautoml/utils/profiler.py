@@ -281,7 +281,7 @@ class Profiler:
         """Update profiling deco settings.
 
         Args:
-            new_settings: dict with new key-values for decorator.
+            new_settings: Dict with new key-values for decorator.
 
         """
         for f in self.all_funcs:

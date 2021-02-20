@@ -28,39 +28,41 @@ class TorchModel(TabularMLAlgo):
 
     default_params:
 
-        - bs: batch size.
-        - num_workers: number of threads for multiprocessing.
-        - max_length: max sequence length.
-        - opt_params: dict with optim params.
-        - scheduler_params: dict with scheduler params.
-        - is_snap: use snapshots.
-        - snap_params: dict with SE parameters.
-        - init_bias: init last linear bias by mean target values.
-        - n_epochs: number of training epochs.
-        - input_bn: use 1d batch norm for input data.
-        - emb_dropout: dropout probability.
-        - emb_ratio: ratio for embedding size = (x + 1) // emb_ratio.
-        - max_emb_size: max embedding size.
-        - bert_name: name of HuggingFace transformer model.
-        - pooling: type of pooling strategy for bert model.
-        - device: torch device or str.
-        - use_cont: use numeric data.
-        - use_cat: use category data.
-        - use_text: use text data.
-        - lang: text language.
-        - deterministic: cudnn backend.
-        - multigpu: use Data Parallel.
-        - path_to_save: path to save model checkpoints, None - stay in memory.
-        - random_state: random state to take subsample..
-        - verbose_inside: number of steps between verbose inside epoch or None.
-        - verbose: verbose every N epochs.
+        - bs: Batch size.
+        - num_workers: Number of threads for multiprocessing.
+        - max_length: Max sequence length.
+        - opt_params: Dict with optim params.
+        - scheduler_params: Dict with scheduler params.
+        - is_snap: Use snapshots.
+        - snap_params: Dict with SE parameters.
+        - init_bias: Init last linear bias by mean target values.
+        - n_epochs: Number of training epochs.
+        - input_bn: Use 1d batch norm for input data.
+        - emb_dropout: Dropout probability.
+        - emb_ratio: Ratio for embedding size = (x + 1) // emb_ratio.
+        - max_emb_size: Max embedding size.
+        - bert_name: Name of HuggingFace transformer model.
+        - pooling: Type of pooling strategy for bert model.
+        - device: Torch device or str.
+        - use_cont: Use numeric data.
+        - use_cat: Use category data.
+        - use_text: Use text data.
+        - lang: Text language.
+        - deterministic: CUDNN backend.
+        - multigpu: Use Data Parallel.
+        - path_to_save: Path to save model checkpoints,
+          ``None`` - stay in memory.
+        - random_state: Random state to take subsample.
+        - verbose_inside: Number of steps between
+          verbose inside epoch or ``None``.
+        - verbose: Verbose every N epochs.
 
     freeze_defaults:
 
         - ``True`` :  params may be rewrited depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: ``Timer`` instance or ``None``.
+    timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'TorchNN'
@@ -172,10 +174,11 @@ class TorchModel(TabularMLAlgo):
         """Get model parameters depending on dataset parameters.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
-            parameters of model.
+            Parameters of model.
+
         """
 
         suggested_params = copy(self.default_params)
@@ -242,8 +245,8 @@ class TorchModel(TabularMLAlgo):
         """Implements training and prediction on single fold.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values).
@@ -273,11 +276,11 @@ class TorchModel(TabularMLAlgo):
         """Predict target values for dataset.
 
         Args:
-            model: neural net object or dict or str.
-            dataset: test dataset.
+            model: Neural net object or dict or str.
+            dataset: Test dataset.
 
         Return:
-            predicted target values.
+            Predicted target values.
 
         """
 

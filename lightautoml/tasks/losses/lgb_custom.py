@@ -1,5 +1,6 @@
 """Custom metrics and loss functions for LightGBM."""
 
+from typing import Tuple
 import lightgbm as lgb
 import numpy as np
 from log_calls import record_history
@@ -8,7 +9,7 @@ from scipy.special import softmax
 
 @record_history(enabled=False)
 def softmax_ax1(x: np.ndarray) -> np.ndarray:
-    """
+    """Softmax columnwise.
 
     Args:
         x: input.
@@ -21,16 +22,16 @@ def softmax_ax1(x: np.ndarray) -> np.ndarray:
 
 
 @record_history(enabled=False)
-def lgb_f1_loss_multiclass(preds: np.ndarray, train_data: lgb.Dataset, clip: float = 1e-5):
+def lgb_f1_loss_multiclass(preds: np.ndarray, train_data: lgb.Dataset, clip: float = 1e-5) -> Tuple[np.ndarray, np.ndarray]:
     """Custom loss for optimizing f1.
 
     Args:
-        preds: np.ndarray.
-        train_data: lgb dataset.
-        clip: clip values.
+        preds: Predctions.
+        train_data: Dataset in LightGBM format.
+        clip: Clump constant.
 
     Returns:
-        lgb loss output.
+        Gradient, hessian.
 
     """
     y_true = train_data.get_label().astype(np.int32)

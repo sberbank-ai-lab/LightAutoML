@@ -73,7 +73,7 @@ def oof_task_check(dataset: LAMLDataset):
     """Check if task is binary or regression.
 
     Args:
-        dataset: LAMLDataset to check.
+        dataset: Dataset to check.
 
     """
     task = dataset.task
@@ -84,10 +84,11 @@ def oof_task_check(dataset: LAMLDataset):
 def text_check(dataset: LAMLDataset):
     """Check if all passed vars are text.
 
-    Raises AssertionError if non-text features are present.
-
     Args:
         dataset: LAMLDataset to check.
+
+    Raises:
+         AssertionError: If non-text features are present.
 
     """
     roles = dataset.roles
@@ -108,10 +109,10 @@ class TunableTransformer(LAMLTransformer):
 
     @property
     def params(self) -> dict:
-        """Property.
+        """Parameters.
 
         Returns:
-            dict.
+            Dict.
 
         """
         if self._params is None:
@@ -127,7 +128,7 @@ class TunableTransformer(LAMLTransformer):
         """Init params depending on input data.
 
         Returns:
-            dict with model hyperparameters.
+            Dict with model hyperparameters.
 
         """
         return self.params
@@ -140,6 +141,7 @@ class TunableTransformer(LAMLTransformer):
             freeze_defaults:
                 - ``True`` :  params may be rewritten depending on dataset.
                 - ``False``:  params may be changed only manually or with tuning.
+
         """
         self.task = None
 
@@ -172,11 +174,16 @@ class TfidfTextTransformer(TunableTransformer):
 
         Args:
             default_params: algo hyperparams.
-            freeze_defaults:
-                - ``True`` :  params may be rewritten depending on dataset.
-                - ``False``:  params may be changed only manually or with tuning.
-            subs: subsample to calculate freqs. If None - full data.
-            random_state: random state to take subsample.
+            freeze_defaults: Flag.
+            subs: Subsample to calculate freqs. If ``None`` - full data.
+            random_state: Random state to take subsample.
+
+        Note:
+            The behaviour of `freeze_defaults`:
+
+            - ``True`` :  params may be rewritten depending on dataset.
+            - ``False``:  params may be changed only
+              manually or with tuning.
 
         """
         super().__init__(default_params, freeze_defaults)
@@ -189,10 +196,11 @@ class TfidfTextTransformer(TunableTransformer):
         """Get transformer parameters depending on dataset parameters.
 
         Args:
-            dataset: NumpyOrPandas.
+            dataset: Dataset used for model parmaeters initialization.
 
         Returns:
-            parameters of model.
+            Parameters of model.
+
         """
 
         # TODO: use features_num
@@ -342,7 +350,8 @@ class OneToOneTransformer(TunableTransformer):
             dataset: NumpyOrPandas.
 
         Returns:
-            parameters of model.
+            Parameters of model.
+
         """
 
         # TODO: use features_num
@@ -365,11 +374,11 @@ class OneToOneTransformer(TunableTransformer):
         """
 
         Args:
-            default_params: algo hyperparams.
+            default_params: Algo hyperparams.
             freeze_defaults:
                 - ``True`` :  params may be rewritten depending on dataset.
                 - ``False``:  params may be changed only manually or with tuning.
-            subs: subsample to calculate freqs. If None - full data.
+            subs: Subsample to calculate freqs. If None - full data.
 
         """
 
@@ -480,7 +489,7 @@ class ConcatTextTransformer(LAMLTransformer):
         """
 
         Args:
-            special_token: add special token between columns.
+            special_token: Add special token between columns.
 
         """
         self.special_token = special_token
@@ -537,20 +546,22 @@ class AutoNLPWrap(LAMLTransformer):
         """
 
         Args:
-            model_name: method for aggregating word embeddings into sentence embedding.
-            transformer_params: aggregating model parameters.
-            embedding_model: word level embedding model with dict interface or path to gensim fasttext model.
-            cache_dir: if none - do not cache transformed datasets.
-            bert_model: name of HuggingFace transformer model.
-            subs: subsample to calculate freqs. If None - full data.
-            multigpu: use Data Parallel.
-            random_state: random state to take subsample.
-            train_fasttext: train fasttext.
-            fasttext_params: fasttext init params.
-            fasttext_epochs: number of epochs to train.
-            verbose: verbosity.
-            device: torch device or str.
-            kwargs: unused params.
+            model_name: Method for aggregating word embeddings
+              into sentence embedding.
+            transformer_params: Aggregating model parameters.
+            embedding_model: Word level embedding model with dict
+              interface or path to gensim fasttext model.
+            cache_dir: If ``None`` - do not cache transformed datasets.
+            bert_model: Name of HuggingFace transformer model.
+            subs: Subsample to calculate freqs. If None - full data.
+            multigpu: Use Data Parallel.
+            random_state: Random state to take subsample.
+            train_fasttext: Train fasttext.
+            fasttext_params: Fasttext init params.
+            fasttext_epochs: Number of epochs to train.
+            verbose: Verbosity.
+            device: Torch device or str.
+            **kwargs: Unused params.
 
         """
         if train_fasttext:

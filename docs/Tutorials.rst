@@ -6,6 +6,6 @@ Tutorials
     :maxdepth: 1
     :caption: Contents
 
-    notebooks/tutor_1.ipynb
-    notebooks/tutor_2.ipynb
-    notebooks/tutor_3.ipynb
+    tutorials/tutor_1.ipynb
+    tutorials/tutor_2.ipynb
+    tutorials/tutor_3.ipynb

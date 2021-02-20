@@ -22,10 +22,10 @@ def numeric_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
     Args:
-        dataset: dataset to check.
+        dataset: Dataset to check.
 
     Raises:
-        AssertionError: if there is non number role.
+        AssertionError: If there is non number role.
 
     """
     roles = dataset.roles
@@ -52,9 +52,9 @@ class PCATransformer(LAMLTransformer):
         """
 
         Args:
-            subs: subsample to fit algorithm. If None - full data.
-            random_state: random state to take subsample.
-            n_components: number of PCA components
+            subs: Subsample to fit algorithm. If None - full data.
+            random_state: Random state to take subsample.
+            n_components: Number of PCA components
 
         """
         self.subs = subs

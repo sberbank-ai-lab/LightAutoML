@@ -12,16 +12,17 @@ from ...transformers.base import LAMLTransformer, UnionTransformer, ColumnsSelec
 
 @record_history(enabled=False)
 class WBFeatures(FeaturesPipeline, TabularDataFeatures):
-    """Simple whitebox pipeline.
+    """Simple WhiteBox pipeline.
 
-    Just handles dates, other are handled inside whitebox
+    Just handles dates, other are handled inside WhiteBox.
+
     """
 
     def create_pipeline(self, train: PandasDataset) -> LAMLTransformer:
-        """Create pipeline for whitebox.
+        """Create pipeline for WhiteBox.
 
         Args:
-            train: LAMLDataset with train features.
+            train: Dataset with train features.
 
         Returns:
             Transformer.

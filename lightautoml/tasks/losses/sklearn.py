@@ -37,13 +37,13 @@ class SKLoss(Loss):
         """
 
         Args:
-            loss: one of default loss function. \
-                Valid are: 'logloss', 'mse', 'crossentropy', 'rmsle'.
-            loss_params: addtional loss parameters.
-            fw_func: forward transformation. \
-                Used for transformation of target and item weights.
-            bw_func: backward transformation. \
-                Used for predict values transformation.
+            loss: One of default loss function.
+              Valid are: 'logloss', 'mse', 'crossentropy', 'rmsle'.
+            loss_params: Addtional loss parameters.
+            fw_func: Forward transformation.
+              Used for transformation of target and item weights.
+            bw_func: backward transformation.
+              Used for predict values transformation.
 
         """
         assert loss in ['logloss', 'mse', 'crossentropy', 'rmsle'], 'Not supported in sklearn in general case.'
@@ -62,20 +62,21 @@ class SKLoss(Loss):
         self.loss_params = loss_params
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None):
+                            metric_params: Optional[Dict] = None, task_name: Optional[str] = None):
         """
         Callback metric setter.
 
         Uses default callback of parent class `Loss`.
 
         Args:
-            metric: callback metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric: Callback metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
+            task_name: Name of task.
 
         """
         if self.loss in _sk_force_metric:
             metric, greater_is_better, metric_params = _sk_force_metric[self.loss]
             logger.warning('For sklearn {0} callback metric switched to {1}'.format(self.loss, metric))
 
-        super().set_callback_metric(metric, greater_is_better, metric_params)
+        super().set_callback_metric(metric, greater_is_better, metric_params, task_name)

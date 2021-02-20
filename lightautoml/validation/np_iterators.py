@@ -22,8 +22,8 @@ class FoldsIterator(TrainValidIterator):
         """Creates iterator.
 
         Args:
-            train: dataset for folding.
-            n_folds: number of folds.
+            train: Dataset for folding.
+            n_folds: Number of folds.
 
         """
         assert hasattr(train, 'folds'), 'Folds in dataset should be defined to make folds iterator.'
@@ -37,7 +37,7 @@ class FoldsIterator(TrainValidIterator):
         """Get len of iterator.
 
         Returns:
-            number of folds.
+            Number of folds.
 
         """
         return self.n_folds
@@ -46,7 +46,7 @@ class FoldsIterator(TrainValidIterator):
         """Set counter to 0 and return self.
 
         Returns:
-            iterator for folds.
+            Iterator for folds.
 
         """
         self._curr_idx = 0
@@ -56,7 +56,7 @@ class FoldsIterator(TrainValidIterator):
         """Define how to get next object.
 
         Returns:
-            mask for current fold, train dataset, validation dataset.
+            Mask for current fold, train dataset, validation dataset.
 
         """
         if self._curr_idx == self.n_folds:
@@ -79,12 +79,12 @@ class FoldsIterator(TrainValidIterator):
         return self.train
 
     def convert_to_holdout_iterator(self) -> HoldoutIterator:
-        """Convert iterator to HoldoutIterator.
+        """Convert iterator to hold-out-iterator.
 
         Fold 0 is used for validation, everything else is used for training.
 
         Returns:
-            new HoldoutIterator.
+            new hold-out-iterator.
 
         """
         val_idx = (self.train.folds == 0)
@@ -111,8 +111,10 @@ def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = No
     Args:
         train: ``LAMLDataset`` to train.
         valid: Optional ``LAMLDataset`` for validate.
-        n_folds: maximum number of folds to iterate. If ``None`` - iterate through all folds.
-        iterator: Takes dataset as input and return an iterator of indexes of train/valid for train dataset.
+        n_folds: maximum number of folds to iterate.
+          If ``None`` - iterate through all folds.
+        iterator: Takes dataset as input and return an iterator
+          of indexes of train/valid for train dataset.
 
     Returns:
         new train-validation iterator.
@@ -139,7 +141,8 @@ class TimeSeriesIterator:
         """Create indexes of folds splitted by thresholds.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            datetime_col: Column with value which can be interpreted
+              as time/ordinal value (ex: np.datetime64).
             splitter: List of thresholds (same value as ).
 
         Returns:
@@ -157,7 +160,8 @@ class TimeSeriesIterator:
         """Create indexes of folds splitted into equal parts.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            datetime_col: Column with value which can be interpreted
+              as time/ordinal value (ex: np.datetime64).
             n_splits: Number of splits(folds).
 
         Returns:
@@ -179,7 +183,8 @@ class TimeSeriesIterator:
         """Generates time series data split. Sorter - include left, exclude right.
 
         Args:
-            datetime_col: Column with value which can be interpreted as time/ordinal value (ex: np.datetime64).
+            datetime_col: Column with value which can be interpreted
+              as time/ordinal value (ex: np.datetime64).
             n_splits: Number of splits.
             date_splits: List of thresholds.
             sorted_kfold: is sorted.
@@ -215,7 +220,7 @@ class TimeSeriesIterator:
         For Train indexes use all dates before Validation dates.
 
         Args:
-            item: index of fold.
+            item: Index of fold.
 
         Returns:
             Tuple of train/validation indexes.

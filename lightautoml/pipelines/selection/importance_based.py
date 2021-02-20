@@ -36,7 +36,8 @@ class ModelBasedImportanceEstimator(ImportanceEstimator):
 class ImportanceCutoffSelector(SelectionPipeline):
     """ Selector based on importance threshold.
 
-    It is important that data which passed to .fit should be ok to fit ml_algo or preprocessing pipeline should be defined.
+    It is important that data which passed to ``.fit``
+    should be ok to fit `ml_algo` or preprocessing pipeline should be defined.
 
     """
 
@@ -48,11 +49,11 @@ class ImportanceCutoffSelector(SelectionPipeline):
         """
 
         Args:
-            feature_pipeline: composition of feature transforms.
+            feature_pipeline: Composition of feature transforms.
             ml_algo: Tuple (MlAlgo, ParamsTuner).
-            imp_estimator: feature importance estimator.
-            fit_on_holdout: if use the holdout iterator.
-            cutoff: threshold to cut-off features.
+            imp_estimator: Feature importance estimator.
+            fit_on_holdout: If use the holdout iterator.
+            cutoff: Threshold to cut-off features.
 
         """
         super().__init__(feature_pipeline, ml_algo, imp_estimator, fit_on_holdout)
@@ -62,7 +63,7 @@ class ImportanceCutoffSelector(SelectionPipeline):
         """Select features based on cutoff value.
 
         Args:
-            train_valid: ignored.
+            train_valid: Not used.
 
         """
         imp = self.imp_estimator.get_features_score()

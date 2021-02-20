@@ -19,10 +19,10 @@ def numeric_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
     Args:
-        dataset: dataset to check.
+        dataset: Dataset to check.
 
     Raises:
-        AssertionError: if there is non number role.
+        AssertionError: If there is non number role.
 
     """
     roles = dataset.roles
@@ -42,7 +42,7 @@ class NaNFlags(LAMLTransformer):
         """
 
         Args:
-            nan_rate: nan rate cutoff - should we create column - Feature == NaN.
+            nan_rate: Nan rate cutoff.
             
         """
         self.nan_rate = nan_rate
@@ -113,6 +113,7 @@ class FillnaMedian(LAMLTransformer):
 
         Returns:
             self.
+
         """
         # set transformer names and add checks
         super().fit(dataset)
@@ -135,6 +136,7 @@ class FillnaMedian(LAMLTransformer):
 
         Returns:
             Numpy dataset with encoded labels.
+
         """
         # checks here
         super().transform(dataset)

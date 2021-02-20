@@ -26,17 +26,16 @@ TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
+    All available parameters listed in CatBoost documentation:
 
-    default_params:
-        - all available parameters listed in lightgbm documentation:
         - https://catboost.ai/docs/concepts/python-reference_parameters-list.html#python-reference_parameters-list
 
     freeze_defaults:
 
-        - ``True`` :  params may be rewrited depending on dataset.
+        - ``True`` :  params may be rewritten depending on dataset.
         - ``False``:  params may be changed only manually or with tuning.
 
-    timer: Timer instance or None
+    ``timer``: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
     _name: str = 'CatBoost'
@@ -103,10 +102,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Get model parameters depending on input dataset parameters.
 
         Args:
-            train_valid_iterator: classic cv iterator.
+            train_valid_iterator: Classic cv-iterator.
 
         Returns:
-            parameters of model.
+            Parameters of model.
 
         """
 
@@ -195,12 +194,12 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Sample hyperparameters from suggested.
 
         Args:
-            trial: optuna trial object.
-            suggested_params: dict with parameters.
-            estimated_n_trials: maximum number of hyperparameter estimation.
+            trial: Optuna trial object.
+            suggested_params: Dict with parameters.
+            estimated_n_trials: Maximum number of hyperparameter estimation.
 
         Returns:
-            dict with sampled hyperparameters.
+            Dict with sampled hyperparameters.
 
         """
 
@@ -281,7 +280,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             # copy was made in prev astype
             data.astype({x: 'category' for x in self._le_cat_features}, copy=False)
 
-        target, weights = self.task.losses['cb'].fw_func(dataset.target, dataset.weights)
+        if dataset.target is not None:
+            target, weights = self.task.losses['cb'].fw_func(dataset.target, dataset.weights)
+        else:
+            target, weights = dataset.target, dataset.weights
 
         pool = cb.Pool(
             data,
@@ -298,8 +300,8 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """Implements training and prediction on single fold.
 
         Args:
-            train: NumpyDataset to train.
-            valid: NumpyDataset to validate.
+            train: Train Dataset.
+            valid: Validation Dataset.
 
         Returns:
             Tuple (model, predicted_values).
@@ -326,10 +328,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         Args:
             model: CatBoost object.
-            dataset: test dataset.
+            dataset: Test dataset.
 
         Return:
-            predicted target values.
+            Predicted target values.
 
         """
 
@@ -343,7 +345,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     def get_features_score(self) -> Series:
         """Computes feature importance.
 
-        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange) , per all models.
+        Computes as mean values of feature importance, provided by CatBoost (PredictionValuesChange), per all models.
 
         Returns:
             Series with feature importances.
@@ -361,10 +363,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         return Series(imp, index=self.features).sort_values(ascending=False)
 
     def fit(self, train_valid: TrainValidIterator):
-        """Just to be compatible with ImportanceEstimator.
+        """Just to be compatible with :class:`~lightautoml.pipelines.selection.base.ImportanceEstimator`.
 
         Args:
-            train_valid: classic cv iterator.
+            train_valid: Classic cv-iterator.
 
         """
         self.fit_predict(train_valid)

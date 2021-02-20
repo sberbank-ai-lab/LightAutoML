@@ -7,7 +7,8 @@ import lightgbm as lgb
 import numpy as np
 from log_calls import record_history
 
-from .base import Loss, valid_str_multiclass_metric_names
+from .base import Loss
+from ..common_metric import _valid_str_multiclass_metric_names
 from .lgb_custom import lgb_f1_loss_multiclass, softmax_ax1  # , F1Factory
 from ..utils import infer_gib
 from ...utils.logging import get_logger
@@ -19,32 +20,39 @@ logger = get_logger(__name__)
 def fw_rmsle(x, y): return np.log1p(x), y
 
 
-_lgb_metric_mapping = {
-
+_lgb_binary_metrics_dict = {
     'auc': 'auc',
-    'mse': 'mse',
-    'mae': 'mae',
     'logloss': 'binary_logloss',
     'accuracy': 'binary_error',
+}
+
+_lgb_reg_metrics_dict = {
+    'mse': 'mse',
+    'mae': 'mae',
     'r2': 'mse',
     'rmsle': 'mse',
     'mape': 'mape',
-
     'quantile': 'quantile',
     'huber': 'huber',
     'fair': 'fair',
-
 }
 
-_lgb_multiclass_metric_mapping = {
-
-    # 'auc': 'auc_mu',
+_lgb_multiclass_metrics_dict = {
+    'auc': _valid_str_multiclass_metric_names['auc'],
+    'auc_mu': _valid_str_multiclass_metric_names['auc_mu'],
     'crossentropy': 'multi_logloss',
     'accuracy': 'multi_error',
 
-    'f1_macro': valid_str_multiclass_metric_names['f1_macro'],
-    'f1_micro': valid_str_multiclass_metric_names['f1_micro'],
-    'f1_weighted': valid_str_multiclass_metric_names['f1_weighted'],
+    'f1_macro': _valid_str_multiclass_metric_names['f1_macro'],
+    'f1_micro': _valid_str_multiclass_metric_names['f1_micro'],
+    'f1_weighted': _valid_str_multiclass_metric_names['f1_weighted'],
+}
+
+
+_lgb_metrics_dict = {
+    'binary': _lgb_binary_metrics_dict,
+    'reg': _lgb_reg_metrics_dict,
+    'multiclass': _lgb_multiclass_metrics_dict
 }
 
 _lgb_loss_mapping = {
@@ -63,36 +71,27 @@ _lgb_loss_mapping = {
 }
 
 _lgb_loss_params_mapping = {
-
     'quantile': {
-
         'q': 'alpha'
-
     },
-
     'huber': {
-
         'a': 'alpha'
-
     },
-
     'fair_c': {
-
         'c': 'fair_c'
-
     }
-
 }
 
 _lgb_force_metric = {
-
     'rmsle': ('mse', None, None),
-
 }
 
 
 @record_history(enabled=False)
 class LGBFunc:
+    """
+    Wrapper of metric function for LightGBM.
+    """
     def __init__(self, metric_func, greater_is_better, bw_func):
         self.metric_func = metric_func
         self.greater_is_better = greater_is_better
@@ -130,19 +129,22 @@ class LGBLoss(Loss):
         """
 
         Args:
-            loss: Valid options are:
+            loss: Objective to optimize.
+            loss_params: additional loss parameters.
+              Format like in :mod:`lightautoml.tasks.custom_metrics`.
+            fw_func: forward transformation.
+              Used for transformation of target and item weights.
+            bw_func: backward transformation.
+              Used for predict values transformation.
 
-                - str: one of default losses \
-                     ('auc', 'mse', 'mae', 'logloss', 'accuray', 'r2', \
-                      'rmsle', 'mape', 'quantile', 'huber', 'fair') \
-                     or another lightgbm objectivite.
-                - callable: custom lightgbm style objective.
-            loss_params: additional loss parameters. \
-                Format like in lightautoml.tasks.custom_metrics.
-            fw_func: forward transformation. \
-                Used for transformation of target and item weights.
-            bw_func: backward transformation. \
-                Used for predict values transformation.
+        Note:
+            Loss can be one of the types:
+
+                - Str: one of default losses
+                  ('auc', 'mse', 'mae', 'logloss', 'accuray', 'r2',
+                  'rmsle', 'mape', 'quantile', 'huber', 'fair')
+                  or another lightgbm objective.
+                - Callable: custom lightgbm style objective.
 
         """
         if loss in _lgb_loss_mapping:
@@ -184,12 +186,12 @@ class LGBLoss(Loss):
         """Customize metric.
 
         Args:
-            metric_func: callable metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric_func: Callable metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
 
         Returns:
-            callable metric, that returns ('Opt metric', value, greater_is_better).
+            Callable metric, that returns ('Opt metric', value, greater_is_better).
 
         """
         if greater_is_better is None:
@@ -201,16 +203,25 @@ class LGBLoss(Loss):
         return LGBFunc(metric_func, greater_is_better, self._bw_func)
 
     def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None):
+                            metric_params: Optional[Dict] = None, task_name: Optional[str] = None):
         """Callback metric setter.
 
         Args:
-            metric: callback metric.
-            greater_is_better: whether or not higher value is better.
-            metric_params: additional metric parameters.
+            metric: Callback metric.
+            greater_is_better: Whether or not higher value is better.
+            metric_params: Additional metric parameters.
+            task_name: Name of task.
+
+        Note:
+            Value of ``task_name`` should be one of following options:
+
+            - `'binary'`
+            - `'reg'`
+            - `'multiclass'`
 
         """
         # force metric if special loss
+        # what about task_name? in this case?
         if self.fobj_name in _lgb_force_metric:
             metric, greater_is_better, metric_params = _lgb_force_metric[self.fobj_name]
             logger.warning('For lgbm {0} callback metric switched to {1}'.format(self.fobj_name, metric), UserWarning)
@@ -224,10 +235,7 @@ class LGBLoss(Loss):
             if metric_params is not None:
                 self.metric_params = metric_params
 
-            # for multiclass case
-            multiclass_flg = (self.fobj_name == 'multiclass') or self.fobj == lgb_f1_loss_multiclass
-
-            _metric_dict = _lgb_multiclass_metric_mapping if multiclass_flg else _lgb_metric_mapping
+            _metric_dict = _lgb_metrics_dict[task_name]
             _metric = _metric_dict.get(metric)
             if type(_metric) is str:
                 self.metric_name = _metric
