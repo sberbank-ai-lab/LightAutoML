@@ -2,9 +2,10 @@ from typing import Tuple
 
 import numpy as np
 from log_calls import record_history
-
 from sklearn.metrics import auc
 from sklearn.utils.multiclass import type_of_target
+
+from lightautoml.utils.logging import get_logger
 
 
 _available_uplift_modes = ('qini', 'cum_gain', 'adj_qini')
@@ -34,7 +35,8 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
         perfect curve
 
     """
-    # assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
+    assert type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0),\
+        'For a continuous target, the perfect curve is only available for non-negative values'
 
     if type_of_target(y_true) == 'binary':
         perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
@@ -106,8 +108,10 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
         xs, ys - curve's coordinates
 
     """
-    # assert type_of_target(y_true) == 'binary', "Uplift curve can be calculate for binary target"
     assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate uplift curve for constant predicts"
+    assert type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0),\
+        'For a continuous target, the perfect curve is only available for non-negative values'
+
 
     sorted_indexes = np.argsort(uplift_pred)[::-1]
     y_true, uplift_pred, treatment = y_true[sorted_indexes], uplift_pred[sorted_indexes], treatment[sorted_indexes]
@@ -185,3 +189,43 @@ def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode
     auc_perfect = auc(xs_perfect, ys_perfect)
 
     return auc_base, auc_perfect
+
+
+@record_history(enabled=False)
+def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray,  top: float = 30):
+    """Calculate Uplift metric at TOP
+
+    Calculate uplift metric at top
+
+    Args:
+        y_true: Target values
+        uplift_pred: Prediction of meta model
+        treatment: Treatment column
+        top: Rate, value between (0, 100]
+
+    Returns:
+        score: Score
+
+    """
+    assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts"
+
+    if (treatment == 1).mean() > 0.5:
+        uplift = uplift_pred[treatment == 1]
+    else:
+        uplift = uplift_pred[treatment == 0]
+
+    uplift_percentile = np.percentile(uplift, top)
+    mask_top = uplift_pred > uplift_percentile
+
+    control_true_top = y_true[(treatment == 0) & mask_top].sum()
+    treatment_true_top = y_true[(treatment == 1) & mask_top].sum()
+
+    n_control_samples = (treatment[mask_top] == 0).sum()
+    n_treatment_samples = (treatment[mask_top] == 1).sum()
+
+    mean_control_value = control_true_top / n_control_samples if n_control_samples > 0 else 0.0
+    mean_treatment_value = treatment_true_top / n_treatment_samples if n_treatment_samples > 0 else 0.0
+
+    score = mean_treatment_value - mean_control_value
+
+    return score
