@@ -10,6 +10,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from log_calls import record_history
 from pandas import DataFrame
+from sqlalchemy import create_engine
 
 
 @record_history(enabled=False)
@@ -319,6 +320,47 @@ class FileBatchGenerator(BatchGenerator):
         return FileBatch(self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params)
 
 
+@record_history(enabled=False)
+class SqlDataSource:
+    def __init__(self, connection_string: str, query: str):
+        """
+
+        Data wrapper for SQL connection
+
+        Args:
+            connection_string: database url; for reference see https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
+            query: SQL query to obtain data from
+        """
+        self.engine = create_engine(connection_string)
+        self.query = query
+        self._data = None
+
+    @property
+    def data(self):
+        """
+        Get data associated with the query as :class:`~pandas.DataFrame`
+
+        Returns:
+            :class:`~pandas.DataFrame`
+        """
+        if self._data is None:
+            with self.engine.begin() as conn:
+                self._data = pd.read_sql(self.query, conn, index_col='index')
+        return self._data
+
+    def get_batch_generator(self, n_jobs: int = 1, batch_size: int = None):
+        """
+        Access data with batch generator
+        Args:
+            n_jobs: Number of processes to read file.
+            batch_size: Number of entries in one batch.
+
+        Returns:
+            DfBatchGenerator object
+        """
+        return DfBatchGenerator(self.data, n_jobs, batch_size)
+
+
 ReadableToDf = Union[str, np.ndarray, DataFrame, Dict[str, np.ndarray], Batch]
 
 
@@ -385,6 +427,9 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
         else:
             return read_csv(data, n_jobs, **read_csv_params), None
 
+    if isinstance(data, SqlDataSource):
+        return data.data, None
+
     raise ValueError('Input data format is not supported')
 
 
@@ -430,5 +475,8 @@ def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = Non
         else:
             data, _ = read_data(data, features_names, n_jobs, read_csv_params)
             return DfBatchGenerator(data, n_jobs=n_jobs, batch_size=batch_size)
+
+    if isinstance(data, SqlDataSource):
+        return data.get_batch_generator(n_jobs, batch_size)
 
     raise ValueError('Data type not supported')
