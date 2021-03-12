@@ -322,7 +322,7 @@ class FileBatchGenerator(BatchGenerator):
 
 @record_history(enabled=False)
 class SqlDataSource:
-    def __init__(self, connection_string: str, query: str):
+    def __init__(self, connection_string: str, query: str, index: Optional[Union[str, List[str]]] = None):
         """
 
         Data wrapper for SQL connection
@@ -330,9 +330,11 @@ class SqlDataSource:
         Args:
             connection_string: database url; for reference see https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
             query: SQL query to obtain data from
+            index: optional index column to be removed from the query result; can be None, str of List[str]
         """
         self.engine = create_engine(connection_string)
         self.query = query
+        self.index = index
         self._data = None
 
     @property
@@ -345,7 +347,7 @@ class SqlDataSource:
         """
         if self._data is None:
             with self.engine.begin() as conn:
-                self._data = pd.read_sql(self.query, conn, index_col='index')
+                self._data = pd.read_sql(self.query, conn, index_col=self.index)
         return self._data
 
     def get_batch_generator(self, n_jobs: int = 1, batch_size: int = None):
