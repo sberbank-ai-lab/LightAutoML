@@ -55,12 +55,21 @@ To find out how to work with LightAutoML, we have several tutorials:
 1. `Tutorial_1. Create your own pipeline.ipynb` - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
 2. `Tutorial_2. AutoML pipeline preset.ipynb` - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data. Using presets you can solve binary classification, multiclass classification and regression tasks, changing the first argument in Task.
 3. `Tutorial_3. Multiclass task.ipynb` - shows how to build ML pipeline for multiclass ML task by hand
+4. `Tutorial_4. SQL data source for pipeline preset.ipynb` - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data from SQL data base instead of CSV.
 
 Each tutorial has the step to enable Profiler and completes with Profiler run, which generates distribution for each function call time and shows it in interactive HTML report: the report show full time of run on its top and interactive tree of calls with percent of total time spent by the specific subtree.
 
 **Important 1**: for production you have no need to use profiler (which increase work time and memory consomption), so please do not turn it on - it is in off state by default
 
 **Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command. 
+
+Kaggle kernel examples of LightAutoML usage:
+- [Titanic competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-titanic-love)
+- [House prices competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-houseprices-love)
+- [Tabular Playground Series March 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-for-tabulardatamarch)
+- [Tabular Playground Series February 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-tabulardata-love)
+- [Interpretable WhiteBox solution](https://www.kaggle.com/simakov/lama-whitebox-preset-example)
+- [Custom ML pipeline elements inside existing ones](https://www.kaggle.com/simakov/lama-custom-automl-pipeline-example)
 
 For more examples, in `tests` folder you can find different scenarios of LightAutoML usage:
 1. `demo0.py` - building ML pipeline from blocks and fit + predict the pipeline itself.
@@ -88,7 +97,6 @@ If you are interested in contributing to LightAutoML, please read the [Contribut
 # Questions / Issues / Suggestions 
 
 Write a message to us:
-- Alexander Ryzhkov (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
-- Anton Vakhrushev (_email_: AGVakhrushev@sberbank.ru)
-
+- [Alexander Ryzhkov](https://kaggle.com/alexryzhkov) (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
+- [Anton Vakhrushev](https://kaggle.com/btbpanda) (_email_: AGVakhrushev@sberbank.ru)
 
