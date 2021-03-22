@@ -14,19 +14,20 @@ from lightautoml.tasks import Task
 
 
 @record_history(enabled=False)
-def create_linear_automl(base_task: Task, n_folds: int = 5, random_state: int = 42):
+def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] = None, random_state: int = 42):
     """Linear automl
 
     Args:
         base_task: task
         n_folds: number of folds
+        timeout: Stub, not used.
         random_state: random_state
 
     Returns:
         automl:
 
     """
-    reader = PandasToPandasReader(base_task, cv=n_folds, random_state=random_state)
+    reader = PandasToPandasReader(task, cv=n_folds, random_state=random_state)
     pipe = LinearFeatures()
     model = LinearLBFGS()
     pipeline = MLPipeline([model], pre_selection=None, features_pipeline=pipe, post_selection=None)

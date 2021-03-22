@@ -35,8 +35,8 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
         perfect curve
 
     """
-    assert type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0),\
-        'For a continuous target, the perfect curve is only available for non-negative values'
+    if type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0):
+        raise Exception('For a continuous target, the perfect curve is only available for non-negative values')
 
     if type_of_target(y_true) == 'binary':
         perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
@@ -109,9 +109,9 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
 
     """
     assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate uplift curve for constant predicts"
-    assert type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0),\
-        'For a continuous target, the perfect curve is only available for non-negative values'
 
+    if type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0):
+        raise Exception('For a continuous target, the perfect curve is only available for non-negative values')
 
     sorted_indexes = np.argsort(uplift_pred)[::-1]
     y_true, uplift_pred, treatment = y_true[sorted_indexes], uplift_pred[sorted_indexes], treatment[sorted_indexes]
