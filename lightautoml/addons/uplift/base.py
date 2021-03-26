@@ -39,7 +39,6 @@ class Wrapper(Generic[T]):
 
     def __call__(self):
         def _init(x: Any):
-            # return x() if isinstance(x, Wrapper) else x
             if issubclass(x.__class__, Wrapper):
                 return x()
             elif isinstance(x, list):
@@ -61,7 +60,6 @@ class Wrapper(Generic[T]):
         """
         self.params.update(d)
 
-# BaseLearnerWrapper = Wrapper[Type[AutoML]]
 
 @record_history(enabled=False)
 class BaseLearnerWrapper(Wrapper[Type[AutoML]]): pass
@@ -210,8 +208,6 @@ class AutoUplift(BaseAutoUplift):
             if add_dd_candidates:
                 logger.warning("'add_dd_candidates' isn't used when 'uplift_candidates' is specified.")
 
-        # self.base_task = base_task
-
         self.checkout_timeout = True
         if len(uplift_candidates) > 0:
             self.uplift_candidates = uplift_candidates
@@ -222,13 +218,8 @@ class AutoUplift(BaseAutoUplift):
         self.best_metalearner: Optional[MetaLearner] = None
         self.best_metalearner_candidate: Optional[MetaLearnerWrapper] = None
         self.add_dd_candidates = add_dd_candidates
-        # self.metric = metric
-        # self.normed_metric = normed_metric
-        # self.test_size = test_size
         self.candidate_holdout_metrics: List[Union[float, None]] = []
         self._threshold_imbalance_treatment = threshold_imbalance_treatment
-        # self.timeout = timeout
-        # self.random_state = random_state
 
     def fit(self, data: DataFrame, roles: Dict):
         """Fit AutoUplift.
@@ -251,14 +242,9 @@ class AutoUplift(BaseAutoUplift):
 
         self.candidate_holdout_metrics = [None] * len(self.uplift_candidates)
 
-        # start_time = time.time()
         self._timer.start()
 
         for idx_candidate, candidate_info in enumerate(self.uplift_candidates):
-            # _, metalearner_class, metalearner_kwargs = candidate_info
-            # metalearner_class = candidate_info.metalearner_type
-            # metalearner_kwargs = candidate_info.metalearner_parameters
-
             metalearner = candidate_info()
             metalearner.fit(train_data, roles)
             logger.info("Uplift candidate #{} [{}] is fitted".format(idx_candidate, candidate_info.name))
@@ -277,9 +263,6 @@ class AutoUplift(BaseAutoUplift):
                 best_metalearner_candidate_info = candidate_info
                 max_metric_value = metric_value
 
-            # train_interval = int(time.time() - start_time)
-
-            # if self.checkout_timeout and self.timeout is not None and (train_interval > self.timeout):
             if self._timer.time_limit_exceeded():
                 logger.warning("Time of training exceeds 'timeout': {} > {}.".format(self._timer.time_spent, self.timeout))
                 logger.warning("There is fitted {}/{} candidates".format(idx_candidate + 1, len(self.uplift_candidates)))
@@ -569,12 +552,10 @@ class MetaLearnerStage():
 @record_history(enabled=False)
 @dataclass
 class TrainedStageBaseLearner:
-    # prev_stage_bl: BaseLearnerWrapper
     stage_bl: BaseLearnerWrapper
     prev_stage_bl: Optional[BaseLearnerWrapper]
     trained_model: AutoML
     pred: np.ndarray
-    # Tuple[BaseLearnerWrapper, AutoML, np.ndarray]
 
 
 @record_history(enabled=False)
@@ -726,9 +707,9 @@ class AutoUpliftTX(BaseAutoUplift):
             metrics.append(metric)
 
         rating_table = DataFrame({
-            'MetaLearner': metalearner_names, #[ml_name[0] for ml_name in self._metalearner_metrics.items()],
-            'Parameters': params, #[ml_name[1] for ml_name in self._metalearner_metrics],
-            'Metrics': metrics, #[metric for _, metric in self._metalearner_metrics.items()]
+            'MetaLearner': metalearner_names,
+            'Parameters': params,
+            'Metrics': metrics,
         })
 
         rating_table['Rank'] = rating_table['Metrics'].rank(method='first', ascending=False)
@@ -978,27 +959,6 @@ class AutoUpliftTX(BaseAutoUplift):
                 metric_value = calculate_uplift_auc(test_target, uplift_pred, test_treatment, self.metric, self.normed_metric)
                 self._metalearner_metrics[trained_ml_full_name] = metric_value
 
-        # for set_stage_baselearners in self._bl_for_ml():
-        #     for metalearner_name in self.metalearners:
-        #         ml_subset_stage_baselearners = {}
-        #         for stage in self.__MAP_META_TO_STAGES__[metalearner_name]:
-        #             stage_full_name = stage.full_name()
-        #             if stage_full_name in set_stage_baselearners:
-        #                 ml_subset_stage_baselearners[stage_full_name] = set_stage_baselearners[stage_full_name]
-
-        #         if not len(ml_subset_stage_baselearners) == len(self.__MAP_META_TO_STAGES__[metalearner_name]):
-        #             continue
-
-        #         for stage_full_name,  in ml_subset_stage_baselearners.items():
-
-        #         sbls = tuple((stage_name, bl.stage_bl.name) for stage_name, bl in ml_subset_stage_baselearners.items())
-        #         if (metalearner_name, sbls) in self._metalearner_metrics:
-        #             continue
-
-        #         uplift_pred = self._metalearner_predict(metalearner_name, set_stage_baselearners)
-        #         metric_value = calculate_uplift_auc(test_target, uplift_pred, test_treatment, self.metric, self.normed_metric)
-        #         self._metalearner_metrics[(metalearner_name, sbls)] = metric_value
-
     def _bl_for_ml(self) -> Generator[Dict[str, Dict[MLStageFullName, TrainedStageBaseLearner]], None, None]:
         """Prepare stage-baselearners for calculating metalearner metrics."""
         ready_metalearners = []
@@ -1052,8 +1012,6 @@ class AutoUpliftTX(BaseAutoUplift):
             uplift_pred: Prediction.
 
         """
-        # assert metalearner in self.__MAP_META_TO_STAGES__, 'Prediction is available only for {}.'.format(self.__MAP_META_TO_STAGES__)
-
         if metalearner == 'TLearner':
             control_pred = baselearners[('outcome_control',)].pred
             treatment_pred = baselearners[('outcome_treatment',)].pred
@@ -1098,8 +1056,6 @@ class AutoUpliftTX(BaseAutoUplift):
             ml: Metalearner.
 
         """
-        # assert metalearner_name in self.__MAP_META_TO_STAGES__, 'Available only for {}'.format(self.__MAP_META_TO_STAGES__)
-
         ml: Optional[MetaLearner] = None
         if metalearner_name == 'TLearner':
             ocl = self._get_trained_bl(('outcome_control',), bls[('outcome_control',)]).trained_model
