@@ -803,20 +803,24 @@ class AutoUpliftTX(BaseAutoUplift):
 
         """
         #TODO Timeout!
-        baselearners = []
-        if isinstance(self.baselearners, list):
-            baselearners = deepcopy(self.baselearners)
+        # baselearners = []
+        # if isinstance(self.baselearners, list):
+        #     baselearners = deepcopy(self._validate_baselearners(self.baselearners))
 
         stage_baselearners = {}
         if isinstance(self.baselearners, dict):
-            stage_baselearners = self.baselearners
+            stage_baselearners = {k: deepcopy(self._validate_baselearners(v)) for k, v in self.baselearners.items()}
 
         all_stages_full_names = set(stage.full_name() for ml, ml_stages in self.__MAP_META_TO_STAGES__.items() for stage in ml_stages)
 
         if len(stage_baselearners) != len(all_stages_full_names):
             timeout = self._calculate_single_bl_timeout(len(stage_baselearners) > 0)
 
-            baselearners = deepcopy(self.__default_learners(tab_params={'timeout': timeout}))
+            if isinstance(self.baselearners, list) and len(self.baselearners) > 0:
+                baselearners = deepcopy(self._validate_baselearners(self.baselearners))
+            elif self.baselearners is None:
+                baselearners = deepcopy(self.__default_learners(tab_params={'timeout': timeout}))
+
             remain_stages_full_names = all_stages_full_names - set(stage_baselearners)
 
             #TODO: Consider the parameters of stages, not only names.
@@ -869,6 +873,49 @@ class AutoUpliftTX(BaseAutoUplift):
             timeout = self.timeout_single_learner
 
         return timeout
+
+    def _validate_baselearners(self, baselearners: List[BaseLearnerWrapper]):
+        """Validate baselearners names.
+
+        Validates baselearners by unique names for equal bl class names.
+
+        Args:
+            baselearners: List of baselearners.
+
+        Returns:
+            baselearners: Valideted baselearners.
+
+        """
+        k2n: Dict[str, List[int]] = {}
+        for idx, bl in enumerate(baselearners):
+            bl_name = bl.name
+
+            k2n.setdefault(bl_name, [])
+            k2n[bl_name].append(idx)
+
+        is_name_duplicates = any(len(idxs) > 1 for bl_name, idxs in k2n.items())
+
+        if is_name_duplicates:
+            logger.warning("Naming of baselearner should be unique.")
+            logger.warning("Name of baselearner would be updated with postfix '__order_idx_bl__'.")
+
+            rename = lambda name, idx: '{}__#{}__'.format(name, idx)
+
+            renaming_by_idxs: Dict[int, str] = {}
+            for bl_name, idxs in k2n.items():
+                if len(idxs) > 1:
+                    for idx in idxs:
+                        renaming_by_idxs[idx] = rename(bl_name, idx)
+
+            baselearners_t = []
+            for idx, bl in enumerate(baselearners):
+                if idx in renaming_by_idxs:
+                    bl.name = renaming_by_idxs[idx]
+
+                baselearners_t.append(bl)
+            return baselearners_t
+        else:
+            return baselearners
 
     def _evaluate(self, stage_info: Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], train: DataFrame, test: DataFrame, roles: dict):
         """Evaluate baselearner: fit-train/predict-test.
