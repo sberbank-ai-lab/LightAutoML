@@ -27,14 +27,12 @@ from lightautoml.utils.timer import Timer
 logger = get_logger(__name__)
 
 
-T = TypeVar('T')
-
 @record_history(enabled=False)
 @dataclass
-class Wrapper(Generic[T]):
+class Wrapper():
     """Wrapper for class"""
     name: str
-    klass: T
+    klass: Any
     params: Dict[str, Any]
 
     def __call__(self):
@@ -62,11 +60,11 @@ class Wrapper(Generic[T]):
 
 
 @record_history(enabled=False)
-class BaseLearnerWrapper(Wrapper[Type[AutoML]]): pass
+class BaseLearnerWrapper(Wrapper): pass
 
 
 @record_history(enabled=False)
-class MetaLearnerWrapper(Wrapper[Type[MetaLearner]]):
+class MetaLearnerWrapper(Wrapper):
     def update_baselearner_params(self, d: Dict[str, Any]):
         new_params: Dict[str, Any] = {}
         for k, v in self.params.items():
@@ -818,7 +816,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
             if isinstance(self.baselearners, list) and len(self.baselearners) > 0:
                 baselearners = deepcopy(self._validate_baselearners(self.baselearners))
-            elif self.baselearners is None:
+            elif self.baselearners is None or isinstance(self.baselearners, dict):
                 baselearners = deepcopy(self.__default_learners(tab_params={'timeout': timeout}))
 
             remain_stages_full_names = all_stages_full_names - set(stage_baselearners)
