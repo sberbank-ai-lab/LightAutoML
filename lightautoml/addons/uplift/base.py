@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from lightautoml.addons.uplift import meta_learners as uplift_meta_learners
 from lightautoml.addons.uplift import utils as uplift_utils
 from lightautoml.addons.uplift.meta_learners import MetaLearner, TLearner, XLearner
-from lightautoml.addons.uplift.metrics import calculate_uplift_auc
+from lightautoml.addons.uplift.metrics import calculate_uplift_auc, TUpliftMetric
 from lightautoml.automl.base import AutoML
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.report.report_deco import ReportDecoUplift
@@ -89,7 +89,7 @@ class MetaLearnerWrapper(Wrapper):
 class BaseAutoUplift(metaclass=abc.ABCMeta):
     def __init__(self,
                  base_task: Task,
-                 metric: str = 'adj_qini',
+                 metric: Union[str, TUpliftMetric] = 'adj_qini',
                  normed_metric: bool = True,
                  increasing_metric: bool = True,
                  test_size: float = 0.2,
@@ -109,6 +109,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
 
         """
         assert 0.0 < test_size < 1.0, "'test_size' must be between (0.0, 1.0)"
+        assert isinstance(metric, str) or isinstance(metric, TUpliftMetric),\
+            "Invalid metric type: available = {'str', 'TUpliftMetric'}"
 
         self.base_task = base_task
         self.metric = metric
@@ -130,6 +132,14 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def predict(self, data: Any) -> Tuple[np.ndarray, ...]:
         pass
+
+    def calculate_metric(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
+        if isinstance(self.metric, str):
+            return calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
+        elif isinstance(self.metric, TUpliftMetric):
+            return self.metric(y_true, uplift_pred, treatment)
+        else:
+            raise Exception("Invalid metric type: available = {'str', 'TUpliftMetric'}")
 
     def _prepare_data(self, data: DataFrame, roles: dict) -> Tuple[DataFrame, DataFrame, np.ndarray, np.ndarray]:
         """Prepare data for training part.
@@ -174,7 +184,7 @@ class AutoUplift(BaseAutoUplift):
                  base_task: Task,
                  uplift_candidates: List[MetaLearnerWrapper] = [],
                  add_dd_candidates: bool = False,
-                 metric: str = 'adj_qini',
+                 metric: Union[str, TUpliftMetric] = 'adj_qini',
                  normed_metric: bool = True,
                  increasing_metric: bool = True,
                  test_size: float = 0.2,
@@ -233,7 +243,7 @@ class AutoUplift(BaseAutoUplift):
 
         best_metalearner: Optional[MetaLearner] = None
         best_metalearner_candidate_info: Optional[MetaLearnerWrapper] = None
-        max_metric_value = 0.0
+        best_metric_value = 0.0
 
         if len(self.uplift_candidates) == 0:
             self._generate_uplift_candidates(data, roles)
@@ -248,18 +258,20 @@ class AutoUplift(BaseAutoUplift):
             logger.info("Uplift candidate #{} [{}] is fitted".format(idx_candidate, candidate_info.name))
 
             uplift_pred, _, _ = metalearner.predict(test_data)
+            uplift_pred = uplift_pred.ravel()
 
-            metric_value = calculate_uplift_auc(test_target, uplift_pred.ravel(), test_treatment, self.metric,
-                self.normed_metric)
+            metric_value = self.calculate_metric(test_target, uplift_pred, test_treatment)
             self.candidate_holdout_metrics[idx_candidate] = metric_value
 
             if best_metalearner_candidate_info is None:
                 best_metalearner = metalearner
                 best_metalearner_candidate_info = candidate_info
-            elif max_metric_value < metric_value:
+                best_metric_value = metric_value
+            elif (best_metric_value < metric_value and self.increasing_metric) or\
+                    (best_metric_value > metric_value and not self.increasing_metric):
                 best_metalearner = metalearner
                 best_metalearner_candidate_info = candidate_info
-                max_metric_value = metric_value
+                best_metric_value = metric_value
 
             if self._timer.time_limit_exceeded():
                 logger.warning("Time of training exceeds 'timeout': {} > {}.".format(self._timer.time_spent, self.timeout))
@@ -288,7 +300,7 @@ class AutoUplift(BaseAutoUplift):
 
         return self.best_metalearner.predict(data)
 
-    def create_best_meta_learner(self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {})\
+    def create_best_metalearner(self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {})\
             -> Union[MetaLearner, ReportDecoUplift]:
         """ Create 'raw' best metalearner with(without) report functionality.
 
@@ -313,8 +325,11 @@ class AutoUplift(BaseAutoUplift):
         best_metalearner = candidate_info()
 
         if need_report:
-            rdu = ReportDecoUplift()
-            best_metalearner = rdu(best_metalearner)
+            if isinstance(self.metric, str):
+                rdu = ReportDecoUplift()
+                best_metalearner = rdu(best_metalearner)
+            else:
+                logger.warning("Report doesn't work with custom metric, return just best_metalearner.")
 
         return best_metalearner
 
@@ -331,7 +346,7 @@ class AutoUplift(BaseAutoUplift):
             'Metrics': self.candidate_holdout_metrics
         })
 
-        rating_table['Rank'] = rating_table['Metrics'].rank(method='first', ascending=False)
+        rating_table['Rank'] = rating_table['Metrics'].rank(method='first', ascending=not self.increasing_metric)
         rating_table.sort_values('Rank', inplace=True)
         rating_table.reset_index(drop=True, inplace=True)
 
@@ -640,7 +655,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 logger.warning("Time of training exceeds 'timeout': {} > {}.".format(self._timer.time_spent, self.timeout))
                 break
 
-        self._calculate_ml_metric(test_treatment, test_target)
+        self._calculate_metalearners_metrics(test_treatment, test_target)
 
         self._set_best_metalearner()
 
@@ -686,10 +701,13 @@ class AutoUpliftTX(BaseAutoUplift):
         best_metalearner_raw = ml_wrap()
 
         if need_report:
-            rdu = ReportDecoUplift()
-            best_metalearner = rdu(best_metalearner_raw)
+            if isinstance(self.metric, str):
+                rdu = ReportDecoUplift()
+                best_metalearner_raw = rdu(best_metalearner_raw)
+            else:
+                logger.warning("Report doesn't work with custom metric, return just best_metalearner.")
 
-        return best_metalearner
+        return best_metalearner_raw
 
     def get_metalearners_ranting(self) -> DataFrame:
         """Get rating of metalearners.
@@ -710,7 +728,7 @@ class AutoUpliftTX(BaseAutoUplift):
             'Metrics': metrics,
         })
 
-        rating_table['Rank'] = rating_table['Metrics'].rank(method='first', ascending=False)
+        rating_table['Rank'] = rating_table['Metrics'].rank(method='first', ascending=not self.increasing_metric)
         rating_table.sort_values('Rank', inplace=True)
         rating_table.reset_index(drop=True, inplace=True)
 
@@ -992,7 +1010,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         return train_data, train_roles
 
-    def _calculate_ml_metric(self, test_target: np.ndarray, test_treatment: np.ndarray):
+    def _calculate_metalearners_metrics(self, test_target: np.ndarray, test_treatment: np.ndarray):
         """Calculate metalearners' metric."""
         for set_ml_stage_bls in self._bl_for_ml():
             for ml_name, stage_bls in set_ml_stage_bls.items():
@@ -1001,7 +1019,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 trained_ml_full_name = (ml_name, sbls)
 
                 uplift_pred = self._metalearner_predict(ml_name, stage_bls)
-                metric_value = calculate_uplift_auc(test_target, uplift_pred, test_treatment, self.metric, self.normed_metric)
+                metric_value = self.calculate_metric(test_target, uplift_pred, test_treatment)
                 self._metalearner_metrics[trained_ml_full_name] = metric_value
 
     def _bl_for_ml(self) -> Generator[Dict[str, Dict[MLStageFullName, TrainedStageBaseLearner]], None, None]:

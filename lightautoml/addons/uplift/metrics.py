@@ -1,4 +1,5 @@
-from typing import Tuple
+import abc
+from typing import Callable, Tuple, Type
 
 import numpy as np
 from log_calls import record_history
@@ -9,6 +10,13 @@ from lightautoml.utils.logging import get_logger
 
 
 _available_uplift_modes = ('qini', 'cum_gain', 'adj_qini')
+
+
+@record_history(enabled=False)
+class TUpliftMetric(metaclass=abc.ABCMeta):
+    @abc.abstractclassmethod
+    def __call__(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
+        pass
 
 
 @record_history(enabled=False)
@@ -207,14 +215,14 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
         score: Score
 
     """
-    assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts"
+    assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts."
 
     if (treatment == 1).mean() > 0.5:
         uplift = uplift_pred[treatment == 1]
     else:
         uplift = uplift_pred[treatment == 0]
 
-    uplift_percentile = np.percentile(uplift, top)
+    uplift_percentile = np.percentile(uplift, 100 - top)
     mask_top = uplift_pred > uplift_percentile
 
     control_true_top = y_true[(treatment == 0) & mask_top].sum()
