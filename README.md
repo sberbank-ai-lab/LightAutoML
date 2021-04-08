@@ -25,22 +25,22 @@ Currently we work with datasets, where **each row is an object with its specific
 # Installation
 ### Installation via pip from PyPI
 To install LAMA framework on your machine:
-```bash 
+```bash
 pip install lightautoml
 ```
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
-```bash 
+```bash
 bash build_package.sh
 ```
 To check this variant of installation and run all the demo scripts, use the command below:
-```bash 
+```bash
 bash test_package.sh
 ```
 *******
 # Docs generation
 To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
-```bash 
+```bash
 bash build_docs.sh
 ```
 
@@ -52,12 +52,13 @@ To find out how to work with LightAutoML, we have several tutorials:
 1. `Tutorial_1. Create your own pipeline.ipynb` - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
 2. `Tutorial_2. AutoML pipeline preset.ipynb` - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data. Using presets you can solve binary classification, multiclass classification and regression tasks, changing the first argument in Task.
 3. `Tutorial_3. Multiclass task.ipynb` - shows how to build ML pipeline for multiclass ML task by hand
+4. `Tutorial_4. Uplift modeling.ipynb` - shows how to solve uplift modeling.
 
-Each tutorial has the step to enable Profiler and completes with Profiler run, which generates distribution for each function call time and shows it in interactive HTML report: the report show full time of run on its top and interactive tree of calls with percent of total time spent by the specific subtree.
+Each tutorial has the step to enable Profiler and completes with Profiler run, which generates distribution for each function call time and shows it in interactive HTML report: the report show full time of run on its top and interactive tree of calls with percent of total time spent by the specific subtree (except `Tutorial_4`).
 
 **Important 1**: for production you have no need to use profiler (which increase work time and memory consomption), so please do not turn it on - it is in off state by default
 
-**Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command. 
+**Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command.
 
 For more examples, in `tests` folder you can find different scenarios of LAMA usage:
 1. `demo0.py` - building ML pipeline from blocks and fit + predict the pipeline itself.
@@ -75,7 +76,7 @@ For more examples, in `tests` folder you can find different scenarios of LAMA us
 13. `demo12.py` - AutoML tabular preset usage with custom validation scheme and multiprocessed inference
 
 *******
-# Questions / Issues / Suggestions 
+# Questions / Issues / Suggestions
 
 Write a message to us:
 - Alexander Ryzhkov (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
