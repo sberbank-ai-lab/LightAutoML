@@ -332,6 +332,7 @@ class PandasToPandasReader(Reader):
             assert np.nan not in cnts.index, 'Nan in target detected'
             unqiues = cnts.index.values
             srtd = np.sort(unqiues)
+            self._n_classes = len(unqiues)
 
             # case - target correctly defined and no mapping
             if (np.arange(srtd.shape[0]) == srtd).all():
