@@ -358,7 +358,7 @@ class TimeUtilization:
 
         # pred = self.outer_blend.predict(outer_preds)
 
-        if self.return_all_predictions:
+        if not self.return_all_predictions:
             pred = self.outer_blend.predict(outer_preds)
         else:
             pred = concatenate(outer_preds)
