@@ -159,7 +159,7 @@ def read_csv(file: str, n_jobs: int = 1, **read_csv_params) -> DataFrame:
     if n_jobs == -1:
         n_jobs = os.cpu_count()
 
-    _check_csv_params(read_csv_params)
+    _check_csv_params(**read_csv_params)
     offsets, cnts = get_file_offsets(file, n_jobs)
 
     with Parallel(n_jobs) as p:

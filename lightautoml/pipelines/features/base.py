@@ -234,7 +234,7 @@ class TabularDataFeatures:
 
         dt_processing = SequentialTransformer([
 
-            ColumnsSelector(keys=datetimes + base_dates),
+            ColumnsSelector(keys=list(set(datetimes + base_dates))),
             BaseDiff(base_names=base_dates, diff_names=datetimes),
 
         ])
