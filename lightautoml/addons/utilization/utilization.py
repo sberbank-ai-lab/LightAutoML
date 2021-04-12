@@ -310,7 +310,7 @@ class TimeUtilization:
             inner_pipes.append(MLPipeForAutoMLWrapper.from_blended(inner_pipe, inner_blend))
 
         # outer blend - blend of blends
-        if self.return_all_predictions:
+        if not self.return_all_predictions:
             val_pred, self.outer_pipes = self.outer_blend.fit_predict(inner_preds, inner_pipes)
         else:
             val_pred = concatenate(inner_preds)
@@ -359,7 +359,7 @@ class TimeUtilization:
         # pred = self.outer_blend.predict(outer_preds)
 
         if self.return_all_predictions:
-            pred = self.outer_blend.fit_predict(outer_preds)
+            pred = self.outer_blend.predict(outer_preds)
         else:
             pred = concatenate(outer_preds)
 
