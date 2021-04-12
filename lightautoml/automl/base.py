@@ -1,8 +1,8 @@
 """Base AutoML class."""
 
+import logging
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
-import logging
 from log_calls import record_history
 
 from .blend import Blender, BestModelSelector
@@ -257,9 +257,6 @@ class AutoML:
         """
         dataset = self.reader.read(data, features_names=features_names, add_array_attrs=False)
 
-        # for pycharm)
-        blended_prediction = None
-
         for n, level in enumerate(self.levels, 1):
             # check if last level
 
@@ -285,8 +282,6 @@ class AutoML:
                 if (return_all_predictions is None and self.return_all_predictions) or return_all_predictions:
                     return concatenate(level_predictions)
                 return self.blender.predict(level_predictions)
-
-        return blended_prediction
 
     def collect_used_feats(self) -> List[str]:
         """Get feats that automl uses on inference.
