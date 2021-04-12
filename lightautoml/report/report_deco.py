@@ -365,7 +365,11 @@ class ReportDeco:
         self._sections = {}
         self._sections['intro'] = '<p>This report was generated automatically.</p>'
         self._model_results = []
-
+        
+        # storing data for report graphics
+        self._report_data = {}
+        self._report_data['predict'] = []
+        
         self.generate_report()
 
     def __call__(self, model):
@@ -479,7 +483,8 @@ class ReportDeco:
             data = self._collect_data(preds, train_data)
         else:
             data = self._collect_data(preds, valid_data)
-
+        self._report_data['fit_predict'] = data.to_dict()
+        
         self._inference_content = {}
         if self.task == 'binary':
             # filling for html
@@ -491,6 +496,7 @@ class ReportDeco:
             self._inference_content['distribution_of_logits'] = 'valid_distribution_of_logits.png'
             # graphics and metrics
             _, self._F1_thresh = f1_score_w_co(data)
+            self._report_data['F1_thresh'] = self._F1_thresh
             auc_score, prec, rec, F1 = self._binary_classification_details(data)
             # update model section
             evaluation_parameters = ['AUC-score', \
@@ -558,7 +564,8 @@ class ReportDeco:
 
         test_data = kwargs["test"] if "test" in kwargs else args[0]
         data = self._collect_data(test_preds, test_data)
-
+        self._report_data['predict'].append(data.to_dict())
+        
         if self.task == 'binary':
             # filling for html
             self._inference_content = {}
@@ -933,7 +940,6 @@ class ReportDecoNLP(ReportDeco):
         self._nlp_subsections = []
         self.sections_order.append('nlp')
         
-        
 
     def __call__(self, model):
         self._model = model
@@ -967,11 +973,13 @@ class ReportDecoNLP(ReportDeco):
             content = {}
             content['title'] = 'Text field: ' + text_field
             content['char_len_hist'] = text_field + '_char_len_hist.png'
-            plot_data_hist(data=train_data[text_field].apply(len).values,
+            self._report_data['char_len_hist'] = train_data[text_field].apply(len).values
+            plot_data_hist(data=self._report_data['char_len_hist'],
                            path = os.path.join(self.output_path, content['char_len_hist']),
                            title='Length in char')
             content['tokens_len_hist'] = text_field + '_tokens_len_hist.png'
-            plot_data_hist(data=train_data[text_field].str.split(' ').apply(len).values,
+            self._report_data['tokens_len_hist'] = train_data[text_field].str.split(' ').apply(len).values
+            plot_data_hist(data=self._report_data['tokens_len_hist'],
                            path = os.path.join(self.output_path, content['tokens_len_hist']),
                            title='Length in tokens')
             self._generate_nlp_subsection(content)
@@ -981,11 +989,13 @@ class ReportDecoNLP(ReportDeco):
             content = {}
             content['title'] = 'Concatenated text fields'
             content['char_len_hist'] = 'concat_char_len_hist.png'
-            plot_data_hist(data=all_fields.apply(len).values,
+            self._report_data['char_len_hist'] = all_fields.apply(len).values
+            plot_data_hist(data=self._report_data['char_len_hist'],
                            path = os.path.join(self.output_path, content['char_len_hist']),
                            title='Length in char')
             content['tokens_len_hist'] = 'concat_tokens_len_hist.png'
-            plot_data_hist(data=all_fields.str.split(' ').apply(len).values,
+            self._report_data['tokens_len_hist'] = all_fields.str.split(' ').apply(len).values
+            plot_data_hist(data=self._report_data['tokens_len_hist'],
                            path = os.path.join(self.output_path, content['tokens_len_hist']),
                            title='Length in tokens')
             self._generate_nlp_subsection(content)
