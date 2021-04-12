@@ -239,7 +239,7 @@ class TorchBasedLinearEstimator:
         self.model.train()
         opt = optim.LBFGS(
             self.model.parameters(),
-            lr=1,
+            lr=0.1,
             max_iter=self.max_iter,
             tolerance_change=self.tol,
             tolerance_grad=self.tol,

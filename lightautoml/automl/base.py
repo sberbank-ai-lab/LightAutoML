@@ -58,7 +58,8 @@ class AutoML:
     """
 
     def __init__(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                 blender: Optional[Blender] = None, skip_conn: bool = False, verbose: int = 2):
+                 blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False,
+                 verbose: int = 2):
         """
 
         Args:
@@ -85,10 +86,11 @@ class AutoML:
                 - `3`: Debug.
 
         """
-        self._initialize(reader, levels, timer, blender, skip_conn, verbose)
+        self._initialize(reader, levels, timer, blender, skip_conn, return_all_predictions, verbose)
 
     def _initialize(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                    blender: Optional[Blender] = None, skip_conn: bool = False, verbose: int = 2):
+                    blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False,
+                    verbose: int = 2):
         """Same as __init__. Exists for delayed initialization in presets.
 
         Args:
@@ -104,6 +106,8 @@ class AutoML:
               Default - :class:`~lightautoml.automl.blend.BestModelSelector`.
             skip_conn: True if we should pass first level
               input features to next levels.
+            return_all_predictions: True if we should return all predictions from last
+              level models.
             verbose: Verbosity level. Default 2.
 
         """
@@ -128,6 +132,7 @@ class AutoML:
                 pipe.upd_model_names('Lvl_{0}_Pipe_{1}'.format(i, j))
 
         self.skip_conn = skip_conn
+        self.return_all_predictions = return_all_predictions
 
     def fit_predict(self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
                     cv_iter: Optional[Iterable] = None,
@@ -229,16 +234,23 @@ class AutoML:
         self.reader.upd_used_features(remove=list(set(self.reader.used_features) - set(self.collect_used_feats())))
 
         del self._levels
+
+        if self.return_all_predictions:
+            return concatenate(level_predictions)
         return blended_prediction
 
-    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None) -> LAMLDataset:
+    def predict(self,
+                data: Any,
+                features_names: Optional[Sequence[str]] = None,
+                return_all_predictions: Optional[bool] = None) -> LAMLDataset:
         """Predict with automl on new dataset.
 
         Args:
             data: Dataset to perform inference.
             features_names: Optional features names,
               if cannot be inferred from `train_data`.
-
+            return_all_predictions: if True,
+              returns all model predictions from last level
         Returns:
             Dataset with predictions.
 
@@ -270,7 +282,9 @@ class AutoML:
                 else:
                     dataset = level_predictions
             else:
-                blended_prediction = self.blender.predict(level_predictions)
+                if (return_all_predictions is None and self.return_all_predictions) or return_all_predictions:
+                    return concatenate(level_predictions)
+                return self.blender.predict(level_predictions)
 
         return blended_prediction
 

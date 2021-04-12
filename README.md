@@ -15,12 +15,16 @@ Currently we work with datasets, where **each row is an object with its specific
 
 **Note**: for automatic creation of interpretable models we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library made by our group as well.
 
-**Authors**: Ryzhkov Alexander, Vakhrushev Anton, Simakov Dmitry, Bunakov Vasilii, Damdinov Rinchin, Shvets Pavel, Kirilin Alexander
+**Authors**: [Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Anton Vakhrushev](https://kaggle.com/btbpanda), [Dmitry Simakov](https://kaggle.com/simakov), Vasilii Bunakov, Rinchin Damdinov, Pavel Shvets, Alexander Kirilin
 
 **LightAutoML video guides**:
-- [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) (Ryzhkov Alexander, Simakov Dmitry)
-- [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) (Ryzhkov Alexander)
-- [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) (Simakov Dmitry)
+- (Russian) [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Dmitry Simakov](https://kaggle.com/simakov))
+- (Russian) [LightAutoML hands-on tutorial in Kaggle Kernels](https://www.youtube.com/watch?v=TYu1UG-E9e8) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+- (English) [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+- (English) [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) ([Dmitry Simakov](https://kaggle.com/simakov))
+
+**Articles about LightAutoML:**
+- (English) [Hands-On Python Guide to LightAutoML – An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
 
 See the [Documentation of LightAutoML](https://lightautoml.readthedocs.io/).
 
@@ -64,8 +68,11 @@ Each tutorial has the step to enable Profiler and completes with Profiler run, w
 **Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command. 
 
 Kaggle kernel examples of LightAutoML usage:
-- [Titanic competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-titanic-love)
+- [Tabular Playground Series April 2021 competition solution](https://www.kaggle.com/alexryzhkov/n3-tps-april-21-lightautoml-starter)
+- [Titanic competition solution (80% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-titanic-love)
+- [Titanic **12-code-lines** competition solution (78% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-extreme-short-titanic-solution)
 - [House prices competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-houseprices-love)
+- [Natural Language Processing with Disaster Tweets solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-nlp)
 - [Tabular Playground Series March 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-for-tabulardatamarch)
 - [Tabular Playground Series February 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-tabulardata-love)
 - [Interpretable WhiteBox solution](https://www.kaggle.com/simakov/lama-whitebox-preset-example)
@@ -82,7 +89,7 @@ For more examples, in `tests` folder you can find different scenarios of LightAu
 8. `demo7.py` - AutoML preset usage for tabular datasets (predefined structure of AutoML pipeline and simple interface for users without building from blocks)
 9. `demo8.py` - creation pipelines from blocks to build AutoML, solving multiclass classification task
 10. `demo9.py` - AutoML time utilization preset usage for tabular datasets (predefined structure of AutoML pipeline and simple interface for users without building from blocks)
-11. `demo10.py` - creation pipelines from blocks (including CatBoost) to build AutoML , solving multiclass classification task
+11. `demo10.py` - creation pipelines from blocks (including CatBoost) to build AutoML, solving multiclass classification task
 12. `demo11.py` - AutoML NLP preset usage for tabular datasets with text columns
 13. `demo12.py` - AutoML tabular preset usage with custom validation scheme and multiprocessed inference
 
@@ -99,4 +106,4 @@ If you are interested in contributing to LightAutoML, please read the [Contribut
 Write a message to us:
 - [Alexander Ryzhkov](https://kaggle.com/alexryzhkov) (_email_: AMRyzhkov@sberbank.ru, _telegram_: @RyzhkovAlex)
 - [Anton Vakhrushev](https://kaggle.com/btbpanda) (_email_: AGVakhrushev@sberbank.ru)
-
+- [Dmitry Simakov](https://kaggle.com/simakov) (_email_: Simakov.D.E@sberbank.ru)

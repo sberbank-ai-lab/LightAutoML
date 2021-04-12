@@ -1,6 +1,6 @@
 """Reader and its derivatives."""
 
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
 
 import numpy as np
@@ -181,6 +181,7 @@ class PandasToPandasReader(Reader):
         self.n_jobs = n_jobs
 
         self.roles_params = roles_params
+        self.target = None
         if roles_params is None:
             self.roles_params = {}
 
@@ -243,6 +244,7 @@ class PandasToPandasReader(Reader):
             parsed_roles[feat] = r
 
         assert 'target' in kwargs, 'Target should be defined'
+        self.target = kwargs['target'].name
         kwargs['target'] = self._create_target(kwargs['target'])
 
         # TODO: Check target and task

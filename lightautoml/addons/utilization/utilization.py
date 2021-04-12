@@ -141,7 +141,7 @@ class TimeUtilization:
         self.automl_factory = automl_factory
         self.task = task
         self.timeout = timeout
-        self.memoty_limit = memory_limit
+        self.memory_limit = memory_limit
         self.cpu_limit = cpu_limit
         self.gpu_ids = gpu_ids
 
@@ -254,6 +254,7 @@ class TimeUtilization:
 
             for n_cfg, config in enumerate(self.configs_list):
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
+                random_states['general_params'] = {'return_all_predictions': False}
                 upd_state_val += 1
                 logger.info('Current random state: {}'.format(random_states))
                 cur_kwargs = self.kwargs.copy()
@@ -264,7 +265,7 @@ class TimeUtilization:
                         del cur_kwargs[k]
                         logger.info('Merged variant for {} = {}'.format(k, random_states[k]))
 
-                automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memoty_limit,
+                automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memory_limit,
                                              cpu_limit=self.cpu_limit, gpu_ids=self.gpu_ids,
                                              verbose=self.verbose,
                                              timing_params=self.timing_params,

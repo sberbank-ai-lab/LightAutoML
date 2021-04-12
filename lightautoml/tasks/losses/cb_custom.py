@@ -39,6 +39,7 @@ class CBCustomMetric:
         target = np.array(target)
         pred = np.array(approxes[0])
         if self._bw_func is not None:
+            target = self._bw_func(target)
             pred = self._bw_func(pred)
 
         return pred, target

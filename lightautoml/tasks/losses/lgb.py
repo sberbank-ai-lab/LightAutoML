@@ -107,6 +107,7 @@ class LGBFunc:
             pred = pred.reshape((label.shape[0], -1), order='F')
             label = label.astype(np.int32)
 
+        label = self.bw_func(label)
         pred = self.bw_func(pred)
 
         # for weighted case

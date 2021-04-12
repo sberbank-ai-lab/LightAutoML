@@ -11,7 +11,7 @@ if os.getenv('DOCUMENTATION_ENV') is None:
     except ModuleNotFoundError:
         import importlib_metadata
 
-    __version__ = importlib_metadata.version(__name__)
+    __version__ = "1.0.0"#importlib_metadata.version(__name__)
 
     from .addons import *
     from .addons.utilization import *
