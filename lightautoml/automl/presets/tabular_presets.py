@@ -11,6 +11,7 @@ from log_calls import record_history
 from pandas import DataFrame
 
 from .base import AutoMLPreset, upd_params
+from .utils import calc_feats_permutation_imps
 from ..blend import WeightedBlender, MeanBlender
 from ...addons.utilization import TimeUtilization
 from ...dataset.np_pd_dataset import NumpyDataset
@@ -29,8 +30,6 @@ from ...reader.base import PandasToPandasReader
 from ...reader.tabular_batch_generator import read_data, read_batch, ReadableToDf
 from ...tasks import Task
 from ...utils.logging import get_logger
-
-from .utils import calc_feats_permutation_imps
 
 _base_dir = os.path.dirname(__file__)
 logger = get_logger(__name__)
@@ -522,6 +521,7 @@ class TabularUtilizedAutoML(TimeUtilization):
                  timing_params: Optional[dict] = None,
                  configs_list: Optional[Sequence[str]] = None,
                  drop_last: bool = True,
+                 return_all_predictions: bool = False,
                  max_runs_per_config: int = 5,
                  random_state: int = 42,
                  outer_blender_max_nonzero_coef: float = 0.05,
@@ -540,6 +540,7 @@ class TabularUtilizedAutoML(TimeUtilization):
             configs_list: List of str path to configs files.
             drop_last: Usually last automl will be stopped with timeout.
               Flag that defines if we should drop it from ensemble.
+            return_all_predictions: skip blending phase
             max_runs_per_config: Maximum number of multistart loops.
             random_state: Initial random seed that will be set
               in case of search in config.
@@ -553,7 +554,8 @@ class TabularUtilizedAutoML(TimeUtilization):
         inner_blend = MeanBlender()
         outer_blend = WeightedBlender(max_nonzero_coef=outer_blender_max_nonzero_coef)
         super().__init__(TabularAutoML, task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params,
-                         configs_list, inner_blend, outer_blend, drop_last, max_runs_per_config, None, random_state,
+                         configs_list, inner_blend, outer_blend, drop_last, return_all_predictions,
+                         max_runs_per_config, None, random_state,
                          **kwargs)
 
     def get_feature_scores(self,

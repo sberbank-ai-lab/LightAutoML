@@ -318,7 +318,8 @@ class TimeUtilization:
 
         return val_pred
 
-    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, **kwargs) -> LAMLDataset:
+    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, return_all_predictions: Optional[bool] = None,
+                **kwargs) -> LAMLDataset:
         """Get dataset with predictions.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
@@ -337,11 +338,15 @@ class TimeUtilization:
             data: Dataset to perform inference.
             features_names: Optional features names,
               if cannot be inferred from `train_data`.
+            return_all_predictions: bool - skip blending phase
 
         Returns:
             Dataset with predictions.
 
         """
+
+        if return_all_predictions is None or self.return_all_predictions:
+            return_all_predictions = self.return_all_predictions
 
         outer_preds = []
 
@@ -358,7 +363,7 @@ class TimeUtilization:
 
         # pred = self.outer_blend.predict(outer_preds)
 
-        if not self.return_all_predictions:
+        if not return_all_predictions:
             pred = self.outer_blend.predict(outer_preds)
         else:
             pred = concatenate(outer_preds)
