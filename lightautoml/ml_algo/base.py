@@ -240,7 +240,7 @@ class TabularMLAlgo(MLAlgo):
 
         # TODO: Make parallel version later
         for n, (idx, train, valid) in enumerate(train_valid_iterator):
-
+            logger.info('\n===== Start working with fold {} for {} =====\n'.format(n, self._name))
             self.timer.set_control_point()
 
             model, pred = self.fit_predict_single_fold(train, valid)

@@ -9,6 +9,7 @@ from ...automl.base import AutoML
 from ...automl.blend import Blender, BestModelSelector
 from ...automl.presets.base import AutoMLPreset
 from ...dataset.base import LAMLDataset
+from ...dataset.utils import concatenate
 from ...ml_algo.base import MLAlgo
 from ...pipelines.ml.base import MLPipeline
 from ...tasks import Task
@@ -88,7 +89,7 @@ class TimeUtilization:
 
     """
 
-    def __init__(self, automl_factory: AutoMLPreset,
+    def __init__(self, automl_factory: Type[AutoMLPreset],
                  task: Task,
                  timeout: int = 3600,
                  memory_limit: int = 16,
@@ -100,6 +101,7 @@ class TimeUtilization:
                  inner_blend: Optional[Blender] = None,
                  outer_blend: Optional[Blender] = None,
                  drop_last: bool = True,
+                 return_all_predictions: bool = False,
                  max_runs_per_config: int = 5,
                  random_state_keys: Optional[dict] = None,
                  random_state: int = 42,
@@ -123,6 +125,7 @@ class TimeUtilization:
               automl's with different configs.
             drop_last: Usually last automl will be stopped with timeout.
               Flag that defines if we should drop it from ensemble
+            return_all_predictions: Skip blend and return all model predictions
             max_runs_per_config: Maximum number of multistart loops.
             random_state_keys: Params of config that used as
               random state with initial values. If ``None`` - search for
@@ -141,7 +144,7 @@ class TimeUtilization:
         self.automl_factory = automl_factory
         self.task = task
         self.timeout = timeout
-        self.memoty_limit = memory_limit
+        self.memory_limit = memory_limit
         self.cpu_limit = cpu_limit
         self.gpu_ids = gpu_ids
 
@@ -169,6 +172,7 @@ class TimeUtilization:
         if outer_blend is None:
             self.outer_blend = BestModelSelector()
         self.drop_last = drop_last
+        self.return_all_predictions = return_all_predictions
         self.kwargs = kwargs
 
     def _search_for_key(self, config, key, value: int = 42) -> dict:
@@ -254,6 +258,7 @@ class TimeUtilization:
 
             for n_cfg, config in enumerate(self.configs_list):
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
+                random_states['general_params'] = {'return_all_predictions': False}
                 upd_state_val += 1
                 logger.info('Current random state: {}'.format(random_states))
                 cur_kwargs = self.kwargs.copy()
@@ -264,7 +269,7 @@ class TimeUtilization:
                         del cur_kwargs[k]
                         logger.info('Merged variant for {} = {}'.format(k, random_states[k]))
 
-                automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memoty_limit,
+                automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memory_limit,
                                              cpu_limit=self.cpu_limit, gpu_ids=self.gpu_ids,
                                              verbose=self.verbose,
                                              timing_params=self.timing_params,
@@ -305,11 +310,16 @@ class TimeUtilization:
             inner_pipes.append(MLPipeForAutoMLWrapper.from_blended(inner_pipe, inner_blend))
 
         # outer blend - blend of blends
-        val_pred, self.outer_pipes = self.outer_blend.fit_predict(inner_preds, inner_pipes)
+        if not self.return_all_predictions:
+            val_pred, self.outer_pipes = self.outer_blend.fit_predict(inner_preds, inner_pipes)
+        else:
+            val_pred = concatenate(inner_preds)
+            self.outer_pipes = inner_pipes
 
         return val_pred
 
-    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, **kwargs) -> LAMLDataset:
+    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None, return_all_predictions: Optional[bool] = None,
+                **kwargs) -> LAMLDataset:
         """Get dataset with predictions.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
@@ -328,11 +338,15 @@ class TimeUtilization:
             data: Dataset to perform inference.
             features_names: Optional features names,
               if cannot be inferred from `train_data`.
+            return_all_predictions: bool - skip blending phase
 
         Returns:
             Dataset with predictions.
 
         """
+
+        if return_all_predictions is None or self.return_all_predictions:
+            return_all_predictions = self.return_all_predictions
 
         outer_preds = []
 
@@ -347,6 +361,11 @@ class TimeUtilization:
             outer_pred = amls_pipe.blender.predict(inner_preds)
             outer_preds.append(outer_pred)
 
-        pred = self.outer_blend.predict(outer_preds)
+        # pred = self.outer_blend.predict(outer_preds)
+
+        if not return_all_predictions:
+            pred = self.outer_blend.predict(outer_preds)
+        else:
+            pred = concatenate(outer_preds)
 
         return pred
