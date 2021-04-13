@@ -5,6 +5,7 @@ from copy import copy, deepcopy
 from typing import Optional, Sequence, cast, Iterable
 
 import numpy as np
+import pandas as pd
 import torch
 from joblib import Parallel, delayed
 from log_calls import record_history
@@ -475,7 +476,8 @@ class TabularAutoML(AutoMLPreset):
     def get_feature_scores(self,
                            calc_method: str = 'fast',
                            data: Optional[ReadableToDf] = None,
-                           features_names: Optional[Sequence[str]] = None
+                           features_names: Optional[Sequence[str]] = None,
+                           silent: bool = True
                            ):
         if calc_method == 'fast':
             for level in self.levels:
@@ -488,22 +490,26 @@ class TabularAutoML(AutoMLPreset):
                         return fi[fi['Feature'].map(lambda x: x in used_feats)]
 
             else:
-                logger.warning('No feature importances to show. Please use another calculation method')
+                if not silent:
+                    logger.warning('No feature importances to show. Please use another calculation method')
                 return None
 
         if calc_method != 'accurate':
-            logger.warning(
-                "Unknown calc_method. Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
+            if not silent:
+                logger.warning("Unknown calc_method. " +
+                               "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
             return None
 
         if data is None:
-            logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+            if not silent:
+                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
             return None
 
         read_csv_params = self._get_read_csv_params()
         data, _ = read_data(data, features_names, self.cpu_limit, read_csv_params)
-
-        fi = calc_feats_permutation_imps(self, data, self.reader.target, self.task.get_dataset_metric())
+        used_feats = self.collect_used_feats()
+        fi = calc_feats_permutation_imps(self, used_feats, data, self.reader.target,
+                                         self.task.get_dataset_metric(), silent=silent)
         return fi
 
 
@@ -561,34 +567,43 @@ class TabularUtilizedAutoML(TimeUtilization):
     def get_feature_scores(self,
                            calc_method: str = 'fast',
                            data: Optional[ReadableToDf] = None,
-                           features_names: Optional[Sequence[str]] = None
+                           features_names: Optional[Sequence[str]] = None,
+                           silent: bool = True
                            ):
         if calc_method == 'fast':
-
-            for level in self.levels:
-                for pipe in level:
-                    fi = pipe.pre_selection.get_features_score()
+            feat_imps = []
+            for pipe in self.outer_pipes:
+                for model in pipe.ml_algos:
+                    fi = model.models[0][0].get_feature_scores('fast')
                     if fi is not None:
-                        used_feats = set(self.collect_used_feats())
-                        fi = fi.reset_index()
-                        fi.columns = ['Feature', 'Importance']
-                        return fi[fi['Feature'].map(lambda x: x in used_feats)]
-
-            else:
-                logger.warning('No feature importances to show. Please use another calculation method')
+                        feat_imps.append(fi)
+            n_feat_imps = len(feat_imps)
+            if n_feat_imps == 0:
+                if not silent:
+                    logger.warning('No feature importances to show. Please use another calculation method')
                 return None
+            return (pd.concat(feat_imps).groupby('Feature')['Importance'].agg(sum).sort_values(
+                ascending=False) / n_feat_imps).reset_index()
 
         if calc_method != 'accurate':
-            logger.warning(
-                "Unknown calc_method. Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
+            if not silent:
+                logger.warning("Unknown calc_method. " +
+                               "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
             return None
 
         if data is None:
-            logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+            if not silent:
+                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
             return None
 
-        read_csv_params = self._get_read_csv_params()
+        automl = self.outer_pipes[0].ml_algos[0].models[0][0]
+        read_csv_params = automl._get_read_csv_params()
         data, _ = read_data(data, features_names, self.cpu_limit, read_csv_params)
 
-        fi = calc_feats_permutation_imps(self, data, self.reader.target, self.task.get_dataset_metric())
+        used_feats = set()
+        for pipe in self.outer_pipes:
+            used_feats.update(pipe.ml_algos[0].models[0][0].collect_used_feats())
+
+        fi = calc_feats_permutation_imps(self, list(used_feats), data,
+                                         automl.reader.target, automl.task.get_dataset_metric(), silent=silent)
         return fi
