@@ -14,7 +14,8 @@ from lightautoml.tasks import Task
 
 
 @record_history(enabled=False)
-def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] = None, random_state: int = 42):
+def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] = None,
+                         n_reader_jobs: int = 1, verbose: int = 0, random_state: int = 42):
     """Linear automl
 
     Args:
@@ -27,11 +28,11 @@ def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] =
         automl:
 
     """
-    reader = PandasToPandasReader(task, cv=n_folds, random_state=random_state)
+    reader = PandasToPandasReader(task, cv=n_folds, random_state=random_state, n_jobs=n_reader_jobs)
     pipe = LinearFeatures()
     model = LinearLBFGS()
     pipeline = MLPipeline([model], pre_selection=None, features_pipeline=pipe, post_selection=None)
-    automl = AutoML(reader, [[pipeline]], skip_conn=False)
+    automl = AutoML(reader, [[pipeline]], skip_conn=False, verbose=0)
 
     return automl
 
