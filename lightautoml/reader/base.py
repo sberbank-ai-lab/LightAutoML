@@ -310,8 +310,13 @@ class PandasToPandasReader(Reader):
         if self.advanced_roles:
             new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
             droplist = [x for x in new_roles if new_roles[x].name == 'Drop' and not self._roles[x].force_input]
-            self.upd_used_features(remove=droplist)
-            self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
+            if len(droplist) == len(self.used_features):
+                stub_feature_name = droplist.pop(0)
+                self._used_features = [stub_feature_name]
+                self._roles = {stub_feature_name: self.roles[stub_feature_name]}
+            else:
+                self.upd_used_features(remove=droplist)
+                self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
             dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
 
         return dataset
