@@ -130,7 +130,7 @@ class TextBert(nn.Module):
         # last hidden layer
         encoded_layers, _ = self.transformer(input_ids=inp['input_ids'],
                                              attention_mask=inp['attention_mask'],
-                                             token_type_ids=inp['token_type_ids'], return_dict=False)
+                                             token_type_ids=inp.get('token_type_ids'), return_dict=False)
 
         # pool the outputs into a vector
         encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1).bool())

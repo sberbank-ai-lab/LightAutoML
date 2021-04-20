@@ -41,7 +41,7 @@ class NLPDataFeatures:
         if 'lang' in kwargs:
             assert kwargs['lang'] in self._lang, f'Language must be one of: {self._lang}'
 
-        self.lang = 'en'
+        self.lang = 'en' if 'lang' not in kwargs else kwargs['lang']
         self.is_tokenize_autonlp = False
         self.use_stem = False
         self.verbose = False
