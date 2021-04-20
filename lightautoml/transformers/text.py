@@ -587,13 +587,11 @@ class AutoNLPWrap(LAMLTransformer):
             self.model_name = model_name
 
         self.transformer_params = model_by_name[self.model_name]
-
         if transformer_params is not None:
             self.transformer_params.update(transformer_params)
+
         self._update_bert_model(bert_model)
-
         if embedding_model is not None:
-
             if isinstance(embedding_model, str):
                 try:
                     embedding_model = gensim.models.FastText.load(embedding_model)
@@ -606,6 +604,7 @@ class AutoNLPWrap(LAMLTransformer):
             self.transformer_params = self._update_transformers_emb_model(self.transformer_params, embedding_model)
 
         else:
+
             self.train_fasttext = (self.model_name in self._trainable)
 
         if torch.cuda.is_available() and self.model_name != 'wat':
@@ -629,7 +628,10 @@ class AutoNLPWrap(LAMLTransformer):
             try:
                 emb_size = model.vector_size
             except:
-                emb_size = self.fasttext_params['size']
+                if 'model_params' in params:
+                     emb_size = params['model_params'].get('embed_size', self.fasttext_params['size'])
+                else:
+                    emb_size = self.fasttext_params['size']
 
         try:
             model = model.wv
