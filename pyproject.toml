@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.11"
+version = "0.2.12"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -52,7 +52,7 @@ nltk = "*"
 gensim = "*"
 tqdm = "*"
 efficientnet-pytorch = "*"
-albumentations = "*"
+albumentations = ">=0.4.6"
 opencv-python = "*"
 joblib = "*"
 pywavelets = "*"
