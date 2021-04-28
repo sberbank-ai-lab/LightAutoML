@@ -40,6 +40,7 @@ cmaes = "*"
 log-calls = "*"
 pyyaml = "*"
 catboost = "*"
+hdfs = "^2.6.0"
 
 autowoe = ">=1.2"
 

@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 from log_calls import record_history
 from pandas import DataFrame
 from sqlalchemy import create_engine
+import hdfs
 
 
 @record_history(enabled=False)
@@ -426,6 +427,16 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
         if data.endswith('.parquet'):
             return pd.read_parquet(data, columns=read_csv_params['usecols']), None
 
+        if data.startswith('hdfs://'):
+            if data.startswith('hdfs://'):
+                client = hdfs.InsecureClient(**read_csv_params['client_options'])
+                hdfs_path = data[len("hdfs://"):]
+                with client.read(hdfs_path, **read_csv_params.get('hdfs_reader_options', {})) as reader:
+                    if hdfs_path.lower().endswith('.parquet'):
+                        return pd.read_parquet(reader, **read_csv_params.get('pandas_reader_options', {})), None
+                    if hdfs_path.lower().endswith('.csv'):
+                        return pd.read_csv(reader, **read_csv_params.get('pandas_reader_options', {})), None
+                    raise NotImplementedError('Only CSV and Parquet are currently implemented')
         else:
             return read_csv(data, n_jobs, **read_csv_params), None
 
