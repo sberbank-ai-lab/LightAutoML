@@ -2,7 +2,8 @@ import re
 import itertools
 
 
-from typing import Iterable, Optional, List, Any
+from typing import Iterable, Optional, List, Any, \
+    Dict, Tuple, Callable, Union
 
 import numpy as np
 import pandas as pd
@@ -19,27 +20,80 @@ from .utils import IndexedString, draw_html
 
 
 class TextExplanation:
+    """Explanation of object for textual data."""
+
+    
     def __init__(self, index_string: IndexedString,
                  task_name: str, 
                  class_names: Optional[List[Any]] = None,
                  random_state=None):
+        """
         
+        Args:
+            index_string: Pertrubing string object.
+            task_name: Task name. Can be
+                one of ['binary', 'multiclass', 'reg'].
+            class_names: List of class names.
+            random_state: Random seed for perturbation generation.
+            
+        """
         self.idx_str = index_string
-        # todo: regression-mode
-        assert task_name in ['binary', 'multiclass']
+        assert task_name in ['binary', 'multiclass', 'reg']
         self.task_name = task_name
-        
         self.class_names = class_names
+        
+        if task_name == 'reg':
+            self.default_label = 0
+        else:
+            self.default_label = 1
+            
         self.random_state = check_random_state(random_state)
         self.instance = {}
         
     
-    def as_list(self, label=1, **kwargs):
+    def as_list(self, label: Optional[int] = None) -> List[Tuple[int, float]]:
+        """Get feature weights as list.
+        
+        Args:
+            label: Explaing label. Not necessary
+                for regression. By default, for 
+                regression 0 will be used, and 1 for
+                other task types.
+        
+        Returns:
+            List in format (token_id, weight).
+        
+        """
+        label = self._label(label)    
         ans = self.instance[label]['feature_weights']
         ans = [(x[0], float(x[1])) for x in ans]
+        
         return ans
     
-    def as_features(self, label=1, add_not_rel=False, normalize=False):
+    def as_features(self, label: Optional[int] = None,
+                    add_not_rel: bool = False,
+                    normalize: bool = False) -> List[Tuple[str, float]]:
+        """Get feature weights as list with feature names.
+        
+        Args:
+            label: Explaing label. Not necessary
+                for regression. By default, for 
+                regression 0 will be used, and 1 for
+                other task types.
+                
+            add_not_rel: The not relevalt tokens will be
+                added in explanation with zero feature weights.
+                Using this flag it is convenient to visualize
+                the predictions.
+            
+            normalize: Normalization by the maximum
+                absolute value of the importance of the feature.
+                
+        Returns:
+            List in format (token, weight).
+        
+        """
+        label = self._label(label)
         fw = self.instance[label]['feature_weights']
         norm_const = 1.0
         if normalize:
@@ -60,31 +114,126 @@ class TextExplanation:
             
         return ans
     
-    def as_map(self, label):
-        return {k : v['feature_weights'] \
-                for k, v in self.instance.items()}
+    def as_map(self, label:  Optional[int] = None) -> Dict[str, float]:
+        """Get feature weights as list with features.
+        
+        Args:
+            label: Explaing label. Not necessary
+                for regression. By default, for 
+                regression 0 will be used, and 1 for
+                other task types.
+                
+        Returns:
+            Dictonary of tokens and it's weights in format
+            ({token_id}_{position}, feature_weight).
+            
+        """
+        label = self._label(label)
+        return {f'{k}_{i}' : v for i, (k, v) in enumerate(self.instance[label]['feature_weights'])}
 
-    def as_html(self, label):
-        weight_string = self.as_features(label, True, True)
+    def as_html(self, label: Optional[int] = None) -> str:
+        """Generates inline HTML with colors.
+        
+        Args:
+            label: Explaing label. Not necessary
+                for regression. By default, for 
+                regression 0 will be used, and 1 for
+                other task types.
+                
+        Returns:
+            HTML code.
+        
+        """
+        
+        label = self._label(label)
+        weight_string = self.as_features(label, add_not_rel=True,
+                                         normalize=True)
         return draw_html(weight_string)
         
-    def visualize_in_notebook(self, label):
+    def visualize_in_notebook(self, label: Optional[int] = None):
+        """Visualization of interpretation in IPython notebook.
+        
+        Args:
+            label: Explaing label. Not necessary
+                for regression. By default, for 
+                regression 0 will be used, and 1 for
+                other task types.
+                
+        """
         from IPython.display import HTML, display_html
         
+        label = self._label(label)
         raw_html = self.as_html(label)
         if display:
             display_html(HTML(raw_html))
-
-            
+    
+    def _label(self, label: Union[None, int]) -> int:
+        if label is None or self.task_name == 'reg':
+            label = self.default_label
+                
+        return label
+    
+    
 class LimeTextExplainer:
+    """Instance-wise textual explanation.
     
+    Method working as follows:
+    1. Tokenize perturbed text-column.
+    2. Create dataset by perturbing text column.
+    3. Select features (Optional).
+    4. Fit explainable model (distil_model). (For multiclass
+    one-versus-all will be used)
+    5. Get the explanation from distil_model.
     
-    def __init__(self, automl, kernel=None, kernel_width=25,
-                 feature_selection='none',
-                 force_order=False, model_regressor=None,
-                 distance_metric='cosine', random_state=0):
+    Note:
+        More info: `"Why Should I Trust You?":
+        Explaining the Predictions of Any Classifier
+        Ribeiro et al. <https://arxiv.org/abs/1602.04938>`_
+        
+    Note:
+        Basic usage of explaier.
+        
+        >>> task = Task('reg')
+        >>> automl = TabularNLPAutoML(task=task, 
+        >>>     timeout=600, gpu_ids = '0',
+        >>>     general_params = {'nested_cv': False, 'use_algos': [['nn']]},
+        >>>     text_params = {'lang': 'ru'})
+        >>> automl.fit_predict(train, roles=roles)
+        >>> lime = LimeTextExplainer(automl)
+        >>> explanation = lime.explain_instance(train.iloc[0], perturb_column='message')
+        >>> explanation.visualize_in_notebook(1)
+    
+    """
+    
+    def __init__(self, automl, kernel: Optional[Callable] = None,
+                 kernel_width: float = 25.,
+                 feature_selection: str = 'none',
+                 force_order: bool = False,
+                 model_regressor: Any = None,
+                 distance_metric: str = 'cosine',
+                 random_state: Union[int, np.random.RandomState] = 0):
+        """
+        
+        Args:
+            automl: Automl object.
+            kernel: Callable object with parameter `kernel_width`.
+                By default, the squared-exponential kernel will be used.
+            kernel_width: Kernel width.
+            feature_selection: Feature selection type. For now,
+                'none', 'lasso' are availiable.
+            force_order: Whether to follow the word order.
+            model_regressor: Model distilator. By default,
+                Ridge regression will be used.
+            distance_metric: Distance type between binary vectors.
+            random_state: Random seed used,
+                for sampling perturbation of text column.
+        
+        """
         self.automl = automl
         self.task_name = automl.reader.task.name
+        
+        assert self.task_name in ['binary', 'multiclass', 'reg']
+        
         self.roles = automl.reader.roles
         self.kernel_width = kernel_width
         if kernel is None:
@@ -103,6 +252,7 @@ class LimeTextExplainer:
         self.distil_model = model_regressor
         
         # todo: forward selection and higher weights
+        # and l2x
         # and auto-mode
         
         assert feature_selection in ['none', 'lasso']
@@ -116,7 +266,10 @@ class LimeTextExplainer:
         
         class_names = automl.reader.class_mapping
         if class_names == None:
-            class_names = np.arange(automl.reader._n_classes)
+            if self.task_name == 'reg':
+                class_names = [0]
+            else:
+                class_names = np.arange(automl.reader._n_classes)
         else:
             class_names = list(class_mapping.values())
             
@@ -124,20 +277,34 @@ class LimeTextExplainer:
         
         
     def explain_instance(self, data: pd.Series, perturb_column: str,
-                         labels: Iterable =(1,), n_features: int = 10,
-                         n_samples: int = 5000):
+                         labels: Optional[Iterable] = None, n_features: int = 10,
+                         n_samples: int = 5000) -> 'TextExplanation':
         """
-        Args:
-            data: 
         
+        Args:
+            data: Data sample to explain.
+            perturb_column: Column that will be perturbed.
+            labels: Target variable values to be interpreted.
+            n_features: If a feature selector was specified,
+                then this number means the maximum number
+                of features that will be used in the distilled model.
+            n_samples: Number of sampled instances by perturbing text column.
+            
+        Returns:
+            TextExplanation object.
+            
         """
         assert self.roles[perturb_column].name == 'Text', \
             'Column is not text column'
         assert n_samples > 1, 'Number of generated samples must be > 0'
         
         
+        if labels is None:
+            labels = (0,) if self.task_name == 'reg' else (1,)
+        
         data, y, dst, expl = self._get_perturb_dataset(
             data, perturb_column, n_samples)
+        
         for label in labels:
             expl.instance[label] = self._explain_dataset(
                 data, y, dst, label, n_features)
@@ -177,7 +344,10 @@ class LimeTextExplainer:
         
         return dataset, pred, distance * 100, expl
         
-    def _explain_dataset(self, data, y, dst, label, n_features):
+    def _explain_dataset(self, data: pd.DataFrame,
+                         y: np.array, dst: np.array,
+                         label: int, n_features: int
+                        ) -> Dict[str, Union[float, np.array]]:
         weights = self.kernel_fn(dst)
         y = y[:, label]
         features = self._feature_selection(
@@ -202,7 +372,10 @@ class LimeTextExplainer:
         return res
                 
         
-    def _feature_selection(self, data, y, weights, n_features, mode='none'):
+    def _feature_selection(self, data: pd.DataFrame,
+                           y: np.array, weights: np.array,
+                           n_features: int,
+                           mode: str = 'none') -> List[int]:
         if mode == 'none':
             return np.arange(data.shape[1])
         if mode == 'lasso':
