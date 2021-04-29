@@ -201,7 +201,7 @@ class LimeTextExplainer:
         >>> automl.fit_predict(train, roles=roles)
         >>> lime = LimeTextExplainer(automl)
         >>> explanation = lime.explain_instance(train.iloc[0], perturb_column='message')
-        >>> explanation.visualize_in_notebook(1)
+        >>> explanation.visualize_in_notebook()
     
     """
     
