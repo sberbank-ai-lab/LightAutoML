@@ -7,12 +7,13 @@ import itertools
 
 import matplotlib.pyplot as plt
 
-T_untok = Union[List[str], Tuple[List[str], List[Any]]]
+
+T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
 
 def untokenize(raw: str, tokens: List[str],
                return_mask: bool = False,
                token_sym: Any = True,
-               untoken_sym: Any = False) -> T_untok:
+               untoken_sym: Any = False) -> T_untokenized:
     """Get between tokens symbols.
     
     Args:
@@ -86,7 +87,7 @@ def find_positions(arr: List[str],
 class IndexedString:
     """Indexed string."""
     
-    def __init__(self, raw_string, tokenizer, force_order=True):
+    def __init__(self, raw_string: str, tokenizer: Any, force_order: bool = True):
         """
         Args:
             raw_string: Raw string.
@@ -103,7 +104,7 @@ class IndexedString:
         self.toks = [token.lower() for token in self.toks_]
         self.as_list_, self.mask = untokenize(
             self.raw, self.toks_, return_mask=True)
-#         self.as_list = [w.lower() for w in self.as_list_] 
+        
         self.pos = find_positions(self.as_list_, self.mask)
         self.as_np_ = np.array(self.as_list_)
         self.inv = []
@@ -121,16 +122,38 @@ class IndexedString:
             self.inv = self.toks_
         
         
-    def _tokenize(self, text):
+    def _tokenize(self, text: str) -> List[str]:
         prep_text = self.tokenizer._tokenize(text)
         tokens = self.tokenizer.tokenize_sentence(text)
         
         return tokens
     
-    def word(self, idx):
+    def word(self, idx: int) -> str:
+        """Token by its index.
+        
+        Args:
+            idx: Index of token.
+            
+        Returns:
+            Token.
+            
+        """
         return self.inv[idx]
     
-    def inverse_removing(self, to_del, by_tokens=False):
+    def inverse_removing(self, to_del: Union[List[str], List[int]],
+                         by_tokens=False) -> str:
+        """Remove tokens.
+        
+        Args:
+            to_del: Tokens (text of int) to del.
+            by_tokens: Flag if tokens are text or indexes.
+            
+        Returns:
+            String without removed tokens.
+        
+        """
+        
+        
         # todo: this type of mapping will be not use order,
         # in case when we have not unique tokens.
         assert (not self.force_order) or \
@@ -151,16 +174,33 @@ class IndexedString:
         return new_str
             
     @property
-    def n_words(self):
+    def n_words(self) -> int:
+        """Number of unique words."""
         return len(self.pos)
     
 
 
 
-def draw_html(tokens_and_weights, cmap=plt.get_cmap("bwr"),
-              token_template="""<span style="background-color: {color_hex}">{token}</span>""",
-              font_style="font-size:14px;"
-             ):
+def draw_html(tokens_and_weights: List[Tuple[str, float]],
+              cmap: Any = plt.get_cmap("bwr"),
+              token_template: str = """<span style="background-color: {color_hex}">{token}</span>""",
+              font_style: str = "font-size:14px;"
+             ) -> str:
+    """Get colored text in html format.
+    
+    For color used gradient from cmap.
+    To normalize weights sigmoid is used.
+    
+    Args:
+        tokens_and_weights: List of tokens. 
+        cmap: ```matplotlib.colors.Colormap``` object.
+        token_template: Template for coloring the token.
+        font_style: Styling properties of html.
+        
+    Returns:
+        HTML like string.
+    
+    """
     def get_color_hex(weight):
         rgba = cmap(1. / (1 + np.exp(weight)), bytes=True)
         return '#%02X%02X%02X' % rgba[:3]
