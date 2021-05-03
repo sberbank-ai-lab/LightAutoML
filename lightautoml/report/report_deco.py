@@ -347,7 +347,7 @@ class ReportDeco:
         self.template_path = kwargs.get('template_path', os.path.join(base_dir, 'lama_report_templates/'))
         self.output_path = kwargs.get('output_path', 'lama_report/')
         self.report_file_name = kwargs.get('report_file_name', 'lama_interactive_report.html')
-        self.pdf = kwargs.get('pdf_file_name', None)
+        self.pdf_file_name = kwargs.get('pdf_file_name', None)
 
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path, exist_ok=True)
@@ -757,19 +757,19 @@ class ReportDeco:
         report = env.get_template(self._base_template_path).render(
             title=self.title,
             sections=sections_list,
-            pdf=self.pdf
+            pdf=self.pdf_file_name
         )
         with open(os.path.join(self.output_path, self.report_file_name), "w", encoding='utf-8') as f:
             f.write(report)
 
-        if self.pdf:
+        if self.pdf_file_name:
             try:
                 from weasyprint import HTML
 
                 HTML(
                     string=report,
                     base_url=self.output_path
-                ).write_pdf(os.path.join(self.output_path, self.pdf))
+                ).write_pdf(os.path.join(self.output_path, self.pdf_file_name))
             except ModuleNotFoundError:
                 print("Can't generate PDF report: check manual for installing pdf extras.")
 
