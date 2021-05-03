@@ -347,6 +347,7 @@ class ReportDeco:
         self.template_path = kwargs.get('template_path', os.path.join(base_dir, 'lama_report_templates/'))
         self.output_path = kwargs.get('output_path', 'lama_report/')
         self.report_file_name = kwargs.get('report_file_name', 'lama_interactive_report.html')
+        self.pdf = kwargs.get('pdf_file_name', None)
 
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path, exist_ok=True)
@@ -609,7 +610,7 @@ class ReportDeco:
         # update model section
         self._generate_model_section()
 
-        # generate predict section    
+        # generate predict section
         self._generate_inference_section(data)
         self.generate_report()
         return test_preds
@@ -755,10 +756,22 @@ class ReportDeco:
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         report = env.get_template(self._base_template_path).render(
             title=self.title,
-            sections=sections_list
+            sections=sections_list,
+            pdf=self.pdf
         )
         with open(os.path.join(self.output_path, self.report_file_name), "w", encoding='utf-8') as f:
             f.write(report)
+
+        if self.pdf:
+            try:
+                from weasyprint import HTML
+
+                HTML(
+                    string=report,
+                    base_url=self.output_path
+                ).write_pdf(os.path.join(self.output_path, self.pdf))
+            except ModuleNotFoundError:
+                print("Can't generate PDF report: check manual for installing pdf extras.")
 
 
 _default_wb_report_params = {"automl_date_column": "",
@@ -913,8 +926,7 @@ class ReportDecoWhitebox(ReportDeco):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         self._sections['whitebox'] = env.get_template(self._whitebox_section_path).render(content)
 
-        
-        
+
 def plot_data_hist(data, title='title', bins=100, path=None):
     sns.set(style="whitegrid", font_scale=1.5)
     fig, axs = plt.subplots(figsize=(16, 10))
@@ -925,15 +937,14 @@ def plot_data_hist(data, title='title', bins=100, path=None):
 
 
 class ReportDecoNLP(ReportDeco):
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._nlp_section_path = 'nlp_section.html'
         self._nlp_subsection_path = 'nlp_subsection.html'
         self._nlp_subsections = []
         self.sections_order.append('nlp')
-        
-        
+
 
     def __call__(self, model):
         self._model = model
@@ -954,14 +965,14 @@ class ReportDecoNLP(ReportDeco):
         self._generate_model_section()
         self.generate_report()
         return self
-    
-    
+
+
     def fit_predict(self, *args, **kwargs):
         preds = super().fit_predict(*args, **kwargs)
-        
+
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
         roles = kwargs["roles"] if "roles" in kwargs else args[1]
-        
+
         self._text_fields = roles['text']
         for text_field in self._text_fields:
             content = {}
@@ -989,13 +1000,13 @@ class ReportDecoNLP(ReportDeco):
                            path = os.path.join(self.output_path, content['tokens_len_hist']),
                            title='Length in tokens')
             self._generate_nlp_subsection(content)
-            
-        
+
+
         self._generate_nlp_section()
         self.generate_report()
         return preds
-    
-    
+
+
     def _generate_nlp_subsection(self, content):
         # content has the following fields:
         # title:            subsection title
@@ -1005,7 +1016,7 @@ class ReportDecoNLP(ReportDeco):
         nlp_subsection = env.get_template(self._nlp_subsection_path).render(content)
         self._nlp_subsections.append(nlp_subsection)
 
-    
+
     def _generate_nlp_section(self):
         if self._model_results:
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))

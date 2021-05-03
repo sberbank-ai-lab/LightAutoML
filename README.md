@@ -46,6 +46,22 @@ To check this variant of installation and run all the demo scripts, use the comm
 ```bash
 bash test_package.sh
 ```
+To install optional support for generating reports in pdf format run following commands:
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+
+poetry install -E pdf
+```
 *******
 # Docs generation
 ```bash
