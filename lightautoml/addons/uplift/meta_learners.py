@@ -409,6 +409,9 @@ class RLearner(MetaLearner):
         \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) + (W_i - e(X_i))\tau(X_i) \Big]^2
 
     """
+
+    _epsi = 10 ** -5
+
     def __init__(self,
                  propensity_learner: Optional[AutoML] = None,
                  mean_outcome_learner: Optional[AutoML] = None,
@@ -422,19 +425,20 @@ class RLearner(MetaLearner):
             base_task: task
 
         """
-        assert propensity_learner is not None and self._get_task(propensity_learner).name == 'binary',\
-            "Task of effect_learner must be 'reg'"
+        assert propensity_learner is None or self._get_task(propensity_learner).name == 'binary',\
+            "Task of propensity_learner must be 'binary'"
         assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
-        assert effect_learner is not None and self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
+        assert effect_learner is None or self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
 
-        super().__init__(base_task)
+        if mean_outcome_learner is None and base_task is not None:
+            super().__init__(base_task)
 
         self.propensity_learner: AutoML
         self.mean_outcome_learner: AutoML
         self.effect_learner: AutoML
 
         if propensity_learner is None:
-            self.propensity_learner = TabularAutoML(task='binary')
+            self.propensity_learner = TabularAutoML(task=Task('binary'))
         else:
             self.propensity_learner = propensity_learner
 
@@ -444,7 +448,7 @@ class RLearner(MetaLearner):
             self.mean_outcome_learner = TabularAutoML(task=base_task)
 
         if effect_learner is None:
-            self.effect_learner = TabularAutoML(task='reg')
+            self.effect_learner = TabularAutoML(task=Task('reg'))
         else:
             self.effect_learner = effect_learner
 
@@ -531,7 +535,6 @@ class RLearner(MetaLearner):
             mean_outcome_pred: oof-prediction of mean_outcome_learner
 
         """
-        epsi = 10 ** -5
         effect_roles = copy.deepcopy(roles)
 
         target_role, target_col = _get_target_role(roles)
@@ -541,7 +544,7 @@ class RLearner(MetaLearner):
         train_treatment = train_data[treatment_col]
         effect_roles.pop(treatment_role)
 
-        weights = train_treatment - propensity_pred + epsi
+        weights = train_treatment - propensity_pred + self._epsi
 
         train_cp = train_data.copy()
         train_cp.drop(treatment_col, axis=1, inplace=True)
