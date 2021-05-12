@@ -1,18 +1,15 @@
 import abc
-import logging
-import time
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from itertools import product, zip_longest
-from typing import Any, Dict, Generator, Generic, Iterable, Iterator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import numpy as np
 from log_calls import record_history
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
-from lightautoml.addons.uplift import meta_learners as uplift_meta_learners
 from lightautoml.addons.uplift import utils as uplift_utils
 from lightautoml.addons.uplift.meta_learners import MetaLearner, TLearner, XLearner
 from lightautoml.addons.uplift.metrics import calculate_uplift_auc, TUpliftMetric
@@ -95,6 +92,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
                  test_size: float = 0.2,
                  timeout: Optional[int] = None,
                  timeout_single_learner: Optional[int] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all',
                  random_state: int = 42):
         """
         Args:
@@ -105,6 +104,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
             random_state: Random state.
 
         """
@@ -119,6 +120,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         self.test_size = test_size
         self.timeout = timeout
         self.timeout_single_learner = timeout_single_learner
+        self.gpu_ids = gpu_ids
+        self.cpu_limit = cpu_limit
         self.random_state = random_state
 
         self._timer = Timer()
@@ -191,6 +194,8 @@ class AutoUplift(BaseAutoUplift):
                  threshold_imbalance_treatment: float = 0.2,
                  timeout: Optional[int] = None,
                  timeout_single_learner: Optional[int] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all',
                  random_state: int = 42):
         """
         Args:
@@ -205,10 +210,15 @@ class AutoUplift(BaseAutoUplift):
                 Condition: | MEAN(treatment) - 0.5| > threshold_imbalance_treatment
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
             random_state: Random state.
 
         """
-        super().__init__(base_task, metric, normed_metric, increasing_metric, test_size, timeout, timeout_single_learner, random_state)
+        super().__init__(
+            base_task, metric, normed_metric, increasing_metric, test_size, timeout, timeout_single_learner,
+            cpu_limit, gpu_ids, random_state
+        )
 
         if len(uplift_candidates) > 0:
             if timeout is not None:
@@ -387,7 +397,7 @@ class AutoUplift(BaseAutoUplift):
             MetaLearnerWrapper(
                 name='__TLearner__Default__',
                 klass=TLearner,
-                params={'base_task': self.base_task}
+                params={'base_task': self.base_task, 'gpu_ids': self.gpu_ids, 'cpu_limit': self.cpu_limit}
             ),
             MetaLearnerWrapper(
                 name='__XLearner__Default__',
@@ -604,6 +614,8 @@ class AutoUpliftTX(BaseAutoUplift):
                  test_size: float = 0.2,
                  timeout: Optional[int] = None,
                  timeout_single_learner: Optional[int] = None,
+                 gpu_ids: Optional[str] = 'all',
+                 cpu_limit: int = 4,
                  random_state: int = 42):
         """
         Args:
@@ -616,12 +628,17 @@ class AutoUpliftTX(BaseAutoUplift):
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
+            gpu_ids: GPU IDs that are passed to each automl.
+            cpu_limit: CPU limit that that are passed to each automl.
             random_state: Random state.
 
         """
         assert all(ml in self.__MAP_META_TO_STAGES__ for ml in metalearners), 'Currently available for {}.'.format(self.__MAP_META_TO_STAGES__)
 
-        super().__init__(base_task, metric, normed_metric, increasing_metric, test_size, timeout, timeout_single_learner, random_state)
+        super().__init__(
+            base_task, metric, normed_metric, increasing_metric, test_size, timeout, timeout_single_learner,
+            cpu_limit, gpu_ids, random_state
+        )
 
         self.baselearners = baselearners
         self.metalearners = metalearners if len(metalearners) > 0 else list(self.__MAP_META_TO_STAGES__)
@@ -1195,23 +1212,25 @@ class AutoUpliftTX(BaseAutoUplift):
 
         return ml_wrap
 
-    def __default_learners(self, lin_params: Dict[str, Any] = {},
-                           tab_params: Dict[str, Any] = {'timeout': None} ) -> List[BaseLearnerWrapper]:
+    def __default_learners(self, lin_params: Optional[Dict[str, Any]] = None,
+                           tab_params: Optional[Dict[str, Any]] = None) -> List[BaseLearnerWrapper]:
         """Predefined baselearners.
 
         Returns:
             baselearners: Default.
 
         """
+        default_lin_params = {'cpu_limit': self.cpu_limit}
+        default_tab_params = {'timeout': None, 'cpu_limit': self.cpu_limit, 'gpu_ids': self.gpu_ids}
         return [
             BaseLearnerWrapper(
                 name='__Linear__',
                 klass=uplift_utils.create_linear_automl,
-                params=lin_params,
+                params=default_lin_params if lin_params is None else lin_params,
             ),
             BaseLearnerWrapper(
                 name='__Tabular__',
                 klass=TabularAutoML,
-                params=tab_params
+                params=default_tab_params if tab_params is None else tab_params
             )
         ]

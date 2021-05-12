@@ -19,8 +19,10 @@ from .utils import create_linear_automl, _get_target_role, _get_treatment_role
 @record_history(enabled=False)
 class MetaLearner(metaclass=ABCMeta):
     """Base class for uplift meta-learner"""
-    def __init__(self, base_task: Task):
+    def __init__(self, base_task: Task, cpu_limit: int = 4, gpu_ids: Optional[str] = 'all'):
         self.base_task = base_task
+        self.cpu_limit = cpu_limit
+        self.gpu_ids = gpu_ids
 
     @abstractmethod
     def fit(self, train_data: DataFrame, roles: Dict):
@@ -57,12 +59,16 @@ class TLearner(MetaLearner):
     def __init__(self,
                  treatment_learner: Optional[AutoML] = None,
                  control_learner: Optional[AutoML] = None,
-                 base_task: Optional[Task] = None):
+                 base_task: Optional[Task] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
         """
         Args:
             treatment_learner: AutoML model, if `None` then will be used model by default
             control_learner: AutoML model, if `None` then will be used model by default
             base_task: task
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
 
         """
         assert any(x is not None for x in [treatment_learner, control_learner, base_task]), (
@@ -74,7 +80,7 @@ class TLearner(MetaLearner):
             elif control_learner is not None:
                 base_task = self._get_task(control_learner)
 
-        super().__init__(base_task)
+        super().__init__(base_task, cpu_limit, gpu_ids)
 
         self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
         self.control_learner = control_learner if control_learner is not None else self._get_default_learner(self.base_task)
@@ -140,12 +146,17 @@ class T2Learner(MetaLearner):
                  treatment_learner: Optional[AutoML] = None,
                  control_learner: Optional[AutoML] = None,
                  n_uplift_iterator_folds: int = 5,
-                 base_task: Optional[Task] = None):
+                 base_task: Optional[Task] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
         """
         Args:
             treatment_learner: AutoML model, if `None` then will be used model by default
             control_learner: AutoML model, if `None` then will be used model by default
             base_task: task
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+
         """
         if base_task is None:
             if treatment_learner is not None:
@@ -155,7 +166,7 @@ class T2Learner(MetaLearner):
             else:
                 raise RuntimeError('Must specify any of learners or "base_task"')
 
-        super().__init__(base_task)
+        super().__init__(base_task, cpu_limit, gpu_ids)
 
         self._n_uplift_iterator_folds = n_uplift_iterator_folds
 
@@ -234,7 +245,9 @@ class XLearner(MetaLearner):
                  outcome_learners: Optional[Sequence[AutoML]] = None,
                  effect_learners: Optional[Sequence[AutoML]] = None,
                  propensity_learner: Optional[AutoML] = None,
-                 base_task: Optional[Task] = None):
+                 base_task: Optional[Task] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
         """
         Args:
             outcome_learners: Models predict `outcome` (base task) for each group (treatment/control),
@@ -249,17 +262,21 @@ class XLearner(MetaLearner):
             propensity_learner: Model predicts treatment group membership,
                 If `None` then will be used model by default
             base_task: Task - 'binary' or 'reg'
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
 
         """
         if (outcome_learners is None or len(outcome_learners) == 0) and base_task is None:
             raise RuntimeError('Must specify any of learners or "base_task"')
 
         if outcome_learners is not None and len(outcome_learners) > 0:
-            super().__init__(self._get_task(outcome_learners[0]))
+            base_task = self._get_task(outcome_learners[0])
         elif base_task is not None:
-            super().__init__(base_task)
+            # super().__init__(base_task)
+            pass
         else:
             raise RuntimeError('Must specify any of learners or "base_task"')
+        super().__init__(base_task, cpu_limit, gpu_ids)
 
         self.learners: Dict[str, Union[Dict[str, AutoML], AutoML]] = {'outcome': {}, 'effect': {}}
         if propensity_learner is None:
@@ -416,13 +433,17 @@ class RLearner(MetaLearner):
                  propensity_learner: Optional[AutoML] = None,
                  mean_outcome_learner: Optional[AutoML] = None,
                  effect_learner: Optional[AutoML] = None,
-                 base_task: Optional[Task] = Task('binary')):
+                 base_task: Optional[Task] = Task('binary'),
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
         """
         Args:
             propensity_learner: AutoML model, if `None` then will be used model by default (task must be 'binary')
             mean_outcome_learner: AutoML model, if `None` then will be used model by default
             effect_learner: AutoML model, if `None` then will be used model by default (task must be 'reg')
             base_task: task
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
 
         """
         assert propensity_learner is None or self._get_task(propensity_learner).name == 'binary',\
@@ -430,8 +451,11 @@ class RLearner(MetaLearner):
         assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
         assert effect_learner is None or self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
 
-        if mean_outcome_learner is None and base_task is not None:
-            super().__init__(base_task)
+        # if mean_outcome_learner is None and base_task is not None:
+        if base_task is None and mean_outcome_learner is not None:
+            base_task = self._get_task(mean_outcome_learner)
+
+        super().__init__(base_task, cpu_limit, gpu_ids)
 
         self.propensity_learner: AutoML
         self.mean_outcome_learner: AutoML

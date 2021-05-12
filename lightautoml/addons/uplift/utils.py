@@ -2,6 +2,7 @@
 
 from typing import Dict, Optional, Sequence, Tuple, Union
 
+import torch
 from log_calls import record_history
 
 from lightautoml.automl.base import AutoML
@@ -15,7 +16,7 @@ from lightautoml.tasks import Task
 
 @record_history(enabled=False)
 def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] = None,
-                         n_reader_jobs: int = 1, verbose: int = 0, random_state: int = 42):
+                         n_reader_jobs: int = 1, cpu_limit: int = 4, verbose: int = 0, random_state: int = 42):
     """Linear automl
 
     Args:
@@ -28,6 +29,8 @@ def create_linear_automl(task: Task, n_folds: int = 5, timeout: Optional[None] =
         automl:
 
     """
+    torch.set_num_threads(cpu_limit)
+
     reader = PandasToPandasReader(task, cv=n_folds, random_state=random_state, n_jobs=n_reader_jobs)
     pipe = LinearFeatures()
     model = LinearLBFGS()
