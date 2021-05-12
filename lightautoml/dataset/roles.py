@@ -160,7 +160,6 @@ class CategoryRole(ColumnRole):
             dtype: Variable type.
             encoding_type: Encoding type.
             unknown: Cut-off freq to process rare categories as unseen.
-<<<<<<< HEAD
             force_input: Select a feature for training,
               regardless of the selector results.
 
@@ -173,19 +172,6 @@ class CategoryRole(ColumnRole):
                 - `'freq'` - frequency encoding
                 - `'ohe'` - one hot encoding
 
-=======
-            force_input: Select a feature for training regardless of the selector results.
-
-        Note:
-            Valid encoding_type:
-
-                - auto - default processing
-                - int - encode with int
-                - oof - out-of-fold target encoding
-                - freq - frequency encoding
-                - ohe - one hot encoding
-
->>>>>>> Uplift modeling
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
         # assert encoding_type == 'auto', 'For the moment only auto is supported'
