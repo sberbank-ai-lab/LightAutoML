@@ -431,7 +431,10 @@ class ReportDeco:
         f_weighted = f1_score(y_true, y_pred, average='weighted')
 
         # classification report for features
-        classes = sorted(self.mapping, key=self.mapping.get)
+        if self.mapping:
+            classes = sorted(self.mapping, key=self.mapping.get)
+        else:
+            classes = np.arange(self._N_classes)
         p, r, f, s = precision_recall_fscore_support(y_true, y_pred)
         cls_report = pd.DataFrame({'Class name': classes, 'Precision': p, 'Recall': r, 'F1-score': f, 'Support': s})
         self._inference_content['classification_report'] = cls_report.to_html(index=False, float_format='{:.4f}'.format,
@@ -447,12 +450,12 @@ class ReportDeco:
             if self.mapping is not None:
                 data['y_true'] = np.array([self.mapping[y] for y in data['y_true'].values])
             data['y_pred'] = preds._data.argmax(axis=1)
+            data = data[~np.isnan(preds._data).any(axis=1)]
         else:
             data['y_pred'] = preds._data[:, 0]
             data.sort_values('y_pred', ascending=False, inplace=True)
             data['bin'] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
-        # remove NaN in predictions:
-        data = data[~data['y_pred'].isnull()]
+            data = data[~data['y_pred'].isnull()]
         return data
 
     def fit_predict(self, *args, **kwargs):
@@ -516,6 +519,7 @@ class ReportDeco:
             self._model_summary = pd.DataFrame({'Evaluation parameter': evaluation_parameters, \
                                                 'Validation sample': [mean_ae, median_ae, mse, r2, evs]})
         elif self.task == 'multiclass':
+            self._N_classes = len(train_data[self._target].drop_duplicates())
             self._inference_content['confusion_matrix'] = 'valid_confusion_matrix.png'
 
             index_names = np.array([['Precision', 'Recall', 'F1-score'], \
@@ -936,8 +940,16 @@ def plot_data_hist(data, title='title', bins=100, path=None):
     plt.close()
 
 
+    
 class ReportDecoNLP(ReportDeco):
-
+    """
+    Special report wrapper for :class:`~lightautoml.automl.presets.text_presets.TabularNLPAutoML`.
+    Usage case is the same as main
+    :class:`~lightautoml.report.report_deco.ReportDeco` class.
+    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
+    but with additional NLP report part.
+    
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._nlp_section_path = 'nlp_section.html'
@@ -968,6 +980,18 @@ class ReportDecoNLP(ReportDeco):
 
 
     def fit_predict(self, *args, **kwargs):
+        """Wrapped :meth:`TabularNLPAutoML.fit_predict` method.
+
+        Valid args, kwargs are the same as wrapped automl.
+
+        Args:
+            *args: Arguments.
+            **kwargs: Additional parameters.
+
+        Returns:
+            OOF predictions.
+
+        """
         preds = super().fit_predict(*args, **kwargs)
 
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
