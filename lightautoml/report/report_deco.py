@@ -928,8 +928,16 @@ def plot_data_hist(data, title='title', bins=100, path=None):
     plt.close()
 
 
-class ReportDecoNLP(ReportDeco):
     
+class ReportDecoNLP(ReportDeco):
+    """
+    Special report wrapper for :class:`~lightautoml.automl.presets.text_presets.TabularNLPAutoML`.
+    Usage case is the same as main
+    :class:`~lightautoml.report.report_deco.ReportDeco` class.
+    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
+    but with additional NLP report part.
+    
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._nlp_section_path = 'nlp_section.html'
@@ -961,6 +969,18 @@ class ReportDecoNLP(ReportDeco):
     
     
     def fit_predict(self, *args, **kwargs):
+        """Wrapped :meth:`TabularNLPAutoML.fit_predict` method.
+
+        Valid args, kwargs are the same as wrapped automl.
+
+        Args:
+            *args: Arguments.
+            **kwargs: Additional parameters.
+
+        Returns:
+            OOF predictions.
+
+        """
         preds = super().fit_predict(*args, **kwargs)
         
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
