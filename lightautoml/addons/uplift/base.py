@@ -866,7 +866,7 @@ class AutoUpliftTX(BaseAutoUplift):
                     if bl.params['task'].name == 'binary':
                         bin_baselearners.append(bl)
                     if bl.params['task'].name == 'reg':
-                        bin_baselearners.append(bl)
+                        reg_baselearners.append(bl)
                 else:
                     raw_baselearners.append(bl)
 
@@ -883,7 +883,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 if stage_task.name == 'binary':
                     baselearners_on_stage.extend(bin_baselearners)
                 elif stage_task.name == 'reg':
-                    baselearners_on_stage.extend(bin_baselearners)
+                    baselearners_on_stage.extend(reg_baselearners)
 
                 stage_baselearners[full_name] = baselearners_on_stage
 
