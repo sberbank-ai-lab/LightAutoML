@@ -158,7 +158,8 @@ def plot_pie_f1_metric(data, F1_thresh, path):
     return prec, rec, F1
 
 
-def f1_score_w_co(data, min_co=.01, max_co=.99, step=0.01):
+def f1_score_w_co(input_data, min_co=.01, max_co=.99, step=0.01):
+    data = input_data.copy()
     data['y_pred'] = np.clip(np.ceil(data['y_pred'].values / step) * step, min_co, max_co)
 
     pos = data['y_true'].sum()
