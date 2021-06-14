@@ -215,7 +215,7 @@ class WbMLAlgo(TabularMLAlgo):
         train_df, group_kf = self._include_target(train, True)
 
         roles = train.roles
-        mapping = {'Category': 'real', 'Numeric': 'real'}
+        mapping = {'Category': 'cat', 'Numeric': 'real'}
         features_type = {x: mapping[roles[x].name] for x in roles}
 
         valid_df = None
