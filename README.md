@@ -21,6 +21,7 @@ Currently we work with datasets, where **each row is an object with its specific
 **LightAutoML video guides**:
 - (Russian) [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Dmitry Simakov](https://kaggle.com/simakov))
 - (Russian) [LightAutoML hands-on tutorial in Kaggle Kernels](https://www.youtube.com/watch?v=TYu1UG-E9e8) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+- (English) [Automated Machine Learning with LightAutoML: theory and practice](https://www.youtube.com/watch?v=4pbO673B9Oo) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
 - (English) [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
 - (English) [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) ([Dmitry Simakov](https://kaggle.com/simakov))
 
@@ -35,7 +36,7 @@ See the [Documentation of LightAutoML](https://lightautoml.readthedocs.io/).
 ### Installation via pip from PyPI
 To install LAMA framework on your machine:
 ```bash
-pip install lightautoml
+pip install -U lightautoml
 ```
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
@@ -45,6 +46,22 @@ bash build_package.sh
 To check this variant of installation and run all the demo scripts, use the command below:
 ```bash
 bash test_package.sh
+```
+To install optional support for generating reports in pdf format run following commands:
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+
+poetry install -E pdf
 ```
 *******
 # Docs generation

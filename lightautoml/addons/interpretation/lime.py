@@ -1,7 +1,3 @@
-import re
-import itertools
-
-
 from typing import Iterable, Optional, List, Any, \
     Dict, Tuple, Callable, Union
 
@@ -15,7 +11,6 @@ from sklearn.metrics import pairwise_distances
 
 from ...pipelines.features.text_pipeline import _tokenizer_by_lang
 
-from collections import defaultdict
 from .utils import IndexedString, draw_html
 
 
@@ -224,7 +219,7 @@ class LimeTextExplainer:
         >>> automl.fit_predict(train, roles=roles)
         >>> lime = LimeTextExplainer(automl)
         >>> explanation = lime.explain_instance(train.iloc[0], perturb_column='message')
-        >>> explanation.visualize_in_notebook(1)
+        >>> explanation.visualize_in_notebook()
     
     """
     
@@ -428,5 +423,5 @@ class LimeTextExplainer:
                 features = coefs.T[i].nonzero()[0]
                 if len(features) <= n_features:
                     break
-            
-            return features 
+
+            return features
