@@ -24,9 +24,11 @@ class TextExplanation:
 
     
     def __init__(self, index_string: IndexedString,
-                 task_name: str, 
+                 task_name: str,
+                 prediction: np.ndarray,
                  class_names: Optional[List[Any]] = None,
-                 random_state=None):
+                 random_state=None
+                ):
         """
         
         Args:
@@ -40,6 +42,7 @@ class TextExplanation:
         self.idx_str = index_string
         assert task_name in ['binary', 'multiclass', 'reg']
         self.task_name = task_name
+        self.prediction = prediction
         self.class_names = class_names
         
         if task_name == 'reg':
@@ -72,7 +75,8 @@ class TextExplanation:
     
     def as_features(self, label: Optional[int] = None,
                     add_not_rel: bool = False,
-                    normalize: bool = False) -> List[Tuple[str, float]]:
+                    normalize: bool = False
+                   ) -> List[Tuple[str, float]]:
         """Get feature weights as list with feature names.
         
         Args:
@@ -110,7 +114,7 @@ class TextExplanation:
                    for k, w in zip(self.idx_str.as_np_, weights)]
         else:
             ans = [(self.idx_str.word(k), float(v) * norm_const)\
-                   for k, v in ans.items()]
+                   for k, v in fw.items()]
             
         return ans
     
@@ -147,8 +151,25 @@ class TextExplanation:
         
         label = self._label(label)
         weight_string = self.as_features(label, add_not_rel=True,
-                                         normalize=True)
-        return draw_html(weight_string)
+                                         normalize=False)
+        prediction = self.prediction[label]
+        if self.task_name == 'reg': 
+            return draw_html(weight_string,
+                             self.task_name,
+                             prediction=prediction)
+        elif self.task_name == 'binary':
+            return draw_html(weight_string,
+                             self.task_name,
+                             prediction=prediction,
+                             grad_line=True,
+                             grad_positive_label=str(self.class_names[label]),
+                             grad_negative_label=str(self.class_names[1 - label]))
+        elif self.task_name == 'multiclass':
+            return draw_html(weight_string,
+                             self.task_name,
+                             prediction=prediction,
+                             grad_line=True,
+                             grad_positive_label=str(self.class_names[label]))
         
     def visualize_in_notebook(self, label: Optional[int] = None):
         """Visualization of interpretation in IPython notebook.
@@ -164,14 +185,16 @@ class TextExplanation:
         
         label = self._label(label)
         raw_html = self.as_html(label)
-        if display:
-            display_html(HTML(raw_html))
+        display_html(HTML(raw_html))
     
     def _label(self, label: Union[None, int]) -> int:
         if label is None or self.task_name == 'reg':
             label = self.default_label
                 
         return label
+    
+    def get_label(self, name):
+        return self.class_names.index(name)
     
     
 class LimeTextExplainer:
@@ -205,7 +228,8 @@ class LimeTextExplainer:
     
     """
     
-    def __init__(self, automl, kernel: Optional[Callable] = None,
+    def __init__(self, automl,
+                 kernel: Optional[Callable] = None,
                  kernel_width: float = 25.,
                  feature_selection: str = 'none',
                  force_order: bool = False,
@@ -311,7 +335,10 @@ class LimeTextExplainer:
         
         return expl
 
-    def _get_perturb_dataset(self, data, perturb_column, n_samples):
+    def _get_perturb_dataset(self,
+                             data,
+                             perturb_column: str,
+                             n_samples: int):
         text = data[perturb_column]
         idx_str = IndexedString(text, self.tokenizer, self.force_order)
         n_words = idx_str.n_words
@@ -339,14 +366,18 @@ class LimeTextExplainer:
         
         expl = TextExplanation(idx_str,
                                self.task_name,
+                               pred[0],
                                self.class_names,
                                self.random_state)
         
         return dataset, pred, distance * 100, expl
         
-    def _explain_dataset(self, data: pd.DataFrame,
-                         y: np.array, dst: np.array,
-                         label: int, n_features: int
+    def _explain_dataset(self,
+                         data: pd.DataFrame,
+                         y: np.array,
+                         dst: np.array,
+                         label: int,
+                         n_features: int
                         ) -> Dict[str, Union[float, np.array]]:
         weights = self.kernel_fn(dst)
         y = y[:, label]
@@ -372,10 +403,13 @@ class LimeTextExplainer:
         return res
                 
         
-    def _feature_selection(self, data: pd.DataFrame,
-                           y: np.array, weights: np.array,
+    def _feature_selection(self,
+                           data: pd.DataFrame,
+                           y: np.array,
+                           weights: np.array,
                            n_features: int,
-                           mode: str = 'none') -> List[int]:
+                           mode: str = 'none'
+                          ) -> List[int]:
         if mode == 'none':
             return np.arange(data.shape[1])
         if mode == 'lasso':
@@ -395,5 +429,4 @@ class LimeTextExplainer:
                 if len(features) <= n_features:
                     break
             
-            return features
-        
+            return features 

@@ -157,7 +157,7 @@ nn_params:
   use_cont: True
   use_cat: True
   use_text: True
-  lang: 'ru'
+  lang: null
   #set cudnn backend
   deterministic: False
   # use DP for model training
@@ -311,3 +311,5 @@ autonlp_params:
   # use DP for embeddings
   # currently, must be set to FALSE value
   multigpu: False
+  # forcing using wat if gpu is not avaliable
+  force: True

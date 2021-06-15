@@ -407,7 +407,7 @@ class Trainer:
                 self.scheduler.step(np.mean(val_loss))
 
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
-                logger.info('Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
+                print('Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
                                                                                                     e=self.epoch,
                                                                                                     tl=np.mean(train_loss),
                                                                                                     vl=np.mean(val_loss)))

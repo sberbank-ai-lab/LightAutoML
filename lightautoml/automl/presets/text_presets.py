@@ -191,13 +191,14 @@ class TabularNLPAutoML(TabularAutoML):
             self.text_params['device'] = 'cpu'
 
             if self.general_params['use_algos'] == 'auto':
-                self.general_params['use_algos'] = [['linear_l2', 'lgb', 'nn']]
+                self.general_params['use_algos'] = [['linear_l2', 'lgb']]
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
         torch.set_num_threads(cpu_cnt)
 
         self.nn_params['num_workers'] = min(self.nn_params['num_workers'], cpu_cnt)
+        self.nn_params['lang'] = self.text_params['lang']
 
         if isinstance(self.autonlp_params['transformer_params'], dict):
             if 'loader_params' in self.autonlp_params['transformer_params']:

@@ -118,7 +118,7 @@ class ColumnRole:
         if name in ['path']:
             return PathRole()
 
-        raise ValueError('Unknown string role')
+        raise ValueError('Unknown string role: {}'.format(name))
 
 
 @record_history(enabled=False)

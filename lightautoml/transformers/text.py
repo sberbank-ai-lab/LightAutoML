@@ -528,7 +528,7 @@ class AutoNLPWrap(LAMLTransformer):
     _fit_checks = (text_check,)
     _transform_checks = ()
     _fname_prefix = 'emb'
-    fasttext_params = {'size': 64, 'window': 3, 'min_count': 1}
+    fasttext_params = {'vector_size': 64, 'window': 3, 'min_count': 1}
     _names = {'random_lstm', 'random_lstm_bert', 'pooled_bert', 'wat', 'borep'}
     _trainable = {'wat', 'borep', 'random_lstm'}
 
@@ -537,12 +537,23 @@ class AutoNLPWrap(LAMLTransformer):
         """Features list."""
         return self._features
 
-    def __init__(self, model_name: str, embedding_model: Optional[str] = None, cache_dir: str = './cache_NLP',
+    def __init__(self,
+                 model_name: str,
+                 embedding_model: Optional[str] = None,
+                 cache_dir: str = './cache_NLP',
                  bert_model: Optional[str] = None,
                  transformer_params: Optional[Dict] = None,
-                 subs: Optional[int] = None, multigpu: bool = False,
-                 random_state: int = 42, train_fasttext: bool = False, fasttext_params: Optional[Dict] = None,
-                 fasttext_epochs: int = 2, verbose: bool = False, device: Any = '0', **kwargs: Any):
+                 subs: Optional[int] = None,
+                 multigpu: bool = False,
+                 random_state: int = 42,
+                 train_fasttext: bool = False,
+                 fasttext_params: Optional[Dict] = None,
+                 fasttext_epochs: int = 2,
+                 sent_scaler: Optional[str] = None,
+                 verbose: bool = False,
+                 device: Any = '0',
+                 **kwargs: Any
+                ):
         """
 
         Args:
@@ -578,14 +589,9 @@ class AutoNLPWrap(LAMLTransformer):
         if fasttext_params is not None:
             self.fasttext_params.update(fasttext_params)
         self.dicts = {}
-
+        self.sent_scaler = sent_scaler
         self.verbose = verbose
-
-        if not torch.cuda.is_available() or self.device == 'cpu':
-            self.model_name = 'wat'
-        else:
-            self.model_name = model_name
-
+        self.model_name = model_name
         self.transformer_params = model_by_name[self.model_name]
         if transformer_params is not None:
             self.transformer_params.update(transformer_params)
@@ -606,12 +612,11 @@ class AutoNLPWrap(LAMLTransformer):
         else:
 
             self.train_fasttext = (self.model_name in self._trainable)
-
-        if torch.cuda.is_available() and self.model_name != 'wat':
-            self.transformer = DLTransformer
-        else:
-            self.model_name = 'wat'
+        
+        if self.model_name == 'wat':
             self.transformer = WeightedAverageTransformer
+        else:
+            self.transformer = DLTransformer
 
     def _update_bert_model(self, bert_model: str):
         if bert_model is not None:
@@ -622,26 +627,34 @@ class AutoNLPWrap(LAMLTransformer):
             if 'model_params' in self.transformer_params:
                 self.transformer_params['model_params']['model_name'] = bert_model
         return self
-
-    def _update_transformers_emb_model(self, params: Dict, model, emb_size: Optional[int] = None):
+    
+    def _update_transformers_emb_model(self,
+                                       params: Dict,
+                                       model: Any,
+                                       emb_size: Optional[int] = None
+                                      ) -> Dict[str, Any]:
         if emb_size is None:
             try:
                 emb_size = model.vector_size
             except:
-                if 'model_params' in params:
-                     emb_size = params['model_params'].get('embed_size', self.fasttext_params['size'])
-                else:
-                    emb_size = self.fasttext_params['size']
-
+                try:
+                    emb_size = model.vw.vector_size                    
+                except:
+                    try:
+                        emb_size = model[model.vocab.words[0]].shape[0]
+                    except:
+                        try:
+                            emb_size = next(iter(model.values())).shape[0]
+                        except:
+                            raise ValueError('Unrecognized embedding dimention, please specify it in model_params')
         try:
             model = model.wv
         except:
             pass
 
         if self.model_name == 'wat':
-            params['embedding_model'] = model
             params['embed_size'] = emb_size
-
+            params['embedding_model'] = model
         elif self.model_name in {'random_lstm', 'borep'}:
             params['dataset_params']['embedding_model'] = model
             params['dataset_params']['embed_size'] = emb_size
@@ -740,4 +753,17 @@ class AutoNLPWrap(LAMLTransformer):
             outputs.append(output)
             logger.info(f'Feature {i} transformed')
         # create resulted
-        return dataset.empty().to_numpy().concat(outputs)
+        dataset = dataset.empty().to_numpy().concat(outputs)
+        
+        def norm_l2(x):
+            return ((x**2).sum(axis=1, keepdims=True))**.5
+        
+        def norm_l1(x):
+            return np.abs(x).sum(axis=1, keepdims=True)
+        
+        if self.sent_scaler == 'l2':
+            dataset.data = dataset.data / norm_l2(dataset.data)
+        elif self.sent_scaler == 'l1':
+            dataset.data = dataset.data / norm_l1(dataset.data)
+            
+        return dataset

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, Any
+from typing import List, Tuple, Union, Any, Optional
 
 import numpy as np
 
@@ -6,6 +6,7 @@ from collections import defaultdict
 import itertools
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import Colormap
 
 
 T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
@@ -13,7 +14,8 @@ T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
 def untokenize(raw: str, tokens: List[str],
                return_mask: bool = False,
                token_sym: Any = True,
-               untoken_sym: Any = False) -> T_untokenized:
+               untoken_sym: Any = False
+              ) -> T_untokenized:
     """Get between tokens symbols.
     
     Args:
@@ -81,13 +83,18 @@ def find_positions(arr: List[str],
     for i, (token, istoken) in enumerate(zip(arr, mask)):
         if istoken:
             pos.append(i)
+            
     return pos
 
 
 class IndexedString:
     """Indexed string."""
     
-    def __init__(self, raw_string: str, tokenizer: Any, force_order: bool = True):
+    def __init__(self,
+                 raw_string: str,
+                 tokenizer: Any,
+                 force_order: bool = True
+                ):
         """
         Args:
             raw_string: Raw string.
@@ -124,7 +131,7 @@ class IndexedString:
         
     def _tokenize(self, text: str) -> List[str]:
         prep_text = self.tokenizer._tokenize(text)
-        tokens = self.tokenizer.tokenize_sentence(text)
+        tokens = self.tokenizer.tokenize_sentence(prep_text)
         
         return tokens
     
@@ -140,8 +147,10 @@ class IndexedString:
         """
         return self.inv[idx]
     
-    def inverse_removing(self, to_del: Union[List[str], List[int]],
-                         by_tokens=False) -> str:
+    def inverse_removing(self,
+                         to_del: Union[List[str], List[int]],
+                         by_tokens: bool = False
+                        ) -> str:
         """Remove tokens.
         
         Args:
@@ -178,40 +187,168 @@ class IndexedString:
         """Number of unique words."""
         return len(self.pos)
     
-
-
-
+    
 def draw_html(tokens_and_weights: List[Tuple[str, float]],
-              cmap: Any = plt.get_cmap("bwr"),
-              token_template: str = """<span style="background-color: {color_hex}">{token}</span>""",
-              font_style: str = "font-size:14px;"
+              task_name: str,
+              cmap: Any = None,
+              grad_line: bool = True,
+              grad_positive_label: Optional[str] = None,
+              grad_negative_label: Optional[str] = None,
+              prediction: Optional[float] = None,
+              n_ticks: int = 10
              ) -> str:
     """Get colored text in html format.
     
     For color used gradient from cmap.
-    To normalize weights sigmoid is used.
     
     Args:
         tokens_and_weights: List of tokens. 
-        cmap: ```matplotlib.colors.Colormap``` object.
-        token_template: Template for coloring the token.
-        font_style: Styling properties of html.
+        cmap: ```matplotlib.colors.Colormap``` or single color string like (#FFFFFF).
+            By default blue-white-red linear gradient is used.
+        positive_label: Positive label text.
+        negatvie_label: Negative label text.
         
     Returns:
         HTML like string.
     
     """
+    font_style = "font-size:14px;"
+    
+    token_template = (
+        '<span style="background-color: {color_hex};">'
+            '{token}'
+        '</span>'
+    )
+    
+    ticks_template = (
+        '<div style="border-left: 1px solid black; height: 18px; float: left; width: {}%;">'
+            '<span style="position: relative; top: 1em; left: -{}em">'
+                '{:.1f}'
+            '</span>'
+        '</div>'
+    )
+    
+    gradient_full = (
+        "margin-left: 10%; "
+        "margin-right: 10%; "
+    )
+    
+    gradient_styling = (
+        "background: linear-gradient(90deg, {} 0%, {} 50%, {} 100%); "
+        "border: 1px solid black; "
+        "margin-left: {}em; "
+        "margin-right: {}em; "
+        "float: center; "
+    )
+    ticks_styling = (
+        "margin-left: {}em; "
+        "margin-right: {}em; "
+    )
+    norm_const = max(map(lambda x: abs(x[1]), tokens_and_weights))
+    order = int('{:.2e}'.format(norm_const).split('e')[1])
+    order_s = '✕ {:.0e}'.format(10**order)
+    lord = 0.5 * len(order_s) + 1.5 # lenght order
+    inorm_const = 1 / norm_const
+    if prediction is None:
+        prediction = ""
+        pred_field = ""
+    else:
+        prediction = "{:.1e}".format(prediction)
+        pred_field = "prediction"
+    
+    if cmap is None:
+        cmap = plt.get_cmap('bwr')
+    
+    if task_name == "reg":
+        grad_positive_label = "Positive"
+        grad_negative_label = "Negative"
+    elif task_name == "multiclass":
+        grad_positive_label = "Class: " + grad_positive_label
+        grad_negative_label = "Other classes"
+    elif task_name ==  "binary":
+        grad_positive_label = "Class: " + grad_positive_label
+        grad_negative_label = "Class: " + grad_negative_label
+    
     def get_color_hex(weight):
-        rgba = cmap(1. / (1 + np.exp(weight)), bytes=True)
-        return '#%02X%02X%02X' % rgba[:3]
+        if isinstance(cmap, Colormap):
+            if task_name == 'reg':
+                rgba = cmap((- weight * inorm_const * 0.25 + 0.5), bytes=True)
+            else: 
+                rgba = cmap((- weight * inorm_const * 0.25 + 0.5), bytes=True)
+                # may be sigmoid for classifications, but hard to understand
+                # rgba = cmap(1.0 / (1 + np.exp(weight * inorm_const)), bytes=True)
+            return '#%02X%02X%02X' % rgba[:3]
+        elif isinstance(cmap, str):
+            if weight == 0.0:
+                return '#FFFFFF'
+            return cmap
     
     tokens_html = [
         token_template.format(token=token, color_hex=get_color_hex(weight))
         for token, weight in tokens_and_weights
     ]
-    raw_html = """<p style="{}">{}</p>""".format(font_style, ' '.join(tokens_html))
+    between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 for i in range(n_ticks + 1)]
+    ticks = np.linspace(-norm_const, norm_const, n_ticks + 1) / (10**(order))
+    ticks_chart = ' '.join([ticks_template.format(t, 0.7 + 0.385*(k<0), k) for t, k in zip(between_ticks, ticks)])
+    
+    grad_statement = """
+    <p style="text-align: center">
+        Class mapping
+    </p>
+    <div style="{}">
+        <div id="grad" style="{}">
+            <p style="text-align:left; margin-left: 1%; margin-right: 1%; color: white;">
+                {}
+                <span style="float:right;">
+                    {}
+                </span>
+            </p>
+        </div>
+        
+        <div style="{}">
+            {}
+        </div>
+        
+        <div style="float: right; right: 1em; top: -1.5em; position: relative;">{}</div>
+        <div style="float: left; left: -0.5em; top: -4.05em; position: relative;">{}</div>
+        <div style="float: left; left: -4.3em; top: -2.75em; position: relative;">{}</div>
+    </div>
+    """.format(
+        gradient_full,
+        gradient_styling,
+        grad_negative_label,
+        grad_positive_label,
+        ticks_styling.format(
+            lord,
+            lord),
+        ticks_chart,
+        order_s,
+        pred_field,
+        prediction 
+    ).format(
+        get_color_hex(-norm_const),
+        get_color_hex(0.0),                                
+        get_color_hex(norm_const),
+        lord,
+        lord
+    )
+    if not grad_line:
+        grad_statement = ""
+    
+    raw_html = """
+    <div>
+        <p style="text-align: center">
+            Text
+        </p>
+        <div style="border: 1px solid black;">
+            <p style="{}; margin-left: 1%; margin-right: 1%;">{}</p>
+        </div>
+        {}
+    </div>
+    """.format(
+        font_style,
+        ' '.join(tokens_html),
+        grad_statement
+    )
     
     return raw_html
-    
-        
-    

@@ -62,7 +62,8 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         "feature_border_type": "GreedyLogSum",
         "nan_mode": "Min",
         # "silent": False,
-        "verbose": False
+        "verbose": False,
+        "allow_writing_files": False
     }
 
     def _infer_params(self) -> Tuple[dict, int, int, Callable, Callable]:

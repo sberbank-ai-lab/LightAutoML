@@ -123,6 +123,23 @@ class Reader:
                 cls.__dict__[attr] = getattr(reader, attr)
 
         return new_reader
+    
+    def cols_by_type(self, col_type: str) -> List[str]:
+        """Get roles names by it's type.
+        
+        Args:
+            col_type: Column type, for example 'Text'.
+            
+        Returns:
+            Array with column names.
+            
+        """
+        names = []
+        for col, role in self.roles.items():
+            if role.name == col_type:
+                names.append(col)
+
+        return names
 
 
 @record_history(enabled=False)
@@ -514,3 +531,4 @@ class PandasToPandasReader(Reader):
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict
+    
