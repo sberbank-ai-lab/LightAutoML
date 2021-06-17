@@ -145,7 +145,7 @@ def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment:
         uplift_pred: Prediction of meta model
         treatment: Treatment column
         mode: Name of available metrics
-        normed: AUC divided by the maximum AUC
+        normed: Normed AUC: (AUC - MIN_AUC) / (MAX_AUC - MIN_AUC)
 
     Returns:
         auc_score: Area under model uplift curve
@@ -156,8 +156,9 @@ def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment:
     uplift_auc = auc(xs, ys)
 
     if normed:
-        _, max_auc = calculate_min_max_uplift_auc(y_true, treatment, mode)
-        uplift_auc /= max_auc
+        min_auc, max_auc = calculate_min_max_uplift_auc(y_true, treatment, mode)
+
+        uplift_auc = (uplift_auc - min_auc) / (max_auc - min_auc)
 
     return uplift_auc
 
