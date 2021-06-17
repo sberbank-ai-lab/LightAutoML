@@ -11,7 +11,7 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
 from lightautoml.addons.uplift import utils as uplift_utils
-from lightautoml.addons.uplift.meta_learners import MetaLearner, TLearner, XLearner
+from lightautoml.addons.uplift.meta_learners import MetaLearner, RLearner, SLearner, TLearner, TDLearner, XLearner
 from lightautoml.addons.uplift.metrics import calculate_uplift_auc, TUpliftMetric
 from lightautoml.automl.base import AutoML
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
@@ -120,8 +120,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         self.test_size = test_size
         self.timeout = timeout
         self.timeout_single_learner = timeout_single_learner
-        self.gpu_ids = gpu_ids
         self.cpu_limit = cpu_limit
+        self.gpu_ids = gpu_ids
         self.random_state = random_state
 
         self._timer = Timer()
@@ -395,9 +395,19 @@ class AutoUplift(BaseAutoUplift):
         """Default uplift candidates"""
         return [
             MetaLearnerWrapper(
+                name='__SLearner__Default__',
+                klass=SLearner,
+                params={'base_task': self.base_task}
+            ),
+            MetaLearnerWrapper(
                 name='__TLearner__Default__',
                 klass=TLearner,
-                params={'base_task': self.base_task, 'gpu_ids': self.gpu_ids, 'cpu_limit': self.cpu_limit}
+                params={'base_task': self.base_task}
+            ),
+            MetaLearnerWrapper(
+                name='__TDLearner__Default__',
+                klass=TDLearner,
+                params={'base_task': self.base_task}
             ),
             MetaLearnerWrapper(
                 name='__XLearner__Default__',
@@ -405,8 +415,61 @@ class AutoUplift(BaseAutoUplift):
                 params={'base_task': self.base_task}
             ),
             MetaLearnerWrapper(
+                name='__RLearner__Linear__',
+                klass=RLearner,
+                params={
+                    'propensity_learner': BaseLearnerWrapper(
+                        name='__Linear__',
+                        klass=uplift_utils.create_linear_automl,
+                        params={'task': Task('binary')}
+                    ),
+                    'mean_outcome_learner': BaseLearnerWrapper(
+                        name='__Linear__',
+                        klass=uplift_utils.create_linear_automl,
+                        params={'task': self.base_task}
+                    ),
+                    'effect_learner': BaseLearnerWrapper(
+                        name='__Linear__',
+                        klass=uplift_utils.create_linear_automl,
+                        params={'task': Task('reg')}
+                    )
+                }
+            ),
+            MetaLearnerWrapper(
+                name='__RLearner__Default__',
+                klass=RLearner,
+                params={'base_task': self.base_task}
+            ),
+            MetaLearnerWrapper(
+                name='__SLearner__TabularAutoML__',
+                klass=SLearner,
+                params={
+                    'learner': BaseLearnerWrapper(
+                        name='__TabularAutoML__',
+                        klass=TabularAutoML,
+                        params={'task': self.base_task, 'timeout': self._tabular_timeout}
+                    )
+                }
+            ),
+            MetaLearnerWrapper(
                 name='__TLearner__TabularAutoML__',
                 klass=TLearner,
+                params={
+                    'treatment_learner': BaseLearnerWrapper(
+                        name='__TabularAutoML__',
+                        klass=TabularAutoML,
+                        params={'task': self.base_task, 'timeout': self._tabular_timeout}
+                    ),
+                    'control_learner': BaseLearnerWrapper(
+                        name='__TabularAutoML__',
+                        klass=TabularAutoML,
+                        params={'task': self.base_task, 'timeout': self._tabular_timeout}
+                    )
+                }
+            ),
+            MetaLearnerWrapper(
+                name='__TDLearner__TabularAutoML__',
+                klass=TDLearner,
                 params={
                     'treatment_learner': BaseLearnerWrapper(
                         name='__TabularAutoML__',
@@ -555,6 +618,7 @@ class AutoUplift(BaseAutoUplift):
 MLStageFullName = Tuple[str, ...]
 TrainedMetaLearnerFullName = Tuple[str, Tuple[Tuple[MLStageFullName, str], ...]]
 
+
 @record_history(enabled=False)
 @dataclass
 class MetaLearnerStage():
@@ -614,8 +678,8 @@ class AutoUpliftTX(BaseAutoUplift):
                  test_size: float = 0.2,
                  timeout: Optional[int] = None,
                  timeout_single_learner: Optional[int] = None,
-                 gpu_ids: Optional[str] = 'all',
                  cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all',
                  random_state: int = 42):
         """
         Args:
@@ -628,8 +692,8 @@ class AutoUpliftTX(BaseAutoUplift):
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
-            gpu_ids: GPU IDs that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
             random_state: Random state.
 
         """
@@ -695,7 +759,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
     def create_best_metalearner(self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {})\
             -> Union[MetaLearner, ReportDecoUplift]:
-        """ Create 'raw' best metalearner with(without) report functionality.
+        """Create 'raw' best metalearner with(without) report functionality.
 
         Returned metalearner should be refitted.
 
@@ -866,7 +930,7 @@ class AutoUpliftTX(BaseAutoUplift):
                     if bl.params['task'].name == 'binary':
                         bin_baselearners.append(bl)
                     if bl.params['task'].name == 'reg':
-                        reg_baselearners.append(bl)
+                        bin_baselearners.append(bl)
                 else:
                     raw_baselearners.append(bl)
 
@@ -883,7 +947,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 if stage_task.name == 'binary':
                     baselearners_on_stage.extend(bin_baselearners)
                 elif stage_task.name == 'reg':
-                    baselearners_on_stage.extend(reg_baselearners)
+                    baselearners_on_stage.extend(bin_baselearners)
 
                 stage_baselearners[full_name] = baselearners_on_stage
 

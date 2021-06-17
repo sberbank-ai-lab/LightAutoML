@@ -29,7 +29,7 @@ class MetaLearner(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def predict(self, train_data: DataFrame) -> Tuple[np.ndarray, ...]:
+    def predict(self, data: DataFrame) -> Tuple[np.ndarray, ...]:
         pass
 
     def _get_default_learner(self, task: Task):
@@ -42,6 +42,75 @@ class MetaLearner(metaclass=ABCMeta):
             return learner.reader.task
         else:
             raise RuntimeError("Can't extract 'task' from learner")
+
+
+@record_history(enabled=False)
+class SLearner(MetaLearner):
+    """SLearner
+
+    `SLearner` - is an 'meta' model using 'treatment' column as a feature.
+
+    """
+
+    def __init__(self,
+                 learner: Optional[AutoML] = None,
+                 base_task: Optional[Task] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
+        if base_task is None:
+            if learner is not None:
+                base_task = self._get_task(learner)
+            else:
+                raise RuntimeError('Must specify any of learners or "base_task"')
+
+        super().__init__(base_task, cpu_limit, gpu_ids)
+
+        if learner is None:
+            self.learner = self._get_default_learner(base_task)
+        else:
+            self.learner = learner
+
+        self._treatment_col: str
+
+    def fit(self, train_data: DataFrame, roles: Dict):
+        """Fit meta-learner
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+
+        """
+        treatment_role, treatment_col = _get_treatment_role(roles)
+        self._treatment_col = treatment_col
+
+        uplift_roles = copy.deepcopy(roles)
+        uplift_roles.pop(treatment_role)
+
+        self.learner.fit_predict(train_data, uplift_roles)
+
+    def predict(self, data: DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Predict treatment effects
+
+        Args:
+            data: Dataset to perform inference.
+
+        Returns:
+            treatment_effect: Predictions of treatment effects
+            effect_w_interaction: Predictions of base task values on treated-group
+            effect_wo_interaction: Predictions of base task values on control-group
+
+        """
+        data_c = data.copy()
+
+        data_c[self._treatment_col] = 0
+        control_pred = self.learner.predict(data_c).data.ravel()
+
+        data_c[self._treatment_col] = 1
+        treatment_pred = self.learner.predict(data_c).data.ravel()
+
+        uplift_pred = treatment_pred - control_pred
+
+        return uplift_pred, treatment_pred, control_pred
 
 
 @record_history(enabled=False)
@@ -224,6 +293,127 @@ class T2Learner(MetaLearner):
 
 
 @record_history(enabled=False)
+class TDLearner(MetaLearner):
+    """TDLearner
+
+    `TDLearner` - is an 'meta' model which uses a two models (the one model depends on the prediction of another model).
+
+    The 'meta' model prediction is a substraction predictions of 'treatment' model and 'control' model.
+
+    """
+
+    def __init__(self,
+                 treatment_learner: Optional[AutoML] = None,
+                 control_learner: Optional[AutoML] = None,
+                 base_task: Optional[Task] = None,
+                 dependent_group: Optional[int] = None,
+                 cpu_limit: int = 4,
+                 gpu_ids: Optional[str] = 'all'):
+        """
+        Args:
+            treatment_learner: AutoML model, if `None` then will be used model by default
+            control_learner: AutoML model, if `None` then will be used model by default
+            base_task: task
+            dependent_group: Value := {0 , 1}. Dependent group on the prediction of another group,
+                If `None` is dependent group will be a large group by size
+            cpu_limit: CPU limit that that are passed to each automl.
+            gpu_ids: GPU IDs that are passed to each automl.
+
+        """
+        assert any(x is not None for x in [treatment_learner, control_learner, base_task]), (
+               'Must specify any of learners or "base_task"')
+
+        if base_task is None and (treatment_learner is None or control_learner is None):
+            if treatment_learner is not None:
+                base_task = self._get_task(treatment_learner)
+            elif control_learner is not None:
+                base_task = self._get_task(control_learner)
+
+        super().__init__(base_task, cpu_limit, gpu_ids)
+
+        self.treatment_learner = treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
+        self.control_learner = control_learner if control_learner is not None else self._get_default_learner(self.base_task)
+
+        self._other_group_pred_col = '__OTHER_GROUP_PREDICTION__'
+        self._dependent_group: Optional[int] = dependent_group
+
+    def fit(self, train_data: DataFrame, roles: Dict):
+        """Fit meta-learner
+
+        Args:
+            train_data: Dataset to train
+            roles: Roles dict with 'treatment' roles
+
+        """
+        treatment_role, treatment_col = _get_treatment_role(roles)
+
+        self._set_dependent_group(train_data[treatment_col].mean())
+
+        new_roles = copy.deepcopy(roles)
+        new_roles.pop(treatment_role)
+
+        control_train_data = train_data[train_data[treatment_col] == 0]
+        treatment_train_data = train_data[train_data[treatment_col] == 1]
+
+        control_train_data.drop(treatment_col, axis=1, inplace=True)
+        treatment_train_data.drop(treatment_col, axis=1, inplace=True)
+
+        if self._dependent_group == 1:
+            dependent_train_data = treatment_train_data
+            dependent_learner = self.treatment_learner
+
+            independent_train_data = control_train_data
+            independent_learner = self.control_learner
+        else:
+            dependent_train_data = control_train_data
+            dependent_learner = self.control_learner
+
+            independent_train_data = treatment_train_data
+            independent_learner = self.treatment_learner
+
+        independent_learner.fit_predict(independent_train_data, new_roles)
+        sg_oof_pred = independent_learner.predict(dependent_train_data).data.ravel()
+        dependent_train_data[self._other_group_pred_col] = sg_oof_pred
+        dependent_learner.fit_predict(dependent_train_data, new_roles)
+
+    def predict(self, data: Any) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Predict treatment effects
+
+        Args:
+            data: Dataset to perform inference.
+
+        Returns:
+            treatment_effect: Predictions of treatment effects
+            effect_w_interaction: Predictions of base task values on treated-group
+            effect_wo_interaction: Predictions of base task values on control-group
+
+        """
+        data_c = data.copy()
+
+        if self._dependent_group == 1:
+            dependent_learner, independent_learner = self.treatment_learner, self.control_learner
+        else:
+            dependent_learner, independent_learner = self.control_learner, self.treatment_learner
+
+        independent_pred = independent_learner.predict(data_c).data.ravel()
+        data_c[self._other_group_pred_col] = independent_pred
+        dependent_pred = dependent_learner.predict(data_c).data.ravel()
+
+        if self._dependent_group == 1:
+            control_pred, treatment_pred = independent_pred, dependent_pred
+        else:
+            control_pred, treatment_pred = dependent_pred, independent_pred
+
+        uplift = treatment_pred - control_pred
+
+        return uplift, treatment_pred, control_pred
+
+    def _set_dependent_group(self, treatment_rate: float):
+        if self._dependent_group is None:
+            self._dependent_group = 1 if treatment_rate > 0.5 else 0
+
+
+@record_history(enabled=False)
 class XLearner(MetaLearner):
     """XLearner
 
@@ -261,9 +451,9 @@ class XLearner(MetaLearner):
                 If `None` then will be used model by default.
             propensity_learner: Model predicts treatment group membership,
                 If `None` then will be used model by default
-            base_task: Task - 'binary' or 'reg'
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
+            base_task: Task - 'binary' or 'reg'
 
         """
         if (outcome_learners is None or len(outcome_learners) == 0) and base_task is None:
@@ -271,11 +461,8 @@ class XLearner(MetaLearner):
 
         if outcome_learners is not None and len(outcome_learners) > 0:
             base_task = self._get_task(outcome_learners[0])
-        elif base_task is not None:
-            # super().__init__(base_task)
-            pass
-        else:
-            raise RuntimeError('Must specify any of learners or "base_task"')
+            super().__init__(self._get_task(outcome_learners[0]))
+
         super().__init__(base_task, cpu_limit, gpu_ids)
 
         self.learners: Dict[str, Union[Dict[str, AutoML], AutoML]] = {'outcome': {}, 'effect': {}}
@@ -446,14 +633,19 @@ class RLearner(MetaLearner):
             gpu_ids: GPU IDs that are passed to each automl.
 
         """
-        assert propensity_learner is None or self._get_task(propensity_learner).name == 'binary',\
-            "Task of propensity_learner must be 'binary'"
-        assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
-        assert effect_learner is None or self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
+        # assert propensity_learner is not None and self._get_task(propensity_learner).name == 'binary',\
+        #     "Task of 'propensity_learner' must be 'binary'"
+        # assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
+        # assert effect_learner is not None and self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
 
-        # if mean_outcome_learner is None and base_task is not None:
-        if base_task is None and mean_outcome_learner is not None:
-            base_task = self._get_task(mean_outcome_learner)
+        if propensity_learner is not None and self._get_task(propensity_learner).name != 'binary':
+            raise RuntimeError("Task of 'propensity_learner' must be 'binary'")
+
+        if mean_outcome_learner is None and base_task is None:
+            raise RuntimeError("Must specify 'mean_outcome_learner' or base_task")
+
+        if effect_learner is not None and self._get_task(effect_learner).name != 'reg':
+            raise RuntimeError("Task of effect_learner must be 'reg'")
 
         super().__init__(base_task, cpu_limit, gpu_ids)
 
@@ -468,6 +660,7 @@ class RLearner(MetaLearner):
 
         if mean_outcome_learner is not None:
             self.mean_outcome_learner = mean_outcome_learner
+            self.base_task = self._get_task(mean_outcome_learner)
         elif base_task is not None:
             self.mean_outcome_learner = TabularAutoML(task=base_task)
 
