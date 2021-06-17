@@ -32,8 +32,7 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
             4) Treatment = 0, Target = 1
 
         If type if 'y_true' is 'continuous':
-            1) Treatment = 1, Target discending sorted
-            2) Treatment = 0, Target ascending sorted
+            Not implemented
 
     Args:
         y_true: Target values
@@ -51,17 +50,7 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
         perfect_treatment_score = ((treatment == 1).astype(int) * 2 * (y_true == 1).astype(int))
         perfect_uplift = perfect_treatment_score + perfect_control_score
     elif type_of_target(y_true) == 'continuous':
-        control_uplift, treatment_uplift = y_true[treatment == 0], y_true[treatment == 1]
-
-        # use indexes like scores
-        control_sorted_indexes, treatment_sorted_indexes = np.zeros_like(control_uplift), np.zeros_like(treatment_uplift)
-
-        control_sorted_indexes[control_uplift.argsort()] = np.arange(control_uplift.shape[0])
-        treatment_sorted_indexes[treatment_uplift.argsort()] = np.arange(treatment_uplift.shape[0])
-
-        perfect_uplift = np.zeros_like(y_true)
-        perfect_uplift[treatment == 0] = -control_sorted_indexes
-        perfect_uplift[treatment == 1] = treatment_sorted_indexes
+        raise NotImplementedError("Can't calculate perfect curve for continuous target")
     else:
         raise RuntimeError("Only 'binary' and 'continuous' targets are available")
 
