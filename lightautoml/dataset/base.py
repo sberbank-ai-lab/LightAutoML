@@ -120,7 +120,7 @@ class LAMLDataset:
             data = self._get_2d(self.data, (rows, idx))
 
             # case of single column - return LAMLColumn
-            if type(cols) is str:
+            if isinstance(cols, str):
                 dataset = LAMLColumn(self._get_2d(self.data, (rows, idx)), role=self.roles[cols])
 
                 return dataset
@@ -327,7 +327,7 @@ class LAMLDataset:
             List of integer indexes of single int.
 
         """
-        if type(columns) is str:
+        if isinstance(columns, str):
             idx = self.features.index(columns)
 
         else:
