@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 from torch import nn
 from torch.distributions.utils import clamp_probs
@@ -7,7 +9,8 @@ from .data_process import create_emb_layer
 
 
 class TIModel(nn.Module):
-    def __init__(self, voc_size, embed_dim=50,
+    def __init__(self,
+                 voc_size, embed_dim=50,
                  conv_filters=100, conv_ksize=3,
                  drop_rate=0.2, hidden_dim=100,
                  weights_matrix=None, trainable_embeds=False):

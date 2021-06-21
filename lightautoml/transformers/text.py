@@ -635,15 +635,19 @@ class AutoNLPWrap(LAMLTransformer):
                                       ) -> Dict[str, Any]:
         if emb_size is None:
             try:
+                # Gensim checker [1]
                 emb_size = model.vector_size
             except:
                 try:
+                    # Gensim checker[2]
                     emb_size = model.vw.vector_size                    
                 except:
                     try:
+                        # Natasha checker
                         emb_size = model[model.vocab.words[0]].shape[0]
                     except:
                         try:
+                            # Dict of embeddings checker
                             emb_size = next(iter(model.values())).shape[0]
                         except:
                             raise ValueError('Unrecognized embedding dimention, please specify it in model_params')
@@ -754,16 +758,23 @@ class AutoNLPWrap(LAMLTransformer):
             logger.info(f'Feature {i} transformed')
         # create resulted
         dataset = dataset.empty().to_numpy().concat(outputs)
+        # instance-wise sentence embedding normalization
+        dataset.data = dataset.data / self._sentence_norm(dataset.data, self.sent_scaler)
         
-        def norm_l2(x):
-            return ((x**2).sum(axis=1, keepdims=True))**.5
-        
-        def norm_l1(x):
-            return np.abs(x).sum(axis=1, keepdims=True)
-        
-        if self.sent_scaler == 'l2':
-            dataset.data = dataset.data / norm_l2(dataset.data)
-        elif self.sent_scaler == 'l1':
-            dataset.data = dataset.data / norm_l1(dataset.data)
-            
         return dataset
+    
+    @staticmethod
+    def _sentence_norm(x: np.ndarray,
+                       mode: Optional[str] = None
+                      ) -> Union[np.ndarray, float]:
+        """Get sentence embedding norm."""
+        if mode == 'l2':
+            return ((x**2).sum(axis=1, keepdims=True))**.5
+        elif mode == 'l1':
+            return np.abs(x).sum(axis=1, keepdims=True)
+        if mode is not None:
+            logger.warning(
+                'Unknown sentence scaler mode: sent_scaler={}, '
+                'no normalization will be used'.format(mode)
+            )
+        return 1

@@ -24,7 +24,9 @@ from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
 from ...reader.tabular_batch_generator import ReadableToDf
+from ...utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 
 _base_dir = os.path.dirname(__file__)
@@ -198,7 +200,10 @@ class TabularNLPAutoML(TabularAutoML):
         torch.set_num_threads(cpu_cnt)
 
         self.nn_params['num_workers'] = min(self.nn_params['num_workers'], cpu_cnt)
-        self.nn_params['lang'] = self.text_params['lang']
+        self.nn_params['lang'] = self.nn_params['lang'] or self.text_params['lang']
+        self.nn_params['bert_name'] = self.nn_params['bert_name'] or self.text_params['bert_model']
+        
+        logger.info('Model language mode: {}'.format(self.nn_params['lang']))
 
         if isinstance(self.autonlp_params['transformer_params'], dict):
             if 'loader_params' in self.autonlp_params['transformer_params']:

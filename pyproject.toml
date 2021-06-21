@@ -49,7 +49,7 @@ seaborn = "*"
 
 transformers = ">=4"
 nltk = "*"
-gensim = "*"
+gensim = ">=4"
 tqdm = "*"
 efficientnet-pytorch = "*"
 albumentations = ">=0.4.6"
