@@ -11,7 +11,8 @@ from matplotlib.colors import Colormap
 
 T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
 
-def untokenize(raw: str, tokens: List[str],
+def untokenize(raw: str,
+               tokens: List[str],
                return_mask: bool = False,
                token_sym: Any = True,
                untoken_sym: Any = False
@@ -68,7 +69,8 @@ def untokenize(raw: str, tokens: List[str],
 
 
 def find_positions(arr: List[str],
-                   mask: List[bool]) -> List[int]:
+                   mask: List[bool]
+                  ) -> List[int]:
     """Set positions and tokens.
     
     Args:
@@ -287,9 +289,11 @@ def draw_html(tokens_and_weights: List[Tuple[str, float]],
         token_template.format(token=token, color_hex=get_color_hex(weight))
         for token, weight in tokens_and_weights
     ]
-    between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 for i in range(n_ticks + 1)]
+    between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 \
+                     for i in range(n_ticks + 1)]
     ticks = np.linspace(-norm_const, norm_const, n_ticks + 1) / (10**(order))
-    ticks_chart = ' '.join([ticks_template.format(t, 0.7 + 0.385*(k<0), k) for t, k in zip(between_ticks, ticks)])
+    ticks_chart = ' '.join([ticks_template.format(t, 0.7 + 0.385*(k<0), k) \
+                            for t, k in zip(between_ticks, ticks)])
     
     grad_statement = """
     <p style="text-align: center">
@@ -352,3 +356,8 @@ def draw_html(tokens_and_weights: List[Tuple[str, float]],
     )
     
     return raw_html
+
+def cross_entropy_multiple_class(input: torch.FloatTensor,
+                                 target: torch.FloatTensor
+                                ) -> torch.Tensor:
+    return torch.mean(torch.sum(target * -torch.log(clamp_probs(input)), dim=1))

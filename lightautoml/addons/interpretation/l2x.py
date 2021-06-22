@@ -3,12 +3,10 @@ from numbers import Number
 
 import numpy as np
 import pandas as pd
-
 import gensim
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-
 from tqdm import tqdm
 
 from ...pipelines.features.text_pipeline import _tokenizer_by_lang
@@ -17,7 +15,7 @@ from .data_process import BySequenceLengthSampler, pad_max_len, LengthDataset,\
     get_len_dataset, get_len_dataloader, get_tokenized, get_embedding_matrix,\
     map_tokenized_to_id, get_vocab
 from ...utils.logging import get_logger
-from .utils import draw_html
+from .utils import draw_html, cross_entropy_multiple_class
 from ...text.utils import seed_everything
 
 
@@ -156,7 +154,7 @@ class L2XTextExplainer:
             self._loss = nn.MSELoss()
             self.n_outs = 1
         elif self.task_name == 'multiclass':
-            self._loss = nn.CrossEntropyLoss()
+            self._loss = cross_entropy_multiple_class
             self.n_outs = self.reader._n_classes
         
         if isinstance(tokenizer, str):
@@ -296,7 +294,9 @@ class L2XTextExplainer:
         for col in cols:
             self.explainers[col] = self._fit_one(col, train_data, train_preds, valid_data, valid_preds)
         
-    def _get_cols(self, cols_to_explain: Union[None, str, List[str]]) -> List[str]:
+    def _get_cols(self,
+                  cols_to_explain: Union[None, str, List[str]]
+                 ) -> List[str]:
         """
         Handler for column names.
         
@@ -399,15 +399,17 @@ class L2XTextExplainer:
             valid_loss = self._validate(model, valid_dataloader, loss, self.train_device)
             if self.verbose:
                 if valid_loss is None:
-                    logger.info('Epoch: {}/{}, train loss: {}'.format(epoch + 1, self.n_epochs, train_loss))
+                    logger.info('Epoch: {}/{}, train loss: {}'.format(
+                        epoch + 1, self.n_epochs, train_loss))
                 else:
-                    logger.info('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(epoch + 1, self.n_epochs, train_loss, valid_loss))
+                    logger.info('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(
+                        epoch + 1, self.n_epochs, train_loss, valid_loss))
         model.cpu()
         
     def _train_epoch(self,
                      model: L2XModel,
                      train_dataloader: torch.utils.data.DataLoader,
-                     criterion: torch.nn.modules.loss._Loss,
+                     criterion: Union[torch.nn.modules.loss._Loss, Callable],
                      optimizer: torch.optim.Optimizer,
                      device: torch.device,
                      gamma: float
@@ -454,7 +456,7 @@ class L2XTextExplainer:
     def _validate(self,
                   model: L2XModel,
                   valid_dataloader: Union[None, torch.utils.data.DataLoader],
-                  criterion: torch.nn.modules.loss._Loss,
+                  criterion: Union[torch.nn.modules.loss._Loss, Callable],
                   device: torch.device
                  ) -> float:
         if valid_dataloader is None:

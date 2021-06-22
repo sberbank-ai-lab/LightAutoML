@@ -15,8 +15,10 @@ from random import shuffle
 
 class LengthDataset(Dataset):
     """Default dict like PyTorch dataset, with additional info about lenght of sequence."""
-    def __init__(self, tokens: List[List[int]],
-                 targets: np.ndarray):
+    def __init__(self,
+                 tokens: List[List[int]],
+                 targets: np.ndarray
+                ):
         """
         
         Args:
@@ -44,7 +46,8 @@ class BySequenceLengthSampler(Sampler):
                  bucket_boundaries: List[int],
                  batch_size: int = 64,
                  drop_last: bool = True,
-                 shuffle: bool = True):
+                 shuffle: bool = True
+                ):
         """
         
         Args:
@@ -268,8 +271,11 @@ def get_len_dataloader(dataset: LengthDataset,
     
     return dataloader
 
-def create_emb_layer(weights_matrix=None, voc_size=None,
-                     embed_dim=None, trainable_embeds=True):
+def create_emb_layer(weights_matrix=None,
+                     voc_size=None,
+                     embed_dim=None,
+                     trainable_embeds=True
+                    ):
     assert (weights_matrix is not None) or \
         (voc_size is not None and embed_dim is not None), \
         'Please define anything: weights_matrix or voc_size & embed_dim'

@@ -18,7 +18,8 @@ class TextExplanation:
     """Explanation of object for textual data."""
 
     
-    def __init__(self, index_string: IndexedString,
+    def __init__(self,
+                 index_string: IndexedString,
                  task_name: str,
                  prediction: np.ndarray,
                  class_names: Optional[List[Any]] = None,
@@ -223,14 +224,16 @@ class LimeTextExplainer:
     
     """
     
-    def __init__(self, automl,
+    def __init__(self,
+                 automl,
                  kernel: Optional[Callable] = None,
                  kernel_width: float = 25.,
                  feature_selection: str = 'none',
                  force_order: bool = False,
                  model_regressor: Any = None,
                  distance_metric: str = 'cosine',
-                 random_state: Union[int, np.random.RandomState] = 0):
+                 random_state: Union[int, np.random.RandomState] = 0
+                ):
         """
         
         Args:
@@ -295,9 +298,13 @@ class LimeTextExplainer:
         self.class_names = class_names
         
         
-    def explain_instance(self, data: pd.Series, perturb_column: str,
-                         labels: Optional[Iterable] = None, n_features: int = 10,
-                         n_samples: int = 5000) -> 'TextExplanation':
+    def explain_instance(self,
+                         data: pd.Series,
+                         perturb_column: str,
+                         labels: Optional[Iterable] = None,
+                         n_features: int = 10,
+                         n_samples: int = 5000
+                        ) -> 'TextExplanation':
         """
         
         Args:
