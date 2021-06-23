@@ -325,6 +325,10 @@ class ReportDeco:
     @property
     def mapping(self):
         return self._model.reader.class_mapping
+    
+    @property
+    def task(self):
+        return self._model.reader.task._name
 
     def __init__(self, *args, **kwargs):
         """
@@ -372,9 +376,6 @@ class ReportDeco:
 
     def __call__(self, model):
         self._model = model
-
-        # AutoML only
-        self.task = self._model.task._name  # valid_task_names = ['binary', 'reg', 'multiclass']
 
         # add informataion to report
         self._model_name = model.__class__.__name__
@@ -961,9 +962,6 @@ class ReportDecoNLP(ReportDeco):
 
     def __call__(self, model):
         self._model = model
-
-        # AutoML only
-        self.task = self._model.task._name  # valid_task_names = ['binary', 'reg', 'multiclass']
 
         # add informataion to report
         self._model_name = model.__class__.__name__
