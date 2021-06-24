@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 from lightautoml.addons.uplift import utils as uplift_utils
 from lightautoml.addons.uplift.meta_learners import MetaLearner, RLearner, SLearner, TLearner, TDLearner, XLearner
-from lightautoml.addons.uplift.metrics import calculate_uplift_auc, TUpliftMetric
+from lightautoml.addons.uplift.metrics import calculate_uplift_auc, TUpliftMetric, ConstPredictError
 from lightautoml.automl.base import AutoML
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.report.report_deco import ReportDecoUplift
@@ -138,7 +138,13 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
 
     def calculate_metric(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
         if isinstance(self.metric, str):
-            return calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
+            try:
+                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
+            except ConstPredictError as e:
+                logger.error(str(e) + "\nMetric set to zero.")
+                auc = 0.0
+
+            return auc
         elif isinstance(self.metric, TUpliftMetric):
             return self.metric(y_true, uplift_pred, treatment)
         else:

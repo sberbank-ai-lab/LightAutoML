@@ -13,6 +13,11 @@ _available_uplift_modes = ('qini', 'cum_gain', 'adj_qini')
 
 
 @record_history(enabled=False)
+class ConstPredictError(Exception):
+    pass
+
+
+@record_history(enabled=False)
 class TUpliftMetric(metaclass=abc.ABCMeta):
     @abc.abstractclassmethod
     def __call__(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
@@ -105,7 +110,9 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
         xs, ys - curve's coordinates
 
     """
-    assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate uplift curve for constant predicts"
+    # assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate uplift curve for constant predicts"
+    if np.all(uplift_pred == uplift_pred[0]):
+        raise ConstPredictError("Can't calculate uplift curve for constant predicts")
 
     if type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0):
         raise Exception('For a continuous target, the perfect curve is only available for non-negative values')
@@ -205,7 +212,9 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
         score: Score
 
     """
-    assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts."
+    # assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts."
+    if np.all(uplift_pred == uplift_pred[0]):
+        raise ConstPredictError("Can't calculate uplift curve for constant predicts")
 
     if (treatment == 1).mean() > 0.5:
         uplift = uplift_pred[treatment == 1]
