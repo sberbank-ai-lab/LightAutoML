@@ -311,5 +311,5 @@ autonlp_params:
   # use DP for embeddings
   # currently, must be set to FALSE value
   multigpu: False
-  # forcing using wat if gpu is not avaliable
-  force: True
+  # forcing using custom transformer if gpu is not avaliable
+  force: False
