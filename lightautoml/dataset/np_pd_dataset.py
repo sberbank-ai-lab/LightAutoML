@@ -498,7 +498,7 @@ class PandasDataset(LAMLDataset):
             sequence of int indexes or single int.
 
         """
-        if type(columns) is str:
+        if isinstance(columns, str):
             idx = self.data.columns.get_loc(columns)
 
         else:

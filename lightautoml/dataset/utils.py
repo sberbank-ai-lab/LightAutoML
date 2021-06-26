@@ -31,7 +31,7 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
 
         feat = init_roles[r]
 
-        if type(feat) is str:
+        if isinstance(feat, str):
             roles[feat] = r
 
         else:
