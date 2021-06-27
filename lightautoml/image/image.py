@@ -11,7 +11,6 @@ from albumentations import Compose, Normalize, Resize
 from albumentations.pytorch import ToTensorV2
 from efficientnet_pytorch import EfficientNet
 from joblib import Parallel, delayed
-from log_calls import record_history
 from sklearn.base import TransformerMixin
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -22,7 +21,6 @@ from ..text.utils import seed_everything, parse_devices
 numeric = Union[int, float]
 
 
-@record_history(enabled=False)
 class ColorFeatures:
     """Basic class to compute color features."""
 
@@ -89,7 +87,6 @@ class ColorFeatures:
         return res
 
 
-@record_history(enabled=False)
 class CreateImageFeatures:
     """Class for parallel histogram computation."""
 
@@ -137,7 +134,6 @@ class CreateImageFeatures:
         return np.vstack(res)
 
 
-@record_history(enabled=False)
 class EffNetImageEmbedder(nn.Module):
     """Class to compute EfficientNet embeddings."""
 
@@ -175,7 +171,6 @@ class EffNetImageEmbedder(nn.Module):
         return out[:, :, 0, 0]
 
 
-@record_history(enabled=False)
 class ImageDataset:
     """Image Dataset Class."""
 
@@ -205,7 +200,6 @@ class ImageDataset:
         return len(self.X)
 
 
-@record_history(enabled=False)
 class DeepImageEmbedder(TransformerMixin):
     """Transformer for image embeddings."""
 

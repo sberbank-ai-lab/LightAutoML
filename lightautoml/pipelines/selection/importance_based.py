@@ -2,7 +2,6 @@
 
 from typing import Optional, TypeVar
 
-from log_calls import record_history
 
 from lightautoml.validation.base import TrainValidIterator
 from .base import SelectionPipeline, ImportanceEstimator
@@ -13,7 +12,6 @@ from ...ml_algo.base import MLAlgo
 ImportanceEstimatedAlgo = TypeVar('ImportanceEstimatedAlgo', bound=ImportanceEstimator)
 
 
-@record_history(enabled=False)
 class ModelBasedImportanceEstimator(ImportanceEstimator):
     """Base class for performing feature selection using model feature importances."""
 
@@ -32,7 +30,6 @@ class ModelBasedImportanceEstimator(ImportanceEstimator):
         self.raw_importances = ml_algo.get_features_score()
 
 
-@record_history(enabled=False)
 class ImportanceCutoffSelector(SelectionPipeline):
     """ Selector based on importance threshold.
 

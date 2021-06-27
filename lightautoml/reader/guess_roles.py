@@ -4,7 +4,6 @@ from typing import Optional, Union, cast, Dict, Tuple, Any, List
 
 import numpy as np
 from joblib import Parallel, delayed
-from log_calls import record_history
 from pandas import Series, DataFrame
 
 from lightautoml.dataset.np_pd_dataset import NumpyDataset, PandasDataset
@@ -21,7 +20,6 @@ RolesDict = Dict[str, ColumnRole]
 Encoder = Union[TargetEncoder, MultiClassTargetEncoder]
 
 
-@record_history(enabled=False)
 def ginic(actual: np.ndarray, pred: np.ndarray) -> float:
     """Denormalized gini calculation.
 
@@ -41,7 +39,6 @@ def ginic(actual: np.ndarray, pred: np.ndarray) -> float:
     return gini_sum / n
 
 
-@record_history(enabled=False)
 def gini_normalizedc(a: np.ndarray, p: np.ndarray) -> float:
     """Calculated normalized gini.
 
@@ -56,7 +53,6 @@ def gini_normalizedc(a: np.ndarray, p: np.ndarray) -> float:
     return ginic(a, p) / ginic(a, a)
 
 
-@record_history(enabled=False)
 def gini_normalized(y_true: np.ndarray, y_pred: np.ndarray, empty_slice: Optional[np.ndarray] = None):
     """Calculate normalized gini index.
 
@@ -101,7 +97,6 @@ def gini_normalized(y_true: np.ndarray, y_pred: np.ndarray, empty_slice: Optiona
     return np.abs(ginis).mean()
 
 
-@record_history(enabled=False)
 def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
     """Get target encoder and target based on dataset.
 
@@ -126,7 +121,6 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
     return target, encoder
 
 
-@record_history(enabled=False)
 def calc_ginis(data: np.ndarray, target: np.ndarray, empty_slice: Optional[np.ndarray] = None):
     """
 
@@ -151,7 +145,6 @@ def calc_ginis(data: np.ndarray, target: np.ndarray, empty_slice: Optional[np.nd
     return scores
 
 
-@record_history(enabled=False)
 def _get_score_from_pipe(train, target, pipe: Optional[LAMLTransformer] = None,
                          empty_slice: Optional[np.ndarray] = None) -> np.ndarray:
     """Get normalized gini index from pipeline.
@@ -178,7 +171,6 @@ def _get_score_from_pipe(train, target, pipe: Optional[LAMLTransformer] = None,
     return scores
 
 
-@record_history(enabled=False)
 def get_score_from_pipe(train: NumpyOrPandas, target: np.ndarray, pipe: Optional[LAMLTransformer] = None,
                         empty_slice: Optional[np.ndarray] = None, n_jobs: int = 1) -> np.ndarray:
     """Get normalized gini index from pipeline.
@@ -215,7 +207,6 @@ def get_score_from_pipe(train: NumpyOrPandas, target: np.ndarray, pipe: Optional
     return np.concatenate(list(map(np.array, res)))
 
 
-@record_history(enabled=False)
 def get_numeric_roles_stat(train: NumpyOrPandas, subsample: Optional[Union[float, int]] = 100000, random_state: int = 42,
                            manual_roles: Optional[RolesDict] = None, n_jobs: int = 1) -> DataFrame:
     """Calculate statistics about different encodings performances.
@@ -298,7 +289,6 @@ def get_numeric_roles_stat(train: NumpyOrPandas, subsample: Optional[Union[float
     return res
 
 
-@record_history(enabled=False)
 def calc_encoding_rules(stat: DataFrame, numeric_unique_rate: float = .999, max_to_3rd_rate: float = 1.1,
                         binning_enc_rate: float = 2, raw_decr_rate: float = 1.1,
                         max_score_rate: float = .2, abs_score_val: float = .04) -> DataFrame:
@@ -353,7 +343,6 @@ def calc_encoding_rules(stat: DataFrame, numeric_unique_rate: float = .999, max_
     return stat
 
 
-@record_history(enabled=False)
 def rule_based_roles_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     """Create roles dict based on stats.
 
@@ -410,7 +399,6 @@ def rule_based_roles_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     return roles_dict
 
 
-@record_history(enabled=False)
 def get_category_roles_stat(train: NumpyOrPandas, subsample: Optional[Union[float, int]] = 100000, random_state: int = 42,
                             n_jobs: int = 1):
     """Search for optimal processing of categorical values.
@@ -476,7 +464,6 @@ def get_category_roles_stat(train: NumpyOrPandas, subsample: Optional[Union[floa
     return res
 
 
-@record_history(enabled=False)
 def calc_category_rules(stat: DataFrame, ) -> DataFrame:
     """Select best encoding for categories based on stats.
 
@@ -508,7 +495,6 @@ def calc_category_rules(stat: DataFrame, ) -> DataFrame:
     return stat
 
 
-@record_history(enabled=False)
 def rule_based_cat_handler_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     """Create roles dict based on stats.
 
@@ -542,7 +528,6 @@ def rule_based_cat_handler_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     return roles_dict
 
 
-@record_history(enabled=False)
 def get_null_scores(train: NumpyOrPandas, feats: Optional[List[str]] = None, subsample: Optional[Union[float, int]] = 100000,
                     random_state: int = 42) -> Series:
     """Get null scores.

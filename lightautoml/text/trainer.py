@@ -17,7 +17,6 @@ try:
 except:
     amp = None
 
-from log_calls import record_history
 
 from .utils import _dtypes_mapping
 
@@ -26,7 +25,6 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch.optim.Optimizer:
     """Change optimizer device.
 
@@ -46,7 +44,6 @@ def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch
     return optim
 
 
-@record_history(enabled=False)
 class SnapshotEns:
     """In memory snapshots class."""
 
@@ -224,7 +221,6 @@ class SnapshotEns:
         return self
 
 
-@record_history(enabled=False)
 class Trainer:
     """Torch main trainer class."""
 

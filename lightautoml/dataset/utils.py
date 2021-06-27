@@ -2,7 +2,6 @@
 
 from typing import Dict, Union, Sequence, Callable, Optional, Tuple
 
-from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
@@ -12,7 +11,6 @@ from lightautoml.dataset.roles import ColumnRole
 # RoleType = TypeVar("RoleType", bound=ColumnRole)
 
 
-@record_history(enabled=False)
 def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, ColumnRole]:
     """Parser of roles.
     
@@ -41,7 +39,6 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
     return roles
 
 
-@record_history(enabled=False)
 def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Optional[type]]:
     """Get concatenation function for datasets of different types.
     
@@ -73,7 +70,6 @@ def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Option
     raise TypeError('Unable to concatenate dataset types {0}'.format(list(dataset_types)))
 
 
-@record_history(enabled=False)
 def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset]]) -> PandasDataset:
     """Concat of numpy and pandas dataset.
 
@@ -89,7 +85,6 @@ def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset
     return PandasDataset.concat(datasets)
 
 
-@record_history(enabled=False)
 def concatenate(datasets: Sequence[LAMLDataset]) -> LAMLDataset:
     """Dataset concatenation function.
     

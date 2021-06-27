@@ -3,10 +3,8 @@
 
 import torch
 import torch.nn as nn
-from log_calls import record_history
 
 
-@record_history(enabled=False)
 class SequenceAbstractPooler(nn.Module):
     """Abstract pooling class."""
 
@@ -20,7 +18,6 @@ class SequenceAbstractPooler(nn.Module):
         return self.forward(*args, **kwargs)
 
 
-@record_history(enabled=False)
 class SequenceClsPooler(SequenceAbstractPooler):
     """CLS token pooling."""
 
@@ -31,7 +28,6 @@ class SequenceClsPooler(SequenceAbstractPooler):
         return x[..., 0, :]
 
 
-@record_history(enabled=False)
 class SequenceMaxPooler(SequenceAbstractPooler):
     """Max value pooling."""
 
@@ -44,7 +40,6 @@ class SequenceMaxPooler(SequenceAbstractPooler):
         return values
 
 
-@record_history(enabled=False)
 class SequenceSumPooler(SequenceAbstractPooler):
     """Sum value pooling."""
 
@@ -57,7 +52,6 @@ class SequenceSumPooler(SequenceAbstractPooler):
         return values
 
 
-@record_history(enabled=False)
 class SequenceAvgPooler(SequenceAbstractPooler):
     """Mean value pooling."""
 
@@ -73,7 +67,6 @@ class SequenceAvgPooler(SequenceAbstractPooler):
         return values
 
 
-@record_history(enabled=False)
 class SequenceIndentityPooler(SequenceAbstractPooler):
     """Identity pooling."""
 

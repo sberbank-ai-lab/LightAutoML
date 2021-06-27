@@ -2,7 +2,6 @@
 
 from typing import Tuple, Optional
 
-from log_calls import record_history
 
 from .base import MLAlgo
 from .tuning.base import ParamsTuner
@@ -13,7 +12,6 @@ from ..validation.base import TrainValidIterator
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,
                          train_valid: TrainValidIterator,
                          force_calc: bool = True) -> Tuple[Optional[MLAlgo], Optional[LAMLDataset]]:

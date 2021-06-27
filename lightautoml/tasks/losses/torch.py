@@ -4,13 +4,11 @@ from functools import partial
 from typing import Callable, Union, Optional, Dict, Any
 
 import torch
-from log_calls import record_history
 from torch import nn
 
 from .base import Loss
 
 
-@record_history(enabled=False)
 class TorchLossWrapper(nn.Module):
     """Customize PyTorch-based loss.
 
@@ -48,7 +46,6 @@ class TorchLossWrapper(nn.Module):
         return outp.mean()
 
 
-@record_history(enabled=False)
 def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """Computes Root Mean Squared Logarithmic Error.
 
@@ -75,7 +72,6 @@ def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return outp.mean()
 
 
-@record_history(enabled=False)
 def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                    q: float = 0.9):
     """Computes Mean Quantile Error.
@@ -105,7 +101,6 @@ def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Op
     return err.mean()
 
 
-@record_history(enabled=False)
 def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                c: float = 0.9):
     """Computes Mean Fair Error.
@@ -133,7 +128,6 @@ def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
     return err.mean()
 
 
-@record_history(enabled=False)
 def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
                 a: float = 0.9):
     """Computes Mean Huber Error.
@@ -162,7 +156,6 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return err.mean()
 
 
-@record_history(enabled=False)
 def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """Computes F1 macro.
 
@@ -197,7 +190,6 @@ def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional
     return - f1.mean()
 
 
-@record_history(enabled=False)
 def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
     """Computes Mean Absolute Percentage Error.
 
@@ -240,7 +232,6 @@ _torch_loss_dict = {
 }
 
 
-@record_history(enabled=False)
 class TORCHLoss(Loss):
     """Loss used for PyTorch."""
 

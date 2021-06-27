@@ -5,7 +5,6 @@ from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
 
 import numpy as np
 import pandas as pd
-from log_calls import record_history
 from pandas import Series, DataFrame
 
 from .guess_roles import get_numeric_roles_stat, calc_encoding_rules, rule_based_roles_guess, \
@@ -32,7 +31,6 @@ UserDefinedRolesSequence = Sequence[UserDefinedRole]
 UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
 
 
-@record_history(enabled=False)
 class Reader:
     """
     Abstract class for analyzing input data and creating inner
@@ -125,7 +123,6 @@ class Reader:
         return new_reader
 
 
-@record_history(enabled=False)
 class PandasToPandasReader(Reader):
     """
     Reader to convert :class:`~pandas.DataFrame` to AutoML's :class:`~lightautoml.dataset.np_pd_dataset.PandasDataset`.

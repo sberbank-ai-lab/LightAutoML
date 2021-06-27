@@ -3,7 +3,6 @@
 from typing import Tuple, Sequence, List, cast, Optional, Callable
 
 import numpy as np
-from log_calls import record_history
 from scipy.optimize import minimize_scalar
 
 from ..dataset.base import LAMLDataset
@@ -17,7 +16,6 @@ logger = get_logger(__name__)
 np.seterr(divide='ignore', invalid='ignore')
 
 
-@record_history(enabled=False)
 class Blender:
     """Basic class for blending.
 
@@ -148,7 +146,6 @@ class Blender:
         return self._score(dataset, True)
 
 
-@record_history(enabled=False)
 class BestModelSelector(Blender):
     """Select best single model from level.
 
@@ -208,7 +205,6 @@ class BestModelSelector(Blender):
         return predictions[0]
 
 
-@record_history(enabled=False)
 class MeanBlender(Blender):
     """Simple average level predictions.
 
@@ -263,7 +259,6 @@ class MeanBlender(Blender):
         return outp
 
 
-@record_history(enabled=False)
 class WeightedBlender(Blender):
     """Weighted Blender based on coord descent, optimize task metric directly.
 

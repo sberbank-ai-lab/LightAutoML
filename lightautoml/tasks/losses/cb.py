@@ -3,12 +3,10 @@
 from typing import Callable, Union, Optional, Dict
 
 import numpy as np
-from log_calls import record_history
 
 from .base import Loss
 
 
-@record_history(enabled=False)
 def cb_str_loss_wrapper(name: str, **params: Optional[Dict]):
     """CatBoost loss name wrapper, if it has keyword args.
 
@@ -23,7 +21,6 @@ def cb_str_loss_wrapper(name: str, **params: Optional[Dict]):
     return name + ':' + ';'.join([k + '=' + str(v) for (k, v) in params.items()])
 
 
-@record_history(enabled=False)
 def fw_rmsle(x, y): return np.log1p(x), y
 
 
@@ -98,7 +95,6 @@ _cb_metric_params_mapping = {
 }
 
 
-@record_history(enabled=False)
 class CBLoss(Loss):
     """Loss used for CatBoost."""
 

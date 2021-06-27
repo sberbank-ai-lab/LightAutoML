@@ -3,7 +3,6 @@ import logging
 from copy import deepcopy
 from typing import Optional, Any, Sequence, Type, Union, Iterable
 
-from log_calls import record_history
 
 from ...automl.base import AutoML
 from ...automl.blend import Blender, BestModelSelector
@@ -19,7 +18,6 @@ from ...utils.timer import PipelineTimer
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class MLAlgoForAutoMLWrapper(MLAlgo):
     """Wrapper to apply blender to list of automl's."""
 
@@ -46,7 +44,6 @@ class MLAlgoForAutoMLWrapper(MLAlgo):
         raise NotImplementedError
 
 
-@record_history(enabled=False)
 class MLPipeForAutoMLWrapper(MLPipeline):
     """Wrapper to apply blender to list of automls."""
 
@@ -68,7 +65,6 @@ class MLPipeForAutoMLWrapper(MLPipeline):
         return ml_pipe
 
 
-@record_history(enabled=False)
 class TimeUtilization:
     """Class that helps to utilize given time to :class:`~lightautoml.automl.presets.base.AutoMLPreset`.
 

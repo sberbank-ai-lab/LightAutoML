@@ -4,7 +4,6 @@ import os
 from typing import Optional, Sequence, TYPE_CHECKING
 
 import torch
-from log_calls import record_history
 from pandas import DataFrame
 
 from .base import upd_params
@@ -42,7 +41,6 @@ _time_scores = {
 
 
 # TODO: add text feature selection
-@record_history(enabled=False)
 class TabularNLPAutoML(TabularAutoML):
     """Classic preset - work with tabular and text data.
 

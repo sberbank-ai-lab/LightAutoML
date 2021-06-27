@@ -6,7 +6,6 @@ from typing import Any, Dict, Optional, Sequence
 import numpy as np
 import torch
 import torch.nn as nn
-from log_calls import record_history
 from sklearn.base import TransformerMixin
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -25,7 +24,6 @@ pooling_by_name = {'mean': SequenceAvgPooler,
                    'none': SequenceIndentityPooler}
 
 
-@record_history(enabled=False)
 class DLTransformer(TransformerMixin):
     """Deep Learning based sentence embeddings."""
 
@@ -159,7 +157,6 @@ class DLTransformer(TransformerMixin):
         return result
 
 
-@record_history(enabled=False)
 def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     """Compute positional embedding matrix.
 
@@ -179,7 +176,6 @@ def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     return torch.from_numpy(position_enc).float()
 
 
-@record_history(enabled=False)
 class BOREP(nn.Module):
     """Class to compute Bag of Random Embedding Projections sentence embeddings from words embeddings."""
 
@@ -272,7 +268,6 @@ class BOREP(nn.Module):
         return out
 
 
-@record_history(enabled=False)
 class RandomLSTM(nn.Module):
     """Class to compute Random LSTM sentence embeddings from words embeddings."""
 
@@ -334,7 +329,6 @@ class RandomLSTM(nn.Module):
         return out
 
 
-@record_history(enabled=False)
 class BertEmbedder(nn.Module):
     """Class to compute `HuggingFace <https://huggingface.co>`_ transformers words or sentence embeddings."""
 

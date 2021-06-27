@@ -7,14 +7,12 @@ from typing import Sequence
 import numpy as np
 import torch
 import torch.nn as nn
-from log_calls import record_history
 from transformers import AutoModel
 
 from .dl_transformers import pooling_by_name
 from ..tasks.base import Task
 
 
-@record_history(enabled=False)
 class UniversalDataset:
     """Dataset class for mixed data."""
 
@@ -58,7 +56,6 @@ class UniversalDataset:
         return res
 
 
-@record_history(enabled=False)
 class Clump(nn.Module):
     """Clipping input tensor."""
 
@@ -80,7 +77,6 @@ class Clump(nn.Module):
         return x
 
 
-@record_history(enabled=False)
 class TextBert(nn.Module):
     """Text data model."""
 
@@ -139,7 +135,6 @@ class TextBert(nn.Module):
         return mean_last_hidden_state
 
 
-@record_history(enabled=False)
 class CatEmbedder(nn.Module):
     """Category data model."""
 
@@ -178,7 +173,6 @@ class CatEmbedder(nn.Module):
         return output
 
 
-@record_history(enabled=False)
 class ContEmbedder(nn.Module):
     """Numeric data model."""
 
@@ -213,7 +207,6 @@ class ContEmbedder(nn.Module):
         return output
 
 
-@record_history(enabled=False)
 class TorchUniversalModel(nn.Module):
     """Mixed data model."""
 

@@ -3,13 +3,11 @@
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict, Any
 
-from log_calls import record_history
 
 from ..utils import infer_gib
 from ..common_metric import _valid_str_metric_names
 
 
-@record_history(enabled=False)
 class MetricFunc:
     """
     Wrapper for metric.
@@ -38,7 +36,6 @@ class MetricFunc:
         return val * self.m
 
 
-@record_history(enabled=False)
 class Loss:
     """Loss function with target transformation."""
 

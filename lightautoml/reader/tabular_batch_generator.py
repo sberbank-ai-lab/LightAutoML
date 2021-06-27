@@ -8,12 +8,10 @@ from typing import Optional, List, Tuple, Dict, Sequence, Union, Iterable, TypeV
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from log_calls import record_history
 from pandas import DataFrame
 from sqlalchemy import create_engine
 
 
-@record_history(enabled=False)
 def get_filelen(fname: str) -> int:
     """Get length of csv file.
 
@@ -32,7 +30,6 @@ def get_filelen(fname: str) -> int:
     return cnt_lines
 
 
-@record_history(enabled=False)
 def get_batch_ids(arr, batch_size):
     """Generator of batched sequences.
 
@@ -50,7 +47,6 @@ def get_batch_ids(arr, batch_size):
         n += batch_size
 
 
-@record_history(enabled=False)
 def get_file_offsets(file: str, n_jobs: Optional[int] = None, batch_size: Optional[int] = None
                      ) -> Tuple[List[int], List[int]]:
     """
@@ -90,7 +86,6 @@ def get_file_offsets(file: str, n_jobs: Optional[int] = None, batch_size: Option
     return offsets, cnts
 
 
-@record_history(enabled=False)
 def _check_csv_params(**read_csv_params: dict):
     """
 
@@ -109,7 +104,6 @@ def _check_csv_params(**read_csv_params: dict):
     return read_csv_params
 
 
-@record_history(enabled=False)
 def read_csv_batch(file: str, offset, cnt, **read_csv_params):
     """Read batch of data from csv.
 
@@ -141,7 +135,6 @@ def read_csv_batch(file: str, offset, cnt, **read_csv_params):
     return data
 
 
-@record_history(enabled=False)
 def read_csv(file: str, n_jobs: int = 1, **read_csv_params) -> DataFrame:
     """Read data from csv.
 
@@ -171,7 +164,6 @@ def read_csv(file: str, n_jobs: int = 1, **read_csv_params) -> DataFrame:
     return res
 
 
-@record_history(enabled=False)
 class Batch:
     """
     Class to wraps batch of data in different formats.
@@ -224,7 +216,6 @@ class FileBatch(Batch):
         self.read_csv_params = read_csv_params
 
 
-@record_history(enabled=False)
 class BatchGenerator:
     """
     Abstract - generator of batches from data.
@@ -251,7 +242,6 @@ class BatchGenerator:
         raise NotImplementedError
 
 
-@record_history(enabled=False)
 class DfBatchGenerator(BatchGenerator):
     """
     Batch generator from :class:`~pandas.DataFrame`.
@@ -287,7 +277,6 @@ class DfBatchGenerator(BatchGenerator):
         return Batch(self.data.iloc[self.idxs[idx]])
 
 
-@record_history(enabled=False)
 class FileBatchGenerator(BatchGenerator):
     """
     Generator of batches from file.
@@ -320,7 +309,6 @@ class FileBatchGenerator(BatchGenerator):
         return FileBatch(self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params)
 
 
-@record_history(enabled=False)
 class SqlDataSource:
     def __init__(self, connection_string: str, query: str, index: Optional[Union[str, List[str]]] = None):
         """
@@ -366,7 +354,6 @@ class SqlDataSource:
 ReadableToDf = Union[str, np.ndarray, DataFrame, Dict[str, np.ndarray], Batch]
 
 
-@record_history(enabled=False)
 def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
               read_csv_params: Optional[dict] = None) -> Tuple[DataFrame, Optional[dict]]:
     """Get :class:`~pandas.DataFrame` from different data formats.
@@ -435,7 +422,6 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
     raise ValueError('Input data format is not supported')
 
 
-@record_history(enabled=False)
 def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
                batch_size: Optional[int] = None, read_csv_params: Optional[dict] = None) -> Iterable[BatchGenerator]:
     """Read data for inference by batches for simple tabular data

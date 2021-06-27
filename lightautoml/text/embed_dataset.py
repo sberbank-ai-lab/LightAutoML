@@ -3,11 +3,9 @@
 from typing import Dict, Sequence, Any, Union
 
 import numpy as np
-from log_calls import record_history
 from transformers import AutoTokenizer
 
 
-@record_history(enabled=False)
 class BertDataset:
     """Dataset class with transformers tokenization."""
 
@@ -36,7 +34,6 @@ class BertDataset:
         return len(self.sentences)
 
 
-@record_history(enabled=False)
 class EmbedDataset:
     """Dataset class for extracting word embeddings."""
 

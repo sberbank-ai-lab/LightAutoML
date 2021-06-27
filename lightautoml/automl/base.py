@@ -3,7 +3,6 @@
 import logging
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
-from log_calls import record_history
 
 from .blend import Blender, BestModelSelector
 from ..dataset.base import LAMLDataset
@@ -17,7 +16,6 @@ from ..validation.utils import create_validation_iterator
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class AutoML:
     """Class for compile full pipeline of AutoML task.
 

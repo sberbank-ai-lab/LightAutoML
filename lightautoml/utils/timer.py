@@ -4,7 +4,6 @@ from time import time
 from typing import Optional, List, Union
 
 import numpy as np
-from log_calls import record_history
 
 from .logging import get_logger, DuplicateFilter
 
@@ -12,7 +11,6 @@ logger = get_logger(__name__)
 logger.addFilter(DuplicateFilter())
 
 
-@record_history(enabled=False)
 class Timer:
     """Timer to limit the duration tasks."""
     _timeout = 1e10
@@ -57,7 +55,6 @@ class Timer:
         return self
 
 
-@record_history(enabled=False)
 class PipelineTimer(Timer):
     """Timer is used to control time over full automl run.
 
@@ -117,7 +114,6 @@ class PipelineTimer(Timer):
         return TaskTimer(self, key, score, self._rate_overhead, self._mode, self.tuning_rate)
 
 
-@record_history(enabled=False)
 class TaskTimer(Timer):
     """Timer is used to control time over single ML task run.
 

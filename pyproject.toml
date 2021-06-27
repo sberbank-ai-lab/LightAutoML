@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.15"
+version = "0.2.16"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -35,7 +35,6 @@ lightgbm = "^2.3"
 optuna = "*"
 torch = ">=1.6"
 holidays = "*"
-networkx = "*"
 cmaes = "*"
 log-calls = "*"
 pyyaml = "*"
@@ -49,7 +48,7 @@ seaborn = "*"
 
 transformers = ">=4"
 nltk = "*"
-gensim = "*"
+gensim = "<=3.8.3"
 tqdm = "*"
 efficientnet-pytorch = "*"
 albumentations = ">=0.4.6"

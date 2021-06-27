@@ -6,7 +6,6 @@ from typing import Tuple, Dict, Union, Callable
 
 import catboost as cb
 import numpy as np
-from log_calls import record_history
 from optuna.trial import Trial
 from pandas import Series
 
@@ -22,7 +21,6 @@ logger = get_logger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 

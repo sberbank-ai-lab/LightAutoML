@@ -5,7 +5,6 @@ from copy import deepcopy
 from typing import Optional, Tuple, Callable, Union, TypeVar
 
 import optuna
-from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
@@ -21,7 +20,6 @@ optuna.logging.set_verbosity(optuna.logging.ERROR)
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
 
-@record_history(enabled=False)
 class OptunaTunableMixin(ABC):
     """Optuna Sampler."""
     mean_trial_time: float = None
@@ -90,7 +88,6 @@ class OptunaTunableMixin(ABC):
         return objective
 
 
-@record_history(enabled=False)
 class OptunaTuner(ParamsTuner):
     """Wrapper for optuna tuner."""
 
@@ -160,7 +157,6 @@ class OptunaTuner(ParamsTuner):
             flg_new_iterator = True
 
         # TODO: Check if time estimation will be ok with multiprocessing
-        @record_history(enabled=False)
         def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
             """Callback for number of iteration with time cut-off.
 
