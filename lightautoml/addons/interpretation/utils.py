@@ -1,12 +1,11 @@
 from typing import List, Tuple, Union, Any, Optional
 
-import numpy as np
-
 from collections import defaultdict
 import itertools
-
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
+import torch
 
 
 T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
@@ -251,25 +250,8 @@ def draw_html(tokens_and_weights: List[Tuple[str, float]],
     order_s = '✕ {:.0e}'.format(10**order)
     lord = 0.5 * len(order_s) + 1.5 # lenght order
     inorm_const = 1 / norm_const
-    if prediction is None:
-        prediction = ""
-        pred_field = ""
-    else:
-        prediction = "{:.1e}".format(prediction)
-        pred_field = "prediction"
-    
     if cmap is None:
         cmap = plt.get_cmap('bwr')
-    
-    if task_name == "reg":
-        grad_positive_label = "Positive"
-        grad_negative_label = "Negative"
-    elif task_name == "multiclass":
-        grad_positive_label = "Class: " + grad_positive_label
-        grad_negative_label = "Other classes"
-    elif task_name ==  "binary":
-        grad_positive_label = "Class: " + grad_positive_label
-        grad_negative_label = "Class: " + grad_negative_label
     
     def get_color_hex(weight):
         if isinstance(cmap, Colormap):
@@ -285,58 +267,85 @@ def draw_html(tokens_and_weights: List[Tuple[str, float]],
                 return '#FFFFFF'
             return cmap
     
+    if prediction is None:
+        prediction = ""
+        pred_field = ""
+    else:
+        if task_name == 'reg':
+            prediction = "{:.1e}".format(prediction)
+        else:
+            prediction = "{:.3f}".format(prediction)
+        pred_field = "AutoML's prediction"
+        
+    if grad_line:
+        if task_name == "reg":
+            grad_positive_label = "Positive"
+            grad_negative_label = "Negative"
+        elif task_name == "multiclass":
+            grad_positive_label = "Class: " + grad_positive_label
+            grad_negative_label = "Other classes"
+        elif task_name ==  "binary":
+            grad_positive_label = "Class: " + grad_positive_label
+            grad_negative_label = "Class: " + grad_negative_label
+    else:
+        grad_positive_label = ""
+        grad_negative_label = ""
+    
     tokens_html = [
         token_template.format(token=token, color_hex=get_color_hex(weight))
         for token, weight in tokens_and_weights
     ]
-    between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 \
-                     for i in range(n_ticks + 1)]
-    ticks = np.linspace(-norm_const, norm_const, n_ticks + 1) / (10**(order))
-    ticks_chart = ' '.join([ticks_template.format(t, 0.7 + 0.385*(k<0), k) \
-                            for t, k in zip(between_ticks, ticks)])
     
-    grad_statement = """
-    <p style="text-align: center">
-        Class mapping
-    </p>
-    <div style="{}">
-        <div id="grad" style="{}">
-            <p style="text-align:left; margin-left: 1%; margin-right: 1%; color: white;">
-                {}
-                <span style="float:right;">
-                    {}
-                </span>
-            </p>
-        </div>
-        
+    if grad_line:
+        between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 \
+                     for i in range(n_ticks + 1)]
+        ticks = np.linspace(-norm_const, norm_const, n_ticks + 1) / (10**(order))
+        ticks_chart = ' '.join([ticks_template.format(t, 0.7 + 0.385*(k<0), k) \
+                                for t, k in zip(between_ticks, ticks)])
+        grad_statement = """
+        <p style="text-align: center">
+            Class mapping
+        </p>
         <div style="{}">
-            {}
+            <div id="grad" style="{}">
+                <p style="text-align:left; margin-left: 1%; margin-right: 1%; color: white;">
+                    {}
+                    <span style="float:right;">
+                        {}
+                    </span>
+                </p>
+            </div>
+
+            <div style="{}">
+                {}
+            </div>
+
+            <div style="float: right; right: 0.75em; top: -3em; position: relative; font-weight: bold;">Scale</div>
+            <div style="float: right; right: -2em; top: -2.9em; position: relative; font-weight: bold;">{}</div>
+
+            <div style="float: left; left: -5.5em; top: -4.42em; position: relative;  font-weight: bold;">{}</div>
+            <div style="float: left; left: -8.22em; top: -2.9em; position: relative;  font-weight: bold;">{}</div>
         </div>
-        
-        <div style="float: right; right: 1em; top: -1.5em; position: relative;">{}</div>
-        <div style="float: left; left: -0.5em; top: -4.05em; position: relative;">{}</div>
-        <div style="float: left; left: -4.3em; top: -2.75em; position: relative;">{}</div>
-    </div>
-    """.format(
-        gradient_full,
-        gradient_styling,
-        grad_negative_label,
-        grad_positive_label,
-        ticks_styling.format(
+        """.format(
+            gradient_full,
+            gradient_styling,
+            grad_negative_label,
+            grad_positive_label,
+            ticks_styling.format(
+                lord,
+                lord),
+            ticks_chart,
+            order_s,
+            pred_field,
+            prediction 
+        ).format(
+            get_color_hex(-norm_const),
+            get_color_hex(0.0),                                
+            get_color_hex(norm_const),
             lord,
-            lord),
-        ticks_chart,
-        order_s,
-        pred_field,
-        prediction 
-    ).format(
-        get_color_hex(-norm_const),
-        get_color_hex(0.0),                                
-        get_color_hex(norm_const),
-        lord,
-        lord
-    )
-    if not grad_line:
+            lord
+        )
+    else:
         grad_statement = ""
     
     raw_html = """

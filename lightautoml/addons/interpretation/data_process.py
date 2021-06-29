@@ -193,7 +193,7 @@ def get_vocab(tokenized: List[List[str]],
     
     return word_to_id, id_to_word
 
-def get_embedding_matrix(id_to_word, embedder, embedder_dim):
+def get_embedding_matrix(id_to_word, embedder, embedder_dim, first_non_zero=3):
     weights_matrix = np.random.normal(scale=0.6, size=(len(id_to_word), embedder_dim))
     if embedder is not None:
         for i in range(len(id_to_word)):

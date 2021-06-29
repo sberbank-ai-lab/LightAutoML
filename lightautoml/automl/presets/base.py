@@ -77,7 +77,7 @@ class AutoMLPreset(AutoML):
 
         """
         self._set_config(config_path)
-        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
+        self.set_verbosity_level(verbose)
 
         for name, param in zip(['timing_params'], [timing_params]):
             if param is None:
@@ -177,3 +177,15 @@ class AutoMLPreset(AutoML):
         logger.info('\nAutoml preset training completed in {:.2f} seconds.'.format(self.timer.time_spent))
 
         return result
+    
+    @staticmethod
+    def set_verbosity_level(verbose: int):
+        """Verbosity level setter.
+        
+        Args:
+            verbose: Verbose level. ``0`` - no messages,
+                ``1`` - only warning messages, ``2`` - info messages,
+                ``>=3`` - debug messages.
+                
+        """
+        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))

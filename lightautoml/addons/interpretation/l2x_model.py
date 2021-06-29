@@ -10,10 +10,15 @@ from .data_process import create_emb_layer
 
 class TIModel(nn.Module):
     def __init__(self,
-                 voc_size, embed_dim=50,
-                 conv_filters=100, conv_ksize=3,
-                 drop_rate=0.2, hidden_dim=100,
-                 weights_matrix=None, trainable_embeds=False):
+                 voc_size: int,
+                 embed_dim: int = 50,
+                 conv_filters: int = 100,
+                 conv_ksize: int = 3,
+                 drop_rate: float = 0.2,
+                 hidden_dim: int = 100,
+                 weights_matrix: Optional[torch.FloatTensor] = None,
+                 trainable_embeds: bool = False
+                ):
         super(TIModel, self).__init__()
         
         self.lookup = create_emb_layer(weights_matrix, voc_size,
@@ -49,21 +54,29 @@ class TIModel(nn.Module):
         embeds = self.get_embedding_layer()
         embeds.weight.requires_grad_(True)    
     
-    def predict(self, x): # batch_size x len_seq x embed_dim
-        x = x.transpose(1, 2) # batch_size x embed_dim x len_seq
-        x = self.act1(self.conv1(self.drop1(x))) # batch_size x conv_filters x len_seq
+    def predict(self, x): 
+        # input: batch_size x len_seq x embed_dim
+        # batch_size x embed_dim x len_seq
+        x = x.transpose(1, 2) 
+        # batch_size x conv_filters x len_seq
+        x = self.act1(self.conv1(self.drop1(x)))
+        # batch_size x conv_filters x len_seq -> batch_size x conv_filters ->
+        # -> batch_size x hidden_dim
         global_info = self.global_act(
             self.global_info(self.pool1(x).squeeze(2))) 
-        # -> batch_size x conv_filters x len_seq -> batch_size x conv_filters ->
-        # -> batch_size x hidden_dim
+        # batch_size x hidden_dim x len_seq ->
+        # -> batch_size x hidden_dim x len_seq
         local_info = self.local_act(self.local_info(
             self.act2(self.conv2(x)))) 
-        # -> batch_size x hidden_dim x len_seq -> batch_size x hidden_dim x len_seq
+        # batch_size x hidden_dim x 1 -> 
+        # -> batch_size x hidden_dim x len_seq
         global_info = global_info.unsqueeze(-1).expand_as(local_info) 
-        # batch_size x hidden_dim x 1 -> batch_size x hidden_dim x len_seq
-        z = torch.cat([global_info, local_info], dim=1) # batch_size x 2 * hidden_dim x len_seq
-        z = self.act3(self.conv3(self.drop3(z))) # -> batch_size x conv_filters x len_seq
-        logits = self.conv4(z) # batch_size x 1 x len_seq
+        # batch_size x 2 * hidden_dim x len_seq
+        z = torch.cat([global_info, local_info], dim=1) 
+        # batch_size x conv_filters x len_seq
+        z = self.act3(self.conv3(self.drop3(z))) 
+        # batch_size x 1 x len_seq
+        logits = self.conv4(z) 
         
         return logits
     
@@ -151,8 +164,15 @@ class SoftSubSampler(nn.Module):
     
 
 class DistilPredictor(nn.Module):
-    def __init__(self, task_name, n_outs, voc_size, embed_dim=300, hidden_dim=100,
-                 weights_matrix=None, trainable_embeds=False):
+    def __init__(self,
+                 task_name: str,
+                 n_outs: int,
+                 voc_size: int,
+                 embed_dim: int = 300,
+                 hidden_dim: int = 100,
+                 weights_matrix: Optional[torch.FloatTensor] = None,
+                 trainable_embeds: bool = False
+                ):
         super(DistilPredictor, self).__init__()
         
         self.lookup = create_emb_layer(weights_matrix, voc_size,
@@ -202,11 +222,22 @@ class DistilPredictor(nn.Module):
     
     
 class L2XModel(nn.Module):
-    def __init__(self, task_name, n_outs, voc_size=1000, embed_dim=100,
-                 conv_filters=100, conv_ksize=3,
-                 drop_rate=0.2, hidden_dim=100, T=0.3, k=5,
-                 weights_matrix=None, trainable_embeds=False,
-                 sampler='gumbeltopk', anneal_factor=1):
+    def __init__(self,
+                 task_name: str,
+                 n_outs: int,
+                 voc_size: int = 1000,
+                 embed_dim: int = 100,
+                 conv_filters: int = 100,
+                 conv_ksize: int = 3,
+                 drop_rate: float = 0.2,
+                 hidden_dim: int = 100,
+                 T: float = 0.3,
+                 k: int = 5,
+                 weights_matrix: Optional[torch.FloatTensor] = None,
+                 trainable_embeds: bool = False,
+                 sampler: str = 'gumbeltopk',
+                 anneal_factor: float = 1.
+                ):
         super(L2XModel, self).__init__()
         
         self.ti_model = TIModel(

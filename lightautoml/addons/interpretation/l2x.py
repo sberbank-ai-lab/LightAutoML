@@ -1,8 +1,10 @@
 from typing import List, Optional, Dict, Any, Callable, Type, Union
 from numbers import Number
 
+import os
 import numpy as np
 import pandas as pd
+from html import escape
 import gensim
 import torch
 import torch.nn as nn
@@ -81,6 +83,7 @@ class L2XTextExplainer:
                  n_epochs: int = 200,
                  optimizer: Type[torch.optim.Optimizer] = Adam,
                  optimizer_params: Optional[Dict[str, Any]] = None,
+                 patience: int = 0,
                  train_batch_size: int = 64,
                  valid_batch_size: int = 16,
                  temperature: float = 2,
@@ -96,7 +99,8 @@ class L2XTextExplainer:
                  max_vocab_length: int = -1,
                  gamma: float = 0.01,
                  random_seed: int = 42,
-                 deterministic: bool = True
+                 deterministic: bool = True,
+                 cache_dir: Optional[str] = None
                 ):
         """
         
@@ -124,6 +128,7 @@ class L2XTextExplainer:
             optimizer: Should be optimizer in pytorch format.
             optimizer_params: Additional params of optimizer,
                 exclude learning_rate.
+            patience: Early stopping epochs.
             train_batch_size: Size of batch for training process.
             valid_batch_size: Size of batch for validation process.
             temperature: Temperature of concrete distribution sampling.
@@ -141,6 +146,9 @@ class L2XTextExplainer:
             gamma: Special coefficient, that encourage neighborhood of important tokens.
             random_seed: Random seed.
             deterministic: Use cuda deterministic.
+            cache_dir: Directory used for checkpointing model for early stopping.
+                By default, it will infer from automl cache directory,
+                or './l2x_cache' in case there is no opportunity to infer.
         """
         self.automl = automl
         self.reader = automl.reader
@@ -257,6 +265,14 @@ class L2XTextExplainer:
         self.random_seed = random_seed
         self.deterministic = deterministic
         seed_everything(random_seed, deterministic)
+        self.patience = patience
+        if cache_dir is None:
+            cache_dir = automl.autonlp_params['cache_dir'] or './l2x_cache'
+        if not isinstance(cache_dir, str):
+            raise TypeError("Unknown type for cache_dir: {}".format(type(cache_dir)))
+        os.makedirs(cache_dir, exist_ok=True)
+        self.cache_dir = cache_dir
+        self._checkpoint_path = cache_dir + '/l2x_checkpoint.pt'
             
     @property
     def n_important(self):
@@ -394,6 +410,9 @@ class L2XTextExplainer:
         loss = self._loss
         optimizer = self.optimizer(model.parameters(), **self.optim_params)
         model.to(self.train_device)
+        best_iter = -1
+        best_loss = torch.finfo(float).max
+        
         for epoch in range(self.n_epochs):
             train_loss = self._train_epoch(model, train_dataloader, loss, optimizer, self.train_device, self.gamma)
             valid_loss = self._validate(model, valid_dataloader, loss, self.train_device)
@@ -404,6 +423,14 @@ class L2XTextExplainer:
                 else:
                     logger.info('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(
                         epoch + 1, self.n_epochs, train_loss, valid_loss))
+            if self.patience > 0 and valid_loss < best_loss:
+                best_loss = valid_loss
+                prev_best = epoch
+                torch.save(model.state_dict(), self._checkpoint_path)
+            elif self.patience > 0 and epoch - prev_best > self.patience:
+                model.load_state_dict(torch.load(self._checkpoint_path))
+                break
+            
         model.cpu()
         
     def _train_epoch(self,
@@ -617,7 +644,7 @@ class L2XExplanation:
         """
         from IPython.display import HTML, display_html
         
-        token_weights = [(x, y) for x, y in zip(self.tokens, self.mask)]
+        token_weights = [(escape(x), y) for x, y in zip(self.tokens, self.mask)]
         html_code = draw_html(token_weights, self.task_name, self._hightliting_color, grad_line=False)
         display_html(HTML(html_code))
             
