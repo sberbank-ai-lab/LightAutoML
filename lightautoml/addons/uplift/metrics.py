@@ -213,15 +213,8 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
 
     """
     # assert not np.all(uplift_pred == uplift_pred[0]), "Can't calculate for constant predicts."
-    if np.all(uplift_pred == uplift_pred[0]):
-        raise ConstPredictError("Can't calculate uplift curve for constant predicts")
 
-    if (treatment == 1).mean() > 0.5:
-        uplift = uplift_pred[treatment == 1]
-    else:
-        uplift = uplift_pred[treatment == 0]
-
-    uplift_percentile = np.percentile(uplift, 100 - top)
+    uplift_percentile = np.percentile(uplift_pred, 100 - top)
     mask_top = uplift_pred > uplift_percentile
 
     control_true_top = y_true[(treatment == 0) & mask_top].sum()
