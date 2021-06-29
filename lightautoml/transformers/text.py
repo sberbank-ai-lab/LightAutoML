@@ -697,8 +697,10 @@ class AutoNLPWrap(LAMLTransformer):
             if self.train_fasttext:
                 embedding_model = gensim.models.FastText(**self.fasttext_params)
                 common_texts = [i.split(' ') for i in subs[i].values]
-                embedding_model.build_vocab(sentences=common_texts)
-                embedding_model.train(sentences=common_texts, total_examples=len(common_texts), epochs=self.fasttext_epochs)
+                embedding_model.build_vocab(corpus_iterable=common_texts)
+                embedding_model.train(corpus_iterable=common_texts,
+                                      total_examples=len(common_texts),
+                                      epochs=self.fasttext_epochs)
                 transformer_params = self._update_transformers_emb_model(transformer_params, embedding_model)
 
             transformer = self.transformer(verbose=self.verbose, device=self.device, multigpu=self.multigpu, **transformer_params)
