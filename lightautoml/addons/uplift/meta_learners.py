@@ -143,7 +143,7 @@ class TLearner(MetaLearner):
         assert any(x is not None for x in [treatment_learner, control_learner, base_task]), (
                'Must specify any of learners or "base_task"')
 
-        if base_task is None and (treatment_learner is None or control_learner is None):
+        if base_task is None:
             if treatment_learner is not None:
                 base_task = self._get_task(treatment_learner)
             elif control_learner is not None:
