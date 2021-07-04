@@ -193,7 +193,7 @@ def get_vocab(tokenized: List[List[str]],
     
     return word_to_id, id_to_word
 
-def get_embedding_matrix(id_to_word, embedder, embedder_dim, first_non_zero=3):
+def get_embedding_matrix(id_to_word, embedder, embedder_dim):
     weights_matrix = np.random.normal(scale=0.6, size=(len(id_to_word), embedder_dim))
     if embedder is not None:
         for i in range(len(id_to_word)):
@@ -209,14 +209,29 @@ def get_embedding_matrix(id_to_word, embedder, embedder_dim, first_non_zero=3):
     
     return weights_matrix
 
+class WrappedVocabulary:
+    def __init__(self, word_to_id, unk_token='<UNK>'):
+        self.word_to_id = word_to_id
+        self.unk_token = word_to_id[unk_token]
+        
+    def __call__(self, x):
+        return self.word_to_id.get(x, self.unk_token)
+    
+    def __getitem__(self, val):
+        return self.word_to_id.get(val, self.unk_token)
+    
+    def __len__(self):
+        return len(self.word_to_id)
+    
+
 def map_tokenized_to_id(tokenized, word_to_id, min_k):
     dataset = []
     for sent in tokenized:
         sent_list = [word_to_id['<START>']]
-        sent_list.extend(map(lambda x: word_to_id.get(x, word_to_id['<UNK>']), sent))
+        # word_to_id is also callable
+        sent_list.extend(map(word_to_id, sent))
         pad_tokens = max(1, min_k - len(sent_list))
         sent_list.extend([word_to_id['<PAD>']] * pad_tokens)
-        
         dataset.append(torch.Tensor(sent_list).long())
         
     return dataset

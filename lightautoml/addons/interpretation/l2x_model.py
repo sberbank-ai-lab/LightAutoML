@@ -90,8 +90,19 @@ class TIModel(nn.Module):
 class GumbelTopKSampler(nn.Module):
     def __init__(self, T, k):
         super(GumbelTopKSampler, self).__init__()
-        self.T = T
-        self.k = k
+        # Use as parameter to serialize,
+        # Serialization of pytorch, when loading an already initialized model
+        # does not load class arguments, only arguments that are model parameters.
+        # So code (pseudo-code) like this, doesn't work right:
+        # >>> l2x = L2XModel(...)
+        # >>> for epoch in range(n_epochs):
+        # >>>     train_step(...)
+        # >>>     val_loss = valid_step(...)
+        # >>>     if best_loss > val_loss:
+        # >>>         torch.save(l2x.state_dict(), self._checkpoint_path)
+        # >>> l2x.load_state_dict(torch.load(self._checkpoint_path))
+        self.T = nn.Parameter(torch.tensor(T, dtype=torch.float32), requires_grad=False)
+        self.k = nn.Parameter(torch.tensor(k, dtype=torch.int32), requires_grad=False)
         
     def sample_continous(self, logits):
         l_shape = (logits.shape[0], self.k, logits.shape[2])
@@ -122,8 +133,8 @@ class GumbelTopKSampler(nn.Module):
 class SoftSubSampler(nn.Module):
     def __init__(self, T, k):
         super(SoftSubSampler, self).__init__()
-        self.T = T
-        self.k = k
+        self.T = nn.Parameter(torch.tensor(T, dtype=torch.float32), requires_grad=False)
+        self.k = nn.Parameter(torch.tensor(k, dtype=torch.int32), requires_grad=False)
         
     def inject_noise(self, logits):
         u = clamp_probs(torch.rand_like(logits))

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, Any, Optional
+from typing import List, Tuple, Union, Any, Optional, Dict
 
 
 from collections import defaultdict
@@ -10,6 +10,48 @@ import torch
 
 
 T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
+
+
+class WrappedVocabulary:
+    """Look-up table (word to token-id), handling unrecognized words.
+    
+    Args:
+        word_to_id: Word to token id dictionary.
+        unk_token: Token with which to replace unrecognized words.
+    
+    """
+    def __init__(self,
+                 word_to_id: Dict[str, int],
+                 unk_token: str = '<UNK>'
+                ):
+        self.word_to_id = word_to_id
+        self.unk_token = word_to_id[unk_token]
+        
+    def __call__(self, x: str) -> int:
+        return self.word_to_id.get(x, self.unk_token)
+    
+    def __getitem__(self, val: str) -> int:
+        return self.word_to_id.get(val, self.unk_token)
+    
+    def __len__(self):
+        return len(self.word_to_id)
+    
+class WrappedTokenizer:
+    """Handler for automl tokenizer.
+    
+    Args:
+        tokenizer: Automl tokenizer.
+        
+    """
+    
+    def __init__(self,
+                 tokenizer: 'lightautoml.text.tokenizer.BaseTokenizer'
+                ):
+        self._tokenizer = tokenizer
+        
+    def __call__(self, x: str) -> List[str]:
+        return self._tokenizer.tokenize_sentence(self._tokenizer._tokenize(x))
+    
 
 def untokenize(raw: str,
                tokens: List[str],

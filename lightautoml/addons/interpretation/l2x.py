@@ -9,6 +9,7 @@ import gensim
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
 from ...pipelines.features.text_pipeline import _tokenizer_by_lang
@@ -17,7 +18,7 @@ from .data_process import BySequenceLengthSampler, pad_max_len, LengthDataset,\
     get_len_dataset, get_len_dataloader, get_tokenized, get_embedding_matrix,\
     map_tokenized_to_id, get_vocab
 from ...utils.logging import get_logger
-from .utils import draw_html, cross_entropy_multiple_class
+from .utils import draw_html, cross_entropy_multiple_class, WrappedTokenizer, WrappedVocabulary
 from ...text.utils import seed_everything
 
 
@@ -84,6 +85,7 @@ class L2XTextExplainer:
                  optimizer: Type[torch.optim.Optimizer] = Adam,
                  optimizer_params: Optional[Dict[str, Any]] = None,
                  patience: int = 0,
+                 extreme_patience: int = 0,
                  train_batch_size: int = 64,
                  valid_batch_size: int = 16,
                  temperature: float = 2,
@@ -98,6 +100,7 @@ class L2XTextExplainer:
                  trainable_embeds: bool = False,
                  max_vocab_length: int = -1,
                  gamma: float = 0.01,
+                 gamma_anneal_factor: float = 1.0,
                  random_seed: int = 42,
                  deterministic: bool = True,
                  cache_dir: Optional[str] = None
@@ -128,12 +131,13 @@ class L2XTextExplainer:
             optimizer: Should be optimizer in pytorch format.
             optimizer_params: Additional params of optimizer,
                 exclude learning_rate.
-            patience: Early stopping epochs.
+            patience: Number of epochs before reducing learning rate.
+            extreme_patience: Early stopping epochs.
             train_batch_size: Size of batch for training process.
             valid_batch_size: Size of batch for validation process.
             temperature: Temperature of concrete distribution sampling.
             temp_anneal_factor: Annealing temperature. The temperature will be
-                multiplied by this coefficient every epoch.
+                multiplied by this coefficient after every epoch.
             conv_filters: Number of convolution kernels in model,
                 that produces important tokens.
             conv_ksize: Size of convolution kernel.
@@ -144,6 +148,8 @@ class L2XTextExplainer:
             trainable_embeds: To train embeddings of L2X.
             max_vocab_length: Maximum vocabulary length. If -1 then include all in train set.
             gamma: Special coefficient, that encourage neighborhood of important tokens.
+            gamma_anneal_factor: Annealing gamma. The gamma will be
+                multiplied by this coefficient after every epoch.
             random_seed: Random seed.
             deterministic: Use cuda deterministic.
             cache_dir: Directory used for checkpointing model for early stopping.
@@ -168,13 +174,14 @@ class L2XTextExplainer:
         if isinstance(tokenizer, str):
             if tokenizer not in ['ru', 'en']:
                 raise ValueError("Tokenizer must be one 'ru' or 'en', but {} given".format(tokenizer))
-            self.tokenizer = _tokenizer_by_lang[tokenizer](is_stemmer=False)
+            self._tokenizer = _tokenizer_by_lang[tokenizer](is_stemmer=False)
+            self.tokenizer = WrappedTokenizer(self._tokenizer)
         elif tokenizer is None:
             # check is_stemmer=True or False,
             # who's the best and what easy to implement
             lang = automl.text_params['lang']
             self._tokenizer = _tokenizer_by_lang[lang](is_stemmer=False)
-            self.tokenizer = lambda x: self._tokenizer.tokenize_sentence(self._tokenizer._tokenize(x))
+            self.tokenizer = WrappedTokenizer(self._tokenizer)
         elif callable(tokenizer):
             self.tokenizer = tokenizer
         else:
@@ -208,7 +215,7 @@ class L2XTextExplainer:
         
         if temp_anneal_factor <= 0:
             raise ValueError("Temperature annealing factor should be positive, but {} given".format(temp_anneal_factor))
-        self.anneal_factor = temp_anneal_factor
+        self.temp_anneal_factor = temp_anneal_factor
         
         if conv_filters <= 0:
             raise ValueError("Number of filters in convolution layers should be positive, but {} given".format(conv_filters))
@@ -235,12 +242,12 @@ class L2XTextExplainer:
             self.embedding_dim = embedding_dim
         elif isinstance(embedder, str):
             try:
-                self.embedder = gensim.models.FastText.load(embedder)
+                self.embedder = gensim.models.FastText.load(embedder).wv
             except:
                 try:
-                    self.embedder = gensim.models.FastText.load_fasttext_format(embedder)
+                    self.embedder = gensim.models.FastText.load_fasttext_format(embedder).wv
                 except:
-                    self.embedder = gensim.models.KeyedVectors.load(embedder)
+                    self.embedder = gensim.models.KeyedVectors.load(embedder).wv
             self.embedding_dim = self.embedder.vector_size
         elif isinstance(embedder, dict):
             self.embedder = embedder
@@ -261,11 +268,24 @@ class L2XTextExplainer:
         if gamma < 0:
             logger.warn("For now sparse token highlighting will be encouraged, since gamma < 0")
         self.gamma = gamma
+        if gamma_anneal_factor <= 0:
+            raise ValueError("Gamma annealing factor should be positive, but {} given".format(temp_anneal_factor))
+        self.gamma_anneal_factor = gamma_anneal_factor
         self.explainers = {}
         self.random_seed = random_seed
         self.deterministic = deterministic
         seed_everything(random_seed, deterministic)
+        
+        if extreme_patience == 0:
+            extreme_patience = n_epochs
+        if patience == 0:
+            patience = extreme_patience
+        if patience > extreme_patience:
+            logger.warn("extreme_patience (={}) must be greater or equal patience (={}), now extreme_patience also ={}".format(extreme_patience, patience, patience))
+            self.extreme_patience = patience
         self.patience = patience
+        self.extreme_patience = extreme_patience
+        
         if cache_dir is None:
             cache_dir = automl.autonlp_params['cache_dir'] or './l2x_cache'
         if not isinstance(cache_dir, str):
@@ -358,6 +378,7 @@ class L2XTextExplainer:
         """
         train_tokenized = get_tokenized(train_data, col_to_explain, self.tokenizer)
         word_to_id, id_to_word = get_vocab(train_tokenized, self.max_vocab_length)
+        word_to_id = WrappedVocabulary(word_to_id)
         weights_matrix = get_embedding_matrix(id_to_word, self.embedder, self.embedding_dim)
         train_data = map_tokenized_to_id(train_tokenized, word_to_id, self.k)
         train_dataset = get_len_dataset(train_data, train_preds)
@@ -385,18 +406,24 @@ class L2XTextExplainer:
             weights_matrix=weights_matrix,
             trainable_embeds=self.trainable_embeds,
             sampler=self.importance_sampler,
-            anneal_factor=self.anneal_factor                
+            anneal_factor=self.temp_anneal_factor                
         )
-        self.train(model, train_dataloader, valid_dataloader)
+        train_loss_logs = []
+        if valid_data is not None:
+            valid_loss_logs = []
+        self.train(model, train_dataloader, train_loss_logs,
+                   valid_dataloader, valid_loss_logs)
         
         return _L2XExplainer(model, col_to_explain, boundaries, self.tokenizer,
                              word_to_id, id_to_word, self.inference_device, self.k,
-                             self.task_name)
+                             self.task_name, train_loss_logs, valid_loss_logs)
         
     def train(self,
               model: L2XModel,
               train_dataloader: torch.utils.data.DataLoader,
-              valid_dataloader: Optional[torch.utils.data.DataLoader] = None
+              train_loss_logs: List[float],
+              valid_dataloader: Optional[torch.utils.data.DataLoader] = None,
+              valid_loss_logs: List[Union[float, None]] = None
              ):
         """
         Trainer for L2X.
@@ -412,10 +439,15 @@ class L2XTextExplainer:
         model.to(self.train_device)
         best_iter = -1
         best_loss = torch.finfo(float).max
+        gamma = self.gamma
         
+        scheduler = ReduceLROnPlateau(optimizer, patience=self.patience)
         for epoch in range(self.n_epochs):
-            train_loss = self._train_epoch(model, train_dataloader, loss, optimizer, self.train_device, self.gamma)
+            train_loss = self._train_epoch(model, train_dataloader, loss, optimizer, self.train_device, gamma)
             valid_loss = self._validate(model, valid_dataloader, loss, self.train_device)
+            train_loss_logs.append(train_loss)
+            if valid_loss_logs is not None:
+                valid_loss_logs.append(valid_loss)
             if self.verbose:
                 if valid_loss is None:
                     logger.info('Epoch: {}/{}, train loss: {}'.format(
@@ -423,15 +455,22 @@ class L2XTextExplainer:
                 else:
                     logger.info('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(
                         epoch + 1, self.n_epochs, train_loss, valid_loss))
-            if self.patience > 0 and valid_loss < best_loss:
-                best_loss = valid_loss
-                prev_best = epoch
-                torch.save(model.state_dict(), self._checkpoint_path)
-            elif self.patience > 0 and epoch - prev_best > self.patience:
-                model.load_state_dict(torch.load(self._checkpoint_path))
-                break
+            if valid_loss is not None:
+                scheduler.step(valid_loss)
+                if self.extreme_patience > 0 and valid_loss < best_loss:
+                    best_loss = valid_loss
+                    prev_best = epoch
+                    torch.save(model.state_dict(), self._checkpoint_path)
+
+                elif self.extreme_patience > 0 and epoch - prev_best > self.extreme_patience:
+                    model.load_state_dict(torch.load(self._checkpoint_path))
+                    break
+            if epoch != self.n_epochs - 1:
+                model.anneal()
+                gamma *= self.gamma_anneal_factor
             
         model.cpu()
+    
         
     def _train_epoch(self,
                      model: L2XModel,
@@ -469,12 +508,14 @@ class L2XTextExplainer:
             # Encouragement of neighbour tokens
             corr_loss =  torch.mean(((corr_pred[:, 1:])**2 * (corr_pred[:, :-1])**2).sum(-1))
             # Not sure that optima of this pair of losses is the same
+            # but dunno how get best validation score
             loss = nll_loss - gamma * corr_loss
             loss.backward()
-            optimizer.step()
+            optimizer.step(),
             nll_loss = nll_loss.data.cpu().detach().numpy()
             accum_loss += nll_loss
             iters += 1
+            
             if self.verbose:
                 train_dataloader.set_description('train nll (loss={:.4f})'.format(accum_loss / iters))
             
@@ -545,7 +586,9 @@ class _L2XExplainer:
                  id_to_word: Dict[int, str],
                  inference_device: torch.device,
                  n_important: int,
-                 task_name: str
+                 task_name: str,
+                 train_loss_logs: List[float],
+                 valid_loss_logs: List[Union[float, None]]
                 ):
         """
         Args:
@@ -557,6 +600,10 @@ class _L2XExplainer:
             inference_device: Inference device.
             n_important: Number of important tokens.
             task_name: Task name.
+            train_loss_logs: Train process logs.
+                Contains train loss list.
+            valid_loss_logs: Valid process logs.
+                Contains valid loss list.
             
         """
         self.model = model
@@ -568,6 +615,21 @@ class _L2XExplainer:
         self.inference_device = inference_device
         self.k = n_important
         self.task_name = task_name
+        self.train_loss_logs = train_loss_logs
+        self.valid_loss_logs = valid_loss_logs
+        
+        
+    @property
+    def train_loss(self):
+        return self.train_loss_logs
+    
+    @property
+    def valid_loss(self):
+        return self.valid_loss_logs
+    
+    @property
+    def n_train_epochs(self):
+        return len(self.train_loss_logs)
         
     @property
     def n_important(self):
@@ -675,4 +737,4 @@ class L2XExplanationsContainer:
         return L2XExplanation(self.docs[i], self.masks[i], self.task_name)
     
     def get_all(self):
-        return [(x, y) for x, y in zip(self.docs, self.masks)]                          
+        return [(x, y) for x, y in zip(self.docs, self.masks)] 
