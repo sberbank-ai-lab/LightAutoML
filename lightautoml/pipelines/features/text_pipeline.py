@@ -63,6 +63,8 @@ class NLPDataFeatures:
         self.force = False
         self.sent_scaler = None
         self.embed_scaler = None
+        # if in autonlp_params no effect
+        self.multigpu = False
 
         for k in kwargs:
             if kwargs[k] is not None:

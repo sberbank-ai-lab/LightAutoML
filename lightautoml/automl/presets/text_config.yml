@@ -308,8 +308,5 @@ autonlp_params:
   is_tokenize_autonlp: False
   # path to save cached preprocessed text for faster experiments or None to disable
   cache_dir: null
-  # use DP for embeddings
-  # currently, must be set to FALSE value
-  multigpu: False
   # forcing using custom transformer if gpu is not avaliable
   force: False
