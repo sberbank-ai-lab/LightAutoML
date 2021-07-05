@@ -98,7 +98,7 @@ class ArgsWrapper:
         self.flg = 'sample_weight' in keys
         self.func = partial(func, **metric_params)
 
-        def __call__(self, y_true, y_pred, sample_weight=None):
+    def __call__(self, y_true, y_pred, sample_weight=None):
         """Calculate metric value.
 
         If the metric does not include weights, then they are ignored.
