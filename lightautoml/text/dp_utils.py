@@ -6,12 +6,10 @@ from typing import Optional, List
 
 import torch
 import torch.nn as nn
-from log_calls import record_history
 from torch._utils import ExceptionWrapper
 from torch.cuda._utils import _get_device_index
 
 
-@record_history(enabled=False)
 def get_a_var(obj):
     if isinstance(obj, torch.Tensor):
         return obj
@@ -27,7 +25,6 @@ def get_a_var(obj):
     return None
 
 
-@record_history(enabled=False)
 def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
     """Applies each `module` predict method in `modules` in parallel on arguments
     contained in `inputs` (positional) and `kwargs_tup` (keyword)
@@ -92,7 +89,6 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
     return outputs
 
 
-@record_history(enabled=False)
 class CustomDataParallel(nn.DataParallel):
     """Extension for nn.DataParallel for supporting predict method of DL model."""
 

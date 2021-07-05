@@ -4,14 +4,12 @@ from datetime import datetime
 from typing import Union, Callable, Optional, Sequence, Any
 
 import numpy as np
-from log_calls import record_history
 
 Dtype = Union[Callable, type, str]
 
 
 # valid_features_str_names = []
 
-@record_history(enabled=False)
 class ColumnRole:
     """Abstract class for column role.
 
@@ -121,7 +119,6 @@ class ColumnRole:
         raise ValueError('Unknown string role: {}'.format(name))
 
 
-@record_history(enabled=False)
 class NumericRole(ColumnRole):
     """Numeric role."""
     _name = 'Numeric'
@@ -144,7 +141,6 @@ class NumericRole(ColumnRole):
         self.discretization = discretization
 
 
-@record_history(enabled=False)
 class CategoryRole(ColumnRole):
     """Category role."""
     _name = 'Category'
@@ -181,7 +177,6 @@ class CategoryRole(ColumnRole):
         self.ordinal = ordinal
 
 
-@record_history(enabled=False)
 class TextRole(ColumnRole):
     """Text role."""
     _name = 'Text'
@@ -200,7 +195,6 @@ class TextRole(ColumnRole):
         self.force_input = force_input
 
 
-@record_history(enabled=False)
 class DatetimeRole(ColumnRole):
     """Datetime role."""
     _name = 'Datetime'
@@ -256,7 +250,6 @@ class DatetimeRole(ColumnRole):
 #     Mixed role. If exact role extraction is difficult, it goes into both pipelines
 #     """
 
-@record_history(enabled=False)
 class TargetRole(ColumnRole):
     """Target role."""
     _name = 'Target'
@@ -271,31 +264,26 @@ class TargetRole(ColumnRole):
         self.dtype = dtype
 
 
-@record_history(enabled=False)
 class GroupRole(ColumnRole):
     """Group role."""
     _name = 'Group'
 
 
-@record_history(enabled=False)
 class DropRole(ColumnRole):
     """Drop role."""
     _name = 'Drop'
 
 
-@record_history(enabled=False)
 class WeightsRole(ColumnRole):
     """Weights role."""
     _name = 'Weights'
 
 
-@record_history(enabled=False)
 class FoldsRole(ColumnRole):
     """Folds role."""
     _name = 'Folds'
 
 
-@record_history(enabled=False)
 class PathRole(ColumnRole):
     """Path role."""
     _name = 'Path'

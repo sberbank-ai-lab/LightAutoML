@@ -17,14 +17,14 @@ try:
 except:
     amp = None
 
-from log_calls import record_history
+
 from .utils import _dtypes_mapping
+
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 def optim_to_device(optim: torch.optim.Optimizer,
                     device: torch.device
                    ) -> torch.optim.Optimizer:
@@ -46,7 +46,6 @@ def optim_to_device(optim: torch.optim.Optimizer,
     return optim
 
 
-@record_history(enabled=False)
 class SnapshotEns:
     """In memory snapshots class."""
 
@@ -235,7 +234,6 @@ class SnapshotEns:
         return self
 
 
-@record_history(enabled=False)
 class Trainer:
     """Torch main trainer class."""
 
@@ -250,13 +248,9 @@ class Trainer:
                  metric: Callable,
                  snap_params: Dict,
                  is_snap: bool = False,
-                 sch: Optional = None,
-                 scheduler_params: Optional[Dict] = None,
-                 verbose: int = 1,
+                 sch: Optional = None, scheduler_params: Optional[Dict] = None, verbose: int = 1,
                  verbose_inside: Optional[int] = None,
-                 apex: bool = False,
-                 pretrained_path: Optional[str] = None
-                ):
+                 apex: bool = False, pretrained_path: Optional[str] = None):
         """Train, validation and test loops for NN models.
 
         Use DataParallel if device_ids is not None.
@@ -548,7 +542,7 @@ class Trainer:
 
         with torch.no_grad():
             for sample in loader:
-                data = {i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == 'long' 
+                data = {i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == 'long'
                             else sample[i].to(self.device)) for i in sample.keys()}
 
                 if snap:

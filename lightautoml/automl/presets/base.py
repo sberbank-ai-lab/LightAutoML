@@ -7,7 +7,6 @@ from typing import Optional, Any, Sequence, Iterable
 import logging
 import torch
 import yaml
-from log_calls import record_history
 
 from ..base import AutoML
 from ...dataset.base import LAMLDataset
@@ -20,7 +19,6 @@ logger = get_logger(__name__)
 base_dir = os.path.dirname(__file__)
 
 
-@record_history(enabled=False)
 def upd_params(old: dict, new: dict) -> dict:
     for k in new:
         if type(new[k]) is dict and k in old and type(old[k]) is dict:
@@ -31,7 +29,6 @@ def upd_params(old: dict, new: dict) -> dict:
     return old
 
 
-@record_history(enabled=False)
 class AutoMLPreset(AutoML):
     """Basic class for automl preset.
 

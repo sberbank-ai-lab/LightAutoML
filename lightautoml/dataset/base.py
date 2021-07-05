@@ -3,7 +3,6 @@
 from copy import copy  # , deepcopy
 from typing import Any, Optional, Dict, List, Tuple, Sequence, Union, TypeVar
 
-from log_calls import record_history
 
 from .roles import ColumnRole
 from ..tasks.base import Task
@@ -20,7 +19,6 @@ RowSlice = Optional[Union[Sequence[int], Sequence[bool]]]
 ColSlice = Optional[Union[Sequence[str], str]]
 
 
-@record_history(enabled=False)
 class LAMLColumn:
     """Basic class for pair - column, role."""
 
@@ -45,7 +43,6 @@ class LAMLColumn:
         return self.data.__repr__()
 
 
-@record_history(enabled=False)
 class LAMLDataset:
     """Basic class to create dataset."""
 
@@ -120,7 +117,7 @@ class LAMLDataset:
             data = self._get_2d(self.data, (rows, idx))
 
             # case of single column - return LAMLColumn
-            if type(cols) is str:
+            if isinstance(cols, str):
                 dataset = LAMLColumn(self._get_2d(self.data, (rows, idx)), role=self.roles[cols])
 
                 return dataset
@@ -327,7 +324,7 @@ class LAMLDataset:
             List of integer indexes of single int.
 
         """
-        if type(columns) is str:
+        if isinstance(columns, str):
             idx = self.features.index(columns)
 
         else:

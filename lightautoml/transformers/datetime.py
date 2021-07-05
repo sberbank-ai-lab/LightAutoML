@@ -5,7 +5,6 @@ from typing import Union, Sequence, List, Optional
 
 import holidays
 import numpy as np
-from log_calls import record_history
 
 from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
@@ -21,7 +20,6 @@ date_attrs = {'y': 'year', 'm': 'month',
               'sec': 'second', 'ms': 'microsecond', 'ns': 'nanosecond'}
 
 
-@record_history(enabled=False)
 def datetime_check(dataset: LAMLDataset):
     """Check if all passed vars are datetimes.
 
@@ -38,7 +36,6 @@ def datetime_check(dataset: LAMLDataset):
         assert roles[f].name == 'Datetime', 'Only datetimes accepted in this transformer'
 
 
-@record_history(enabled=False)
 class TimeToNum(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
@@ -80,7 +77,6 @@ class TimeToNum(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class BaseDiff(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
@@ -163,7 +159,6 @@ class BaseDiff(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class DateSeasons(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.

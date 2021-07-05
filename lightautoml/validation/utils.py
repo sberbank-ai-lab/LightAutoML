@@ -2,7 +2,6 @@
 
 from typing import Optional, Callable, cast, Union
 
-from log_calls import record_history
 
 from .base import DummyIterator, HoldoutIterator, TrainValidIterator
 from .np_iterators import get_numpy_iterator
@@ -12,7 +11,6 @@ from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDatase
 NpDataset = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] = None,
                                n_folds: Optional[int] = None, cv_iter: Optional[Callable] = None) -> TrainValidIterator:
     """Creates train-validation iterator.

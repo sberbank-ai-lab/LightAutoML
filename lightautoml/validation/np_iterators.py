@@ -3,7 +3,6 @@
 from typing import Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
-from log_calls import record_history
 
 from .base import CustomIdxs, CustomIterator, DummyIterator, HoldoutIterator, TrainValidIterator
 from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
@@ -11,7 +10,6 @@ from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDatase
 NumpyOrSparse = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 class FoldsIterator(TrainValidIterator):
     """Classic cv iterator.
 
@@ -95,7 +93,6 @@ class FoldsIterator(TrainValidIterator):
         return HoldoutIterator(train, valid)
 
 
-@record_history(enabled=False)
 def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = None,
                        n_folds: Optional[int] = None,
                        iterator: Optional[CustomIdxs] = None
@@ -132,7 +129,6 @@ def get_numpy_iterator(train: NumpyOrSparse, valid: Optional[NumpyOrSparse] = No
     return train_valid
 
 
-@record_history(enabled=False)
 class TimeSeriesIterator:
     """Time Series Iterator."""
 

@@ -3,7 +3,6 @@
 from typing import Any
 
 import torch
-from log_calls import record_history
 
 from .base import FeaturesPipeline
 from ..utils import get_columns_by_role
@@ -25,7 +24,6 @@ _tokenizer_by_lang = {'ru': SimpleRuTokenizer,
                       'multi': BaseTokenizer}
 
 
-@record_history(enabled=False)
 class NLPDataFeatures:
     """
     Class contains basic features transformations for text data.
@@ -76,7 +74,6 @@ class NLPDataFeatures:
             if self.model_name is None:
                 self.model_name = 'wat' if self.device == 'cpu' else 'random_lstm' if 'embedding_model' in kwargs else 'random_lstm_bert'
 
-@record_history(enabled=False)
 class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Class contains embedding features for text data.
@@ -119,7 +116,6 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Class contains tfidf features for text data.
@@ -155,7 +151,6 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class TextBertFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Features pipeline for BERT.

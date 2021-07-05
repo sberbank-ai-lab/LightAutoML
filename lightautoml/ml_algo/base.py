@@ -5,7 +5,6 @@ from copy import copy
 from typing import Optional, Tuple, Any, List, cast, Dict, Sequence, Union
 
 import numpy as np
-from log_calls import record_history
 
 from lightautoml.validation.base import TrainValidIterator
 from ..dataset.base import LAMLDataset
@@ -18,7 +17,6 @@ logger = get_logger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 class MLAlgo(ABC):
     """
     Abstract class for machine learning algorithm.
@@ -161,7 +159,6 @@ class MLAlgo(ABC):
         return self
 
 
-@record_history(enabled=False)
 class TabularMLAlgo(MLAlgo):
     """Machine learning algorithms that accepts numpy arrays as input."""
     _name: str = 'TabularAlgo'

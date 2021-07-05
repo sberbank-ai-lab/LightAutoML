@@ -5,7 +5,6 @@ from itertools import repeat
 from typing import Any, Dict, Sequence
 
 import numpy as np
-from log_calls import record_history
 from scipy.linalg import svd
 from sklearn.base import TransformerMixin
 from sklearn.feature_extraction import DictVectorizer
@@ -16,7 +15,6 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class WeightedAverageTransformer(TransformerMixin):
     """Weighted average of word embeddings."""
     name = 'WAT'

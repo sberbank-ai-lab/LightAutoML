@@ -3,7 +3,6 @@
 from typing import Optional, Union
 
 import numpy as np
-from log_calls import record_history
 
 from .base import FeaturesPipeline, TabularDataFeatures
 from ..selection.base import ImportanceEstimator
@@ -18,7 +17,6 @@ from ...transformers.datetime import TimeToNum
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history(enabled=False)
 class LGBSimpleFeatures(FeaturesPipeline):
     """Creates simple pipeline for tree based models.
 
@@ -81,7 +79,6 @@ class LGBSimpleFeatures(FeaturesPipeline):
         return union_all
 
 
-@record_history(enabled=False)
 class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
     """Create advanced pipeline for trees based models.
 

@@ -5,7 +5,6 @@ from typing import Sequence, Callable, Optional, Union
 
 import numpy as np
 import torch
-from log_calls import record_history
 from scipy import sparse
 from torch import nn
 from torch import optim
@@ -17,7 +16,6 @@ logger = get_logger(__name__)
 ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 
-@record_history(enabled=False)
 def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor:
     """Convert scipy sparse matrix to torch sparse tensor.
 
@@ -37,7 +35,6 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
     return sparse_tensor
 
 
-@record_history(enabled=False)
 class CatLinear(nn.Module):
     """Simple linear model to handle numeric and categorical features."""
 
@@ -82,7 +79,6 @@ class CatLinear(nn.Module):
         return x
 
 
-@record_history(enabled=False)
 class CatLogisticRegression(CatLinear):
     """Realisation of torch-based logistic regression."""
 
@@ -105,7 +101,6 @@ class CatLogisticRegression(CatLinear):
         return x
 
 
-@record_history(enabled=False)
 class CatRegression(CatLinear):
     """Realisation of torch-based linear regreession."""
 
@@ -113,7 +108,6 @@ class CatRegression(CatLinear):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
 
 
-@record_history(enabled=False)
 class CatMulticlass(CatLinear):
     """Realisation of multi-class linear classifier."""
 
@@ -129,7 +123,6 @@ class CatMulticlass(CatLinear):
         return x
 
 
-@record_history(enabled=False)
 class TorchBasedLinearEstimator:
     """Linear model based on torch L-BFGS solver.
 
@@ -375,7 +368,6 @@ class TorchBasedLinearEstimator:
         return self._score(data, data_cat)
 
 
-@record_history(enabled=False)
 class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
     """Linear binary classifier."""
 
@@ -428,7 +420,6 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         return pred
 
 
-@record_history(enabled=False)
 class TorchBasedLinearRegression(TorchBasedLinearEstimator):
     """Torch-based linear regressor optimized by L-BFGS."""
 

@@ -3,7 +3,6 @@
 from typing import Union, Optional
 
 import numpy as np
-from log_calls import record_history
 
 from .base import TabularDataFeatures, FeaturesPipeline
 from ..selection.base import ImportanceEstimator
@@ -17,7 +16,6 @@ from ...transformers.numeric import StandardScaler, NaNFlags, FillnaMedian, LogO
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history(enabled=False)
 class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
     """
     Creates pipeline for linear models and nnets.

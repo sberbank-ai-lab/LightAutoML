@@ -10,7 +10,6 @@ import gensim
 import numpy as np
 import pandas as pd
 import torch
-from log_calls import record_history
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDRegressor, SGDClassifier
 
@@ -68,7 +67,6 @@ model_by_name = {'random_lstm': {'model': RandomLSTM,
                  }
 
 
-@record_history(enabled=False)
 def oof_task_check(dataset: LAMLDataset):
     """Check if task is binary or regression.
 
@@ -80,7 +78,6 @@ def oof_task_check(dataset: LAMLDataset):
     assert task.name in ['binary', 'reg'], 'Only binary and regression tasks supported in this transformer'
 
 
-@record_history(enabled=False)
 def text_check(dataset: LAMLDataset):
     """Check if all passed vars are text.
 
@@ -98,7 +95,6 @@ def text_check(dataset: LAMLDataset):
 
 
 # TODO: combine TunableTransformer with LAMLTransformer class?
-@record_history(enabled=False)
 class TunableTransformer(LAMLTransformer):
     """Base class for ML transformers.
 
@@ -152,7 +148,6 @@ class TunableTransformer(LAMLTransformer):
         self.default_params = {**self._default_params, **default_params}
 
 
-@record_history(enabled=False)
 class TfidfTextTransformer(TunableTransformer):
     """Simple Tfidf vectorizer."""
 
@@ -281,7 +276,6 @@ class TfidfTextTransformer(TunableTransformer):
         return dataset.empty().to_numpy().to_csr().concat(outputs)
 
 
-@record_history(enabled=False)
 class TokenizerTransformer(LAMLTransformer):
     """Simple tokenizer transformer."""
 
@@ -328,7 +322,6 @@ class TokenizerTransformer(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class OneToOneTransformer(TunableTransformer):
     """Out-of-fold sgd model prediction to reduce dimension of encoded text data."""
 
@@ -478,7 +471,6 @@ class OneToOneTransformer(TunableTransformer):
         return output
 
 
-@record_history(enabled=False)
 class ConcatTextTransformer(LAMLTransformer):
     """Concat text features transformer."""
     _fit_checks = (text_check,)
@@ -521,7 +513,6 @@ class ConcatTextTransformer(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class AutoNLPWrap(LAMLTransformer):
     """Calculate text embeddings."""
 
