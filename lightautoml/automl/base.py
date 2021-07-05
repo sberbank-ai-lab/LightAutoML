@@ -193,17 +193,13 @@ class AutoML:
                 logger.info('Time left {0}'.format(self.timer.time_left))
 
                 if self.timer.time_limit_exceeded():
-                    logger.warning('Time limit exceeded. Last level models will be blended and unused pipelines will be pruned. \
-                                        \nTry to set higher time limits or use Profiler to find bottleneck and optimize Pipelines settings')
+                    logger.warning('Time limit exceeded. Last level models will be blended and unused pipelines will be pruned.')
 
                     flg_last_level = True
                     break
             else:
                 if self.timer.child_out_of_time:
-                    logger.warning('Time limit exceeded in one of the tasks. AutoML will blend level {0} models. \
-                                        \nTry to set higher time limits or use Profiler to find bottleneck and optimize Pipelines settings'
-                                   .format(n)
-                                   )
+                    logger.warning('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.'.format(n))
                     flg_last_level = True
 
             # here is split on exit condition
