@@ -3,7 +3,6 @@
 from typing import Any
 
 import torch
-from log_calls import record_history
 
 from .base import FeaturesPipeline
 from ..utils import get_columns_by_role
@@ -14,6 +13,7 @@ from ...transformers.decomposition import SVDTransformer
 from ...transformers.text import AutoNLPWrap
 from ...transformers.text import TfidfTextTransformer
 from ...transformers.text import TokenizerTransformer, ConcatTextTransformer
+from ...transformers.numeric import StandardScaler
 
 _model_name_by_lang = {'ru': 'DeepPavlov/rubert-base-cased-conversational',  # "sberbank-ai/sbert_large_nlu_ru" - sberdevices
                        'en': 'bert-base-cased',
@@ -24,7 +24,6 @@ _tokenizer_by_lang = {'ru': SimpleRuTokenizer,
                       'multi': BaseTokenizer}
 
 
-@record_history(enabled=False)
 class NLPDataFeatures:
     """
     Class contains basic features transformations for text data.
@@ -47,8 +46,8 @@ class NLPDataFeatures:
         self.verbose = False
         self.bert_model = _model_name_by_lang[self.lang]
         self.random_state = 42
-        self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
-        self.model_name = 'wat' if self.device.type == 'cpu' else 'random_lstm' if 'embedding_model' in kwargs else 'random_lstm_bert'
+        self.device = None
+        self.model_name = None
         self.embedding_model = None
         self.svd = True
         self.n_components = 100
@@ -61,13 +60,22 @@ class NLPDataFeatures:
         self.fasttext_params = None  # init fasttext params
         self.fasttext_epochs = 2
         self.stopwords = False
+        self.force = False
+        self.sent_scaler = None
+        self.embed_scaler = None
+        # if in autonlp_params no effect
+        self.multigpu = False
 
         for k in kwargs:
             if kwargs[k] is not None:
                 self.__dict__[k] = kwargs[k]
+        
+        if not self.force and self.device == 'cpu':
+            self.model_name = 'wat'
+        else:
+            if self.model_name is None:
+                self.model_name = 'wat' if self.device == 'cpu' else 'random_lstm' if 'embedding_model' in kwargs else 'random_lstm_bert'
 
-
-@record_history(enabled=False)
 class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Class contains embedding features for text data.
@@ -97,9 +105,11 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
                 AutoNLPWrap(model_name=self.model_name, embedding_model=self.embedding_model,
                             cache_dir=self.cache_dir, bert_model=self.bert_model, transformer_params=self.transformer_params,
                             random_state=self.random_state, train_fasttext=self.train_fasttext, device=self.device,
-                            multigpu=self.multigpu,
+                            multigpu=self.multigpu, sent_scaler=self.sent_scaler,
                             fasttext_params=self.fasttext_params, fasttext_epochs=self.fasttext_epochs, verbose=self.verbose))
-
+            if self.embed_scaler == 'standard':
+                transforms.append(StandardScaler())
+                
             text_processing = SequentialTransformer(transforms)
             transformers_list.append(text_processing)
 
@@ -108,7 +118,6 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Class contains tfidf features for text data.
@@ -144,7 +153,6 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class TextBertFeatures(FeaturesPipeline, NLPDataFeatures):
     """
     Features pipeline for BERT.

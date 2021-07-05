@@ -3,14 +3,12 @@
 from typing import Union, Optional
 
 import numpy as np
-from log_calls import record_history
 from scipy.sparse import linalg as sp_linalg
 
 from .base import SelectionPipeline
 from ...validation.base import TrainValidIterator
 
 
-@record_history(enabled=False)
 class HighCorrRemoval(SelectionPipeline):
     """Selector to remove highly correlated features.
 

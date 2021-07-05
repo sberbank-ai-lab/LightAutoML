@@ -1,12 +1,12 @@
 """Main pytorch training and prediction class with Snapshots Ensemble."""
 
+import logging
 from copy import deepcopy
 from typing import Optional, Dict, List, Callable, Union, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -17,7 +17,6 @@ try:
 except:
     amp = None
 
-from log_calls import record_history
 
 from .utils import _dtypes_mapping
 
@@ -26,8 +25,9 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
-def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch.optim.Optimizer:
+def optim_to_device(optim: torch.optim.Optimizer,
+                    device: torch.device
+                   ) -> torch.optim.Optimizer:
     """Change optimizer device.
 
     Args:
@@ -46,12 +46,16 @@ def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch
     return optim
 
 
-@record_history(enabled=False)
 class SnapshotEns:
     """In memory snapshots class."""
 
-    def __init__(self, device: torch.device, k: int = 1, early_stopping: bool = True,
-                 patience: int = 3, swa: bool = False):
+    def __init__(self,
+                 device: torch.device,
+                 k: int = 1,
+                 early_stopping: bool = True,
+                 patience: int = 3,
+                 swa: bool = False
+                ):
         """Class for SE, SWA and early stopping.
 
         Args:
@@ -72,7 +76,10 @@ class SnapshotEns:
         self.counter = 0
         self.early_stop = False
 
-    def update(self, model: nn.Module, loss: float):
+    def update(self,
+               model: nn.Module,
+               loss: float
+              ):
         """Update current state.
 
         Args:
@@ -204,7 +211,10 @@ class SnapshotEns:
                 models_dict[n] = model.state_dict()
         return models_dict
 
-    def load_state_dict(self, weights: Dict, model: nn.Module):
+    def load_state_dict(self,
+                        weights: Dict,
+                        model: nn.Module
+                       ):
         """Load SE state.
 
         Args:
@@ -224,12 +234,19 @@ class SnapshotEns:
         return self
 
 
-@record_history(enabled=False)
 class Trainer:
     """Torch main trainer class."""
 
-    def __init__(self, net, net_params: Dict, opt, opt_params: Dict, n_epochs: int,
-                 device: torch.device, device_ids: List[int], metric: Callable, snap_params: Dict,
+    def __init__(self,
+                 net,
+                 net_params: Dict,
+                 opt,
+                 opt_params: Dict,
+                 n_epochs: int,
+                 device: torch.device,
+                 device_ids: List[int],
+                 metric: Callable,
+                 snap_params: Dict,
                  is_snap: bool = False,
                  sch: Optional = None, scheduler_params: Optional[Dict] = None, verbose: int = 1,
                  verbose_inside: Optional[int] = None,
@@ -407,10 +424,14 @@ class Trainer:
                 self.scheduler.step(np.mean(val_loss))
 
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
-                logger.info('Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                                                    e=self.epoch,
-                                                                                                    tl=np.mean(train_loss),
-                                                                                                    vl=np.mean(val_loss)))
+                logger.info(
+                    'Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(
+                        me=self.metric(*val_data),
+                        e=self.epoch,
+                        tl=np.mean(train_loss),
+                        vl=np.mean(val_loss)
+                    )
+                )
             if self.se.early_stop:
                 break
 
@@ -418,12 +439,20 @@ class Trainer:
 
         if self.is_snap:
             val_loss, val_data = self.test(dataloader=dataloaders['val'], snap=True, stage='val')
-            logger.info('Result SE, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                             vl=np.mean(val_loss)))
+            logger.info(
+                'Result SE, val loss: {vl}, val metric: {me}'.format(
+                    me=self.metric(*val_data),
+                    vl=np.mean(val_loss)
+                )
+            )
         elif self.se.early_stop:
             val_loss, val_data = self.test(dataloader=dataloaders['val'])
             logger.info(
-                'Early stopping: val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data), vl=np.mean(val_loss)))
+                'Early stopping: val loss: {vl}, val metric: {me}'.format(
+                    me=self.metric(*val_data),
+                    vl=np.mean(val_loss)
+                )
+            )
 
         self.is_fitted = True
 
@@ -444,14 +473,15 @@ class Trainer:
         self.model.train()
         running_loss = 0
         c = 0
-        if self.verbose:
+        logging_level = logger.getEffectiveLevel()
+        if logging_level <= logging.INFO and self.verbose:
             loader = tqdm(dataloaders['train'], desc='train', disable=False)
         else:
             loader = dataloaders['train']
 
         for sample in loader:
-            data = {i: (Variable(sample[i].long()).to(self.device) if _dtypes_mapping[i] == 'long'
-                        else Variable(sample[i]).to(self.device)) for i in sample.keys()}
+            data = {i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == 'long'
+                        else sample[i].to(self.device)) for i in sample.keys()}
 
             loss = self.model(data).mean()
             if self.apex:
@@ -466,21 +496,29 @@ class Trainer:
             running_loss += loss
 
             c += 1
-            if self.verbose_inside:
+            if self.verbose_inside and logging_level <= logging.INFO:
                 if c % self.verbose_inside == 0:
                     val_loss, val_data = self.test(dataloader=dataloaders['val'])
                     self.se.update(self.model, np.mean(val_loss))
                     if self.verbose is not None:
-                        logger.info('Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                                                     e=self.epoch,
-                                                                                                     c=c,
-                                                                                                     vl=np.mean(val_loss)))
-            if self.verbose:
+                        logger.info(
+                            'Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}'.format(
+                                me=self.metric(*val_data),
+                                e=self.epoch,
+                                c=c,
+                                vl=np.mean(val_loss)
+                            )
+                        )
+            if logging_level <= logging.INFO and self.verbose:
                 loader.set_description('train (loss=%g)' % (running_loss / c))
 
         return loss_log
 
-    def test(self, dataloader: DataLoader, stage: str = 'val', snap: bool = False) -> Tuple:
+    def test(self,
+             dataloader: DataLoader,
+             stage: str = 'val',
+             snap: bool = False
+            ) -> Tuple[List[float], Tuple[np.ndarray, np.ndarray]]:
         """Testing loop.
 
         Args:
@@ -496,17 +534,16 @@ class Trainer:
         self.model.eval()
         pred = []
         target = []
-
-        if self.verbose:
+        logging_level = logger.getEffectiveLevel()
+        if logging_level <= logging.INFO and self.verbose:
             loader = tqdm(dataloader, desc=stage, disable=False)
         else:
             loader = dataloader
 
         with torch.no_grad():
             for sample in loader:
-                data = {i: (
-                    Variable(sample[i].long()).to(self.device) if _dtypes_mapping[i] == 'long' else Variable(sample[i]).to(
-                        self.device)) for i in sample.keys()}
+                data = {i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == 'long'
+                            else sample[i].to(self.device)) for i in sample.keys()}
 
                 if snap:
                     output = self.se.predict(data)
@@ -532,7 +569,10 @@ class Trainer:
                           np.vstack(pred) if len(pred[0].shape) == 2 else np.hstack(pred),
                           )
 
-    def predict(self, dataloader: DataLoader, stage: str) -> np.ndarray:
+    def predict(self,
+                dataloader: DataLoader,
+                stage: str
+               ) -> np.ndarray:
         """Predict model.
 
         Args:

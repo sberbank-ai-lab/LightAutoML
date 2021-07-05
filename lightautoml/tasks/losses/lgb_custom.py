@@ -3,11 +3,9 @@
 from typing import Tuple
 import lightgbm as lgb
 import numpy as np
-from log_calls import record_history
 from scipy.special import softmax
 
 
-@record_history(enabled=False)
 def softmax_ax1(x: np.ndarray) -> np.ndarray:
     """Softmax columnwise.
 
@@ -21,7 +19,6 @@ def softmax_ax1(x: np.ndarray) -> np.ndarray:
     return softmax(x, axis=1)
 
 
-@record_history(enabled=False)
 def lgb_f1_loss_multiclass(preds: np.ndarray, train_data: lgb.Dataset, clip: float = 1e-5) -> Tuple[np.ndarray, np.ndarray]:
     """Custom loss for optimizing f1.
 

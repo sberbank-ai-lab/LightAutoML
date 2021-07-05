@@ -4,7 +4,6 @@ from copy import copy, deepcopy
 from typing import Tuple, Union, Sequence
 
 import numpy as np
-from log_calls import record_history
 from sklearn.linear_model import LogisticRegression, ElasticNet, Lasso
 
 from .base import TabularMLAlgo, TabularDataset
@@ -19,7 +18,6 @@ logger = get_logger(__name__)
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
 
-@record_history(enabled=False)
 class LinearLBFGS(TabularMLAlgo):
     """LBFGS L2 regression based on torch.
 
@@ -119,7 +117,6 @@ class LinearLBFGS(TabularMLAlgo):
         return pred
 
 
-@record_history(enabled=False)
 class LinearL1CD(TabularMLAlgo):
     """Coordinate descent based on sklearn implementation."""
     _name: str = 'LinearElasticNet'

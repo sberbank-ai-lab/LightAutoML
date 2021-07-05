@@ -2,7 +2,6 @@
 
 from typing import Sequence, Optional, Tuple, Union, List
 
-from log_calls import record_history
 
 from lightautoml.validation.base import TrainValidIterator
 from ..features.base import FeaturesPipeline, EmptyFeaturePipeline
@@ -14,7 +13,6 @@ from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
 from ...ml_algo.utils import tune_and_fit_predict
 
 
-@record_history(enabled=False)
 class MLPipeline:
     """Single ML pipeline.
 

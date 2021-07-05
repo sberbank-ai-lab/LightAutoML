@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import torch
 from joblib import Parallel, delayed
-from log_calls import record_history
 from pandas import DataFrame
 
 from .base import AutoMLPreset, upd_params
@@ -36,7 +35,6 @@ _base_dir = os.path.dirname(__file__)
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
     """
     Classic preset - work with tabular data.
@@ -513,7 +511,6 @@ class TabularAutoML(AutoMLPreset):
         return fi
 
 
-@record_history(enabled=False)
 class TabularUtilizedAutoML(TimeUtilization):
     """Template to make TimeUtilization from TabularAutoML."""
 

@@ -6,7 +6,6 @@ from typing import Dict, List, Sequence
 
 import numpy as np
 import torch
-from log_calls import record_history
 from sklearn.utils.murmurhash import murmurhash3_32
 
 _dtypes_mapping = {'label': 'float',
@@ -20,7 +19,6 @@ _dtypes_mapping = {'label': 'float',
                    'length': 'long'}
 
 
-@record_history(enabled=False)
 def inv_sigmoid(x: np.ndarray) -> np.ndarray:
     """Inverse sigmoid transformation.
 
@@ -34,7 +32,6 @@ def inv_sigmoid(x: np.ndarray) -> np.ndarray:
     return np.log(x / (1 - x))
 
 
-@record_history(enabled=False)
 def inv_softmax(x: np.ndarray) -> np.ndarray:
     """Variant of inverse softmax transformation with zero constant term.
 
@@ -52,7 +49,6 @@ def inv_softmax(x: np.ndarray) -> np.ndarray:
     return arr
 
 
-@record_history(enabled=False)
 def is_shuffle(stage: str) -> bool:
     """Whether shuffle input.
 
@@ -67,7 +63,6 @@ def is_shuffle(stage: str) -> bool:
     return is_sh[stage]
 
 
-@record_history(enabled=False)
 def seed_everything(seed: int = 42, deterministic: bool = True):
     """Set random seed and cudnn params.
 
@@ -85,7 +80,6 @@ def seed_everything(seed: int = 42, deterministic: bool = True):
         torch.backends.cudnn.deterministic = True
 
 
-@record_history(enabled=False)
 def parse_devices(dvs, is_dp: bool = False) -> tuple:
     """Parse devices and convert first to the torch device.
 
@@ -136,7 +130,6 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
     return device[0], ids if (len(device) > 1) and is_dp else None
 
 
-@record_history(enabled=False)
 def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
     """Puts each data field into a tensor with outer dimension batch size."""
 
@@ -151,7 +144,6 @@ def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
         return torch.from_numpy(np.array(batch)).float()
 
 
-@record_history(enabled=False)
 def collate_dict(batch: List[Dict[str, np.ndarray]]) -> Dict[str, torch.Tensor]:
     """custom_collate for dicts."""
     keys = list(batch[0].keys())
@@ -159,7 +151,6 @@ def collate_dict(batch: List[Dict[str, np.ndarray]]) -> Dict[str, torch.Tensor]:
     return {key: custom_collate(transposed_data[n]) for n, key in enumerate(keys)}
 
 
-@record_history(enabled=False)
 def single_text_hash(x: str) -> str:
     """Get text hash.
 
@@ -175,7 +166,6 @@ def single_text_hash(x: str) -> str:
     return texthash
 
 
-@record_history(enabled=False)
 def get_textarr_hash(x: Sequence[str]) -> str:
     """Get hash of array with texts.
 

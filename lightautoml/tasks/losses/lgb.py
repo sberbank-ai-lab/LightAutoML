@@ -5,7 +5,6 @@ from typing import Callable, Tuple, Union, Optional, Dict
 
 import lightgbm as lgb
 import numpy as np
-from log_calls import record_history
 
 from .base import Loss
 from ..common_metric import _valid_str_multiclass_metric_names
@@ -16,7 +15,6 @@ from ...utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 def fw_rmsle(x, y): return np.log1p(x), y
 
 
@@ -87,7 +85,6 @@ _lgb_force_metric = {
 }
 
 
-@record_history(enabled=False)
 class LGBFunc:
     """
     Wrapper of metric function for LightGBM.
@@ -121,7 +118,6 @@ class LGBFunc:
         return 'Opt metric', val, self.greater_is_better
 
 
-@record_history(enabled=False)
 class LGBLoss(Loss):
     """Loss used for LightGBM."""
 

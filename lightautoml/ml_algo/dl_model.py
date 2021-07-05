@@ -7,7 +7,6 @@ from copy import copy
 
 import numpy as np
 import torch
-from log_calls import record_history
 from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
 
@@ -22,7 +21,6 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class TorchModel(TabularMLAlgo):
     """Neural net for tabular datasets.
 

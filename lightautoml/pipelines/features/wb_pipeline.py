@@ -1,7 +1,6 @@
 """Whitebox features."""
 
 import numpy as np
-from log_calls import record_history
 
 from .base import FeaturesPipeline, TabularDataFeatures
 from ..utils import get_columns_by_role
@@ -10,7 +9,6 @@ from ...dataset.roles import NumericRole
 from ...transformers.base import LAMLTransformer, UnionTransformer, ColumnsSelector
 
 
-@record_history(enabled=False)
 class WBFeatures(FeaturesPipeline, TabularDataFeatures):
     """Simple WhiteBox pipeline.
 

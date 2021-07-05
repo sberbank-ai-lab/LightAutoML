@@ -7,7 +7,6 @@ from typing import Optional, Any, Sequence, Iterable
 import logging
 import torch
 import yaml
-from log_calls import record_history
 
 from ..base import AutoML
 from ...dataset.base import LAMLDataset
@@ -20,7 +19,6 @@ logger = get_logger(__name__)
 base_dir = os.path.dirname(__file__)
 
 
-@record_history(enabled=False)
 def upd_params(old: dict, new: dict) -> dict:
     for k in new:
         if type(new[k]) is dict and k in old and type(old[k]) is dict:
@@ -31,7 +29,6 @@ def upd_params(old: dict, new: dict) -> dict:
     return old
 
 
-@record_history(enabled=False)
 class AutoMLPreset(AutoML):
     """Basic class for automl preset.
 
@@ -77,7 +74,7 @@ class AutoMLPreset(AutoML):
 
         """
         self._set_config(config_path)
-        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
+        self.set_verbosity_level(verbose)
 
         for name, param in zip(['timing_params'], [timing_params]):
             if param is None:
@@ -177,3 +174,15 @@ class AutoMLPreset(AutoML):
         logger.info('\nAutoml preset training completed in {:.2f} seconds.'.format(self.timer.time_spent))
 
         return result
+    
+    @staticmethod
+    def set_verbosity_level(verbose: int):
+        """Verbosity level setter.
+        
+        Args:
+            verbose: Verbose level. ``0`` - no messages,
+                ``1`` - only warning messages, ``2`` - info messages,
+                ``>=3`` - debug messages.
+                
+        """
+        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))

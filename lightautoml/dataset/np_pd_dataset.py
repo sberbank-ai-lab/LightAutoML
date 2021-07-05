@@ -5,7 +5,6 @@ from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
-from log_calls import record_history
 from pandas import Series, DataFrame
 from scipy import sparse
 
@@ -33,7 +32,6 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 
 # sparse - do not replace init and set data, but move type assert in checks?
 
-@record_history(enabled=False)
 class NumpyDataset(LAMLDataset):
     """Dataset, that contains info in np.ndarray format."""
     # TODO: Checks here
@@ -299,7 +297,6 @@ class NumpyDataset(LAMLDataset):
         return dataset.to_numpy()
 
 
-@record_history(enabled=False)
 class CSRSparseDataset(NumpyDataset):
     """Dataset that contains sparse features and np.ndarray targets."""
     _init_checks = ()
@@ -435,7 +432,6 @@ class CSRSparseDataset(NumpyDataset):
         return dataset.to_csr()
 
 
-@record_history(enabled=False)
 class PandasDataset(LAMLDataset):
     """Dataset that contains `pd.DataFrame` features and `pd.Series` targets."""
     _init_checks = ()

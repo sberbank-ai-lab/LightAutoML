@@ -6,7 +6,6 @@ from typing import Optional, Callable, Tuple, Dict
 
 import lightgbm as lgb
 import numpy as np
-from log_calls import record_history
 from optuna.trial import Trial
 from pandas import Series
 
@@ -19,7 +18,6 @@ from ..validation.base import TrainValidIterator
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
