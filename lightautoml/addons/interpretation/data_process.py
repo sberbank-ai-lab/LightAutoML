@@ -193,7 +193,21 @@ def get_vocab(tokenized: List[List[str]],
     
     return word_to_id, id_to_word
 
-def get_embedding_matrix(id_to_word, embedder, embedder_dim):
+def get_embedding_matrix(id_to_word: Dict[int, str],
+                         embedder: Any,
+                         embedder_dim: int
+                        ) -> torch.FloatTensor:
+    """Create embedding matrix from lookup table and (optionaly) embedder.
+    
+    Args:
+        id_to_word: Dictionary token-id to word.
+        embedder: Lookup table with embeddings.
+        embedder_dim: Dimetion of embeddings.
+    
+    Returns:
+        Weight matrix of embedding layer.
+        
+    """
     weights_matrix = np.random.normal(scale=0.6, size=(len(id_to_word), embedder_dim))
     if embedder is not None:
         for i in range(len(id_to_word)):
@@ -208,23 +222,23 @@ def get_embedding_matrix(id_to_word, embedder, embedder_dim):
     weights_matrix = torch.from_numpy(weights_matrix)
     
     return weights_matrix
-
-class WrappedVocabulary:
-    def __init__(self, word_to_id, unk_token='<UNK>'):
-        self.word_to_id = word_to_id
-        self.unk_token = word_to_id[unk_token]
-        
-    def __call__(self, x):
-        return self.word_to_id.get(x, self.unk_token)
-    
-    def __getitem__(self, val):
-        return self.word_to_id.get(val, self.unk_token)
-    
-    def __len__(self):
-        return len(self.word_to_id)
     
 
-def map_tokenized_to_id(tokenized, word_to_id, min_k):
+def map_tokenized_to_id(tokenized: List[List[str]],
+                        word_to_id: 'lightautoml.addons.interpretation.utils.WrappedVocabulary',
+                        min_k: int
+                       ) -> List[torch.LongTensor]:
+    """Mapping from word dataset to tokenized dataset.
+    
+    Args:
+        tokenized: Dataset of words.
+        word_to_id: Dictionary word to token-id.
+        min_k: Parameter for minumum sequence length (used for padding).
+    
+    Returns:
+        Dataset with token ids.
+    
+    """
     dataset = []
     for sent in tokenized:
         sent_list = [word_to_id['<START>']]
@@ -290,7 +304,20 @@ def create_emb_layer(weights_matrix=None,
                      voc_size=None,
                      embed_dim=None,
                      trainable_embeds=True
-                    ):
+                    ) -> torch.nn.Embedding:
+    """Create initialized embedding layer.
+    
+    Args:
+        weights_matrix: Weights of embedding layer.
+        voc_size: Size of vocabulary.
+        embed_dim: Size of embeddings.
+        trainable_embeds: To optimize layer when training model.
+        
+    Retruns:
+        Initialized embedding layer.
+        
+    """
+    
     assert (weights_matrix is not None) or \
         (voc_size is not None and embed_dim is not None), \
         'Please define anything: weights_matrix or voc_size & embed_dim'
