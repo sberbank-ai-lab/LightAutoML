@@ -290,6 +290,7 @@ class TabularAutoML(AutoMLPreset):
                 raise ValueError('Wrong algo key')
 
             if tuned:
+                gbm_model.set_prefix('Tuned')
                 gbm_tuner = OptunaTuner(n_trials=self.tuning_params['max_tuning_iter'],
                                         timeout=self.tuning_params['max_tuning_time'],
                                         fit_on_holdout=self.tuning_params['fit_on_holdout'])
@@ -604,3 +605,17 @@ class TabularUtilizedAutoML(TimeUtilization):
         fi = calc_feats_permutation_imps(self, list(used_feats), data,
                                          automl.reader.target, automl.task.get_dataset_metric(), silent=silent)
         return fi
+    
+    def create_model_str_desc(self, 
+                              pref_tab_num: int = 0, 
+                              split_line_len: int = 80) -> str:
+        res = 'Final prediction for new objects = \n'
+        for it, (model, weight) in enumerate(zip(self.outer_pipes, self.outer_blend.wts)):
+            config_path = model.ml_algos[0].models[0][0].config_path.split('/')[-1]
+            res += '\t' * (pref_tab_num + 1) + '+ ' * (it > 0) 
+            res += '{:.5f} * {} averaged models with config = "{}" and different CV random_states. Their structures: \n\n'.format(weight, len(model.ml_algos[0].models[0]), config_path)
+            for it1, m in enumerate(model.ml_algos[0].models[0]):
+                cur_model_desc = m.create_model_str_desc(pref_tab_num + 2, split_line_len)
+                res += '\t' * (pref_tab_num + 1) + '    Model #{}.\n{}\n\n'.format(it1, cur_model_desc)
+
+        return res

@@ -94,6 +94,7 @@ class AutoMLPreset(AutoML):
         self.verbose = verbose
 
     def _set_config(self, path):
+        self.config_path = path
 
         if path is None:
             path = os.path.join(base_dir, self._default_config_path)
@@ -174,6 +175,40 @@ class AutoMLPreset(AutoML):
         logger.info('\nAutoml preset training completed in {:.2f} seconds.'.format(self.timer.time_spent))
 
         return result
+    
+    def create_model_str_desc(self, 
+                              pref_tab_num: int = 0, 
+                              split_line_len: int = 0) -> str:
+        prefix = '\t' * pref_tab_num
+        splitter = prefix + '=' * split_line_len + '\n'
+        model_stats = sorted(list(self.collect_model_stats().items()))
+
+        last_lvl = model_stats[-1][0].split('_')[1]
+        last_lvl_models = [ms for ms in model_stats if ms[0].startswith('Lvl_' + last_lvl)]
+        notlast_lvl_models = [ms for ms in model_stats if not ms[0].startswith('Lvl_' + last_lvl)]
+
+        res = ''
+        if len(notlast_lvl_models) > 0:
+            cur_level = 0
+            res += prefix + 'Models on level 0:\n'
+            for model_stat in notlast_lvl_models:
+                model_name, cnt_folds = model_stat
+                level = int(model_name.split('_')[1])
+                if level != cur_level:
+                    cur_level = level
+                    res += '\n' + prefix + 'Models on level {}:\n'.format(cur_level)
+                res += prefix + '\t {} averaged models {}\n'.format(cnt_folds, model_name)
+            res += '\n' 
+
+        res += prefix + 'Final prediction for new objects (level {}) = \n'.format(last_lvl)
+        for model_stat, weight in zip(last_lvl_models, self.blender.wts):
+            model_name, cnt_folds = model_stat
+            res += prefix + '\t {:.5f} * ({} averaged models {}) +\n'.format(weight, cnt_folds, model_name)
+
+        if split_line_len == 0:
+            return res[:-2]
+
+        return splitter + res[:-2] + '\n' + splitter
     
     @staticmethod
     def set_verbosity_level(verbose: int):
