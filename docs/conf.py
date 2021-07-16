@@ -50,6 +50,7 @@ autosummary_mock_imports = ['numpy', 'pandas', 'catboost',
                             'efficientnet_pytorch', 'tqdm',
                             'nltk', 'transformers', 'autowoe',
                             'matplotlib', 'seaborn', 'json2html',
+                            'sqlalchemy'
                             ]
 
 # Add any paths that contain templates here, relative to this directory.
