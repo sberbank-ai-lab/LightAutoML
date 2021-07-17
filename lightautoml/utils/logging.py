@@ -7,60 +7,42 @@ import warnings
 logging.captureWarnings(True)
 
 debug_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-default_log_format = f"%(message)s"
+#default_log_format = f"[%(asctime)s | %(levelname)s] %(message)s"
+default_log_format = f"[%(levelname)s] %(message)s"
+
+logging.addLevelName(logging.CRITICAL, 'critical_level')
+logging.addLevelName(logging.ERROR, '\x1b[0;30;41mlog_lvl_1\x1b[0m')
+logging.addLevelName(logging.WARNING, '\x1b[0;30;43mlog_lvl_2\x1b[0m')
+logging.addLevelName(logging.INFO, '\x1b[0;30;42mlog_lvl_3\x1b[0m')
+logging.addLevelName(logging.DEBUG, '\x1b[0;30;44mlog_lvl_4\x1b[0m')
 
 
 def verbosity_to_loglevel(verbosity):
     if verbosity <= 0:
-        log_level = logging.ERROR
+        log_level = logging.CRITICAL
         warnings.filterwarnings("ignore")
     elif verbosity == 1:
-        log_level = logging.WARNING
+        log_level = logging.ERROR
+        warnings.filterwarnings("ignore")
     elif verbosity == 2:
+        log_level = logging.WARNING
+    elif verbosity == 3:
         log_level = logging.INFO
     else:
         log_level = logging.DEBUG
 
     return log_level
 
-
-def get_file_handler():
-    file_handler = logging.FileHandler("x.log")
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(default_log_format))
-    return file_handler
-
-
-def get_stream_handler(stream, level=None, handler_filter=None):
-    stream_handler = logging.StreamHandler(stream)
-    stream_handler.setFormatter(logging.Formatter(default_log_format))
-
-    if level:
-        stream_handler.setLevel(level)
-
-    if handler_filter:
-        stream_handler.addFilter(handler_filter)
-
-    return stream_handler
-
-
-def get_logger(name=None, level=None):
-    class InfoFilter(logging.Filter):
-        def filter(self, rec):
-            return rec.levelno in (logging.DEBUG, logging.INFO)
-
+def get_logger(name = None, level = None):
     logger = logging.getLogger(name)
-
-    if level:
-        logger.setLevel(level)
-
     if logger.hasHandlers():
         logger.handlers.clear()
+    formatter = logging.Formatter(default_log_format)
 
-    logger.addHandler(get_stream_handler(stream=None, level=logging.WARNING))
-    logger.addHandler(get_stream_handler(stream=sys.stdout, level=logging.DEBUG, handler_filter=InfoFilter()))
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
 
-    logger.propagate = False
+    logger.addHandler(handler)
 
     return logger
 

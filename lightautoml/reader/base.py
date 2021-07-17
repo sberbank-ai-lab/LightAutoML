@@ -229,7 +229,7 @@ class PandasToPandasReader(Reader):
             Dataset with selected features.
 
         """
-        logger.info('Train data shape: {}'.format(train_data.shape))
+        logger.error('\x1b[1mTrain data shape: {}\x1b[0m\n'.format(train_data.shape))
 
         if roles is None:
             roles = {}

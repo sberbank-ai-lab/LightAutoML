@@ -209,7 +209,9 @@ class TabularMLAlgo(MLAlgo):
             Dataset with predicted values.
 
         """
-        logger.info('Start fitting {} ...'.format(self._name))
+        iterator_len = len(train_valid_iterator)
+        if iterator_len > 1 or 'Tuned' not in self._name:
+            logger.error('Start fitting \x1b[1m{}\x1b[0m ...'.format(self._name))
         self.timer.start()
 
         assert self.is_fitted is False, 'Algo is already fitted'
@@ -237,7 +239,8 @@ class TabularMLAlgo(MLAlgo):
 
         # TODO: Make parallel version later
         for n, (idx, train, valid) in enumerate(train_valid_iterator):
-            logger.info('\n===== Start working with fold {} for {} =====\n'.format(n, self._name))
+            if iterator_len > 1:
+                logger.warning('===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m ====='.format(n, self._name))
             self.timer.set_control_point()
 
             model, pred = self.fit_predict_single_fold(train, valid)
@@ -250,7 +253,7 @@ class TabularMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    logger.warning('Time limit exceeded after calculating fold {0}'.format(n))
+                    logger.error('Time limit exceeded after calculating fold {0}\n'.format(n))
                     break
 
         logger.debug('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))
@@ -259,7 +262,10 @@ class TabularMLAlgo(MLAlgo):
         preds_arr = np.where(counter_arr == 0, np.nan, preds_arr)
 
         preds_ds = self._set_prediction(preds_ds, preds_arr)
-        logger.info('{} fitting and predicting completed'.format(self._name))
+        if iterator_len > 1:
+            logger.error('Algo = \x1b[1m{}\x1b[0m, score = \x1b[1m{}\x1b[0m'.format(self._name, self.score(preds_ds)))
+        if iterator_len > 1 or 'Tuned' not in self._name:
+            logger.error('\x1b[1m{}\x1b[0m fitting and predicting completed'.format(self._name))
         return preds_ds
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:

@@ -166,14 +166,14 @@ class AutoMLPreset(AutoML):
                            valid_data=valid_data,
                            valid_features=valid_features
                            )
-        logger.info('Start automl preset with listed constraints:')
-        logger.info('- time: {} seconds'.format(self.timer.timeout))
-        logger.info('- cpus: {} cores'.format(self.cpu_limit))
-        logger.info('- memory: {} gb\n'.format(self.memory_limit))
+        logger.error('Start automl preset with listed constraints:')
+        logger.error('- time: {:.2f} seconds'.format(self.timer.timeout))
+        logger.error('- cpus: {} cores'.format(self.cpu_limit))
+        logger.error('- memory: {} gb\n'.format(self.memory_limit))
         self.timer.start()
         result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features)
-        logger.info('\nAutoml preset training completed in {:.2f} seconds.'.format(self.timer.time_spent))
-
+        logger.error('Automl preset training completed in {:.2f} seconds.\n'.format(self.timer.time_spent))
+        
         return result
     
     def create_model_str_desc(self, 

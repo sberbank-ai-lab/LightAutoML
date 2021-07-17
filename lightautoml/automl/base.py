@@ -1,6 +1,7 @@
 """Base AutoML class."""
 
 import logging
+
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
 
@@ -175,14 +176,13 @@ class AutoML:
 
         for n, level in enumerate(self._levels, 1):
 
-            logger.info('\n')
-            logger.info('Layer {} ...'.format(n))
+            logger.error('\x1b[1mLayer {}\x1b[0m ...\n'.format(n))
 
             pipes = []
             level_predictions = []
             flg_last_level = n == len(self._levels)
 
-            logger.info('Train process start. Time left {0} secs'.format(self.timer.time_left))
+            logger.error('Layer {} train process start. Time left {:.2f} secs'.format(n, self.timer.time_left))
 
             for k, ml_pipe in enumerate(level):
 
@@ -190,16 +190,16 @@ class AutoML:
                 level_predictions.append(pipe_pred)
                 pipes.append(ml_pipe)
 
-                logger.info('Time left {0}'.format(self.timer.time_left))
+                logger.error('Time left {:.2f} secs\n'.format(self.timer.time_left))
 
                 if self.timer.time_limit_exceeded():
-                    logger.warning('Time limit exceeded. Last level models will be blended and unused pipelines will be pruned.')
+                    logger.error('Time limit exceeded. Last level models will be blended and unused pipelines will be pruned.\n')
 
                     flg_last_level = True
                     break
             else:
                 if self.timer.child_out_of_time:
-                    logger.warning('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.'.format(n))
+                    logger.error('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.\n'.format(n))
                     flg_last_level = True
 
             # here is split on exit condition
@@ -220,7 +220,7 @@ class AutoML:
             else:
                 break
 
-            logger.info('Layer {} training completed.'.format(n))
+            logger.error('\x1b[1mLayer {} training completed.\x1b[0m\n'.format(n))
 
         blended_prediction, last_pipes = self.blender.fit_predict(level_predictions, pipes)
         self.levels.append(last_pipes)

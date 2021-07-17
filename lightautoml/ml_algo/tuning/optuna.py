@@ -13,9 +13,9 @@ from lightautoml.utils.logging import get_logger
 from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
 
 logger = get_logger(__name__)
-optuna.logging.enable_propagation()
-optuna.logging.disable_default_handler()
-optuna.logging.set_verbosity(optuna.logging.ERROR)
+# optuna.logging.enable_propagation()
+# optuna.logging.disable_default_handler()
+#optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
@@ -104,7 +104,7 @@ class OptunaTuner(ParamsTuner):
         """
 
         Args:
-            timeout: Mximum learning time.
+            timeout: Maximum learning time.
             n_trials: Maximum number of trials.
             direction: Direction of optimization.
               Set ``minimize`` for minimization
@@ -146,7 +146,7 @@ class OptunaTuner(ParamsTuner):
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
-        logger.info('Optuna may run {0} secs'.format(estimated_tuning_time))
+        logger.error('Optuna may run {0} secs'.format(estimated_tuning_time))
 
         self._upd_timeout(estimated_tuning_time)
         ml_algo = deepcopy(ml_algo)
@@ -189,6 +189,8 @@ class OptunaTuner(ParamsTuner):
             # need to update best params here
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
+            
+            logger.warning('Selected params by Optuna: \x1b[1m{}\x1b[0m'.format(self._best_params))
 
             if flg_new_iterator:
                 # if tuner was fitted on holdout set we dont need to save train results

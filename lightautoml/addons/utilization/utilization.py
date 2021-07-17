@@ -256,7 +256,7 @@ class TimeUtilization:
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
                 random_states['general_params'] = {'return_all_predictions': False}
                 upd_state_val += 1
-                logger.info('Current random state: {}'.format(random_states))
+                logger.error('\x1b[1mConfig = {}\x1b[0m, cur random state: {}'.format(config.split('/')[-1], random_states))
                 cur_kwargs = self.kwargs.copy()
                 for k in random_states.keys():
                     if k in self.kwargs:
@@ -273,6 +273,8 @@ class TimeUtilization:
 
                 val_pred = automl.fit_predict(train_data, roles, train_features, cv_iter,
                                               valid_data, valid_features)
+                
+                logger.error('='*50)
 
                 amls[n_cfg].append(MLPipeForAutoMLWrapper.from_automl(automl))
                 aml_preds[n_cfg].append(val_pred)
