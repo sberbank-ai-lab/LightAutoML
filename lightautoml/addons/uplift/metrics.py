@@ -229,3 +229,30 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
     score = mean_treatment_value - mean_control_value
 
     return score
+
+
+@record_history(enabled=False)
+def calculate_total_score(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
+    """Calculate total target
+
+    Args:
+        y_true: Target values
+        uplift_pred: Prediction of meta model
+        treatment: Treatment column
+        top: Rate, value between (0, 100]
+
+    Returns:
+        score: Score
+
+    """
+    uplift_percentile = np.percentile(uplift_pred, 100 - top)
+    mask_top = uplift_pred > uplift_percentile
+    mask_treatment = treatment == 1
+    treatment_rate = mask_treatment.mean()
+
+    control_true_top = y_true[(~mask_treatment) & (~mask_top)].mean()
+    treatment_true_top = y_true[mask_treatment & mask_top].mean()
+
+    score = control_true_top * (1 - treatment_rate) + treatment_true_top * treatment_rate
+
+    return score
