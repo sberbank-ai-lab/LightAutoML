@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -xeuo pipefail
 
 python3 -m venv lama_venv
 source ./lama_venv/bin/activate
