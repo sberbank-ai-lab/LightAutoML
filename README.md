@@ -38,11 +38,25 @@ To install LAMA framework on your machine:
 ```bash
 pip install -U lightautoml
 ```
+
+For installation NLP/CV part run:
+
+```bash
+pip install lightautoml[EXTRA_PART]  # where EXTRA_PART := {nlp, cv}
+```
+
+
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
 ```bash
-bash build_package.sh
+bash build_package.sh --all
 ```
+
+For more information:
+```bash
+bash build_package.sh --help
+```
+
 To check this variant of installation and run all the demo scripts, use the command below:
 ```bash
 bash test_package.sh
@@ -67,7 +81,12 @@ poetry install -E pdf
 # Docs generation
 To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
 ```bash
-bash build_docs.sh
+# if built LAMA
+bash build_package.sh --docs
+
+# if not built LAMA
+bash build_package.sh --install -e dev --docs
+
 ```
 
 Builded official documentation for LightAutoML is available [`here`](https://lightautoml.readthedocs.io/en/latest/).
