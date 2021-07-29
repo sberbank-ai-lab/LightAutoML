@@ -239,5 +239,5 @@ class LAMAController:
 
 
 if __name__ == "__main__":
-    lama_controller = LAMAController(debug=True)
+    lama_controller = LAMAController(debug=False)
     lama_controller.execute()
