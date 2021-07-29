@@ -49,17 +49,17 @@ pip install lightautoml[EXTRA_PART]  # where EXTRA_PART := {nlp, cv}
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
 ```bash
-bash build_package.sh -i -e full
+./build.py -i -e full
 ```
 
 For more information:
 ```bash
-bash build_package.sh --help
+./build.py --help
 ```
 
 To check this variant of installation and run all the demo scripts, use the command below:
 ```bash
-bash test_package.sh
+./build.py --test
 ```
 To install optional support for generating reports in pdf format run following commands:
 ```bash
@@ -82,10 +82,10 @@ poetry install -E pdf
 To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
 ```bash
 # if built LAMA
-bash build_package.sh --docs
+./build.py --docs
 
 # if not built LAMA
-bash build_package.sh --install -e dev --docs
+./build_.sh --install -e dev --docs
 
 ```
 
