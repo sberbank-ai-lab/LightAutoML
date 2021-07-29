@@ -49,7 +49,7 @@ pip install lightautoml[EXTRA_PART]  # where EXTRA_PART := {nlp, cv}
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
 ```bash
-bash build_package.sh -i -e nlp -e cv
+bash build_package.sh -i -e full
 ```
 
 For more information:

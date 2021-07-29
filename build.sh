@@ -3,12 +3,13 @@
 set -xe
 
 PYTHON_EXE=python3
-ALL=false
+MAKE_ALL=false
 POETRY_INSTALL_ARGS=""
 INSTALL=false
 BUILD_DIST=false
 BUILD_DOCS=false
-NO_DEV_DEPS=false
+DEV_DEPS=false
+FULL_DEPS=false
 
 function usage()
 {
@@ -20,14 +21,32 @@ function usage()
     echo "    -p|--python <PATH>    Path to python interpretator(default: 'python3')"
     echo "    -i|--install    Install library 'LAMA' without nlp/cv/dev dependecies, use -e flag for additional dependencies"
     echo "    -a|--all    Make all actions: install, build dist and docs (other option will be ignored)"
-    echo "    -e|--extra <value>    Additioanl libs := [dev, nlp, cv]"
+    echo "    -e|--extra <value>    Additioanl dependecies := [dev, nlp, cv, full]"
     echo "    -b|--dist    Build the source and wheels archives"
     echo "    -d|--docs    Build and check docs"
     echo "    -h|--help    Print help information"
     echo ""
 }
 
-EXTRA_FLAGS=("dev nlp cv")
+EXTRA_FLAGS=("full" "dev" "cv" "nlp")  # (full deps, dev deps, [extra1 deps], [extra1 deps], ...)
+
+containsElement () {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
+function getFullDeps() {
+    arraylength=${#EXTRA_FLAGS[@]}
+
+    POETRY_INSTALL_ARGS=""
+
+    # Ignore 'full' and 'dev'
+    for (( i=2; i<${arraylength}; i++ )); do
+        POETRY_INSTALL_ARGS+=" -E ${EXTRA_FLAGS[$i]} "
+    done
+}
 
 params="$(getopt \
     -o p:i:abdh \
@@ -46,25 +65,30 @@ do
             shift
             ;;
         -e|--extra)
-            EXTRA_FLAG=(${2-})
+            extra_flag=(${2-})
 
-            if [[ ! " ${EXTRA_FLAGS[@]} " =~ " ${EXTRA_FLAG} " ]]
+            containsElement $extra_flag "${EXTRA_FLAGS[@]}"
+
+            if [[ $? == 1 ]]
                 then
-                echo "ERROR: Wrong extra deps values '$EXTRA_FLAG', only '$EXTRA_FLAGS'"
+                echo "ERROR: Wrong extra deps values '$extra_flag', only '${EXTRA_FLAGS[@]}'"
                 exit 1
             fi
 
-            if [[ $EXTRA_FLAG == "dev" ]]
+            if [[ $extra_flag == "dev" ]]
                 then
-                NO_DEV_DEPS=true
+                DEV_DEPS=true
+            elif [[ $extra_flag == "full" ]]
+                then
+                FULL_DEPS=true
             else
-                POETRY_INSTALL_ARGS+=" -E $EXTRA_FLAG "
+                POETRY_INSTALL_ARGS+=" -E $extra_flag "
             fi
 
             shift 2
             ;;
         -a|--all)
-            ALL=true
+            MAKE_ALL=true
             echo "WARNING: other options will be ignored (except: '-p|--python')"
             shift
             ;;
@@ -89,21 +113,26 @@ do
     esac
 done
 
-
-if [[ ($NO_DEV_DEPS = false) && ($BUILD_DOCS = false) ]]
+# Process docs building
+if [[ ($DEV_DEPS = false) && ($BUILD_DOCS = false) ]]
     then
     POETRY_INSTALL_ARGS+=" --no-dev "
-elif [[ ($NO_DEV_DEPS = false) && ($BUILD_DOCS = true) ]]
+elif [[ ($DEV_DEPS = false) && ($BUILD_DOCS = true) ]]
     then
     echo "WARNING: Can't build docs without dev-deps. Dev-deps will be installed."
 fi
 
-if [[ $ALL = true ]]
+if [[ $FULL_DEPS = true ]]
+    then
+    getFullDeps
+fi
+
+if [[ $MAKE_ALL = true ]]
     then
     INSTALL=true
     BUILD_DIST=true
     BUILD_DOCS=true
-    POETRY_INSTALL_ARGS=" -E nlp -E cv "
+    getFullDeps
 fi
 
 # echo "--- TEST ---"
@@ -112,7 +141,8 @@ fi
 # echo "BUILD_DIST: '$BUILD_DIST'"
 # echo "BUILD_DOCS: '$BUILD_DOCS'"
 # echo "POETRY_INSTALL_ARGS: '$POETRY_INSTALL_ARGS'"
-# echo "EXTRA_FLAGS: '$EXTRA_FLAGS'"
+# echo "FULL_DEPS: $FULL_DEPS"
+# echo "EXTRA_FLAGS: '${EXTRA_FLAGS[@]}'"
 
 if [[ $INSTALL = true ]]
     then
