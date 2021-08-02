@@ -1,31 +1,44 @@
 """Tools for partial installation."""
 
 try:
-    from importlib import import_module
-    from importlib.metadata import distribution
+    from importlib.metadata import PackageNotFoundError, distribution
 except ModuleNotFoundError:
-    from importlib_metadata import distribution, import_module
+    from importlib_metadata import PackageNotFoundError, distribution
 
-from typing import List
+from typing import Dict, List
 
 from lightautoml.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def __validate_extra_deps(extra_section: str) -> None:
-    """Check if extra dependecies is installed."""
+def __validate_extra_deps(extra_section: str, error: bool = False) -> None:
+    """Check if extra dependecies is installed.
+
+    Args:
+        extra_section: Name of extra dependecies
+        error: How to process error
+
+    """
     md = distribution('lightautoml').metadata
-    reqs_info = [v.split(';')[0] for k,v in md.items() if k == 'Requires-Dist' and extra_section in v]
+    extra_pattern = 'extra == "{}"'.format(extra_section)
+    reqs_info = []
+    for k,v in md.items():
+        if k == 'Requires-Dist' and extra_pattern in v:
+            req = v.split(';')[0].split()[0]
+            reqs_info.append(req)
 
     for req_info in reqs_info:
         lib_name: str = req_info.split()[0]
         try:
-            import_module(lib_name)
-        except ModuleNotFoundError:
+            distribution(lib_name)
+        except PackageNotFoundError as e:
             # Print warning
             logger.warning(
                 "'%s' extra dependecy package '%s' isn't installed. "\
-                "Look at README.md for installation instructions.",
+                "Look at README.md in repo 'LightAutoML' for installation instructions.",
                 extra_section, lib_name
             )
+
+            if error:
+                raise e

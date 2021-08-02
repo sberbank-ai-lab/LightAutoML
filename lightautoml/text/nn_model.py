@@ -10,7 +10,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from transformers import AutoModel
+try:
+    from transformers import AutoTokenizer
+except:
+    import warnings
+    warnings.warn("'transformers' - package isn't installed")
 
 from ..tasks.base import Task
 from .dl_transformers import pooling_by_name

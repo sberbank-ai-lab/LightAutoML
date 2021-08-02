@@ -1,5 +1,9 @@
 """Neural net for tabular datasets."""
 
+from lightautoml.utils.installation import __validate_extra_deps
+__validate_extra_deps('nlp')
+
+
 import gc
 import logging
 import os

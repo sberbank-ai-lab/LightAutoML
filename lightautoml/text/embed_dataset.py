@@ -6,8 +6,11 @@ from typing import Sequence
 from typing import Union
 
 import numpy as np
-
-from transformers import AutoTokenizer
+try:
+    from transformers import AutoTokenizer
+except:
+    import warnings
+    warnings.warn("'transformers' - package isn't installed")
 
 
 class BertDataset:
