@@ -14,6 +14,13 @@ from typing import Union
 import gensim
 import numpy as np
 import pandas as pd
+from html import escape
+try:
+    import gensim
+except:
+    import warnings
+    warnings.warn("'gensim' - package isn't installed")
+
 import torch
 import torch.nn as nn
 
@@ -378,12 +385,11 @@ class L2XTextExplainer:
     def temperature(self):
         return self.T
 
-    def fit(
-        self,
-        train_data: pd.DataFrame,
-        valid_data: Optional[pd.DataFrame] = None,
-        cols_to_explain: Optional[Union[str, List[str]]] = None,
-    ):
+    def fit(self,
+            train_data: pd.DataFrame,
+            valid_data: Optional[pd.DataFrame] = None,
+            cols_to_explain: Optional[Union[str, List[str]]] = None
+           ):
         """
         Fit model for all columns in cols_to_explain.
 
@@ -766,6 +772,7 @@ class _L2XExplainer:
         data_tokenized = get_tokenized(data, self.col_to_explain, self.tokenizer)
         data = map_tokenized_to_id(data_tokenized, self.word_to_id, self.k)
         dataset = get_len_dataset(data, np.ones((len(data), 1)))
+
         dataloader = get_len_dataloader(dataset, batch_size, mode="test")
         masks = self._get_masks(dataloader)  # care the order.
         tokens = [self._tokens_to_text(dataset[i]["text"]) for i in range(len(dataset))]

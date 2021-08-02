@@ -62,7 +62,7 @@ transformers = {version = ">=4", optional = true}
 albumentations = {version = ">=0.4.6", optional = true}
 efficientnet-pytorch = {version = "*", optional = true}
 opencv-python = {version = "*", optional = true}
-pywavelets = {version = "*", optional = true}
+PyWavelets = {version = "*", optional = true}
 scikit-image = {version = "*", optional = true}
 torchvision = {version = "*", optional = true}
 
@@ -83,6 +83,7 @@ sphinx-autodoc-typehints = "*"
 pandoc = "*"
 pre-commit = "*"
 notebook = "*"
+mypy = "^0.910"
 
 
 [tool.poetry.extras]
@@ -90,7 +91,7 @@ cv = [
     "albumentations",
     "efficientnet-pytorch",
     "opencv-python",
-    "pywavelets",
+    "PyWavelets",
     "scikit-image",
     "torchvision"
 ]
@@ -99,7 +100,23 @@ nlp = [
     "nltk",
     "transformers"
 ]
-pdf = ["weasyprint", "cffi"]
+pdf = [
+    "cffi",
+    "weasyprint"
+]
+all = [
+    "albumentations",
+    "efficientnet-pytorch",
+    "opencv-python",
+    "PyWavelets",
+    "scikit-image",
+    "torchvision",
+    "gensim",
+    "nltk",
+    "transformers",
+    "cffi",
+    "weasyprint"
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
