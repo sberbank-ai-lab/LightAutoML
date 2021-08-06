@@ -10,14 +10,15 @@ from optuna.trial import Trial
 from pandas import Series
 
 from .base import TabularMLAlgo
+from .tuning.base import Distribution, SearchSpace
 from .tuning.optuna import OptunaTunableMixin
 from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..pipelines.selection.base import ImportanceEstimator
 from ..pipelines.utils import get_columns_by_role
-from ..utils.logging import get_logger
+from ..utils.logging import get_stdout_level
 from ..validation.base import TrainValidIterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
@@ -76,8 +77,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         early_stopping_rounds = params.pop('od_wait')
         num_trees = params.pop('num_trees')
 
-        root_logger = logging.getLogger()
-        level = root_logger.getEffectiveLevel()
+        level = get_stdout_level()
 
         if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
             params['verbose'] = False
@@ -189,7 +189,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def sample_params_values(self, trial: Trial, suggested_params: Dict, estimated_n_trials: int) -> Dict:
+    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -202,54 +202,54 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         """
 
-        trial_values = copy(suggested_params)
+        optimization_search_space = {}
 
         try:
             nan_rate = getattr(self, '_nan_rate')
         except AttributeError:
             nan_rate = 0
 
-        trial_values['max_depth'] = trial.suggest_int(
-            name='max_depth',
+        optimization_search_space['max_depth'] = SearchSpace(
+            Distribution.INTUNIFORM,
             low=3,
             high=7
         )
 
         if nan_rate > 0:
-            trial_values['nan_mode'] = trial.suggest_categorical(
-                name='nan_mode',
+            optimization_search_space['nan_mode'] = SearchSpace(
+                Distribution.CHOICE,
                 choices=['Max', 'Min']
             )
 
         if estimated_n_trials > 20:
-            trial_values['l2_leaf_reg'] = trial.suggest_loguniform(
-                name='l2_leaf_reg',
+            optimization_search_space['l2_leaf_reg'] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
             )
 
-            # trial_values['bagging_temperature'] = trial.suggest_loguniform(
+            # optimization_search_space['bagging_temperature'] = trial.suggest_loguniform(
             #     name='bagging_temperature',
             #     low=0.01,
             #     high=10.0,
             # )
 
         if estimated_n_trials > 50:
-            trial_values['min_data_in_leaf'] = trial.suggest_int(
-                name='min_data_in_leaf',
+            optimization_search_space['min_data_in_leaf'] = SearchSpace(
+                Distribution.INTUNIFORM,
                 low=1,
                 high=20
             )
 
             # the only case when used this parameter is when categorical columns more than 0
             if len(self._le_cat_features) > 0:
-                trial_values['one_hot_max_size'] = trial.suggest_int(
-                    name='one_hot_max_size',
+                optimization_search_space['one_hot_max_size'] = SearchSpace(
+                    Distribution.INTUNIFORM,
                     low=3,
                     high=10
                 )
 
-        return trial_values
+        return optimization_search_space
 
     def _get_pool(self, dataset: TabularDataset):
 

@@ -6,6 +6,7 @@ import pickle
 from copy import deepcopy, copy
 from typing import Optional, Union, List, Dict, Any
 
+import logging
 import gensim
 import numpy as np
 import pandas as pd
@@ -22,9 +23,9 @@ from ..text.embed_dataset import EmbedDataset, BertDataset
 from ..text.tokenizer import BaseTokenizer, SimpleEnTokenizer
 from ..text.utils import get_textarr_hash
 from ..text.weighted_average_transformer import WeightedAverageTransformer
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset]

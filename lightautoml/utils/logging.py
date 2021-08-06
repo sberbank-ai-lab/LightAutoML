@@ -1,14 +1,14 @@
-"""Logging."""
+"""Utils for logging."""
 
+import os
 import logging
 import sys
 import warnings
 
-logging.captureWarnings(True)
+from .. import _logger
 
-debug_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-#default_log_format = f"[%(asctime)s | %(levelname)s] %(message)s"
-default_log_format = f"[%(levelname)s] %(message)s"
+formatter_debug = logging.Formatter(f"%(asctime)s | [%(levelname)s] | %(pathname)s.%(funcName)s:%(lineno)d | %(message)s")
+formatter_default = logging.Formatter(f"[%(levelname)s] %(message)s")
 
 logging.addLevelName(logging.CRITICAL, 'critical_level')
 logging.addLevelName(logging.ERROR, '\x1b[0;30;41mlog_lvl_1\x1b[0m')
@@ -16,8 +16,9 @@ logging.addLevelName(logging.WARNING, '\x1b[0;30;43mlog_lvl_2\x1b[0m')
 logging.addLevelName(logging.INFO, '\x1b[0;30;42mlog_lvl_3\x1b[0m')
 logging.addLevelName(logging.DEBUG, '\x1b[0;30;44mlog_lvl_4\x1b[0m')
 
+logging.captureWarnings(True)
 
-def verbosity_to_loglevel(verbosity):
+def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:
         log_level = logging.CRITICAL
         warnings.filterwarnings("ignore")
@@ -33,19 +34,60 @@ def verbosity_to_loglevel(verbosity):
 
     return log_level
 
-def get_logger(name = None, level = None):
-    logger = logging.getLogger(name)
-    if logger.hasHandlers():
-        logger.handlers.clear()
-    formatter = logging.Formatter(default_log_format)
+def get_stdout_level():
+    for handler in _logger.handlers:
+        if type(handler) == logging.StreamHandler:
+            return handler.level
+    return _logger.getEffectiveLevel()
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
+def set_stdout_level(level):
+    _logger.setLevel(logging.DEBUG)
 
-    logger.addHandler(handler)
+    has_console_handler = False
 
-    return logger
+    for handler in _logger.handlers:
+        if type(handler) == logging.StreamHandler:
+            if handler.level == level:
+                has_console_handler = True
+            else:
+                _logger.handlers.remove(handler)
 
+    if not has_console_handler:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter_default)
+        handler.setLevel(level)
+
+        _logger.addHandler(handler)
+
+def add_filehandler(filename: str, level = logging.DEBUG):
+    if filename:
+        has_file_handler = False
+        
+        for handler in _logger.handlers:
+            if type(handler) == logging.FileHandler:
+                if handler.baseFilename == filename or handler.baseFilename == os.path.join(os.getcwd(), filename):
+                    has_file_handler = True
+                else:
+                    _logger.handlers.remove(handler)
+
+        if not has_file_handler:
+            file_handler = logging.FileHandler(filename, mode='w')
+
+            if level == logging.DEBUG:
+                file_handler.setFormatter(formatter_debug)
+            else:
+                file_handler.setFormatter(formatter_default)
+
+            file_handler.setLevel(level)
+
+            # if handler_filter:
+            #     file_handler.addFilter(handler_filter)
+
+            _logger.addHandler(file_handler)
+    else:
+        for handler in _logger.handlers:
+            if type(handler) == logging.FileHandler:
+                _logger.handlers.remove(handler)
 
 class DuplicateFilter(object):
     def __init__(self):

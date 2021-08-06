@@ -5,15 +5,16 @@ from copy import copy
 from typing import Optional, Tuple, Any, List, cast, Dict, Sequence, Union
 
 import numpy as np
+import logging
 
 from lightautoml.validation.base import TrainValidIterator
 from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..dataset.roles import NumericRole
-from ..utils.logging import get_logger
+
 from ..utils.timer import TaskTimer, PipelineTimer
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
@@ -24,6 +25,7 @@ class MLAlgo(ABC):
     but parameters my be tuned and set before training.
     """
     _default_params: Dict = {}
+    optimization_search_space: Dict = {}
     # TODO: add checks here
     _fit_checks: Tuple = ()
     _transform_checks: Tuple = ()

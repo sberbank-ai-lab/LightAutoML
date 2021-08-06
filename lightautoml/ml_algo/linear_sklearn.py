@@ -3,6 +3,7 @@
 from copy import copy, deepcopy
 from typing import Tuple, Union, Sequence
 
+import logging
 import numpy as np
 from sklearn.linear_model import LogisticRegression, ElasticNet, Lasso
 
@@ -10,10 +11,10 @@ from .base import TabularMLAlgo, TabularDataset
 from .torch_based.linear_model import TorchBasedLinearEstimator, TorchBasedLinearRegression, \
     TorchBasedLogisticRegression
 from ..dataset.np_pd_dataset import PandasDataset
-from ..utils.logging import get_logger
+
 from ..validation.base import TrainValidIterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 

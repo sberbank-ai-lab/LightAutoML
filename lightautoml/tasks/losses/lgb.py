@@ -3,6 +3,7 @@
 from functools import partial
 from typing import Callable, Tuple, Union, Optional, Dict
 
+import logging
 import lightgbm as lgb
 import numpy as np
 
@@ -10,9 +11,9 @@ from .base import Loss
 from ..common_metric import _valid_str_multiclass_metric_names
 from .lgb_custom import lgb_f1_loss_multiclass, softmax_ax1  # , F1Factory
 from ..utils import infer_gib
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def fw_rmsle(x, y): return np.log1p(x), y

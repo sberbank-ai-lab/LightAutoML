@@ -3,6 +3,7 @@
 from copy import deepcopy, copy
 from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
 
+import logging
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
@@ -15,9 +16,9 @@ from ..dataset.np_pd_dataset import PandasDataset
 from ..dataset.roles import ColumnRole, DropRole, DatetimeRole, CategoryRole, NumericRole
 from ..dataset.utils import roles_parser
 from ..tasks import Task
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 # roles, how it's passed to automl
 RoleType = TypeVar("RoleType", bound=ColumnRole)

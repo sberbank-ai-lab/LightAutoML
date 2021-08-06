@@ -4,12 +4,13 @@ import inspect
 from functools import partial
 from typing import Callable, Union, Optional, Dict, Any, TYPE_CHECKING
 
+import logging
 import numpy as np
 
 from lightautoml.tasks.losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
 from .common_metric import _valid_str_metric_names, _valid_metric_args
 from .utils import infer_gib, infer_gib_multiclass
-from ..utils.logging import get_logger
+
 
 if TYPE_CHECKING:
     from ..dataset.np_pd_dataset import NumpyDataset, PandasDataset
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 
     SklearnCompatible = Union[NumpyDataset, PandasDataset]
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 _valid_task_names = ['binary', 'reg', 'multiclass']
 _one_dim_output_tasks = ['binary', 'reg']

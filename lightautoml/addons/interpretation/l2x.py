@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any, Callable, Type, Union
 from numbers import Number
 
 import os
+import logging
 import numpy as np
 import pandas as pd
 from html import escape
@@ -17,12 +18,11 @@ from .l2x_model import L2XModel
 from .data_process import BySequenceLengthSampler, pad_max_len, LengthDataset,\
     get_len_dataset, get_len_dataloader, get_tokenized, get_embedding_matrix,\
     map_tokenized_to_id, get_vocab
-from ...utils.logging import get_logger
 from .utils import draw_html, cross_entropy_multiple_class, WrappedTokenizer, WrappedVocabulary
 from ...text.utils import seed_everything
 
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class L2XTextExplainer:
     """

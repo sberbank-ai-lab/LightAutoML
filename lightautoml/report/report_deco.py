@@ -3,6 +3,7 @@
 import os
 from copy import copy
 
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,9 +14,9 @@ from sklearn.metrics import roc_auc_score, precision_recall_fscore_support, roc_
     average_precision_score, explained_variance_score, mean_absolute_error, \
     mean_squared_error, median_absolute_error, r2_score, f1_score, precision_score, recall_score, confusion_matrix
 
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 base_dir = os.path.dirname(__file__)
 

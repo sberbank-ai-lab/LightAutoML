@@ -1,8 +1,11 @@
 """Tools to configure time utilization."""
-import logging
+
+import os
+
 from copy import deepcopy
 from typing import Optional, Any, Sequence, Type, Union, Iterable
 
+import logging
 
 from ...automl.base import AutoML
 from ...automl.blend import Blender, BestModelSelector
@@ -12,10 +15,10 @@ from ...dataset.utils import concatenate
 from ...ml_algo.base import MLAlgo
 from ...pipelines.ml.base import MLPipeline
 from ...tasks import Task
-from ...utils.logging import get_logger, verbosity_to_loglevel
+from ...utils.logging import verbosity_to_loglevel, set_stdout_level
 from ...utils.timer import PipelineTimer
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class MLAlgoForAutoMLWrapper(MLAlgo):
@@ -91,7 +94,6 @@ class TimeUtilization:
                  memory_limit: int = 16,
                  cpu_limit: int = 4,
                  gpu_ids: Optional[str] = None,
-                 verbose: int = 2,
                  timing_params: Optional[dict] = None,
                  configs_list: Optional[Sequence[str]] = None,
                  inner_blend: Optional[Blender] = None,
@@ -135,8 +137,6 @@ class TimeUtilization:
 
         """
 
-        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
-
         self.automl_factory = automl_factory
         self.task = task
         self.timeout = timeout
@@ -147,8 +147,6 @@ class TimeUtilization:
         self.timing_params = timing_params
         if timing_params is None:
             self.timing_params = {}
-
-        self.verbose = verbose
 
         self.configs_list = configs_list
         if configs_list is None:
@@ -209,7 +207,9 @@ class TimeUtilization:
                     train_features: Optional[Sequence[str]] = None,
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
-                    valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
+                    valid_features: Optional[Sequence[str]] = None,
+                    verbose: int = 0,
+                    log_file: str = None) -> LAMLDataset:
         """Fit and get prediction on validation dataset.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
@@ -239,6 +239,7 @@ class TimeUtilization:
             Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
+        set_stdout_level(verbosity_to_loglevel(verbose))
         timer = PipelineTimer(self.timeout, **self.timing_params).start()
         history = []
 
@@ -253,6 +254,9 @@ class TimeUtilization:
             n_ms += 1
 
             for n_cfg, config in enumerate(self.configs_list):
+                logger.error('='*50)
+                logger.error('Next run:')
+
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
                 random_states['general_params'] = {'return_all_predictions': False}
                 upd_state_val += 1
@@ -267,12 +271,11 @@ class TimeUtilization:
 
                 automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memory_limit,
                                              cpu_limit=self.cpu_limit, gpu_ids=self.gpu_ids,
-                                             verbose=self.verbose,
                                              timing_params=self.timing_params,
                                              config_path=config, **random_states, **cur_kwargs)
 
                 val_pred = automl.fit_predict(train_data, roles, train_features, cv_iter,
-                                              valid_data, valid_features)
+                                              valid_data, valid_features, verbose=verbose, log_file=log_file)
                 
                 logger.error('='*50)
 

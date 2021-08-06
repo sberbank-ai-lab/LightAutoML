@@ -3,6 +3,7 @@
 import os
 from typing import Optional, Sequence, TYPE_CHECKING
 
+import logging
 import torch
 from pandas import DataFrame
 
@@ -23,9 +24,9 @@ from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
 from ...reader.tabular_batch_generator import ReadableToDf
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 _base_dir = os.path.dirname(__file__)

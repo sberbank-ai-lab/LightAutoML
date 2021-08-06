@@ -1,13 +1,14 @@
 """Timer."""
 
+import logging
 from time import time
 from typing import Optional, List, Union
 
 import numpy as np
 
-from .logging import get_logger, DuplicateFilter
+from .logging import DuplicateFilter
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 logger.addFilter(DuplicateFilter())
 
 

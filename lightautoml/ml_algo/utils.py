@@ -2,14 +2,15 @@
 
 from typing import Tuple, Optional
 
+import logging
 
 from .base import MLAlgo
 from .tuning.base import ParamsTuner
 from ..dataset.base import LAMLDataset
-from ..utils.logging import get_logger
+
 from ..validation.base import TrainValidIterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def tune_and_fit_predict(ml_algo: MLAlgo, params_tuner: ParamsTuner,

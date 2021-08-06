@@ -20,9 +20,8 @@ except:
 
 from .utils import _dtypes_mapping
 
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def optim_to_device(optim: torch.optim.Optimizer,

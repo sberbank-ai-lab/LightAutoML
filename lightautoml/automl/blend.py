@@ -2,6 +2,7 @@
 
 from typing import Tuple, Sequence, List, cast, Optional, Callable
 
+import logging
 import numpy as np
 from scipy.optimize import minimize_scalar
 
@@ -9,9 +10,9 @@ from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import NumpyDataset
 from ..dataset.roles import NumericRole
 from ..pipelines.ml.base import MLPipeline
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 np.seterr(divide='ignore', invalid='ignore')
 

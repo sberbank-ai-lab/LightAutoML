@@ -6,6 +6,7 @@ import uuid
 from copy import copy
 
 import numpy as np
+import logging
 import torch
 from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
@@ -16,9 +17,9 @@ from ..pipelines.utils import get_columns_by_role
 from ..text.nn_model import TorchUniversalModel, ContEmbedder, CatEmbedder, TextBert, UniversalDataset
 from ..text.trainer import Trainer
 from ..text.utils import seed_everything, parse_devices, collate_dict, is_shuffle, inv_softmax, inv_sigmoid
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 class TorchModel(TabularMLAlgo):

@@ -4,15 +4,16 @@ from collections import Counter
 from itertools import repeat
 from typing import Any, Dict, Sequence
 
+import logging
 import numpy as np
 from scipy.linalg import svd
 from sklearn.base import TransformerMixin
 from sklearn.feature_extraction import DictVectorizer
 from tqdm import tqdm
 
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 class WeightedAverageTransformer(TransformerMixin):

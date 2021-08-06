@@ -2,12 +2,13 @@
 
 from typing import Callable, Optional, Dict, Union
 
+import logging
 import numpy as np
 
 from .base import Loss
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def fw_rmsle(x, y): return np.log1p(x), y

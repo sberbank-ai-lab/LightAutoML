@@ -4,6 +4,7 @@ import os
 from copy import copy, deepcopy
 from typing import Optional, Sequence, cast, Iterable
 
+import logging
 import numpy as np
 import pandas as pd
 import torch
@@ -29,10 +30,10 @@ from ...pipelines.selection.permutation_importance_based import NpPermutationImp
 from ...reader.base import PandasToPandasReader
 from ...reader.tabular_batch_generator import read_data, read_batch, ReadableToDf
 from ...tasks import Task
-from ...utils.logging import get_logger
+
 
 _base_dir = os.path.dirname(__file__)
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class TabularAutoML(AutoMLPreset):
@@ -61,7 +62,6 @@ class TabularAutoML(AutoMLPreset):
 
     def __init__(self, task: Task, timeout: int = 3600, memory_limit: int = 16, cpu_limit: int = 4,
                  gpu_ids: Optional[str] = 'all',
-                 verbose: int = 2,
                  timing_params: Optional[dict] = None,
                  config_path: Optional[str] = None,
                  general_params: Optional[dict] = None,
@@ -93,7 +93,6 @@ class TabularAutoML(AutoMLPreset):
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
-            verbose: Verbosity level that are passed to each automl.
             timing_params: Timing param dict. Optional.
             config_path: Path to config file.
             general_params: General param dict.
@@ -112,7 +111,7 @@ class TabularAutoML(AutoMLPreset):
               for linear models.
 
         """
-        super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
+        super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, timing_params, config_path)
 
         # upd manual params
         for name, param in zip(['general_params',
@@ -346,7 +345,7 @@ class TabularAutoML(AutoMLPreset):
         # initialize
         self._initialize(reader, levels, skip_conn=self.general_params['skip_conn'],
                          blender=blender, return_all_predictions=self.general_params['return_all_predictions'],
-                         timer=self.timer, verbose=self.verbose)
+                         timer=self.timer)
 
     def _get_read_csv_params(self):
         try:
@@ -371,7 +370,9 @@ class TabularAutoML(AutoMLPreset):
                     train_features: Optional[Sequence[str]] = None,
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[ReadableToDf] = None,
-                    valid_features: Optional[Sequence[str]] = None) -> NumpyDataset:
+                    valid_features: Optional[Sequence[str]] = None,
+                    log_file: str = None,
+                    verbose: int = 0) -> NumpyDataset:
         """Fit and get prediction on validation dataset.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
@@ -402,6 +403,8 @@ class TabularAutoML(AutoMLPreset):
 
         """
         # roles may be none in case of train data is set {'data': np.ndarray, 'target': np.ndarray ...}
+        self.set_logfile(log_file)
+
         if roles is None:
             roles = {}
         read_csv_params = self._get_read_csv_params()
@@ -411,7 +414,7 @@ class TabularAutoML(AutoMLPreset):
         if valid_data is not None:
             data, _ = read_data(valid_data, valid_features, self.cpu_limit, self.read_csv_params)
 
-        oof_pred = super().fit_predict(train, roles=roles, cv_iter=cv_iter, valid_data=valid_data)
+        oof_pred = super().fit_predict(train, roles=roles, cv_iter=cv_iter, valid_data=valid_data, verbose=verbose)
 
         return cast(NumpyDataset, oof_pred)
 
@@ -521,7 +524,6 @@ class TabularUtilizedAutoML(TimeUtilization):
                  memory_limit: int = 16,
                  cpu_limit: int = 4,
                  gpu_ids: Optional[str] = None,
-                 verbose: int = 2,
                  timing_params: Optional[dict] = None,
                  configs_list: Optional[Sequence[str]] = None,
                  drop_last: bool = True,
@@ -539,7 +541,6 @@ class TabularUtilizedAutoML(TimeUtilization):
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
-            verbose: Verbosity level that are passed to each automl.
             timing_params: Timing params level that are passed to each automl.
             configs_list: List of str path to configs files.
             drop_last: Usually last automl will be stopped with timeout.
@@ -557,7 +558,7 @@ class TabularUtilizedAutoML(TimeUtilization):
                              'conf_5_sel_type_1_tuning_full.yml', 'conf_6_sel_type_1_tuning_full_no_int_lgbm.yml']]
         inner_blend = MeanBlender()
         outer_blend = WeightedBlender(max_nonzero_coef=outer_blender_max_nonzero_coef)
-        super().__init__(TabularAutoML, task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params,
+        super().__init__(TabularAutoML, task, timeout, memory_limit, cpu_limit, gpu_ids, timing_params,
                          configs_list, inner_blend, outer_blend, drop_last, return_all_predictions,
                          max_runs_per_config, None, random_state,
                          **kwargs)

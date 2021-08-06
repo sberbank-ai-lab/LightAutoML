@@ -1,40 +1,70 @@
 """"Classes to implement hyperparameter tuning using Optuna."""
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Optional, Tuple, Callable, Union, TypeVar
 
 import optuna
+import logging
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
-from lightautoml.ml_algo.tuning.base import ParamsTuner
-from lightautoml.utils.logging import get_logger
+from lightautoml.ml_algo.tuning.base import ParamsTuner, Distribution, SearchSpace
 from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
 
-logger = get_logger(__name__)
-# optuna.logging.enable_propagation()
-# optuna.logging.disable_default_handler()
+logger = logging.getLogger(__name__)
+optuna.logging.enable_propagation()
+optuna.logging.disable_default_handler()
 #optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
+OPTUNA_DISTRIBUTIONS_MAP = {
+    Distribution.CHOICE: 'suggest_categorical',
+    Distribution.UNIFORM: 'suggest_uniform',
+    Distribution.LOGUNIFORM: 'suggest_loguniform',
+    Distribution.INTUNIFORM: 'suggest_int',
+    Distribution.DISCRETEUNIFORM: 'suggest_discrete_uniform',
+}
 
 class OptunaTunableMixin(ABC):
     """Optuna Sampler."""
     mean_trial_time: float = None
+    optimization_search_space: dict = None
+
+    def __init__(self, *args, **kwargs):
+        if 'optimization_search_space' in kwargs:
+            self.optimization_search_space = kwargs['optimization_search_space']
+            del kwargs['optimization_search_space']
+        super().__init__(*args, **kwargs)
+
+    def _sample_parameters(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
+        if self.optimization_search_space is None:
+            self.optimization_search_space = self._get_search_spaces(suggested_params, estimated_n_trials)
+
+        return self._sample(trial, suggested_params)
+
+    def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
+        trial_values = copy(suggested_params)
+
+        for parameter, SearchSpace in self.optimization_search_space.items():
+            if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                trial_values[parameter] = getattr(trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type])(name=parameter, **SearchSpace.params)
+            else:
+                raise ValueError(f'Optuna does not support distribution {SearchSpace.distribution_type}')
+        
+        return trial_values
 
     @abstractmethod
-    def sample_params_values(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
-        """Sample hyperparameters from suggested.
+    def _get_search_spaces(self, suggested_params: dict, estimated_n_trials: int) -> dict:
+        """Get search spaces for hyperparameters.
 
         Args:
-            trial: Optuna trial object.
             suggested_params: Dict with parameters.
             estimated_n_trials: Maximum number of hyperparameter estimations.
 
         Returns:
-            Dict with sampled hyperparameters.
+            Dict with search spaces for hyperparameters.
 
         """
 
@@ -52,7 +82,7 @@ class OptunaTunableMixin(ABC):
 
         """
 
-        return self.sample_params_values(
+        return self._sample_parameters(
             estimated_n_trials=estimated_n_trials,
             trial=trial,
             suggested_params=self.init_params_on_input(train_valid_iterator)

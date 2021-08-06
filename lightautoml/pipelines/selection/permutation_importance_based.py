@@ -3,6 +3,7 @@
 from copy import deepcopy
 from typing import Optional
 
+import logging
 import numpy as np
 from pandas import Series
 
@@ -12,9 +13,9 @@ from ..features.base import FeaturesPipeline
 from ...dataset.base import LAMLDataset
 from ...ml_algo.base import MLAlgo
 from ...ml_algo.utils import tune_and_fit_predict
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def _create_chunks_from_list(lst, n):

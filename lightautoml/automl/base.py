@@ -1,20 +1,19 @@
 """Base AutoML class."""
 
-import logging
-
 from typing import Sequence, Any, Optional, Iterable, Dict, List
 
+import logging
 
 from .blend import Blender, BestModelSelector
 from ..dataset.base import LAMLDataset
 from ..dataset.utils import concatenate
 from ..pipelines.ml.base import MLPipeline
 from ..reader.base import Reader
-from ..utils.logging import get_logger, verbosity_to_loglevel
+from ..utils.logging import verbosity_to_loglevel, set_stdout_level
 from ..utils.timer import PipelineTimer
 from ..validation.utils import create_validation_iterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AutoML:
@@ -57,8 +56,7 @@ class AutoML:
     """
 
     def __init__(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                 blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False,
-                 verbose: int = 2):
+                 blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False):
         """
 
         Args:
@@ -74,7 +72,6 @@ class AutoML:
               Default - :class:`~lightautoml.automl.blend.BestModelSelector`.
             skip_conn: True if we should pass first level
               input features to next levels.
-            verbose: Verbosity level.
 
         Note:
             There are several verbosity levels:
@@ -85,11 +82,10 @@ class AutoML:
                 - `3`: Debug.
 
         """
-        self._initialize(reader, levels, timer, blender, skip_conn, return_all_predictions, verbose)
+        self._initialize(reader, levels, timer, blender, skip_conn, return_all_predictions)
 
     def _initialize(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                    blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False,
-                    verbose: int = 2):
+                    blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False):
         """Same as __init__. Exists for delayed initialization in presets.
 
         Args:
@@ -110,7 +106,6 @@ class AutoML:
             verbose: Verbosity level. Default 2.
 
         """
-        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
         assert len(levels) > 0, 'At least 1 level should be defined'
 
         self.timer = timer
@@ -136,7 +131,8 @@ class AutoML:
     def fit_predict(self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
                     cv_iter: Optional[Iterable] = None,
                     valid_data: Optional[Any] = None,
-                    valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
+                    valid_features: Optional[Sequence[str]] = None,
+                    verbose: int = 0) -> LAMLDataset:
         """Fit on input data and make prediction on validation part.
 
         Args:
@@ -154,6 +150,7 @@ class AutoML:
             Predicted values.
 
         """
+        set_stdout_level(verbosity_to_loglevel(verbose))
         self.timer.start()
         train_dataset = self.reader.fit_read(train_data, train_features, roles)
 

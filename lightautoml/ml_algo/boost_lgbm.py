@@ -10,12 +10,13 @@ from optuna.trial import Trial
 from pandas import Series
 
 from .base import TabularMLAlgo, TabularDataset
+from .tuning.base import Distribution, SearchSpace
 from .tuning.optuna import OptunaTunableMixin
 from ..pipelines.selection.base import ImportanceEstimator
-from ..utils.logging import get_logger
+from ..utils.logging import get_stdout_level
 from ..validation.base import TrainValidIterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
@@ -69,8 +70,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         early_stopping_rounds = params.pop('early_stopping_rounds')
         num_trees = params.pop('num_trees')
 
-        root_logger = logging.getLogger()
-        level = root_logger.getEffectiveLevel()
+        level = get_stdout_level()
 
         if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
             verbose_eval = False
@@ -174,7 +174,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def sample_params_values(self, trial: Trial, suggested_params: Dict, estimated_n_trials: int) -> Dict:
+    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -189,46 +189,46 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         logger.debug('Suggested parameters:')
         logger.debug(suggested_params)
 
-        trial_values = copy(suggested_params)
+        optimization_search_space = {}
 
-        trial_values['feature_fraction'] = trial.suggest_uniform(
-            name='feature_fraction',
+        optimization_search_space['feature_fraction'] = SearchSpace(
+            Distribution.UNIFORM,
             low=0.5,
             high=1.0,
         )
 
-        trial_values['num_leaves'] = trial.suggest_int(
-            name='num_leaves',
+        optimization_search_space['num_leaves'] = SearchSpace(
+            Distribution.INTUNIFORM,
             low=16,
             high=255,
         )
 
         if estimated_n_trials > 30:
-            trial_values['bagging_fraction'] = trial.suggest_uniform(
-                name='bagging_fraction',
+            optimization_search_space['bagging_fraction'] = SearchSpace(
+                Distribution.UNIFORM,
                 low=0.5,
                 high=1.0,
             )
 
-            trial_values['min_sum_hessian_in_leaf'] = trial.suggest_loguniform(
-                name='min_sum_hessian_in_leaf',
+            optimization_search_space['min_sum_hessian_in_leaf'] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-3,
                 high=10.0,
             )
 
         if estimated_n_trials > 100:
-            trial_values['reg_alpha'] = trial.suggest_loguniform(
-                name='reg_alpha',
+            optimization_search_space['reg_alpha'] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
             )
-            trial_values['reg_lambda'] = trial.suggest_loguniform(
-                name='reg_lambda',
+            optimization_search_space['reg_lambda'] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
             )
 
-        return trial_values
+        return optimization_search_space
 
     def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[lgb.Booster, np.ndarray]:
         """Implements training and prediction on single fold.

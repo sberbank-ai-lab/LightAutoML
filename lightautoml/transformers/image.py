@@ -5,6 +5,7 @@ import pickle
 from copy import deepcopy
 from typing import Optional, Union, List, Callable
 
+import logging
 import numpy as np
 import torch
 
@@ -15,9 +16,8 @@ from ..dataset.roles import NumericRole
 from ..image.image import CreateImageFeatures, DeepImageEmbedder
 from ..image.utils import pil_loader
 from ..text.utils import single_text_hash, get_textarr_hash
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 

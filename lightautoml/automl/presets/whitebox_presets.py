@@ -4,6 +4,7 @@ import os
 from copy import deepcopy
 from typing import Optional, Sequence, Any, cast, Iterable
 
+import logging
 
 from .base import AutoMLPreset, upd_params
 from ...dataset.np_pd_dataset import NumpyDataset
@@ -11,9 +12,9 @@ from ...ml_algo.whitebox import WbMLAlgo
 from ...pipelines.ml.whitebox_ml_pipe import WBPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 _base_dir = os.path.dirname(__file__)
 
 

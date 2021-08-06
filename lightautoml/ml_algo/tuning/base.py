@@ -1,6 +1,7 @@
 """Base classes to implement hyperparameter tuning."""
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Optional, Tuple, Dict, overload
 
 
@@ -9,6 +10,27 @@ from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.validation.base import TrainValidIterator
 
+
+class Distribution(Enum):
+    CHOICE = 0
+
+    UNIFORM = 1
+    INTUNIFORM = 2
+    QUNIFORM = 3
+    LOGUNIFORM = 4
+    DISCRETEUNIFORM = 5
+
+    NORMAL = 6
+    QNORMAL = 7
+    LOGNORMAL = 8
+
+class SearchSpace:
+    distribution_type: Distribution = None
+    params: Dict = {}
+
+    def __init__(self, distribution_type: Distribution, *args, **kwargs):
+        self.distribution_type = distribution_type
+        self.params = kwargs
 
 class ParamsTuner(ABC):
     """Base abstract class for hyperparameters tuners."""

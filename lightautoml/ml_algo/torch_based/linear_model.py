@@ -3,6 +3,7 @@
 from copy import deepcopy
 from typing import Sequence, Callable, Optional, Union
 
+import logging
 import numpy as np
 import torch
 from scipy import sparse
@@ -10,9 +11,9 @@ from torch import nn
 from torch import optim
 
 from ...tasks.losses import TorchLossWrapper
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 

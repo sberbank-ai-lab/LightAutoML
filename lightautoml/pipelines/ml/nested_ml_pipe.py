@@ -3,6 +3,7 @@
 from copy import copy, deepcopy
 from typing import Optional, Tuple, Any, Union, Sequence
 
+import logging
 import numpy as np
 import optuna
 import pandas as pd
@@ -18,12 +19,12 @@ from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
 from ...ml_algo.tuning.optuna import OptunaTunableMixin
 from ...ml_algo.utils import tune_and_fit_predict
 from ...reader.utils import set_sklearn_folds
-from ...utils.logging import get_logger
+
 from ...utils.timer import PipelineTimer
 from ...validation.base import TrainValidIterator
 from ...validation.utils import create_validation_iterator
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
@@ -127,8 +128,8 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
 
         return pred
 
-    def sample_params_values(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
-        return self._ml_algo.sample_params_values(trial, suggested_params, estimated_n_trials)
+    def _get_search_spaces(self, suggested_params: dict, estimated_n_trials: int) -> dict:
+        return self._ml_algo._get_search_spaces(suggested_params, estimated_n_trials)
 
     def get_features_score(self) -> Series:
         scores = pd.concat([x.get_features_score() for x in self.models], axis=1).mean(axis=1)

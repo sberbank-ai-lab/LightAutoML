@@ -11,10 +11,10 @@ import yaml
 from ..base import AutoML
 from ...dataset.base import LAMLDataset
 from ...tasks import Task
-from ...utils.logging import get_logger, verbosity_to_loglevel
+from ...utils.logging import verbosity_to_loglevel, add_filehandler, set_stdout_level
 from ...utils.timer import PipelineTimer
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 base_dir = os.path.dirname(__file__)
 
@@ -47,7 +47,7 @@ class AutoMLPreset(AutoML):
     _default_config_path = 'example_config.yml'
 
     def __init__(self, task: Task, timeout: int = 3600, memory_limit: int = 16, cpu_limit: int = 4,
-                 gpu_ids: Optional[str] = 'all', verbose: int = 2,
+                 gpu_ids: Optional[str] = 'all',
                  timing_params: Optional[dict] = None,
                  config_path: Optional[str] = None, **kwargs: Any):
         """
@@ -74,14 +74,13 @@ class AutoMLPreset(AutoML):
 
         """
         self._set_config(config_path)
-        self.set_verbosity_level(verbose)
 
         for name, param in zip(['timing_params'], [timing_params]):
             if param is None:
                 param = {}
             self.__dict__[name] = {**self.__dict__[name], **param}
 
-        self.timer = PipelineTimer(timeout, **self.timing_params)
+        self.timer = PipelineTimer(timeout, **getattr(self, 'timing_params'))
         self.memory_limit = memory_limit
         if cpu_limit == -1:
             cpu_limit = os.cpu_count()
@@ -90,8 +89,6 @@ class AutoMLPreset(AutoML):
         if gpu_ids == 'all':
             self.gpu_ids = ','.join(map(str, range(torch.cuda.device_count())))
         self.task = task
-
-        self.verbose = verbose
 
     def _set_config(self, path):
         self.config_path = path
@@ -138,10 +135,13 @@ class AutoMLPreset(AutoML):
         """
         raise NotImplementedError
 
-    def fit_predict(self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
-                    cv_iter: Optional[Iterable] = None,
-                    valid_data: Optional[Any] = None,
-                    valid_features: Optional[Sequence[str]] = None) -> LAMLDataset:
+    def fit_predict(
+        self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
+        cv_iter: Optional[Iterable] = None,
+        valid_data: Optional[Any] = None,
+        valid_features: Optional[Sequence[str]] = None,
+        verbose: int = 0
+        ) -> LAMLDataset:
         """Fit on input data and make prediction on validation part.
 
         Args:
@@ -159,6 +159,8 @@ class AutoMLPreset(AutoML):
             Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
+        self.set_verbosity_level(verbose)
+
         self.create_automl(train_data=train_data,
                            roles=roles,
                            train_features=train_features,
@@ -171,7 +173,7 @@ class AutoMLPreset(AutoML):
         logger.error('- cpus: {} cores'.format(self.cpu_limit))
         logger.error('- memory: {} gb\n'.format(self.memory_limit))
         self.timer.start()
-        result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features)
+        result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features, verbose)
         logger.error('Automl preset training completed in {:.2f} seconds.\n'.format(self.timer.time_spent))
         
         return result
@@ -220,4 +222,13 @@ class AutoMLPreset(AutoML):
                 ``>=3`` - debug messages.
                 
         """
-        logging.getLogger().setLevel(verbosity_to_loglevel(verbose))
+        level = verbosity_to_loglevel(verbose)
+        set_stdout_level(level)
+
+        logger.info(f'Logging level is {logging._levelToName[level]}.')
+
+    @staticmethod
+    def set_logfile(filename: str):
+        """     
+        """
+        add_filehandler(filename)

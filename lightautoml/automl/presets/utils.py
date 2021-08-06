@@ -1,9 +1,9 @@
+import logging
 import numpy as np
 import pandas as pd
 
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def calc_one_feat_imp(iters,
