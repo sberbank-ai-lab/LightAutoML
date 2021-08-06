@@ -75,6 +75,7 @@ nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
+pylint = "^2.9.6"
 
 
 [tool.poetry.extras]
