@@ -4,11 +4,15 @@ import os
 from copy import copy, deepcopy
 from typing import Optional, Sequence, cast, Iterable
 
+import calendar
 import numpy as np
 import pandas as pd
 import torch
+from collections import Counter
+from datetime import datetime
 from joblib import Parallel, delayed
 from pandas import DataFrame
+from tqdm import tqdm
 
 from .base import AutoMLPreset, upd_params
 from .utils import calc_feats_permutation_imps
@@ -35,6 +39,9 @@ _base_dir = os.path.dirname(__file__)
 logger = get_logger(__name__)
 
 
+
+
+@record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
     """
     Classic preset - work with tabular data.
@@ -509,6 +516,99 @@ class TabularAutoML(AutoMLPreset):
         fi = calc_feats_permutation_imps(self, used_feats, data, self.reader.target,
                                          self.task.get_dataset_metric(), silent=silent)
         return fi
+    
+    
+    def get_individual_pdp(self, 
+                           test_data: ReadableToDf, 
+                           feature_name: str, 
+                           n_bins: Optional[int] = 30, 
+                           top_n_categories: Optional[int] = 10, 
+                           datetime_level: Optional[str] = 'year'
+                          ):
+        assert feature_name in self.reader._roles
+        assert datetime_level in ['year', 'month', 'dayofweek']
+        test_i = test_data.copy()
+        # Numerical features
+        if self.reader._roles[feature_name].name == 'Numeric':
+            # Mode A. Split feature range on equal bins
+            # 'counts' contains bins populations
+            # 'grid' contains average bin edges
+            counts, bin_edges = np.histogram(test_data[feature_name].dropna(), bins=n_bins)
+            grid = (bin_edges[:-1] + bin_edges[1:]) / 2
+            # Mode B. Split feature values on equal bins
+            # 'counts' is uniform distribution
+            # feature_data = pd.DataFrame({'values': test_data[feature_name].sort_values().values})
+            # feature_data['bin'] = (np.arange(feature_data.shape[0]) / feature_data.shape[0] * n_bins).astype(int)
+            # grid = feature_data.groupby(['bin']).mean().values[:,0]
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+        # Categorical features
+        if self.reader._roles[feature_name].name == 'Category':
+            feature_cnt = test_data[feature_name].value_counts()
+            grid = list(feature_cnt.index.values[:top_n_categories])
+            counts = list(feature_cnt.values[:top_n_categories])
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            if len(feature_cnt) > top_n_categories:
+                freq_mapping = {feature_cnt.index[i]:i for i, _ in enumerate(feature_cnt)}
+                # add 'OTHER' class
+                test_i = test_data.copy()
+                # sample from other classes with the same distribution
+                test_i[feature_name] = test_i[feature_name][np.array([freq_mapping[k] for k in test_i[feature_name]]) > top_n_categories].sample(n=test_data.shape[0], replace=True).values
+                preds = self.predict(test_i).data
+                grid.append('<OTHER>')
+                ys.append(preds)
+                counts.append(feature_cnt.values[top_n_categories:].sum())
+        # Datetime Features
+        def change_datetime(feature_datetime, key, value):
+            assert key in ['year', 'month', 'dayofweek']
+            MAX_DAY = {1: 31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31}
+            changed = []
+            if key == 'year':
+                year = value
+                for i in feature_datetime:
+                    if i.month == 2 and i.day == 29 and not calendar.isleap(year):
+                        i -= pd.Timedelta(1, 'd')
+                    changed.append(i.replace(year=year))
+            if key == 'month':
+                month = value
+                assert month in np.arange(1, 13)
+                for i in feature_datetime:
+                    if i.day > MAX_DAY[month]:
+                        i -= pd.Timedelta(i.day - MAX_DAY[month], 'd')
+                        if month == 2 and i.day == 28 and calendar.isleap(i.year):
+                            i += pd.Timedelta(1, 'd')
+                    changed.append(i.replace(month=month))
+            if key == 'dayofweek':
+                dayofweek = value
+                assert value in np.arange(7)
+                for i in feature_datetime:
+                    i += pd.Timedelta(dayofweek - i.dayofweek, 'd')
+                    changed.append(i)
+            return np.array(changed)
+        if self.reader._roles[feature_name].name == 'Datetime':
+            test_data_read = self.reader.read(test_data)
+            feature_datetime = pd.arrays.DatetimeArray(test_data_read._data[feature_name])
+            if datetime_level=='year':
+                grid = np.unique([i.year for i in feature_datetime])
+            elif datetime_level=='month':
+                grid = np.arange(1, 13)
+            else:
+                grid = np.arange(7)
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = change_datetime(feature_datetime, datetime_level, i)
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            counts = Counter([getattr(i, datetime_level) for i in feature_datetime])
+            counts = [counts[i] for i in grid]
+        return grid, ys, counts
 
 
 class TabularUtilizedAutoML(TimeUtilization):
