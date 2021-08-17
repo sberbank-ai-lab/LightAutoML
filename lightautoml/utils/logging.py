@@ -1,5 +1,6 @@
 """Utils for logging."""
 
+import io
 import os
 import logging
 import sys
@@ -17,6 +18,15 @@ logging.addLevelName(logging.INFO, '\x1b[0;30;42mlog_lvl_3\x1b[0m')
 logging.addLevelName(logging.DEBUG, '\x1b[0;30;44mlog_lvl_4\x1b[0m')
 
 logging.captureWarnings(True)
+
+class LoggerStream(io.IOBase):
+    def __init__(self, new_write) -> None:
+        super().__init__()
+        self.new_write = new_write
+
+    def write(self, s):
+        if s != '\n':
+            self.new_write(s.rstrip())
 
 def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:

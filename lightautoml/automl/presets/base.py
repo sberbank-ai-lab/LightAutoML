@@ -225,7 +225,7 @@ class AutoMLPreset(AutoML):
         level = verbosity_to_loglevel(verbose)
         set_stdout_level(level)
 
-        logger.info(f'Logging level is {logging._levelToName[level]}.')
+        logger.info(f'Stdout logging level is {logging._levelToName[level]}.')
 
     @staticmethod
     def set_logfile(filename: str):

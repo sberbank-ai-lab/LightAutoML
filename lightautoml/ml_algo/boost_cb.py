@@ -6,7 +6,6 @@ from typing import Tuple, Dict, Union, Callable
 
 import catboost as cb
 import numpy as np
-from optuna.trial import Trial
 from pandas import Series
 
 from .base import TabularMLAlgo
@@ -15,12 +14,12 @@ from .tuning.optuna import OptunaTunableMixin
 from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..pipelines.selection.base import ImportanceEstimator
 from ..pipelines.utils import get_columns_by_role
-from ..utils.logging import get_stdout_level
+from ..utils.logging import LoggerStream, get_stdout_level
 from ..validation.base import TrainValidIterator
 
 logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
-
+logger_stream = LoggerStream(logger.info)
 
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
@@ -61,7 +60,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         "feature_border_type": "GreedyLogSum",
         "nan_mode": "Min",
         # "silent": False,
-        "verbose": False,
+        "verbose": True,
         "allow_writing_files": False
     }
 
@@ -79,12 +78,12 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         level = get_stdout_level()
 
-        if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
-            params['verbose'] = False
-        elif level == logging.INFO:
-            params['verbose'] = 100
-        else:
-            params['verbose'] = 10
+        # if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
+        #     params['verbose'] = False
+        # elif level == logging.INFO:
+        #     params['verbose'] = 100
+        # else:
+        #     params['verbose'] = 10
 
         loss = self.task.losses['cb']
         fobj = loss.fobj_name
@@ -316,7 +315,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
                                           'eval_metric': feval,
                                           "od_wait": early_stopping_rounds}})
 
-        model.fit(cb_train, eval_set=cb_valid)
+        model.fit(cb_train, eval_set=cb_valid, log_cout=logger_stream)
 
         val_pred = self._predict(model, cb_valid, params)
 
