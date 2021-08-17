@@ -14,12 +14,12 @@ from .tuning.optuna import OptunaTunableMixin
 from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
 from ..pipelines.selection.base import ImportanceEstimator
 from ..pipelines.utils import get_columns_by_role
-from ..utils.logging import LoggerStream, get_stdout_level
+from ..utils.logging import LoggerStream
 from ..validation.base import TrainValidIterator
 
 logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
-logger_stream = LoggerStream(logger.info)
+logger_stream = LoggerStream(logger.debug)
 
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
@@ -75,15 +75,6 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         params = copy(self.params)
         early_stopping_rounds = params.pop('od_wait')
         num_trees = params.pop('num_trees')
-
-        level = get_stdout_level()
-
-        # if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
-        #     params['verbose'] = False
-        # elif level == logging.INFO:
-        #     params['verbose'] = 100
-        # else:
-        #     params['verbose'] = 10
 
         loss = self.task.losses['cb']
         fobj = loss.fobj_name

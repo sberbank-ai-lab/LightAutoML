@@ -14,11 +14,11 @@ from .base import TabularMLAlgo, TabularDataset
 from .tuning.base import Distribution, SearchSpace
 from .tuning.optuna import OptunaTunableMixin
 from ..pipelines.selection.base import ImportanceEstimator
-from ..utils.logging import LoggerStream, get_stdout_level
+from ..utils.logging import LoggerStream
 from ..validation.base import TrainValidIterator
 
 logger = logging.getLogger(__name__)
-logger_stream = LoggerStream(logger.info)
+logger_stream = LoggerStream(logger.debug)
 
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
@@ -71,15 +71,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         early_stopping_rounds = params.pop('early_stopping_rounds')
         num_trees = params.pop('num_trees')
 
-        level = get_stdout_level()
         verbose_eval = True
-
-        # if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
-        #     verbose_eval = False
-        # elif level == logging.INFO:
-        #     verbose_eval = 100
-        # else:
-        #     verbose_eval = 10
 
         # get objective params
         loss = self.task.losses['lgb']
@@ -188,9 +180,6 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             dict with sampled hyperparameters.
 
         """
-        logger.debug('Suggested parameters:')
-        logger.debug(suggested_params)
-
         optimization_search_space = {}
 
         optimization_search_space['feature_fraction'] = SearchSpace(
@@ -253,9 +242,10 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         lgb_valid = lgb.Dataset(valid.data, label=valid_target, weight=valid_weight)
 
         with redirect_stdout(logger_stream):
-            model = lgb.train(params, lgb_train, num_boost_round=num_trees, valid_sets=[lgb_valid], valid_names=['valid'],
-                            fobj=fobj, feval=feval, early_stopping_rounds=early_stopping_rounds, verbose_eval=verbose_eval
-                            )
+            model = lgb.train(
+                params, lgb_train, num_boost_round=num_trees, valid_sets=[lgb_valid], valid_names=['valid'],
+                fobj=fobj, feval=feval, early_stopping_rounds=early_stopping_rounds, verbose_eval=verbose_eval
+                )
 
         val_pred = model.predict(valid.data)
         val_pred = self.task.losses['lgb'].bw_func(val_pred)

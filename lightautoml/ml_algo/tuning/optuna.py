@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy, copy
+from lightautoml.pipelines import ml
 from typing import Optional, Tuple, Callable, Union, TypeVar
 
 import optuna
@@ -15,7 +16,7 @@ from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
 logger = logging.getLogger(__name__)
 optuna.logging.enable_propagation()
 optuna.logging.disable_default_handler()
-#optuna.logging.set_verbosity(optuna.logging.WARNING)
+optuna.logging.set_verbosity(optuna.logging.DEBUG)
 
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
@@ -45,6 +46,8 @@ class OptunaTunableMixin(ABC):
         return self._sample(trial, suggested_params)
 
     def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
+        # logger.info(f'Suggested parameters: {suggested_params}')
+
         trial_values = copy(suggested_params)
 
         for parameter, SearchSpace in self.optimization_search_space.items():
@@ -170,13 +173,13 @@ class OptunaTuner(ParamsTuner):
 
         """
         assert not ml_algo.is_fitted, 'Fitted algo cannot be tuned.'
-        optuna.logging.set_verbosity(logger.getEffectiveLevel())
+        # optuna.logging.set_verbosity(logger.getEffectiveLevel())
         # upd timeout according to ml_algo timer
         estimated_tuning_time = ml_algo.timer.estimate_tuner_time(len(train_valid_iterator))
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
-        logger.error('Optuna may run {0} secs'.format(estimated_tuning_time))
+        logger.error(f'Start tuning \x1b[1m{ml_algo._name}\x1b[0m ... Optuna may run {estimated_tuning_time} secs')
 
         self._upd_timeout(estimated_tuning_time)
         ml_algo = deepcopy(ml_algo)
@@ -197,6 +200,7 @@ class OptunaTuner(ParamsTuner):
             """
             ml_algo.mean_trial_time = study.trials_dataframe()['duration'].mean().total_seconds()
             self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
+            logger.info(f'Trial {len(study.trials)} finished. Current best trial value is {study.best_value} with params: {study.best_params}')
 
         try:
 
@@ -214,13 +218,15 @@ class OptunaTuner(ParamsTuner):
                 n_trials=self.n_trials,
                 timeout=self.timeout,
                 callbacks=[update_trial_time],
+                # show_progress_bar=True,
             )
 
             # need to update best params here
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
             
-            logger.warning('Selected params by Optuna: \x1b[1m{}\x1b[0m'.format(self._best_params))
+            logger.error(f'Tuning completed \x1b[1m{ml_algo._name}\x1b[0m')
+            logger.warning(f'Parameters selected due to optimization: \x1b[1m{self._best_params}\x1b[0m\n')
 
             if flg_new_iterator:
                 # if tuner was fitted on holdout set we dont need to save train results

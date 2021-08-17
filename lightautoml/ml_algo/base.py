@@ -211,15 +211,17 @@ class TabularMLAlgo(MLAlgo):
             Dataset with predicted values.
 
         """
-        iterator_len = len(train_valid_iterator)
-        if iterator_len > 1 or 'Tuned' not in self._name:
-            logger.error('Start fitting \x1b[1m{}\x1b[0m ...'.format(self._name))
         self.timer.start()
 
         assert self.is_fitted is False, 'Algo is already fitted'
         # init params on input if no params was set before
         if self._params is None:
             self.params = self.init_params_on_input(train_valid_iterator)
+        
+        iterator_len = len(train_valid_iterator)
+        if iterator_len > 1:
+            logger.error('Start fitting \x1b[1m{}\x1b[0m ...'.format(self._name))
+            logger.debug( f'Training params: {self.params}')            
 
         # save features names
         self._features = train_valid_iterator.features
@@ -257,8 +259,8 @@ class TabularMLAlgo(MLAlgo):
                 if self.timer.time_limit_exceeded():
                     logger.error('Time limit exceeded after calculating fold {0}\n'.format(n))
                     break
-
-        logger.debug('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))
+        if iterator_len > 1:
+            logger.info(f'Training is finished. Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}')
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
         preds_arr = np.where(counter_arr == 0, np.nan, preds_arr)
