@@ -168,10 +168,13 @@ class AutoMLPreset(AutoML):
                            valid_data=valid_data,
                            valid_features=valid_features
                            )
+        logger.error(f'Task: {self.task.name}')
+
         logger.error('Start automl preset with listed constraints:')
-        logger.error('- time: {:.2f} seconds'.format(self.timer.timeout))
-        logger.error('- cpus: {} cores'.format(self.cpu_limit))
-        logger.error('- memory: {} gb\n'.format(self.memory_limit))
+        logger.error(f'- time: {self.timer.timeout:.2f} seconds')
+        logger.error(f'- CPU: {self.cpu_limit} cores')
+        logger.error(f'- memory: {self.memory_limit} GB\n')
+
         self.timer.start()
         result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features, verbose)
         logger.error('Automl preset training completed in {:.2f} seconds.\n'.format(self.timer.time_spent))

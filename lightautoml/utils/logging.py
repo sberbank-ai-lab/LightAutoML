@@ -8,14 +8,14 @@ import warnings
 
 from .. import _logger
 
-formatter_debug = logging.Formatter(f"%(asctime)s | [%(levelname)s] | %(pathname)s.%(funcName)s:%(lineno)d | %(message)s")
-formatter_default = logging.Formatter(f"[%(levelname)s] %(message)s")
+formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
+formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%Y-%m-%d %H:%M:%S")
 
 logging.addLevelName(logging.CRITICAL, 'critical_level')
-logging.addLevelName(logging.ERROR, '\x1b[0;30;41mlog_lvl_1\x1b[0m')
-logging.addLevelName(logging.WARNING, '\x1b[0;30;43mlog_lvl_2\x1b[0m')
-logging.addLevelName(logging.INFO, '\x1b[0;30;42mlog_lvl_3\x1b[0m')
-logging.addLevelName(logging.DEBUG, '\x1b[0;30;44mlog_lvl_4\x1b[0m')
+logging.addLevelName(logging.ERROR, 'log_lvl_1')
+logging.addLevelName(logging.WARNING, 'log_lvl_2')
+logging.addLevelName(logging.INFO, 'log_lvl_3')
+logging.addLevelName(logging.DEBUG, 'log_lvl_4')
 
 logging.captureWarnings(True)
 
@@ -24,9 +24,9 @@ class LoggerStream(io.IOBase):
         super().__init__()
         self.new_write = new_write
 
-    def write(self, s):
-        if s != '\n':
-            self.new_write(s.rstrip())
+    def write(self, message):
+        if message != '\n':
+            self.new_write(message.rstrip())
 
 def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:

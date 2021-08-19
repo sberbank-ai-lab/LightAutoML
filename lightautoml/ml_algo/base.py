@@ -259,15 +259,16 @@ class TabularMLAlgo(MLAlgo):
                 if self.timer.time_limit_exceeded():
                     logger.error('Time limit exceeded after calculating fold {0}\n'.format(n))
                     break
-        if iterator_len > 1:
-            logger.info(f'Training is finished. Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}')
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
         preds_arr = np.where(counter_arr == 0, np.nan, preds_arr)
 
         preds_ds = self._set_prediction(preds_ds, preds_arr)
+
         if iterator_len > 1:
-            logger.error('Algo = \x1b[1m{}\x1b[0m, score = \x1b[1m{}\x1b[0m'.format(self._name, self.score(preds_ds)))
+            logger.error(f'Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m')
+            logger.info(f'Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}')
+
         if iterator_len > 1 or 'Tuned' not in self._name:
             logger.error('\x1b[1m{}\x1b[0m fitting and predicting completed'.format(self._name))
         return preds_ds

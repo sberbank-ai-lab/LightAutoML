@@ -365,10 +365,10 @@ class WeightedBlender(Blender):
 
                     candidate = self._get_candidate(candidate, i, w)
 
-            logger.error('Blending, iter \x1b[1m{0}\x1b[0m: score = \x1b[1m{1}\x1b[0m, weights = \x1b[1m{2}\x1b[0m'.format(_, score, candidate))
+            logger.error('Blending: Iteration \x1b[1m{0}\x1b[0m: score = \x1b[1m{1}\x1b[0m, weights = \x1b[1m{2}\x1b[0m'.format(_, score, candidate))
 
             if flg_no_upd:
-                logger.error('No score update. Terminated\n')
+                logger.error('Blending: No score update. Terminated\n')
                 break
 
         return candidate

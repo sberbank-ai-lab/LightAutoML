@@ -171,15 +171,12 @@ class AutoML:
 
         self.levels = []
 
-        for n, level in enumerate(self._levels, 1):
-
-            logger.error('\x1b[1mLayer {}\x1b[0m ...\n'.format(n))
-
+        for leven_number, level in enumerate(self._levels, 1):
             pipes = []
             level_predictions = []
-            flg_last_level = n == len(self._levels)
+            flg_last_level = leven_number == len(self._levels)
 
-            logger.error('Layer {} train process start. Time left {:.2f} secs'.format(n, self.timer.time_left))
+            logger.error(f'Layer \x1b[1m{leven_number}\x1b[0m train process start. Time left {self.timer.time_left:.2f} secs')
 
             for k, ml_pipe in enumerate(level):
 
@@ -196,7 +193,7 @@ class AutoML:
                     break
             else:
                 if self.timer.child_out_of_time:
-                    logger.error('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.\n'.format(n))
+                    logger.error('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.\n'.format(leven_number))
                     flg_last_level = True
 
             # here is split on exit condition
@@ -217,7 +214,7 @@ class AutoML:
             else:
                 break
 
-            logger.error('\x1b[1mLayer {} training completed.\x1b[0m\n'.format(n))
+            logger.error('\x1b[1mLayer {} training completed.\x1b[0m\n'.format(leven_number))
 
         blended_prediction, last_pipes = self.blender.fit_predict(level_predictions, pipes)
         self.levels.append(last_pipes)
