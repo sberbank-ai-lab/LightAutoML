@@ -181,7 +181,7 @@ class OptunaTuner(ParamsTuner):
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
-        logger.error(f'Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time} secs')
+        logger.error(f'Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time:.2f} secs')
 
         self._upd_timeout(estimated_tuning_time)
         metric_name = train_valid_iterator.train.task.get_dataset_metric().name
