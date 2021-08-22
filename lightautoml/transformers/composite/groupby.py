@@ -141,7 +141,14 @@ class GroupByTransformer(LAMLTransformer):
         return self
 
     def transform(self, dataset):
-        """transform"""
+        """Calculate groups statistics by categorial features.
+
+        Args:
+            dataset: Numpy or Pandas dataset with categorial and numerical columns.
+
+        Returns:
+            NumpyDataset of numeric features.
+        """
 
         # checks here
         super().transform(dataset)
