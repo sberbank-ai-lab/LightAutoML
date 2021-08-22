@@ -4,8 +4,18 @@ import numpy as np
 
 from lightautoml.transformers.base import LAMLTransformer
 
-from lightautoml.reader.base import PandasToPandasReader
 class GroupByTransformer(LAMLTransformer):
+     """
+     create group_by features:
+     * group by categorical:
+         * numerical features:
+             * difference with group mode
+     * group by categorical:
+         * categorical features:
+             * group mode 
+             * is current value equal to group mode 
+     """
+        
     _fit_checks = ()
     _transform_checks = ()
     _fname_prefix = 'grb'
@@ -17,6 +27,14 @@ class GroupByTransformer(LAMLTransformer):
         return self._features
 
     def __init__(self, **kwargs):
+        """
+
+        Args:
+            check_mode: compare to pandas implementation.
+            verbose_mode: show debug information.
+
+        """
+        
         super().__init__()
         
         self.dicts = {}        
@@ -28,7 +46,15 @@ class GroupByTransformer(LAMLTransformer):
         return mode(x)[0][0]
 
     def fit(self, dataset):    
-        """fit"""
+        """Fit transformer and return it's instance.
+
+        Args:
+            dataset: Dataset to fit on.
+
+        Returns:
+            self.
+
+        """
 
         if self.verbose_mode: print('GroupByTransformer.__fit_new')
         if self.verbose_mode: print('GroupByTransformer.__fit_new.type(dataset.data):', type(dataset.data.to_numpy()))
