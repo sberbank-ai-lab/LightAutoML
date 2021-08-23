@@ -9,7 +9,7 @@ import warnings
 from .. import _logger
 
 formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
-formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
 
 logging.addLevelName(logging.CRITICAL, 'critical_level')
 logging.addLevelName(logging.ERROR, 'log_lvl_1')
@@ -31,10 +31,10 @@ class LoggerStream(io.IOBase):
 def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:
         log_level = logging.CRITICAL
-        warnings.filterwarnings("ignore")
+        # warnings.filterwarnings("ignore")
     elif verbosity == 1:
         log_level = logging.ERROR
-        warnings.filterwarnings("ignore")
+        # warnings.filterwarnings("ignore")
     elif verbosity == 2:
         log_level = logging.WARNING
     elif verbosity == 3:

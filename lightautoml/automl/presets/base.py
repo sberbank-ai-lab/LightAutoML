@@ -177,8 +177,10 @@ class AutoMLPreset(AutoML):
 
         self.timer.start()
         result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features, verbose)
-        logger.error(' \x1b[1mAutoml preset training completed in {:.2f} seconds\x1b[0m\n'.format(self.timer.time_spent))
-        
+
+        logger.error('\x1b[1mAutoml preset training completed in {:.2f} seconds\x1b[0m\n'.format(self.timer.time_spent))
+        logger.error(f'Model description:\n{self.create_model_str_desc()}\n')
+
         return result
     
     def create_model_str_desc(self, 

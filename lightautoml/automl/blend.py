@@ -344,7 +344,7 @@ class WeightedBlender(Blender):
         best_pred = self._get_weighted_pred(splitted_preds, candidate)
 
         best_score = self.score(best_pred)
-        logger.error('Blending: Optimization starts with equal weights and score \x1b[1m{0}\x1b[0m'.format(best_score))
+        logger.error('Blending: optimization starts with equal weights and score \x1b[1m{0}\x1b[0m'.format(best_score))
         score = best_score
         for _ in range(self.max_iters):
             flg_no_upd = True
@@ -365,10 +365,10 @@ class WeightedBlender(Blender):
 
                     candidate = self._get_candidate(candidate, i, w)
 
-            logger.error('Blending: Iteration \x1b[1m{0}\x1b[0m: score = \x1b[1m{1}\x1b[0m, weights = \x1b[1m{2}\x1b[0m'.format(_, score, candidate))
+            logger.error('Blending: iteration \x1b[1m{0}\x1b[0m: score = \x1b[1m{1}\x1b[0m, weights = \x1b[1m{2}\x1b[0m'.format(_, score, candidate))
 
             if flg_no_upd:
-                logger.error('Blending: No score update. Terminated\n')
+                logger.error('Blending: no score update. Terminated\n')
                 break
 
         return candidate
