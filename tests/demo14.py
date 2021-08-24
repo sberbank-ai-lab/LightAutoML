@@ -25,6 +25,7 @@ from lightautoml.pipelines.utils import get_columns_by_role
 # from lightautoml.transformers.composite import GroupByTransformer
 from composite import GroupByTransformer
 
+
 ################################
 # Features:
 # - group_by transformer
@@ -44,20 +45,18 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
         self.top_category = top_category
         self.top_numeric = top_numeric
         
-        self.verbose_mode = kwargs['verbose_mode'] if 'verbose_mode' in kwargs else False
-
     def create_pipeline(self, train):
         """create_pipeline"""
         
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline')
+        logging.debug(f'GroupByPipeline.create_pipeline')
 
         transformer_list = []
 
         categories = get_columns_by_role(train, 'Category')
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline.categories:', categories)
+        logging.debug(f'GroupByPipeline.create_pipeline.categories:{categories}')
 
         numerics = get_columns_by_role(train, 'Numeric')
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline.numerics:', numerics)
+        logging.debug(f'GroupByPipeline.create_pipeline.numerics:{numerics}')
 
         cat_feats_to_select = []
         num_feats_to_select = []
@@ -66,13 +65,13 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
             cat_feats_to_select = self.get_top_categories(train, self.top_category)
         elif len(categories) > 0:
             cat_feats_to_select = categories
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline.cat_feats_to_select:', cat_feats_to_select)
+        logging.debug(f'GroupByPipeline.create_pipeline.cat_feats_to_select:{cat_feats_to_select}')
             
         if len(numerics) > self.top_numeric:
             num_feats_to_select = self.get_top_numeric(train, self.top_numeric)
         elif len(numerics) > 0:
             num_feats_to_select = numerics        
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline.num_feats_to_select:', num_feats_to_select)
+        logging.debug(f'GroupByPipeline.create_pipeline.num_feats_to_select:{num_feats_to_select}')
 
         if (len(cat_feats_to_select) > 0) and (len(num_feats_to_select) > 0):
             groupby_processing = SequentialTransformer([
@@ -88,14 +87,14 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
                     ]),
 #                 FillnaMedian(),
                 
-                GroupByTransformer(verbose_mode=self.verbose_mode),
+                GroupByTransformer(),
             ])
             
             transformer_list.append(groupby_processing)
         else:
             raise ValueError('GroupByPipeline expects at least 1 categorial and 1 numeric features')                
             
-        if self.verbose_mode: print('GroupByPipeline.create_pipeline.transformer_list:', transformer_list)
+        logging.debug(f'GroupByPipeline.create_pipeline.transformer_list:{transformer_list}')
 
         return UnionTransformer(transformer_list)
     
@@ -154,7 +153,7 @@ def test_groupby_transformer():
     
     model = BoostLGBM(default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': N_THREADS})
     
-    pipe = GroupByPipeline(None, top_category=4, top_numeric=4, verbose_mode=False)
+    pipe = GroupByPipeline(None, top_category=4, top_numeric=4)
     
     pipeline = MLPipeline([(model),], features_pipeline=pipe, )
     

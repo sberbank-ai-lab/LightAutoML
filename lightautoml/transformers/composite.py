@@ -8,6 +8,9 @@ from ..dataset.roles import NumericRole
 
 from scipy.stats import mode
 
+logger = get_logger(__name__)
+logger.setLevel(verbosity_to_loglevel(3))
+
 class GroupByTransformer(LAMLTransformer):
     """
 
@@ -36,6 +39,7 @@ class GroupByTransformer(LAMLTransformer):
 
         Args:
             verbose_mode: show debug information.
+            no
 
         """
         
@@ -43,8 +47,6 @@ class GroupByTransformer(LAMLTransformer):
         
         self.dicts = {}        
 
-        self.verbose_mode = kwargs['verbose_mode'] if 'verbose_mode' in kwargs else False
-        
     @staticmethod
     def __get_mode(x):
         return mode(x)[0][0]
@@ -60,8 +62,8 @@ class GroupByTransformer(LAMLTransformer):
 
         """
 
-        if self.verbose_mode: print('GroupByTransformer.__fit_new')
-        if self.verbose_mode: print('GroupByTransformer.__fit_new.type(dataset.data):', type(dataset.data.to_numpy()))
+        logger.debug(f'GroupByTransformer.__fit_new')
+        logger.debug(f'GroupByTransformer.__fit_new.type(dataset.data.to_numpy())={type(dataset.data.to_numpy())}')
 
         # set transformer names and add checks
         for check_func in self._fit_checks:
@@ -74,8 +76,8 @@ class GroupByTransformer(LAMLTransformer):
         
         cat_cols = get_columns_by_role(dataset, 'Category')
         num_cols = get_columns_by_role(dataset, 'Numeric')
-        if self.verbose_mode: print('GroupByTransformer.__fit_new.cat_cols:', cat_cols)
-        if self.verbose_mode: print('GroupByTransformer.__fit_new.num_cols:', num_cols)
+        logger.debug(f'GroupByTransformer.__fit_new.cat_cols={cat_cols}')
+        logger.debug(f'GroupByTransformer.__fit_new.num_cols:{num_cols}')
         
         col_names = np.array(cat_cols + num_cols)
         col_values = dataset.data[col_names].to_numpy()
@@ -151,8 +153,8 @@ class GroupByTransformer(LAMLTransformer):
         # convert to accepted dtype and get attributes
         cat_cols = get_columns_by_role(dataset, 'Category')
         num_cols = get_columns_by_role(dataset, 'Numeric')
-        if self.verbose_mode: print('GroupByTransformer.__transform_new.cat_cols:', cat_cols)
-        if self.verbose_mode: print('GroupByTransformer.__transform_new.num_cols:', num_cols)
+        logger.debug(f'GroupByTransformer.__transform_new.cat_cols:{cat_cols}')
+        logger.debug(f'GroupByTransformer.__transform_new.num_cols:{num_cols}')
 
         col_names = np.array(cat_cols + num_cols)
         col_values = dataset.data[col_names].to_numpy()
@@ -160,13 +162,6 @@ class GroupByTransformer(LAMLTransformer):
         # transform
         roles = NumericRole()
         outputs = []
-        
-        if self.verbose_mode: 
-            print(
-#                 'GroupByTransformer.transform.self.dicts=', 
-#                   *[(feat, (value['cat'], value['num'], value['kind'], value['values'], )) for feat, value in self.dicts.items()],
-#                   sep='\n'
-                 )
         
         for feat, value in self.dicts.items():
             cat, num = value['cat'], value['num']
