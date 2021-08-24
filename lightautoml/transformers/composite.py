@@ -44,8 +44,9 @@ class GroupByTransformer(LAMLTransformer):
         self.dicts = {}        
 
         self.verbose_mode = kwargs['verbose_mode'] if 'verbose_mode' in kwargs else False
-
-    def __get_mode(self, x):
+        
+    @staticmethod
+    def __get_mode(x):
         return mode(x)[0][0]
 
     def fit(self, dataset):    
