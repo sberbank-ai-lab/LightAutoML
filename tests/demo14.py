@@ -22,7 +22,8 @@ from lightautoml.transformers.base import SequentialTransformer, UnionTransforme
 from lightautoml.transformers.categorical import LabelEncoder
 from lightautoml.pipelines.utils import get_columns_by_role
 
-from lightautoml.transformers.composite import GroupByTransformer
+# from lightautoml.transformers.composite import GroupByTransformer
+from composite import GroupByTransformer
 
 ################################
 # Features:
@@ -43,7 +44,6 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
         self.top_category = top_category
         self.top_numeric = top_numeric
         
-        self.check_mode = kwargs['check_mode'] if 'check_mode' in kwargs else False
         self.verbose_mode = kwargs['verbose_mode'] if 'verbose_mode' in kwargs else False
 
     def create_pipeline(self, train):
@@ -88,7 +88,7 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
                     ]),
 #                 FillnaMedian(),
                 
-                GroupByTransformer(check_mode=self.check_mode, verbose_mode=self.verbose_mode),
+                GroupByTransformer(verbose_mode=self.verbose_mode),
             ])
             
             transformer_list.append(groupby_processing)
@@ -154,7 +154,7 @@ def test_groupby_transformer():
     
     model = BoostLGBM(default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': N_THREADS})
     
-    pipe = GroupByPipeline(None, top_category=4, top_numeric=4, check_mode=False, verbose_mode=False)
+    pipe = GroupByPipeline(None, top_category=4, top_numeric=4, verbose_mode=False)
     
     pipeline = MLPipeline([(model),], features_pipeline=pipe, )
     
