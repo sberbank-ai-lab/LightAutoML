@@ -83,6 +83,7 @@ class GroupByTransformer(LAMLTransformer):
         feats = []
         for cat in cat_cols:
             cat_index = np.where(col_names == cat)[0][0]
+            
             for num in num_cols:
                 num_index = np.where(col_names == num)[0][0]
                 
@@ -100,12 +101,10 @@ class GroupByTransformer(LAMLTransformer):
                 }
                 feats.append(feature)
                 
-        for cat1 in cat_cols:
-            cat_index = np.where(col_names == cat1)[0][0]
             for cat2 in cat_cols:
                 num_index = np.where(col_names == cat2)[0][0]
-                if cat1 != cat2:
-                    feature1 = f'{self._fname_prefix}__{cat1}_mode_{cat2}'
+                if cat != cat2:
+                    feature1 = f'{self._fname_prefix}__{cat}_mode_{cat2}'
                     
                     _dict = {
                         cat_current: 
@@ -114,7 +113,7 @@ class GroupByTransformer(LAMLTransformer):
                     }
 
                     self.dicts[feature1] = {
-                        'cat': cat1, 
+                        'cat': cat, 
                         'cat_index': cat_index, 
                         'num': cat2, 
                         'num_index': num_index, 
@@ -122,9 +121,9 @@ class GroupByTransformer(LAMLTransformer):
                         'kind': 'cat_mode'
                     }
                     
-                    feature2 = f'{self._fname_prefix}__{cat1}_is_mode_{cat2}'
+                    feature2 = f'{self._fname_prefix}__{cat}_is_mode_{cat2}'
                     self.dicts[feature2] = {
-                        'cat': cat1, 
+                        'cat': cat, 
                         'cat_index': cat_index, 
                         'num': cat2, 
                         'num_index': num_index, 
