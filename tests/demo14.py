@@ -18,8 +18,10 @@ from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 
 from lightautoml.pipelines.features.base import FeaturesPipeline
 from lightautoml.pipelines.features.base import TabularDataFeatures
-from lightautoml.transformers.base import SequentialTransformer, UnionTransformer, ColumnsSelector
+from lightautoml.transformers.base import SequentialTransformer, UnionTransformer, ColumnsSelector, ChangeRoles
+from lightautoml.dataset.roles import NumericRole, CategoryRole
 from lightautoml.transformers.categorical import LabelEncoder
+from lightautoml.transformers.numeric import FillnaMedian
 from lightautoml.pipelines.utils import get_columns_by_role
 
 # from lightautoml.transformers.composite import GroupByTransformer
@@ -79,14 +81,13 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
                     SequentialTransformer([
                         ColumnsSelector(keys=categories),
                         LabelEncoder(subs=None, random_state=42),
-#                         FillnaMedian(),
+                        ChangeRoles(NumericRole(np.float32)),
+                        FillnaMedian(),
+                        ChangeRoles(CategoryRole(np.float32)),
                     ]),
                     SequentialTransformer([
                         ColumnsSelector(keys=num_feats_to_select)]),
-#                         FillnaMedian(),
-                    ]),
-#                 FillnaMedian(),
-                
+                    ]),                
                 GroupByTransformer(),
             ])
             
