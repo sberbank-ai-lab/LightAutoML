@@ -2,19 +2,24 @@
 
 import numpy as np
 
-from lightautoml.transformers.base import LAMLTransformer
+from .base import LAMLTransformer
+from ..pipelines.utils import get_columns_by_role
+from ..dataset.roles import NumericRole
+
+from scipy.stats import mode
 
 class GroupByTransformer(LAMLTransformer):
-     """
-     create group_by features:
-     * group by categorical:
-         * numerical features:
-             * difference with group mode
-     * group by categorical:
-         * categorical features:
-             * group mode 
-             * is current value equal to group mode 
-     """
+    """
+
+    create group_by features:
+    * group by categorical:
+        * numerical features:
+            * difference with group mode
+    * group by categorical:
+        * categorical features:
+            * group mode 
+            * is current value equal to group mode 
+    """
         
     _fit_checks = ()
     _transform_checks = ()

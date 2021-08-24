@@ -20,6 +20,9 @@ from lightautoml.pipelines.features.base import FeaturesPipeline
 from lightautoml.pipelines.features.base import TabularDataFeatures
 from lightautoml.transformers.base import SequentialTransformer, UnionTransformer, ColumnsSelector
 from lightautoml.transformers.categorical import LabelEncoder
+from lightautoml.pipelines.utils import get_columns_by_role
+
+from lightautoml.transformers.composite import GroupByTransformer
 
 ################################
 # Features:
