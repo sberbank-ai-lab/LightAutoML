@@ -2,15 +2,15 @@
 
 import numpy as np
 
-# from .base import LAMLTransformer
-# from ..pipelines.utils import get_columns_by_role
-# from ..dataset.roles import NumericRole
-# from ..utils.logging import get_logger
+from .base import LAMLTransformer
+from ..pipelines.utils import get_columns_by_role
+from ..dataset.roles import NumericRole
+from ..utils.logging import get_logger
 
-from lightautoml.transformers.base import LAMLTransformer
-from lightautoml.pipelines.utils import get_columns_by_role
-from lightautoml.dataset.roles import NumericRole
-from lightautoml.utils.logging import get_logger, verbosity_to_loglevel
+# from lightautoml.transformers.base import LAMLTransformer
+# from lightautoml.pipelines.utils import get_columns_by_role
+# from lightautoml.dataset.roles import NumericRole
+# from lightautoml.utils.logging import get_logger, verbosity_to_loglevel
 
 from scipy.stats import mode
 
@@ -159,12 +159,7 @@ class GroupByTransformer(LAMLTransformer):
             group = Groupby(cat_values)
             
             for num in num_cols:
-                num_values = dataset.data[num].to_numpy()
-                
-                _dict = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(np.nanmean, num_values))}
-                
-                _dict_2 = GroupByFactory('num_diff').fit(data=dataset.data, group=group, num=num, cat2=None)
-                assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{num}'
+                _dict = GroupByFactory('num_diff').fit(data=dataset.data, group=group, num=num, cat2=None)
                                 
                 feature = f'{self._fname_prefix}__{cat}_delta_mean_{num}'
                 self.dicts[feature] = {
@@ -176,14 +171,8 @@ class GroupByTransformer(LAMLTransformer):
                 feats.append(feature)
                 
             for cat2 in cat_cols:
-                num_values = dataset.data[cat2].to_numpy()
-                
                 if cat != cat2:
-                    _dict = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(GroupByTransformer.get_mode, num_values))}
-
-                    _dict_2 = GroupByFactory('cat_mode').fit(data=dataset.data, group=group, num=None, cat2=cat2)
-                    
-                    assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{cat2}'
+                    _dict = GroupByFactory('cat_mode').fit(data=dataset.data, group=group, num=None, cat2=cat2)
     
                     feature1 = f'{self._fname_prefix}__{cat}_mode_{cat2}'
                     self.dicts[feature1] = {
@@ -229,21 +218,7 @@ class GroupByTransformer(LAMLTransformer):
         outputs = []
         
         for feat, value in self.dicts.items():
-            cat_values = dataset.data[value['cat']].to_numpy()
-
-            if value['kind'] == 'num_diff':
-                num_values = dataset.data[value['num']].to_numpy()
-                new_arr = (num_values - [value['values'][k] if k in value['values'] else np.nan for k in cat_values]).reshape(-1, 1)
-                
-            elif value['kind'] == 'cat_mode':
-                new_arr = np.array([value['values'][k] if k in value['values'] else np.nan for k in cat_values]).reshape(-1, 1)
-
-            elif value['kind'] == 'cat_ismode':
-                cat_2_values = dataset.data[value['cat2']].to_numpy()
-                new_arr = (cat_2_values == [value['values'][k] if k in value['values'] else np.nan for k in cat_values]).reshape(-1, 1)
-
-            new_arr_2 = GroupByFactory(value['kind']).transform(data=dataset.data, value=value)
-            assert np.allclose(new_arr, new_arr_2, equal_nan=True, atol=1e-9), f"GroupByTransformer.__transform_new.num_diff.not_equal.{value['cat']}.{value['num']}"
+            new_arr = GroupByFactory(value['kind']).transform(data=dataset.data, value=value)
             
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, [feat], roles)
@@ -251,8 +226,3 @@ class GroupByTransformer(LAMLTransformer):
             
         # create resulted        
         return dataset.empty().to_numpy().concat(outputs)
-
-    
-    
-print('ok')
-    
