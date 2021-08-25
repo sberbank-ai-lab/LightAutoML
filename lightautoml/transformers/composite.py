@@ -35,6 +35,10 @@ class GroupByFactory:
     def get_GroupBy(kind):
         for class_name in [
             GroupBy_num_delta_mean, 
+            GroupBy_num_delta_median,
+            GroupBy_num_min,
+            GroupBy_num_max,
+            GroupBy_num_std, 
             GroupBy_cat_mode, 
             GroupBy_cat_is_mode
         ]:
@@ -64,6 +68,103 @@ class GroupBy_num_delta_mean:
         cat_values = data[value['cat']].to_numpy()        
         num_values = data[value['num']].to_numpy()
         new_arr = (num_values - np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
+            
+        assert new_arr is not None
+        return new_arr
+
+class GroupBy_num_delta_median:    
+    id = 'num_delta_median'
+    
+    def fit(self, data, group, num=None, cat2=None):
+        assert data is not None
+        assert group is not None        
+        assert num is not None
+        
+        num_values = data[num].to_numpy()
+        _dict = dict(zip(group.index, group.apply(np.nanmedian, num_values)))
+            
+        assert _dict is not None
+        return _dict
+    
+    def transform(self, data, value):
+        assert data is not None
+        assert value is not None
+        
+        cat_values = data[value['cat']].to_numpy()        
+        num_values = data[value['num']].to_numpy()
+        new_arr = (num_values - np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
+            
+        assert new_arr is not None
+        return new_arr
+
+class GroupBy_num_min:    
+    id = 'num_min'
+    
+    def fit(self, data, group, num=None, cat2=None):
+        assert data is not None
+        assert group is not None        
+        assert num is not None
+        
+        num_values = data[num].to_numpy()
+        _dict = dict(zip(group.index, group.apply(np.nanmin, num_values)))
+            
+        assert _dict is not None
+        return _dict
+    
+    def transform(self, data, value):
+        assert data is not None
+        assert value is not None
+        
+        cat_values = data[value['cat']].to_numpy()        
+        new_arr = (np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
+            
+        assert new_arr is not None
+        return new_arr
+
+class GroupBy_num_max:    
+    id = 'num_delta_max'
+    
+    def fit(self, data, group, num=None, cat2=None):
+        assert data is not None
+        assert group is not None        
+        assert num is not None
+        
+        num_values = data[num].to_numpy()
+        _dict = dict(zip(group.index, group.apply(np.nanmax, num_values)))
+            
+        assert _dict is not None
+        return _dict
+    
+    def transform(self, data, value):
+        assert data is not None
+        assert value is not None
+        
+        cat_values = data[value['cat']].to_numpy()        
+        new_arr = (np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
+            
+        assert new_arr is not None
+        return new_arr
+
+class GroupBy_num_std:    
+    id = 'num_std'
+    
+    def fit(self, data, group, num=None, cat2=None):
+        assert data is not None
+        assert group is not None        
+        assert num is not None
+        
+        num_values = data[num].to_numpy()
+        _dict = dict(zip(group.index, group.apply(np.nanstd, num_values)))
+            
+        assert _dict is not None
+        return _dict
+    
+    def transform(self, data, value):
+        assert data is not None
+        assert value is not None
+        
+        cat_values = data[value['cat']].to_numpy()        
+        new_arr = (np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
             
         assert new_arr is not None
         return new_arr
@@ -192,16 +293,17 @@ class GroupByTransformer(LAMLTransformer):
             group = GroupByBase(cat_values)
             
             for num in num_cols:
-                kind = GroupBy_num_delta_mean.id
-                feature = f'{self._fname_prefix}__{cat}_{kind}_{num}'
-                self.dicts[feature] = {
-                    'cat': cat, 
-                    'num': num, 
-                    'cat2': None, 
-                    'values': GroupByFactory.get_GroupBy(kind).fit(data=dataset.data, group=group, num=num, cat2=None), 
-                    'kind': kind
-                }
-                feats.append(feature)
+                for class_name in [GroupBy_num_delta_mean, GroupBy_num_delta_median, GroupBy_num_min, GroupBy_num_max, GroupBy_num_std, ]:
+                    kind = class_name.id
+                    feature = f'{self._fname_prefix}__{cat}_{kind}_{num}'
+                    self.dicts[feature] = {
+                        'cat': cat, 
+                        'num': num, 
+                        'cat2': None, 
+                        'values': GroupByFactory.get_GroupBy(kind).fit(data=dataset.data, group=group, num=num, cat2=None), 
+                        'kind': kind
+                    }
+                    feats.append(feature)
                 
             for cat2 in cat_cols:
                 if cat != cat2:                    
