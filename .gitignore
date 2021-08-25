@@ -144,7 +144,13 @@ cython_debug/
 catboost_info
 
 .idea/
-lama_venv/
+lama-venv/
 poetry.lock
 distillation_sbx.ipynb
 .vscode
+distill_sbx.ipynb
+distillation_results.ipynb
+example_data/UCI_Datasets/
+example_data/dataset_12_mfeat-factors.csv
+example_data/jungle_chess_2pcs_raw_endgame_complete.csv
+tests/distillation/

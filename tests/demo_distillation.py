@@ -28,6 +28,8 @@ def test_distillation():
     data['constant'] = 1
     data['allnan'] = np.nan
 
+    data['TARGET'] = data['TARGET'].astype('string')
+
     data.drop(['DAYS_BIRTH', 'DAYS_EMPLOYED'], axis=1, inplace=True)
 
     logging.info("Data is loaded")
@@ -45,7 +47,7 @@ def test_distillation():
     logging.info('Fitting distiller...')
     distiller.fit(train, roles=roles)
     logging.info('Distiller is fitted')
-
+    logging.info(distiller.teacher.reader.roles)
     logging.debug('Checking scores...')
     test_pred = distiller.predict(test)
     print('Teacher TEST ROC AUC: {}'.format(roc_auc_score(test[roles['target']].values, test_pred.data[:, 0])))
@@ -57,9 +59,6 @@ def test_distillation():
     print(metrics)
 
     logging.info('Distilling knowledge from teacher...')
-    automl = TabularAutoML(task=task, timeout=30, verbose=0)
-    distiller = Distiller(automl)
-    distiller.fit_predict(train, roles=roles)
     best_model = distiller.distill(train)
     logging.info('Best model after distillation: {}'.format(best_model.levels[0][0].ml_algos[0].name))
 

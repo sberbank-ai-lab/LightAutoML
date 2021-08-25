@@ -2,10 +2,11 @@
 
 from log_calls import record_history
 from ...automl.base import AutoML
-from ...automl.presets.tabular_presets import TabularAutoML
+from ...automl.presets.tabular_presets import TabularAutoML, TabularUtilizedAutoML
 from ...ml_algo.base import TabularMLAlgo
 from ...ml_algo.boost_cb import BoostCB
 from ...ml_algo.boost_lgbm import BoostLGBM
+from ...pipelines.selection.importance_based import ImportanceCutoffSelector, ModelBasedImportanceEstimator
 from ...pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from ...reader.base import PandasToPandasReader
 from ...automl.base import MLPipeline
@@ -14,11 +15,11 @@ from ...tasks import Task
 from typing import Sequence
 from sklearn.exceptions import NotFittedError
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.preprocessing import LabelEncoder
 from pandas import DataFrame
 import numpy as np
 
 logger = get_logger(__name__)
-
 
 @record_history(enabled=False)
 class Distiller:
@@ -32,28 +33,19 @@ class Distiller:
     def is_fitted(self):
         return self._fitted
 
-    def __init__(self, teacher: TabularAutoML, students: Sequence[TabularMLAlgo] = None):
-        """Takes a teacher and a list of students as input.
+    def __init__(self, teacher: TabularUtilizedAutoML):
+        """Initializes a distiller with AutoML Tabular Preset as teacher.
 
         Args:
             teacher: is used to learn knowledge from given data.
-            students: are used to learn knowledge from the teacher.
         """
         self.teacher = teacher
         self.students = list()
-        self._fitted = False
+        if hasattr(teacher, 'outer_pipes'):
+            self._fitted = True
+        else:
+            self._fitted = False
         self.models_scores = None
-        if not students:
-            students = [BoostCB, BoostLGBM]
-        for algo in students:
-            # TODO: implement students consistent with lightautoml
-            reader = PandasToPandasReader(Task('reg'), samples=None, max_nan_rate=1, max_constant_rate=1,
-                                          advanced_roles=True, drop_score_co=-1, n_jobs=1)
-            pipeline_lvl1 = MLPipeline(ml_algos=[algo(default_params={'verbose': 0})],
-                                       pre_selection=None,
-                                       features_pipeline=LGBSimpleFeatures(),
-                                       post_selection=None)
-            self.students.append(AutoML(reader, [[pipeline_lvl1]], skip_conn=False, verbose=0))
 
     def fit(self, data, **kwargs):
         """Fits the teacher to given data.
@@ -62,9 +54,7 @@ class Distiller:
             data: a dataset to fit the teacher to.
             **kwargs: optional params for fitting the teacher.
         """
-        assert not self._fitted, 'The distiller is already fitted'
-        self.teacher.fit_predict(data, **kwargs)
-        self._fitted = True
+        self.fit_predict(self, data, **kwargs)
     
     def fit_predict(self, data, **kwargs):
         """Fits the teacher to given data and returns labels for fitting the students.
@@ -77,9 +67,9 @@ class Distiller:
             labels for fitting the students.
         """
         assert not self._fitted, 'The distiller is already fitted'
-        self.teacher.fit_predict(data, **kwargs)
+        oof_pred = self.teacher.fit_predict(data, **kwargs)
         self._fitted = True
-        return self.teacher.predict(data)
+        return oof_pred
 
     def predict(self, data):
         """Returns labels for fitting the students.
@@ -94,27 +84,103 @@ class Distiller:
             raise NotFittedError
         return self.teacher.predict(data)
 
-    def distill(self, data, labels=None, metric=None):
+    def distill(self, data, students: Sequence[TabularAutoML] = None, labels=None, metric=None):
         """Fits students to given data and finds the best one.
 
         Args:
             data: dataset to fit students to.
+            students: are used to learn knowledge from the teacher.
             labels: labels for fitting students. If not provided, predict labels using the teacher.
             metric: metric to maximize to find the best student.
 
         Returns:
             the best student.
         """
-        if not self._fitted and not labels:
+        if not self._fitted:
             raise NotFittedError
         _data = data.drop(columns=self.teacher.reader.used_array_attrs['target'])
-        if labels is not None:
-            _data['__target__'] = labels
-        else:
-            _data['__target__'] = self.teacher.predict(_data).data[:, 0]
         if self.teacher.task.name == 'binary':
             metric = 'AUC'
+            if labels is not None:
+                _data['__target__'] = labels
+            else:
+                _data['__target__'] = self.teacher.predict(_data).data[:, 0]
+        if self.teacher.task.name == 'multiclass':
+            metric = 'accuracy'
+            if labels is not None:
+                _data['__target__'] = labels
+            else:
+                _data['__target__'] = self.teacher.predict(_data).data
         # TODO: implement metrics for other tasks
+        if students:
+            self.students = [student for student in students]
+        else:
+            self.students = list()
+            for algo in [BoostCB, BoostLGBM]:
+                # TODO: implement students consistent with lightautoml
+                reader = PandasToPandasReader(Task('reg'), samples=None, max_nan_rate=1, max_constant_rate=1,
+                                              advanced_roles=True, drop_score_co=-1, n_jobs=1)
+                pipeline_lvl1 = MLPipeline(ml_algos=[algo(default_params={'verbose': 0})],
+                                           pre_selection=None,
+                                           features_pipeline=LGBSimpleFeatures(),
+                                           post_selection=None)
+                self.students.append(AutoML(reader, [[pipeline_lvl1]], skip_conn=False, verbose=0))
+
+        preds = dict()
+        for estimator in self.students:
+            preds[estimator.levels[0][0].ml_algos[0].name] = estimator.fit_predict(_data, roles={'target': '__target__'})
+
+        models_scores = DataFrame(columns=[metric], index=preds.keys())
+        for name, pred in preds.items():
+            models_scores.loc[name, metric] = roc_auc_score(data[self.teacher.reader.used_array_attrs['target']],
+                                                            pred.data[:, 0])
+
+        self.models_scores = models_scores
+
+        return self.students[np.argmax(models_scores[metric])]
+
+    def distill_cb(self, data, labels=None, metric=None):
+        """Fits students to given data and finds the best one.
+
+        Args:
+            data: dataset to fit students to.
+            students: are used to learn knowledge from the teacher.
+            labels: labels for fitting students. If not provided, predict labels using the teacher.
+            metric: metric to maximize to find the best student.
+
+        Returns:
+            the best student.
+        """
+        if not self._fitted:
+            raise NotFittedError
+        _data = data.drop(columns=self.teacher.reader.used_array_attrs['target'])
+        if self.teacher.task.name == 'binary':
+            metric = 'AUC'
+            if labels is not None:
+                _data['__target__'] = labels
+            else:
+                _data['__target__'] = self.teacher.predict(_data).data[:, 0]
+        if self.teacher.task.name == 'multiclass':
+            metric = 'accuracy'
+            if labels is not None:
+                _data['__target__'] = labels
+            else:
+                _data['__target__'] = self.teacher.predict(_data).data
+        # TODO: implement metrics for other tasks
+        if students:
+            self.students = [student for student in students]
+        else:
+            self.students = list()
+            for algo in [BoostCB, BoostLGBM]:
+                # TODO: implement students consistent with lightautoml
+                reader = PandasToPandasReader(Task('reg'), samples=None, max_nan_rate=1, max_constant_rate=1,
+                                              advanced_roles=True, drop_score_co=-1, n_jobs=1)
+                pipeline_lvl1 = MLPipeline(ml_algos=[algo(default_params={'verbose': 0})],
+                                           pre_selection=None,
+                                           features_pipeline=LGBSimpleFeatures(),
+                                           post_selection=None)
+                self.students.append(AutoML(reader, [[pipeline_lvl1]], skip_conn=False, verbose=0))
+
         preds = dict()
         for estimator in self.students:
             preds[estimator.levels[0][0].ml_algos[0].name] = estimator.fit_predict(_data, roles={'target': '__target__'})
