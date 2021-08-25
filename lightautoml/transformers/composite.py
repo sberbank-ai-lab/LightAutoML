@@ -34,7 +34,58 @@ class Groupby:
             return [[fun(vec[idx].tolist()) for fun, vec in zip(functions, vectors)] for idx in (self.indices)]
         else:
             return [functions(vectors[idx].tolist()) for idx in (self.indices)]
+        
+class GroupByFactory:    
+    def __init__(self, kind):
+        super().__init__()
+        
+        assert kind is not None
+        assert kind != ''
+        self.kind = kind
+        
+    def fit(self, data, group, num=None, cat2=None):
+        assert data is not None
+        assert group is not None
+        
+        if self.kind == 'num_diff':
+            assert num is not None
+            num_values = data[num].to_numpy()
+            _dict = dict(zip(group.index, group.apply(np.nanmean, num_values)))
 
+        elif self.kind == 'cat_mode':
+            assert cat2 is not None
+            cat_2_values = data[cat2].to_numpy()
+            _dict = dict(zip(group.index, group.apply(GroupByTransformer.get_mode, cat_2_values)))
+
+        elif self.kind == 'cat_ismode':
+            assert cat2 is not None
+            cat_2_values = data[cat2].to_numpy()
+            _dict = dict(zip(group.index, group.apply(GroupByTransformer.get_mode, cat_2_values)))
+            
+        assert _dict is not None
+        return _dict
+
+    
+    def transform(self, data, value):
+        assert data is not None
+        
+        cat_values = data[value['cat']].to_numpy()
+        
+        if self.kind == 'num_diff':
+            num_values = data[value['num']].to_numpy()
+            new_arr = (num_values - np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
+
+        elif self.kind == 'cat_mode':
+            new_arr = np.vectorize(value['values'].get)(cat_values).reshape(-1, 1)
+
+        elif self.kind == 'cat_ismode':
+            cat_2_values = data[value['cat2']].to_numpy()
+            new_arr = (cat_2_values == np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)
+            
+        assert new_arr is not None
+        return new_arr
+
+                  
 class GroupByTransformer(LAMLTransformer):
     """
 
@@ -71,7 +122,7 @@ class GroupByTransformer(LAMLTransformer):
         self.dicts = {}        
 
     @staticmethod
-    def __get_mode(x):
+    def get_mode(x):
         return mode(x)[0][0]
 
     def fit(self, dataset):    
@@ -105,13 +156,16 @@ class GroupByTransformer(LAMLTransformer):
         feats = []
         for cat in cat_cols:
             cat_values = dataset.data[cat].to_numpy()
-
+            group = Groupby(cat_values)
+            
             for num in num_cols:
                 num_values = dataset.data[num].to_numpy()
                 
-                group = Groupby(cat_values)
                 _dict = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(np.nanmean, num_values))}
                 
+                _dict_2 = GroupByFactory('num_diff').fit(data=dataset.data, group=group, num=num, cat2=None)
+                assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{num}'
+                                
                 feature = f'{self._fname_prefix}__{cat}_delta_mean_{num}'
                 self.dicts[feature] = {
                     'cat': cat, 
@@ -125,8 +179,12 @@ class GroupByTransformer(LAMLTransformer):
                 num_values = dataset.data[cat2].to_numpy()
                 
                 if cat != cat2:
-                    _dict = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(GroupByTransformer.__get_mode, num_values))}
+                    _dict = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(GroupByTransformer.get_mode, num_values))}
 
+                    _dict_2 = GroupByFactory('cat_mode').fit(data=dataset.data, group=group, num=None, cat2=cat2)
+                    
+                    assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{cat2}'
+    
                     feature1 = f'{self._fname_prefix}__{cat}_mode_{cat2}'
                     self.dicts[feature1] = {
                         'cat': cat, 
@@ -184,6 +242,9 @@ class GroupByTransformer(LAMLTransformer):
                 cat_2_values = dataset.data[value['cat2']].to_numpy()
                 new_arr = (cat_2_values == [value['values'][k] if k in value['values'] else np.nan for k in cat_values]).reshape(-1, 1)
 
+            new_arr_2 = GroupByFactory(value['kind']).transform(data=dataset.data, value=value)
+            assert np.allclose(new_arr, new_arr_2, equal_nan=True, atol=1e-9), f"GroupByTransformer.__transform_new.num_diff.not_equal.{value['cat']}.{value['num']}"
+            
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, [feat], roles)
             outputs.append(output)
