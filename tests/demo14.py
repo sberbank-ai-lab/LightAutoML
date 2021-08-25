@@ -24,9 +24,7 @@ from lightautoml.transformers.categorical import LabelEncoder
 from lightautoml.transformers.numeric import FillnaMedian
 from lightautoml.pipelines.utils import get_columns_by_role
 
-# from lightautoml.transformers.composite import GroupByTransformer
-from composite import GroupByTransformer
-
+from lightautoml.transformers.composite import GroupByTransformer
 
 ################################
 # Features:
