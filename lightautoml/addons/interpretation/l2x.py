@@ -266,7 +266,7 @@ class L2XTextExplainer:
         self.max_vocab_length = max_vocab_length
         
         if gamma < 0:
-            logger.warn("For now sparse token highlighting will be encouraged, since gamma < 0")
+            logger.info2("For now sparse token highlighting will be encouraged, since gamma < 0")
         self.gamma = gamma
         if gamma_anneal_factor <= 0:
             raise ValueError("Gamma annealing factor should be positive, but {} given".format(temp_anneal_factor))
@@ -281,7 +281,7 @@ class L2XTextExplainer:
         if patience == 0:
             patience = extreme_patience
         if patience > extreme_patience:
-            logger.warn("extreme_patience (={}) must be greater or equal patience (={}), now extreme_patience also ={}".format(extreme_patience, patience, patience))
+            logger.info2("extreme_patience (={}) must be greater or equal patience (={}), now extreme_patience also ={}".format(extreme_patience, patience, patience))
             self.extreme_patience = patience
         self.patience = patience
         self.extreme_patience = extreme_patience
@@ -450,10 +450,10 @@ class L2XTextExplainer:
                 valid_loss_logs.append(valid_loss)
             if self.verbose:
                 if valid_loss is None:
-                    logger.info('Epoch: {}/{}, train loss: {}'.format(
+                    logger.info3('Epoch: {}/{}, train loss: {}'.format(
                         epoch + 1, self.n_epochs, train_loss))
                 else:
-                    logger.info('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(
+                    logger.info3('Epoch: {}/{}, train loss: {}, valid loss: {}'.format(
                         epoch + 1, self.n_epochs, train_loss, valid_loss))
             if valid_loss is not None:
                 scheduler.step(valid_loss)

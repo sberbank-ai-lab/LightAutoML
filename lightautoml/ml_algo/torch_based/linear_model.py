@@ -306,7 +306,7 @@ class TorchBasedLinearEstimator:
             weights = torch.from_numpy(weights.astype(np.float32))
 
         if data_val is None and y_val is None:
-            logger.warning('Validation data should be defined. No validation will be performed and C = 1 will be used')
+            logger.info2('Validation data should be defined. No validation will be performed and C = 1 will be used')
             self._optimize(data, data_cat, y, weights, 1.)
 
             return self

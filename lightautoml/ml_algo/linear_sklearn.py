@@ -250,7 +250,7 @@ class LinearL1CD(TabularMLAlgo):
 
                 if np.allclose(model.coef_, 0):
                     if n == (len(cs) - 1):
-                        logger.warning('All model coefs are 0. Model with l1_ratio {0} is dummy'.format(l1_ratio), UserWarning)
+                        logger.info2('All model coefs are 0. Model with l1_ratio {0} is dummy'.format(l1_ratio), UserWarning)
                     else:
                         logger.debug('C = {0} all model coefs are 0'.format(c))
                         continue
@@ -274,7 +274,7 @@ class LinearL1CD(TabularMLAlgo):
                     break
 
                 if self.timer.time_limit_exceeded():
-                    logger.info('Time limit exceeded')
+                    logger.info3('Time limit exceeded')
                     break
 
                 # TODO: Think about is it ok to check time inside train loop?
@@ -288,7 +288,7 @@ class LinearL1CD(TabularMLAlgo):
                 best_model = deepcopy(c_best_model)
 
             if self.timer.time_limit_exceeded():
-                logger.info('Time limit exceeded')
+                logger.info3('Time limit exceeded')
                 break
 
         val_pred = self.task.losses['sklearn'].bw_func(best_pred)

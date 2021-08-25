@@ -230,7 +230,7 @@ class PandasToPandasReader(Reader):
             Dataset with selected features.
 
         """
-        logger.error('\x1b[1mTrain data shape: {}\x1b[0m\n'.format(train_data.shape))
+        logger.info('\x1b[1mTrain data shape: {}\x1b[0m\n'.format(train_data.shape))
 
         if roles is None:
             roles = {}
@@ -525,7 +525,7 @@ class PandasToPandasReader(Reader):
                                           subsample=self.samples)
             top_scores = pd.concat([null_scores, top_scores], axis=1).max(axis=1)
             rejected = list(top_scores[top_scores < drop_co].index)
-            logger.info('Feats was rejected during automatic roles guess: {0}'.format(rejected))
+            logger.info3('Feats was rejected during automatic roles guess: {0}'.format(rejected))
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict

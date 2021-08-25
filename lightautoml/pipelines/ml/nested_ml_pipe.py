@@ -95,7 +95,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
             Tuple (model, predicted_values).
 
         """
-        logger.info('Start fit_predict for nested model on a single fold ...')
+        logger.info3('Start fit_predict for nested model on a single fold ...')
         # TODO: rewrite
         if isinstance(train, PandasDataset):
             train.folds = pd.Series(

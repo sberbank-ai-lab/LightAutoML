@@ -703,7 +703,7 @@ class AutoNLPWrap(LAMLTransformer):
 
             self.dicts[i] = {'transformer': deepcopy(transformer.fit(subs[i])), 'feats': feats}
             names.extend(feats)
-            logger.info(f'Feature {i} fitted')
+            logger.info3(f'Feature {i} fitted')
 
             del transformer
             gc.collect()
@@ -736,7 +736,7 @@ class AutoNLPWrap(LAMLTransformer):
                 full_hash = get_textarr_hash(df[i]) + get_textarr_hash(self.dicts[i]['feats'])
                 fname = os.path.join(self.cache_dir, full_hash + '.pkl')
                 if os.path.exists(fname):
-                    logger.info(f'Load saved dataset for {i}')
+                    logger.info3(f'Load saved dataset for {i}')
                     with open(fname, 'rb') as f:
                         new_arr = pickle.load(f)
                 else:
@@ -749,7 +749,7 @@ class AutoNLPWrap(LAMLTransformer):
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, self.dicts[i]['feats'], roles)
             outputs.append(output)
-            logger.info(f'Feature {i} transformed')
+            logger.info3(f'Feature {i} transformed')
         # create resulted
         dataset = dataset.empty().to_numpy().concat(outputs)
         # instance-wise sentence embedding normalization
@@ -767,7 +767,7 @@ class AutoNLPWrap(LAMLTransformer):
         elif mode == 'l1':
             return np.abs(x).sum(axis=1, keepdims=True)
         if mode is not None:
-            logger.warning(
+            logger.info2(
                 'Unknown sentence scaler mode: sent_scaler={}, '
                 'no normalization will be used'.format(mode)
             )

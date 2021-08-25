@@ -173,7 +173,7 @@ class WhiteBoxPreset(AutoMLPreset):
         """
         assert cv_iter is None or len(cv_iter) == 2, 'Expect custom iterator with len 2'
         if valid_data is None and cv_iter is None:
-            logger.warning("Validation data is not set. Train will be used as valid in report and valid prediction")
+            logger.info2("Validation data is not set. Train will be used as valid in report and valid prediction")
             valid_data = train_data
             valid_features = train_features
 

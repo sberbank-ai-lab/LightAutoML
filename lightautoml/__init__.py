@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 
 _root_logger = logging.getLogger()
@@ -7,7 +8,7 @@ _logger.setLevel(logging.WARNING)
 
 # if root logger has handlers, propagate messages up and let root logger process them
 if not _root_logger.hasHandlers():
-    _logger.addHandler(logging.StreamHandler())
+    _logger.addHandler(logging.StreamHandler(sys.stdout))
     _logger.propagate = False
 
 __all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'image',

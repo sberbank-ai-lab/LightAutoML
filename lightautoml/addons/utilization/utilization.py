@@ -241,11 +241,11 @@ class TimeUtilization:
         """
         set_stdout_level(verbosity_to_loglevel(verbose))
 
-        logger.error('Start automl \x1b[1mutilizator\x1b[0m with listed constraints:')
-        logger.error(f'- time: {self.timeout:.2f} seconds')
-        logger.error(f'- CPU: {self.cpu_limit} cores')
-        logger.error(f'- memory: {self.memory_limit} GB\n')
-        logger.error('\x1b[1mIf one preset completes earlier, next preset configuration will be started\x1b[0m\n')
+        logger.info('Start automl \x1b[1mutilizator\x1b[0m with listed constraints:')
+        logger.info(f'- time: {self.timeout:.2f} seconds')
+        logger.info(f'- CPU: {self.cpu_limit} cores')
+        logger.info(f'- memory: {self.memory_limit} GB\n')
+        logger.info('\x1b[1mIf one preset completes earlier, next preset configuration will be started\x1b[0m\n')
 
         timer = PipelineTimer(self.timeout, **self.timing_params).start()
         history = []
@@ -260,23 +260,23 @@ class TimeUtilization:
         while flg_continute:
             n_ms += 1
 
-            logger.error('='*50)
+            logger.info('='*50)
 
             for n_cfg, config in enumerate(self.configs_list):
                 random_states = self._get_upd_states(self.random_state_keys, upd_state_val)
                 random_states['general_params'] = {'return_all_predictions': False}
                 upd_state_val += 1
 
-                logger.error(f'Start {n_cfg} automl preset configuration:')
-                logger.error('\x1b[1m{}\x1b[0m, random state: {}'.format(config.split('/')[-1], random_states))
+                logger.info(f'Start {n_cfg} automl preset configuration:')
+                logger.info('\x1b[1m{}\x1b[0m, random state: {}'.format(config.split('/')[-1], random_states))
 
                 cur_kwargs = self.kwargs.copy()
                 for k in random_states.keys():
                     if k in self.kwargs:
-                        logger.info('Found {} in kwargs, need to combine'.format(k))
+                        logger.info3('Found {} in kwargs, need to combine'.format(k))
                         random_states[k] = {**cur_kwargs[k], **random_states[k]}
                         del cur_kwargs[k]
-                        logger.info('Merged variant for {} = {}'.format(k, random_states[k]))
+                        logger.info3('Merged variant for {} = {}'.format(k, random_states[k]))
 
                 automl = self.automl_factory(self.task, timer.time_left, memory_limit=self.memory_limit,
                                              cpu_limit=self.cpu_limit, gpu_ids=self.gpu_ids,
@@ -286,7 +286,7 @@ class TimeUtilization:
                 val_pred = automl.fit_predict(train_data, roles, train_features, cv_iter,
                                               valid_data, valid_features, verbose=verbose, log_file=log_file)
                 
-                logger.error('='*50)
+                logger.info('='*50)
 
                 amls[n_cfg].append(MLPipeForAutoMLWrapper.from_automl(automl))
                 aml_preds[n_cfg].append(val_pred)

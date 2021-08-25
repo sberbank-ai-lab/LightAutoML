@@ -423,7 +423,7 @@ class Trainer:
                 self.scheduler.step(np.mean(val_loss))
 
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
-                logger.info(
+                logger.info3(
                     'Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(
                         me=self.metric(*val_data),
                         e=self.epoch,
@@ -438,7 +438,7 @@ class Trainer:
 
         if self.is_snap:
             val_loss, val_data = self.test(dataloader=dataloaders['val'], snap=True, stage='val')
-            logger.info(
+            logger.info3(
                 'Result SE, val loss: {vl}, val metric: {me}'.format(
                     me=self.metric(*val_data),
                     vl=np.mean(val_loss)
@@ -446,7 +446,7 @@ class Trainer:
             )
         elif self.se.early_stop:
             val_loss, val_data = self.test(dataloader=dataloaders['val'])
-            logger.info(
+            logger.info3(
                 'Early stopping: val loss: {vl}, val metric: {me}'.format(
                     me=self.metric(*val_data),
                     vl=np.mean(val_loss)
@@ -500,7 +500,7 @@ class Trainer:
                     val_loss, val_data = self.test(dataloader=dataloaders['val'])
                     self.se.update(self.model, np.mean(val_loss))
                     if self.verbose is not None:
-                        logger.info(
+                        logger.info3(
                             'Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}'.format(
                                 me=self.metric(*val_data),
                                 e=self.epoch,

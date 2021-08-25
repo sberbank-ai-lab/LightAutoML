@@ -168,18 +168,18 @@ class AutoMLPreset(AutoML):
                            valid_data=valid_data,
                            valid_features=valid_features
                            )
-        logger.error(f'Task: {self.task.name}')
+        logger.info(f'Task: {self.task.name}\n')
 
-        logger.error('Start automl preset with listed constraints:')
-        logger.error(f'- time: {self.timer.timeout:.2f} seconds')
-        logger.error(f'- CPU: {self.cpu_limit} cores')
-        logger.error(f'- memory: {self.memory_limit} GB\n')
+        logger.info('Start automl preset with listed constraints:')
+        logger.info(f'- time: {self.timer.timeout:.2f} seconds')
+        logger.info(f'- CPU: {self.cpu_limit} cores')
+        logger.info(f'- memory: {self.memory_limit} GB\n')
 
         self.timer.start()
         result = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features, verbose)
 
-        logger.error('\x1b[1mAutoml preset training completed in {:.2f} seconds\x1b[0m\n'.format(self.timer.time_spent))
-        logger.error(f'Model description:\n{self.create_model_str_desc()}\n')
+        logger.info('\x1b[1mAutoml preset training completed in {:.2f} seconds\x1b[0m\n'.format(self.timer.time_spent))
+        logger.info(f'Model description:\n{self.create_model_str_desc()}\n')
 
         return result
     
@@ -230,7 +230,7 @@ class AutoMLPreset(AutoML):
         level = verbosity_to_loglevel(verbose)
         set_stdout_level(level)
 
-        logger.error(f'Stdout logging level is {logging._levelToName[level]}.')
+        logger.info(f'Stdout logging level is {logging._levelToName[level]}.')
 
     @staticmethod
     def set_logfile(filename: str):

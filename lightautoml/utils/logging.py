@@ -2,8 +2,8 @@
 
 import io
 import os
-import logging
 import sys
+import logging
 import warnings
 
 from .. import _logger
@@ -11,13 +11,58 @@ from .. import _logger
 formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
 formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
 
-logging.addLevelName(logging.CRITICAL, 'critical_level')
-logging.addLevelName(logging.ERROR, 'log_lvl_1')
-logging.addLevelName(logging.WARNING, 'log_lvl_2')
-logging.addLevelName(logging.INFO, 'log_lvl_3')
-logging.addLevelName(logging.DEBUG, 'log_lvl_4')
+INFO2 = 17
+INFO3 = 13
 
-logging.captureWarnings(True)
+def add_logging_level(levelName, levelNum, methodName=None):
+    """
+    Comprehensively adds a new logging level to the `logging` module and the
+    currently configured logging class.
+
+    `levelName` becomes an attribute of the `logging` module with the value
+    `levelNum`. `methodName` becomes a convenience method for both `logging`
+    itself and the class returned by `logging.getLoggerClass()` (usually just
+    `logging.Logger`). If `methodName` is not specified, `levelName.lower()` is
+    used.
+
+    To avoid accidental clobberings of existing attributes, this method will
+    raise an `AttributeError` if the level name is already an attribute of the
+    `logging` module or if the method name is already present 
+
+    Example
+    -------
+    >>> addLoggingLevel('TRACE', logging.DEBUG - 5)
+    >>> logging.getLogger(__name__).setLevel("TRACE")
+    >>> logging.getLogger(__name__).trace('that worked')
+    >>> logging.trace('so did this')
+    >>> logging.TRACE
+    5
+
+    """
+    assert (levelNum > 0) and (levelNum < 50)
+    if not methodName:
+        methodName = levelName.lower()
+
+    if hasattr(logging, levelName):
+        raise AttributeError('{} already defined in logging module'.format(levelName))
+    if hasattr(logging, methodName):
+        raise AttributeError('{} already defined in logging module'.format(methodName))
+    if hasattr(logging.getLoggerClass(), methodName):
+        raise AttributeError('{} already defined in logger class'.format(methodName))
+
+    def logForLevel(self, message, *args, **kwargs):
+        if self.isEnabledFor(levelNum):
+            self._log(levelNum, message, args, **kwargs)
+    def logToRoot(message, *args, **kwargs):
+        logging.log(levelNum, message, *args, **kwargs)
+
+    logging.addLevelName(levelNum, levelName)
+    setattr(logging, levelName, levelNum)
+    setattr(logging.getLoggerClass(), methodName, logForLevel)
+    setattr(logging, methodName, logToRoot)
+
+add_logging_level('INFO2', INFO2)
+add_logging_level('INFO3', INFO3)
 
 class LoggerStream(io.IOBase):
     def __init__(self, new_write) -> None:
@@ -30,15 +75,13 @@ class LoggerStream(io.IOBase):
 
 def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:
-        log_level = logging.CRITICAL
-        # warnings.filterwarnings("ignore")
-    elif verbosity == 1:
         log_level = logging.ERROR
-        # warnings.filterwarnings("ignore")
-    elif verbosity == 2:
-        log_level = logging.WARNING
-    elif verbosity == 3:
+    elif verbosity == 1:
         log_level = logging.INFO
+    elif verbosity == 2:
+        log_level = logging.INFO2
+    elif verbosity == 3:
+        log_level = logging.INFO3
     else:
         log_level = logging.DEBUG
 

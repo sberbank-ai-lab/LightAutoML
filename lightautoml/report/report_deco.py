@@ -876,7 +876,7 @@ class ReportDecoWhitebox(ReportDeco):
         if self._model.general_params['report']:
             self._generate_whitebox_section()
         else:
-            logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
+            logger.info2("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
 
         self.generate_report()
         return predict_proba
@@ -904,7 +904,7 @@ class ReportDecoWhitebox(ReportDeco):
         if self._model.general_params['report']:
             self._generate_whitebox_section()
         else:
-            logger.warning("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
+            logger.info2("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
 
         self.generate_report()
         return predict_proba

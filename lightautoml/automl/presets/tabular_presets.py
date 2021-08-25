@@ -493,18 +493,18 @@ class TabularAutoML(AutoMLPreset):
 
             else:
                 if not silent:
-                    logger.warning('No feature importances to show. Please use another calculation method')
+                    logger.info2('No feature importances to show. Please use another calculation method')
                 return None
 
         if calc_method != 'accurate':
             if not silent:
-                logger.warning("Unknown calc_method. " +
+                logger.info2("Unknown calc_method. " +
                                "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
             return None
 
         if data is None:
             if not silent:
-                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+                logger.info2('Data parameter is not setup for accurate calculation method. Aborting...')
             return None
 
         read_csv_params = self._get_read_csv_params()
@@ -579,20 +579,20 @@ class TabularUtilizedAutoML(TimeUtilization):
             n_feat_imps = len(feat_imps)
             if n_feat_imps == 0:
                 if not silent:
-                    logger.warning('No feature importances to show. Please use another calculation method')
+                    logger.info2('No feature importances to show. Please use another calculation method')
                 return None
             return (pd.concat(feat_imps).groupby('Feature')['Importance'].agg(sum).sort_values(
                 ascending=False) / n_feat_imps).reset_index()
 
         if calc_method != 'accurate':
             if not silent:
-                logger.warning("Unknown calc_method. " +
+                logger.info2("Unknown calc_method. " +
                                "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
             return None
 
         if data is None:
             if not silent:
-                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+                logger.info2('Data parameter is not setup for accurate calculation method. Aborting...')
             return None
 
         automl = self.outer_pipes[0].ml_algos[0].models[0][0]

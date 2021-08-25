@@ -48,7 +48,7 @@ class OptunaTunableMixin(ABC):
         return self._sample(trial, suggested_params)
 
     def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
-        # logger.info(f'Suggested parameters: {suggested_params}')
+        # logger.info3(f'Suggested parameters: {suggested_params}')
 
         trial_values = copy(suggested_params)
 
@@ -181,7 +181,7 @@ class OptunaTuner(ParamsTuner):
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
-        logger.error(f'Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time:.2f} secs')
+        logger.info(f'Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time:.2f} secs')
 
         self._upd_timeout(estimated_tuning_time)
         metric_name = train_valid_iterator.train.task.get_dataset_metric().name
@@ -203,7 +203,7 @@ class OptunaTuner(ParamsTuner):
             """
             ml_algo.mean_trial_time = study.trials_dataframe()['duration'].mean().total_seconds()
             self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
-            logger.info(f'Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}')
+            logger.info3(f'Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}')
 
         try:
 
@@ -228,8 +228,8 @@ class OptunaTuner(ParamsTuner):
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
             
-            logger.error(f'Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed')
-            logger.warning(f'The set of hyperparameters \x1b[1m{self._best_params}\x1b[0m\n achieve {self.study.best_value:.4f} {metric_name}')
+            logger.info(f'Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed')
+            logger.info2(f'The set of hyperparameters \x1b[1m{self._best_params}\x1b[0m\n achieve {self.study.best_value:.4f} {metric_name}')
 
             if flg_new_iterator:
                 # if tuner was fitted on holdout set we dont need to save train results

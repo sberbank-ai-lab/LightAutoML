@@ -220,7 +220,7 @@ class TabularMLAlgo(MLAlgo):
         
         iterator_len = len(train_valid_iterator)
         if iterator_len > 1:
-            logger.error('Start fitting \x1b[1m{}\x1b[0m ...'.format(self._name))
+            logger.info('Start fitting \x1b[1m{}\x1b[0m ...'.format(self._name))
             logger.debug( f'Training params: {self.params}')            
 
         # save features names
@@ -244,7 +244,7 @@ class TabularMLAlgo(MLAlgo):
         # TODO: Make parallel version later
         for n, (idx, train, valid) in enumerate(train_valid_iterator):
             if iterator_len > 1:
-                logger.warning('===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m ====='.format(n, self._name))
+                logger.info2('===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m ====='.format(n, self._name))
             self.timer.set_control_point()
 
             model, pred = self.fit_predict_single_fold(train, valid)
@@ -257,7 +257,7 @@ class TabularMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    logger.error('Time limit exceeded after calculating fold {0}\n'.format(n))
+                    logger.info('Time limit exceeded after calculating fold {0}\n'.format(n))
                     break
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
@@ -266,11 +266,11 @@ class TabularMLAlgo(MLAlgo):
         preds_ds = self._set_prediction(preds_ds, preds_arr)
 
         if iterator_len > 1:
-            logger.error(f'Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m')
-            logger.info(f'Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}')
+            logger.info(f'Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m')
+            logger.info3(f'Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}')
 
         if iterator_len > 1 or 'Tuned' not in self._name:
-            logger.error('\x1b[1m{}\x1b[0m fitting and predicting completed'.format(self._name))
+            logger.info('\x1b[1m{}\x1b[0m fitting and predicting completed'.format(self._name))
         return preds_ds
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:

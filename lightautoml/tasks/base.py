@@ -315,7 +315,7 @@ class Task:
                 # ??? "rewrite METRIC params" ???
                 if loss == metric:
                     metric_params = loss_params
-                    logger.warning('As loss and metric are equal, metric params are ignored.')
+                    logger.info2('As loss and metric are equal, metric params are ignored.')
 
             else:
                 assert loss not in _valid_loss_args, \
@@ -328,7 +328,7 @@ class Task:
                 try:
                     self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
                 except (AssertionError, TypeError, ValueError):
-                    logger.warning("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
+                    logger.info2("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
 
                 # self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
 

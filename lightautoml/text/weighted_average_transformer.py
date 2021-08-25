@@ -80,7 +80,7 @@ class WeightedAverageTransformer(TransformerMixin):
     def get_statistic(self):
         """Get module statistics."""
 
-        logger.info(f'N_words: {self.w_all}, N_emb: {self.w_emb}, coverage: {self.w_emb / self.w_all}.')
+        logger.info3(f'N_words: {self.w_all}, N_emb: {self.w_emb}, coverage: {self.w_emb / self.w_all}.')
 
     def get_embedding_(self, sentence: Sequence[str]) -> np.ndarray:
         result = np.zeros((self.embed_size,))

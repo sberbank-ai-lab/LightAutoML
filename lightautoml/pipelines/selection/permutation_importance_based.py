@@ -79,11 +79,11 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
             shuffled_col = valid_data[permutation, col]
 
             # Set shuffled column
-            logger.info('Shuffled column set')
+            logger.info3('Shuffled column set')
             valid_data[col] = shuffled_col
 
             # Calculate predict and metric
-            logger.info('Shuffled column set')
+            logger.info3('Shuffled column set')
             new_preds = ml_algo.predict(valid_data)
             shuffled_score = ml_algo.score(new_preds)
             logger.debug('Shuffled score for col {} = {}, difference with normal = {}'.format(col,
@@ -126,7 +126,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
 
         """
         if not fit_on_holdout:
-            logger.warning('This selector only for holdout training. fit_on_holout argument added just to be compatible')
+            logger.info2('This selector only for holdout training. fit_on_holout argument added just to be compatible')
 
         super().__init__(feature_pipeline, ml_algo, imp_estimator, True)
 
@@ -154,15 +154,15 @@ class NpIterativeFeatureSelector(SelectionPipeline):
 
         for it, chunk in enumerate(chunks):
             if self.max_features_cnt_in_result is not None and len(selected_feats) >= self.max_features_cnt_in_result:
-                logger.info(
+                logger.info3(
                     'We exceeded max_feature_cnt_in_result bound (selected features count = {}). Exiting from iterative algo...'.format(
                         len(selected_feats)))
                 break
             selected_feats += chunk
-            logger.info('Started iteration {}, chunk = {}, feats to check = {}'.format(it, chunk, selected_feats))
+            logger.info3('Started iteration {}, chunk = {}, feats to check = {}'.format(it, chunk, selected_feats))
             cs = PredefinedSelector(selected_feats)
             selected_cols_iterator = train_valid.apply_selector(cs)
-            logger.info('Features in SCI = {}'.format(selected_cols_iterator.features))
+            logger.info3('Features in SCI = {}'.format(selected_cols_iterator.features))
 
             # Create copy of MLAlgo for iterative algo only
             ml_algo_for_iterative, preds = tune_and_fit_predict(deepcopy(self._empty_algo), self.tuner, selected_cols_iterator)
@@ -171,7 +171,7 @@ class NpIterativeFeatureSelector(SelectionPipeline):
             logger.debug('Current score = {}, current best score = {}'.format(cur_score, cur_best_score))
 
             if cur_best_score is None or cur_best_score < cur_score:
-                logger.info('Update best score from {} to {}'.format(cur_best_score, cur_score))
+                logger.info3('Update best score from {} to {}'.format(cur_best_score, cur_score))
                 cur_best_score = cur_score
                 cnt_without_update = 0
             else:
@@ -186,5 +186,5 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         self.map_raw_feature_importances(imp)
 
         selected_feats = list(self.mapped_importances.index)
-        logger.info('Finally selected feats = {}'.format(selected_feats))
+        logger.info3('Finally selected feats = {}'.format(selected_feats))
         self._selected_features = selected_feats

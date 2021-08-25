@@ -235,7 +235,7 @@ class AutoCVWrap(LAMLTransformer):
                 fname = os.path.join(self.cache_dir, full_hash + '.pkl')
 
                 if os.path.exists(fname):
-                    logger.info(f'Load saved dataset for {conlumn_name}')
+                    logger.info3(f'Load saved dataset for {conlumn_name}')
 
                     with open(fname, 'rb') as f:
                         new_arr = pickle.load(f)
@@ -250,6 +250,6 @@ class AutoCVWrap(LAMLTransformer):
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, self.dicts[conlumn_name]['feats'], roles)
             outputs.append(output)
-            logger.info(f'Feature {conlumn_name} transformed')
+            logger.info3(f'Feature {conlumn_name} transformed')
         # create resulted
         return dataset.empty().to_numpy().concat(outputs)

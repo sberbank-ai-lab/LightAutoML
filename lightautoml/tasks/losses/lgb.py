@@ -222,7 +222,7 @@ class LGBLoss(Loss):
         # what about task_name? in this case?
         if self.fobj_name in _lgb_force_metric:
             metric, greater_is_better, metric_params = _lgb_force_metric[self.fobj_name]
-            logger.warning('For lgbm {0} callback metric switched to {1}'.format(self.fobj_name, metric), UserWarning)
+            logger.info2('For lgbm {0} callback metric switched to {1}'.format(self.fobj_name, metric), UserWarning)
 
         self.metric_params = {}
 
