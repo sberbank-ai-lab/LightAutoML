@@ -99,8 +99,6 @@ class GroupByTransformer(LAMLTransformer):
         
         cat_cols = get_columns_by_role(dataset, 'Category')
         num_cols = get_columns_by_role(dataset, 'Numeric')
-        logger.debug(f'GroupByTransformer.__fit_new.cat_cols={cat_cols}')
-        logger.debug(f'GroupByTransformer.__fit_new.num_cols:{num_cols}')
 #         logger.debug(f'GroupByTransformer.__fit_new.cat_cols={cat_cols}')
 #         logger.debug(f'GroupByTransformer.__fit_new.num_cols:{num_cols}')
         
@@ -110,16 +108,23 @@ class GroupByTransformer(LAMLTransformer):
         feats = []
         for cat in cat_cols:
             cat_index = np.where(col_names == cat)[0][0]
+            cat_values = dataset.data[cat].to_numpy()
+
 #             logger.debug(f'cat={cat}({cat_index})')
             
             for num in num_cols:
                 num_index = np.where(col_names == num)[0][0]
+                num_values = dataset.data[num].to_numpy()
 #                 logger.debug(f'num={num}({num_index})')
                 
                 _dict = {cat_current: np.nanmean(col_values[np.where(col_values[:, cat_index] == cat_current), num_index]) for cat_current in np.unique(col_values[:, cat_index])}
 
-                group = Groupby(col_values[:, cat_index])
-                _dict_2 = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(np.nanmean, col_values[:, num_index]))}
+                group = Groupby(cat_values)
+                _dict_2 = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(np.nanmean, num_values))}
+#                 logger.debug(f'np.unique(col_values[:, cat_index])={np.unique(col_values[:, cat_index])}')
+#                 logger.debug(f'group.__dict__={group.__dict__}')
+#                 logger.debug(f'_dict={_dict}')
+#                 logger.debug(f'_dict_2={_dict_2}')
                 
                 assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{num}'
                        
@@ -137,6 +142,7 @@ class GroupByTransformer(LAMLTransformer):
                 
             for cat2 in cat_cols:
                 num_index = np.where(col_names == cat2)[0][0]
+                num_values = dataset.data[cat2].to_numpy()
 #                 logger.debug(f'cat2={cat2}({num_index})')
                 
                 if cat != cat2:
@@ -146,7 +152,7 @@ class GroupByTransformer(LAMLTransformer):
                         for cat_current in np.unique(col_values[:, cat_index])
                     }
 
-                    _dict_2 = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(GroupByTransformer.__get_mode, col_values[:, num_index]))}
+                    _dict_2 = {cat_value: cat_group_value for cat_value, cat_group_value in zip(group.index, group.apply(GroupByTransformer.__get_mode, num_values))}
 
                     assert np.array([np.isclose(_dict[k], _dict_2[k], equal_nan=True) for k in _dict]).all(), f'GroupByTransformer.__fit_new.not_equal.{cat}.{cat2}'
     
