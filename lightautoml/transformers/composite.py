@@ -122,7 +122,7 @@ class GroupBy_num_min:
         return new_arr
 
 class GroupBy_num_max:    
-    id = 'num_delta_max'
+    id = 'num_max'
     
     def fit(self, data, group, num=None, cat2=None):
         assert data is not None
