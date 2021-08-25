@@ -7,11 +7,6 @@ from ..pipelines.utils import get_columns_by_role
 from ..dataset.roles import NumericRole
 from ..utils.logging import get_logger
 
-# from lightautoml.transformers.base import LAMLTransformer
-# from lightautoml.pipelines.utils import get_columns_by_role
-# from lightautoml.dataset.roles import NumericRole
-# from lightautoml.utils.logging import get_logger, verbosity_to_loglevel
-
 from scipy.stats import mode
 
 logger = get_logger(__name__)
@@ -47,7 +42,7 @@ class GroupByFactory:
         assert data is not None
         assert group is not None
         
-        if self.kind == 'num_diff':
+        if self.kind == 'num_delta_mean':
             assert num is not None
             num_values = data[num].to_numpy()
             _dict = dict(zip(group.index, group.apply(np.nanmean, num_values)))
@@ -57,7 +52,7 @@ class GroupByFactory:
             cat_2_values = data[cat2].to_numpy()
             _dict = dict(zip(group.index, group.apply(GroupByTransformer.get_mode, cat_2_values)))
 
-        elif self.kind == 'cat_ismode':
+        elif self.kind == 'cat_is_mode':
             assert cat2 is not None
             cat_2_values = data[cat2].to_numpy()
             _dict = dict(zip(group.index, group.apply(GroupByTransformer.get_mode, cat_2_values)))
@@ -71,14 +66,14 @@ class GroupByFactory:
         
         cat_values = data[value['cat']].to_numpy()
         
-        if self.kind == 'num_diff':
+        if self.kind == 'num_delta_mean':
             num_values = data[value['num']].to_numpy()
             new_arr = (num_values - np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)            
 
         elif self.kind == 'cat_mode':
             new_arr = np.vectorize(value['values'].get)(cat_values).reshape(-1, 1)
 
-        elif self.kind == 'cat_ismode':
+        elif self.kind == 'cat_is_mode':
             cat_2_values = data[value['cat2']].to_numpy()
             new_arr = (cat_2_values == np.vectorize(value['values'].get)(cat_values)).reshape(-1, 1)
             
@@ -159,35 +154,42 @@ class GroupByTransformer(LAMLTransformer):
             group = Groupby(cat_values)
             
             for num in num_cols:
-                _dict = GroupByFactory('num_diff').fit(data=dataset.data, group=group, num=num, cat2=None)
-                                
-                feature = f'{self._fname_prefix}__{cat}_delta_mean_{num}'
+                kind = 'num_delta_mean'
+                feature = f'{self._fname_prefix}__{cat}_{kind}_{num}'
                 self.dicts[feature] = {
                     'cat': cat, 
                     'num': num, 
-                    'values': _dict, 
-                    'kind': 'num_diff'
+                    'cat2': None, 
+                    'values': GroupByFactory(kind).fit(data=dataset.data, group=group, num=num, cat2=None), 
+                    'kind': kind
                 }
                 feats.append(feature)
                 
             for cat2 in cat_cols:
-                if cat != cat2:
-                    _dict = GroupByFactory('cat_mode').fit(data=dataset.data, group=group, num=None, cat2=cat2)
+                if cat != cat2:                    
     
-                    feature1 = f'{self._fname_prefix}__{cat}_mode_{cat2}'
+                    kind = 'cat_mode'
+                    
+                    # group results are the same for 'cat_mode' and 'cat_is_mode'
+                    _dict = GroupByFactory(kind).fit(data=dataset.data, group=group, num=None, cat2=cat2)
+
+                    feature1 = f'{self._fname_prefix}__{cat}_{kind}_{cat2}'
                     self.dicts[feature1] = {
                         'cat': cat, 
+                        'num': None, 
                         'cat2': cat2, 
                         'values': _dict, 
-                        'kind': 'cat_mode'
+                        'kind': kind
                     }
                     
-                    feature2 = f'{self._fname_prefix}__{cat}_is_mode_{cat2}'
+                    kind = 'cat_is_mode'
+                    feature2 = f'{self._fname_prefix}__{cat}_{kind}_{cat2}'
                     self.dicts[feature2] = {
                         'cat': cat, 
+                        'num': None, 
                         'cat2': cat2, 
                         'values': _dict, 
-                        'kind': 'cat_ismode'
+                        'kind': kind
                     }
                     feats.extend([feature1, feature2])
             
