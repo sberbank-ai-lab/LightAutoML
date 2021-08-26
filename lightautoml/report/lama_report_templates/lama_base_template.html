@@ -20,7 +20,7 @@
     #myUL {
         list-style-type: none;
     }
-    
+
     /* Remove margins and padding from the parent ul */
     #myUL {
         margin: 0;
@@ -56,10 +56,35 @@
     .active {
         display: block;
     }
+    {% if pdf %}
+    /* For WeasyPrint */
+    @media print {
+        @page {
+            size: A4 landscape;
+        }
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        td, th {
+            font-size: 10px;
+            padding: 3px;
+        }
+        img {
+            max-height: 500px;
+            max-width: 800px;
+        }
+        .nested {
+            display: block;
+        }
+        .caret::before {
+            transform: rotate(90deg);
+        }
+    }
+    {% endif %}
 </style>
 <!--
 <script src="shap.js"></script>
-    
+
 -->
 
 <body>

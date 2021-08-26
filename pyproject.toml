@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.10"
+version = "0.2.16"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
            "Simakov Dmitrii <Simakov.D.E@sberbank.ru>"]
 readme = "README.md"
+license = "Apache-2.0"
 homepage = "https://lightautoml.readthedocs.io/en/latest/"
 repository = "https://github.com/sberbank-ai-lab/LightAutoML"
 classifiers = [
@@ -32,7 +33,7 @@ pandas = ">=1"
 scikit-learn = ">=0.22"
 lightgbm = "^2.3"
 optuna = "*"
-torch = ">=1.6"
+torch = "<1.9"
 holidays = "*"
 networkx = "*"
 cmaes = "*"
@@ -48,10 +49,10 @@ seaborn = "*"
 
 transformers = ">=4"
 nltk = "*"
-gensim = "*"
+gensim = ">=4"
 tqdm = "*"
 efficientnet-pytorch = "*"
-albumentations = "*"
+albumentations = ">=0.4.6"
 opencv-python = "*"
 joblib = "*"
 pywavelets = "*"
@@ -61,6 +62,8 @@ torchvision = "*"
 webencodings = "*"
 
 importlib-metadata = {version = "^1.0", python = "<3.8"}
+weasyprint = {version = "^52.5", optional = true}
+cffi = {version = "^1.14.5", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -73,6 +76,9 @@ nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
 
+
+[tool.poetry.extras]
+pdf = ["weasyprint", "cffi"]
 
 
 [build-system]

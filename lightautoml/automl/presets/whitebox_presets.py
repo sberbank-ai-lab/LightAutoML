@@ -4,7 +4,6 @@ import os
 from copy import deepcopy
 from typing import Optional, Sequence, Any, cast, Iterable
 
-from log_calls import record_history
 
 from .base import AutoMLPreset, upd_params
 from ...dataset.np_pd_dataset import NumpyDataset
@@ -18,7 +17,6 @@ logger = get_logger(__name__)
 _base_dir = os.path.dirname(__file__)
 
 
-@record_history(enabled=False)
 class WhiteBoxPreset(AutoMLPreset):
     """Preset for AutoWoE - logistic regression over binned features (scorecard).
 

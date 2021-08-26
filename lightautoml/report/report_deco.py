@@ -22,20 +22,20 @@ base_dir = os.path.dirname(__file__)
 
 def extract_params(input_struct):
     params = dict()
-    for key in input_struct.__dict__:
-        if key.startswith('_'):
+    iterator = input_struct if isinstance(input_struct, dict) else input_struct.__dict__
+    for key in iterator:
+        if key.startswith(('_', 'autonlp_params')):
             continue
-        value = input_struct.__dict__[key]
-        if type(value) in [bool, int, float, dict, str]:
+        value = iterator[key]
+        if type(value) in [bool, int, float, str]:
             params[key] = value
         elif value is None:
             params[key] = None
-        elif hasattr(value, '__dict__'):
+        elif hasattr(value, '__dict__') or isinstance(value, dict):
             params[key] = extract_params(value)
         else:
             params[key] = str(type(value))
     return params
-
 
 def plot_roc_curve_image(data, path):
     sns.set(style="whitegrid", font_scale=1.5)
@@ -158,7 +158,8 @@ def plot_pie_f1_metric(data, F1_thresh, path):
     return prec, rec, F1
 
 
-def f1_score_w_co(data, min_co=.01, max_co=.99, step=0.01):
+def f1_score_w_co(input_data, min_co=.01, max_co=.99, step=0.01):
+    data = input_data.copy()
     data['y_pred'] = np.clip(np.ceil(data['y_pred'].values / step) * step, min_co, max_co)
 
     pos = data['y_true'].sum()
@@ -324,6 +325,10 @@ class ReportDeco:
     @property
     def mapping(self):
         return self._model.reader.class_mapping
+    
+    @property
+    def task(self):
+        return self._model.reader.task._name
 
     def __init__(self, *args, **kwargs):
         """
@@ -347,6 +352,7 @@ class ReportDeco:
         self.template_path = kwargs.get('template_path', os.path.join(base_dir, 'lama_report_templates/'))
         self.output_path = kwargs.get('output_path', 'lama_report/')
         self.report_file_name = kwargs.get('report_file_name', 'lama_interactive_report.html')
+        self.pdf_file_name = kwargs.get('pdf_file_name', None)
 
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path, exist_ok=True)
@@ -370,9 +376,6 @@ class ReportDeco:
 
     def __call__(self, model):
         self._model = model
-
-        # AutoML only
-        self.task = self._model.task._name  # valid_task_names = ['binary', 'reg', 'multiclass']
 
         # add informataion to report
         self._model_name = model.__class__.__name__
@@ -430,7 +433,10 @@ class ReportDeco:
         f_weighted = f1_score(y_true, y_pred, average='weighted')
 
         # classification report for features
-        classes = sorted(self.mapping, key=self.mapping.get)
+        if self.mapping:
+            classes = sorted(self.mapping, key=self.mapping.get)
+        else:
+            classes = np.arange(self._N_classes)
         p, r, f, s = precision_recall_fscore_support(y_true, y_pred)
         cls_report = pd.DataFrame({'Class name': classes, 'Precision': p, 'Recall': r, 'F1-score': f, 'Support': s})
         self._inference_content['classification_report'] = cls_report.to_html(index=False, float_format='{:.4f}'.format,
@@ -446,12 +452,12 @@ class ReportDeco:
             if self.mapping is not None:
                 data['y_true'] = np.array([self.mapping[y] for y in data['y_true'].values])
             data['y_pred'] = preds._data.argmax(axis=1)
+            data = data[~np.isnan(preds._data).any(axis=1)]
         else:
             data['y_pred'] = preds._data[:, 0]
             data.sort_values('y_pred', ascending=False, inplace=True)
             data['bin'] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
-        # remove NaN in predictions:
-        data = data[~data['y_pred'].isnull()]
+            data = data[~data['y_pred'].isnull()]
         return data
 
     def fit_predict(self, *args, **kwargs):
@@ -515,6 +521,7 @@ class ReportDeco:
             self._model_summary = pd.DataFrame({'Evaluation parameter': evaluation_parameters, \
                                                 'Validation sample': [mean_ae, median_ae, mse, r2, evs]})
         elif self.task == 'multiclass':
+            self._N_classes = len(train_data[self._target].drop_duplicates())
             self._inference_content['confusion_matrix'] = 'valid_confusion_matrix.png'
 
             index_names = np.array([['Precision', 'Recall', 'F1-score'], \
@@ -609,7 +616,7 @@ class ReportDeco:
         # update model section
         self._generate_model_section()
 
-        # generate predict section    
+        # generate predict section
         self._generate_inference_section(data)
         self.generate_report()
         return test_preds
@@ -755,10 +762,22 @@ class ReportDeco:
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         report = env.get_template(self._base_template_path).render(
             title=self.title,
-            sections=sections_list
+            sections=sections_list,
+            pdf=self.pdf_file_name
         )
         with open(os.path.join(self.output_path, self.report_file_name), "w", encoding='utf-8') as f:
             f.write(report)
+
+        if self.pdf_file_name:
+            try:
+                from weasyprint import HTML
+
+                HTML(
+                    string=report,
+                    base_url=self.output_path
+                ).write_pdf(os.path.join(self.output_path, self.pdf_file_name))
+            except ModuleNotFoundError:
+                print("Can't generate PDF report: check manual for installing pdf extras.")
 
 
 _default_wb_report_params = {"automl_date_column": "",
@@ -912,3 +931,119 @@ class ReportDecoWhitebox(ReportDeco):
 
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         self._sections['whitebox'] = env.get_template(self._whitebox_section_path).render(content)
+
+
+def plot_data_hist(data, title='title', bins=100, path=None):
+    sns.set(style="whitegrid", font_scale=1.5)
+    fig, axs = plt.subplots(figsize=(16, 10))
+    sns.distplot(data, bins=bins, color="m", ax=axs)
+    axs.set_title(title);
+    fig.savefig(path, bbox_inches='tight');
+    plt.close()
+
+
+    
+class ReportDecoNLP(ReportDeco):
+    """
+    Special report wrapper for :class:`~lightautoml.automl.presets.text_presets.TabularNLPAutoML`.
+    Usage case is the same as main
+    :class:`~lightautoml.report.report_deco.ReportDeco` class.
+    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
+    but with additional NLP report part.
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._nlp_section_path = 'nlp_section.html'
+        self._nlp_subsection_path = 'nlp_subsection.html'
+        self._nlp_subsections = []
+        self.sections_order.append('nlp')
+
+
+    def __call__(self, model):
+        self._model = model
+
+        # add informataion to report
+        self._model_name = model.__class__.__name__
+        self._model_parameters = json2html.convert(extract_params(model))
+        self._model_summary = None
+
+        self._sections = {}
+        self._sections['intro'] = '<p>This report was generated automatically.</p>'
+        self._model_results = []
+        self._n_test_sample = 0
+
+        self._generate_model_section()
+        self.generate_report()
+        return self
+
+
+    def fit_predict(self, *args, **kwargs):
+        """Wrapped :meth:`TabularNLPAutoML.fit_predict` method.
+
+        Valid args, kwargs are the same as wrapped automl.
+
+        Args:
+            *args: Arguments.
+            **kwargs: Additional parameters.
+
+        Returns:
+            OOF predictions.
+
+        """
+        preds = super().fit_predict(*args, **kwargs)
+
+        train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
+        roles = kwargs["roles"] if "roles" in kwargs else args[1]
+
+        self._text_fields = roles['text']
+        for text_field in self._text_fields:
+            content = {}
+            content['title'] = 'Text field: ' + text_field
+            content['char_len_hist'] = text_field + '_char_len_hist.png'
+            plot_data_hist(data=train_data[text_field].apply(len).values,
+                           path = os.path.join(self.output_path, content['char_len_hist']),
+                           title='Length in char')
+            content['tokens_len_hist'] = text_field + '_tokens_len_hist.png'
+            plot_data_hist(data=train_data[text_field].str.split(' ').apply(len).values,
+                           path = os.path.join(self.output_path, content['tokens_len_hist']),
+                           title='Length in tokens')
+            self._generate_nlp_subsection(content)
+        # Concatenated text fields
+        if len(self._text_fields) >= 2:
+            all_fields = train_data[self._text_fields].agg(' '.join, axis=1)
+            content = {}
+            content['title'] = 'Concatenated text fields'
+            content['char_len_hist'] = 'concat_char_len_hist.png'
+            plot_data_hist(data=all_fields.apply(len).values,
+                           path = os.path.join(self.output_path, content['char_len_hist']),
+                           title='Length in char')
+            content['tokens_len_hist'] = 'concat_tokens_len_hist.png'
+            plot_data_hist(data=all_fields.str.split(' ').apply(len).values,
+                           path = os.path.join(self.output_path, content['tokens_len_hist']),
+                           title='Length in tokens')
+            self._generate_nlp_subsection(content)
+
+
+        self._generate_nlp_section()
+        self.generate_report()
+        return preds
+
+
+    def _generate_nlp_subsection(self, content):
+        # content has the following fields:
+        # title:            subsection title
+        # char_len_hist:    path to histogram of text length (number of chars)
+        # tokens_len_hist:  path to histogram of text length (number of tokens)
+        env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+        nlp_subsection = env.get_template(self._nlp_subsection_path).render(content)
+        self._nlp_subsections.append(nlp_subsection)
+
+
+    def _generate_nlp_section(self):
+        if self._model_results:
+            env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+            nlp_section = env.get_template(self._nlp_section_path).render(
+                nlp_subsections=self._nlp_subsections
+            )
+            self._sections['nlp'] = nlp_section

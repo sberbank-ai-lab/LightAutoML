@@ -7,7 +7,6 @@ from typing import Optional, Union, List, Callable
 
 import numpy as np
 import torch
-from log_calls import record_history
 
 from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
@@ -23,7 +22,6 @@ logger = get_logger(__name__)
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 def path_check(dataset: LAMLDataset):
     """Check if all passed vars are path.
 
@@ -40,7 +38,6 @@ def path_check(dataset: LAMLDataset):
         assert roles[f].name == 'Path', 'Only path accepted in this transformer'
 
 
-@record_history(enabled=False)
 class ImageFeaturesTransformer(LAMLTransformer):
     """Simple image histogram."""
 
@@ -131,7 +128,6 @@ class ImageFeaturesTransformer(LAMLTransformer):
         return dataset.empty().to_numpy().concat(outputs)
 
 
-@record_history(enabled=False)
 class AutoCVWrap(LAMLTransformer):
     """Calculate image embeddings."""
 

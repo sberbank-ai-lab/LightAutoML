@@ -6,7 +6,6 @@ from typing import Union, Tuple, Optional
 
 import autowoe
 import numpy as np
-from log_calls import record_history
 from pandas import DataFrame
 
 from .base import TabularMLAlgo
@@ -16,7 +15,6 @@ from ..validation.base import TrainValidIterator
 WbModel = Union[autowoe.AutoWoE, autowoe.ReportDeco]
 
 
-@record_history(enabled=False)
 class WbMLAlgo(TabularMLAlgo):
     """WhiteBox - scorecard model.
 
@@ -215,7 +213,7 @@ class WbMLAlgo(TabularMLAlgo):
         train_df, group_kf = self._include_target(train, True)
 
         roles = train.roles
-        mapping = {'Category': 'real', 'Numeric': 'real'}
+        mapping = {'Category': 'cat', 'Numeric': 'real'}
         features_type = {x: mapping[roles[x].name] for x in roles}
 
         valid_df = None

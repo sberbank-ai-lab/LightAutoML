@@ -157,7 +157,7 @@ nn_params:
   use_cont: True
   use_cat: True
   use_text: True
-  lang: 'ru'
+  lang: null
   #set cudnn backend
   deterministic: False
   # use DP for model training
@@ -300,7 +300,7 @@ autonlp_params:
   # only for 'random_lstm', 'borep', 'wat'
   train_fasttext: False
   # dict with fasttext params if train_fasttext:True
-  # if None - use {'size': 64, 'window': 3, 'min_count': 1}
+  # if None - use {'vector_size': 64, 'window': 3, 'min_count': 1}
   fasttext_params: null
   # epochs to train fasttext if train_fasttext:True
   fasttext_epochs: 2
@@ -308,6 +308,5 @@ autonlp_params:
   is_tokenize_autonlp: False
   # path to save cached preprocessed text for faster experiments or None to disable
   cache_dir: null
-  # use DP for embeddings
-  # currently, must be set to FALSE value
-  multigpu: False
+  # forcing using custom transformer if gpu is not avaliable
+  force: False

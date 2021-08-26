@@ -1,11 +1,10 @@
 """Reader and its derivatives."""
 
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
 
 import numpy as np
 import pandas as pd
-from log_calls import record_history
 from pandas import Series, DataFrame
 
 from .guess_roles import get_numeric_roles_stat, calc_encoding_rules, rule_based_roles_guess, \
@@ -32,7 +31,6 @@ UserDefinedRolesSequence = Sequence[UserDefinedRole]
 UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
 
 
-@record_history(enabled=False)
 class Reader:
     """
     Abstract class for analyzing input data and creating inner
@@ -123,9 +121,25 @@ class Reader:
                 cls.__dict__[attr] = getattr(reader, attr)
 
         return new_reader
+    
+    def cols_by_type(self, col_type: str) -> List[str]:
+        """Get roles names by it's type.
+        
+        Args:
+            col_type: Column type, for example 'Text'.
+            
+        Returns:
+            Array with column names.
+            
+        """
+        names = []
+        for col, role in self.roles.items():
+            if role.name == col_type:
+                names.append(col)
+
+        return names
 
 
-@record_history(enabled=False)
 class PandasToPandasReader(Reader):
     """
     Reader to convert :class:`~pandas.DataFrame` to AutoML's :class:`~lightautoml.dataset.np_pd_dataset.PandasDataset`.
@@ -181,6 +195,7 @@ class PandasToPandasReader(Reader):
         self.n_jobs = n_jobs
 
         self.roles_params = roles_params
+        self.target = None
         if roles_params is None:
             self.roles_params = {}
 
@@ -243,6 +258,7 @@ class PandasToPandasReader(Reader):
             parsed_roles[feat] = r
 
         assert 'target' in kwargs, 'Target should be defined'
+        self.target = kwargs['target'].name
         kwargs['target'] = self._create_target(kwargs['target'])
 
         # TODO: Check target and task
@@ -332,6 +348,7 @@ class PandasToPandasReader(Reader):
             assert np.nan not in cnts.index, 'Nan in target detected'
             unqiues = cnts.index.values
             srtd = np.sort(unqiues)
+            self._n_classes = len(unqiues)
 
             # case - target correctly defined and no mapping
             if (np.arange(srtd.shape[0]) == srtd).all():
@@ -511,3 +528,4 @@ class PandasToPandasReader(Reader):
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict
+    

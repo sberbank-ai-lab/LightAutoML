@@ -6,7 +6,6 @@ from multiprocessing import Pool
 from typing import Sequence, Union, List, Optional, Any
 
 import nltk
-from log_calls import record_history
 from nltk.stem import SnowballStemmer
 
 from .abbreviations import ABBREVIATIONS
@@ -16,13 +15,11 @@ from ..dataset.roles import ColumnRole
 Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
 
 
-@record_history(enabled=False)
 def tokenizer_func(arr, tokenizer):
     """Additional tokenizer function."""
     return [tokenizer._tokenize(x) for x in arr]
 
 
-@record_history(enabled=False)
 class BaseTokenizer:
     """Base class for tokenizer method."""
 
@@ -38,7 +35,6 @@ class BaseTokenizer:
             to_string: Return string or list of tokens.
 
         """
-        super().__init__(**kwargs)
         self.n_jobs = n_jobs
         self.to_string = to_string
 
@@ -175,7 +171,6 @@ class BaseTokenizer:
         return tokens
 
 
-@record_history(enabled=False)
 class SimpleRuTokenizer(BaseTokenizer):
     """Russian tokenizer."""
 
@@ -301,7 +296,6 @@ class SimpleRuTokenizer(BaseTokenizer):
         return snt[1:]
 
 
-@record_history(enabled=False)
 class SimpleEnTokenizer(BaseTokenizer):
     """English tokenizer."""
 
@@ -340,7 +334,10 @@ class SimpleEnTokenizer(BaseTokenizer):
             Resulting string.
 
         """
-        return snt
+        snt = snt.strip()
+        s = re.sub('[^A-Za-zА-Яа-я0-9]+', ' ', snt)
+        s = re.sub(r'^\d+\s|\s\d+\s|\s\d+$', ' ', s)
+        return s
 
     def tokenize_sentence(self, snt: str) -> List[str]:
         """Convert sentence string to a list of tokens.

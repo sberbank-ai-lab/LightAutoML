@@ -3,7 +3,6 @@
 from typing import Union
 
 import numpy as np
-from log_calls import record_history
 
 from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
@@ -14,7 +13,6 @@ from ..dataset.roles import NumericRole, CategoryRole
 NumpyTransformable = Union[NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 def numeric_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
@@ -31,7 +29,6 @@ def numeric_check(dataset: LAMLDataset):
         assert roles[f].name == 'Numeric', 'Only numbers accepted in this transformer'
 
 
-@record_history(enabled=False)
 class NaNFlags(LAMLTransformer):
     """Create NaN flags."""
     _fit_checks = (numeric_check,)
@@ -98,7 +95,6 @@ class NaNFlags(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class FillnaMedian(LAMLTransformer):
     """Fillna with median."""
     _fit_checks = (numeric_check,)
@@ -153,7 +149,6 @@ class FillnaMedian(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class FillInf(LAMLTransformer):
     """Fill inf with nan to handle as nan value."""
     _fit_checks = (numeric_check,)
@@ -186,7 +181,6 @@ class FillInf(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class LogOdds(LAMLTransformer):
     """Convert probs to logodds."""
     _fit_checks = (numeric_check,)
@@ -220,7 +214,6 @@ class LogOdds(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class StandardScaler(LAMLTransformer):
     """Classic StandardScaler."""
 
@@ -279,7 +272,6 @@ class StandardScaler(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class QuantileBinning(LAMLTransformer):
     """Discretization of numeric features by quantiles."""
     _fit_checks = (numeric_check,)

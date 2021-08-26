@@ -5,7 +5,6 @@ from functools import partial
 from typing import Callable, Union, Optional, Dict, Any, TYPE_CHECKING
 
 import numpy as np
-from log_calls import record_history
 
 from lightautoml.tasks.losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
 from .common_metric import _valid_str_metric_names, _valid_metric_args
@@ -59,7 +58,6 @@ _valid_loss_args = {
 }
 
 
-@record_history(enabled=False)
 class LAMLMetric:
     """
     Abstract class for metric.
@@ -85,7 +83,6 @@ class LAMLMetric:
         raise NotImplementedError
 
 
-@record_history(enabled=False)
 class ArgsWrapper:
     """Wrapper - ignore sample_weight if metric not accepts."""
 
@@ -101,7 +98,6 @@ class ArgsWrapper:
         self.flg = 'sample_weight' in keys
         self.func = partial(func, **metric_params)
 
-    # @record_history(enabled=False)
     def __call__(self, y_true, y_pred, sample_weight=None):
         """Calculate metric value.
 
@@ -119,7 +115,6 @@ class ArgsWrapper:
         return self.func(y_true, y_pred)
 
 
-@record_history(enabled=False)
 class SkMetric(LAMLMetric):
     """Abstract class for scikit-learn compatible metric.
 
@@ -206,7 +201,6 @@ class SkMetric(LAMLMetric):
         return value * sign
 
 
-@record_history(enabled=False)
 class Task:
     """
     Specify task (binary classification, multiclass classification, regression), metrics, losses.

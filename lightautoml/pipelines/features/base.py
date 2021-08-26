@@ -4,7 +4,6 @@ from copy import copy, deepcopy
 from typing import List, Any, Union, Optional, Tuple, Callable
 
 import numpy as np
-from log_calls import record_history
 from pandas import Series, DataFrame
 
 from ..utils import map_pipeline_names, get_columns_by_role
@@ -23,7 +22,6 @@ from ...transformers.numeric import QuantileBinning
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history(enabled=False)
 class FeaturesPipeline:
     """Abstract class.
 
@@ -155,7 +153,6 @@ class FeaturesPipeline:
         return SequentialTransformer(pipes) if len(pipes) > 1 else pipes[-1]
 
 
-@record_history(enabled=False)
 class EmptyFeaturePipeline(FeaturesPipeline):
     """Dummy feature pipeline - ``.fit_transform`` and transform do nothing."""
 
@@ -172,7 +169,6 @@ class EmptyFeaturePipeline(FeaturesPipeline):
         return LAMLTransformer()
 
 
-@record_history(enabled=False)
 class TabularDataFeatures:
     """Helper class contains basic features transformations for tabular data.
 
@@ -234,7 +230,7 @@ class TabularDataFeatures:
 
         dt_processing = SequentialTransformer([
 
-            ColumnsSelector(keys=datetimes + base_dates),
+            ColumnsSelector(keys=list(set(datetimes + base_dates))),
             BaseDiff(base_names=base_dates, diff_names=datetimes),
 
         ])

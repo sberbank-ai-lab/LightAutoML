@@ -10,6 +10,10 @@ general_params:
   nested_cv: False
   # skip connections
   skip_conn: True
+  # Return prediction from all last layer algos?
+  return_all_predictions: False
+  # The smallest weight in weighted blender (if lower - the algo will be dropped from final model)
+  weighted_blender_max_nonzero_coef: 0.05
 
 reader_params:
   # sample of data to perform analisys
@@ -123,6 +127,8 @@ gbm_pipeline_params:
   auto_unique_co: 10
   # n_classes to use target encoding for multiclass task
   multiclass_te_co: 3
+  # DEV feature: output categorical features as categories (if True, can totally overfit your model - be careful!)
+  output_categories: False
 
 linear_pipeline_params:
   # max number of categories to generate intersections

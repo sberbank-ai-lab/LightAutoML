@@ -6,7 +6,6 @@ from typing import Optional, Tuple, Any, Union, Sequence
 import numpy as np
 import optuna
 import pandas as pd
-from log_calls import record_history
 from pandas import Series
 
 from .base import MLPipeline
@@ -27,7 +26,6 @@ from ...validation.utils import create_validation_iterator
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
     """
     Wrapper for MLAlgo to make it trainable over nested folds.
@@ -147,7 +145,6 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
         self.fit_predict(train_valid)
 
 
-@record_history(enabled=False)
 class NestedTabularMLPipeline(MLPipeline):
     """
     Wrapper for MLPipeline to make it trainable over nested folds.

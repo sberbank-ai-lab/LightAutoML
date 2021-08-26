@@ -4,7 +4,6 @@ import os
 from typing import Optional, Sequence, TYPE_CHECKING
 
 import torch
-from log_calls import record_history
 from pandas import DataFrame
 
 from .base import upd_params
@@ -24,7 +23,9 @@ from ...pipelines.selection.base import SelectionPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
 from ...reader.tabular_batch_generator import ReadableToDf
+from ...utils.logging import get_logger
 
+logger = get_logger(__name__)
 
 
 _base_dir = os.path.dirname(__file__)
@@ -42,7 +43,6 @@ _time_scores = {
 
 
 # TODO: add text feature selection
-@record_history(enabled=False)
 class TabularNLPAutoML(TabularAutoML):
     """Classic preset - work with tabular and text data.
 
@@ -191,13 +191,17 @@ class TabularNLPAutoML(TabularAutoML):
             self.text_params['device'] = 'cpu'
 
             if self.general_params['use_algos'] == 'auto':
-                self.general_params['use_algos'] = [['linear_l2', 'lgb', 'nn']]
+                self.general_params['use_algos'] = [['linear_l2', 'lgb']]
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
         torch.set_num_threads(cpu_cnt)
 
         self.nn_params['num_workers'] = min(self.nn_params['num_workers'], cpu_cnt)
+        self.nn_params['lang'] = self.nn_params['lang'] or self.text_params['lang']
+        self.nn_params['bert_name'] = self.nn_params['bert_name'] or self.text_params['bert_model']
+        
+        logger.info('Model language mode: {}'.format(self.nn_params['lang']))
 
         if isinstance(self.autonlp_params['transformer_params'], dict):
             if 'loader_params' in self.autonlp_params['transformer_params']:

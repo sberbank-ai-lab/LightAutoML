@@ -4,12 +4,10 @@ from functools import partial
 from typing import Optional, Callable
 
 import numpy as np
-from log_calls import record_history
 from sklearn.metrics import roc_auc_score, mean_squared_error, r2_score, accuracy_score, log_loss, mean_absolute_error, \
     mean_squared_log_error, f1_score
 
 
-@record_history(enabled=False)
 def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                         q: float = 0.9) -> float:
     """Computes Mean Quantile Error.
@@ -34,7 +32,6 @@ def mean_quantile_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: O
     return err.mean()
 
 
-@record_history(enabled=False)
 def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                      a: float = 0.9) -> float:
     """Computes Mean Huber Error.
@@ -59,7 +56,6 @@ def mean_huber_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Opti
     return err.mean()
 
 
-@record_history(enabled=False)
 def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None,
                     c: float = 0.9) -> float:
     """Computes Mean Fair Error.
@@ -83,7 +79,6 @@ def mean_fair_error(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optio
     return err.mean()
 
 
-@record_history(enabled=False)
 def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
                                    sample_weight: Optional[np.ndarray] = None) -> float:
     """Computes Mean Absolute Percentage error.
@@ -106,7 +101,6 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
     return err.mean()
 
 
-@record_history(enabled=False)
 def roc_auc_ovr(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None):
     """ROC-AUC One-Versus-Rest.
 
@@ -122,7 +116,6 @@ def roc_auc_ovr(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[
 
     return roc_auc_score(y_true, y_pred, sample_weight=sample_weight, multi_class='ovr')
 
-@record_history(enabled=False)
 def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None):
     """Root mean squared log error.
 
@@ -139,7 +132,6 @@ def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.nda
     return np.sqrt(mean_squared_log_error(y_true, y_pred, sample_weight=sample_weight))
 
 
-@record_history(enabled=False)
 def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
            sample_weight: Optional[np.ndarray] = None,
            class_weights: Optional[np.ndarray] = None) -> float:
@@ -218,7 +210,6 @@ def auc_mu(y_true: np.ndarray, y_pred: np.ndarray,
     return auc_full
 
 
-@record_history(enabled=False)
 class F1Factory:
     """
     Wrapper for :func:`~sklearn.metrics.f1_score` function.
@@ -251,7 +242,6 @@ class F1Factory:
         return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
 
 
-@record_history(enabled=False)
 class BestClassBinaryWrapper:
     """Metric wrapper to get best class prediction instead of probs.
 
@@ -275,7 +265,6 @@ class BestClassBinaryWrapper:
         return self.func(y_true, y_pred, sample_weight=sample_weight, **kwargs)
 
 
-@record_history(enabled=False)
 class BestClassMulticlassWrapper:
     """Metric wrapper to get best class prediction instead of probs for multiclass.
 

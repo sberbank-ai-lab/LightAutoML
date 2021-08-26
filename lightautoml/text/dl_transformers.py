@@ -6,11 +6,11 @@ from typing import Any, Dict, Optional, Sequence
 import numpy as np
 import torch
 import torch.nn as nn
-from log_calls import record_history
 from sklearn.base import TransformerMixin
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoModel
+from copy import deepcopy
 
 from .dp_utils import CustomDataParallel
 from .sentence_pooling import SequenceMaxPooler, SequenceAvgPooler, SequenceSumPooler, SequenceClsPooler, \
@@ -24,15 +24,20 @@ pooling_by_name = {'mean': SequenceAvgPooler,
                    'none': SequenceIndentityPooler}
 
 
-@record_history(enabled=False)
 class DLTransformer(TransformerMixin):
     """Deep Learning based sentence embeddings."""
 
-    model_params = {'embed_size': 300, 'hidden_size': 256, 'pooling': 'mean', 'num_layers': 1}
-    loader_params = {'batch_size': 1024, 'shuffle': False, 'num_workers': 4}
-    dataset_params = {'embedding_model': None, 'max_length': 200, 'embed_size': 300}
-    embedding_model_params = {'model_name': 'bert-base-cased'}
+    _model_params = {'embed_size': 300, 'hidden_size': 256, 'pooling': 'mean', 'num_layers': 1}
+    _loader_params = {'batch_size': 1024, 'shuffle': False, 'num_workers': 4}
+    _dataset_params = {'embedding_model': None, 'max_length': 200, 'embed_size': 300}
+    _embedding_model_params = {'model_name': 'bert-base-cased'}
 
+    def _infer_params(self):
+        self.model_params = deepcopy(self._model_params)
+        self.loader_params = deepcopy(self._loader_params)
+        self.dataset_params = deepcopy(self._dataset_params)
+        self.embedding_model_params = deepcopy(self._embedding_model_params)
+             
     def __init__(self, model, model_params: Dict, dataset, dataset_params: Dict, loader_params: Dict,
                  device: str = 'cuda', random_state: int = 42,
                  embedding_model: Optional = None, embedding_model_params: Dict[str, Dict] = None,
@@ -57,9 +62,8 @@ class DLTransformer(TransformerMixin):
 
         """
         super(DLTransformer, self).__init__()
-
+        self._infer_params()
         self.device, self.device_ids = parse_devices(device, multigpu)
-
         self.random_state = random_state
         self.verbose = verbose
         seed_everything(random_state)
@@ -153,7 +157,6 @@ class DLTransformer(TransformerMixin):
         return result
 
 
-@record_history(enabled=False)
 def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     """Compute positional embedding matrix.
 
@@ -173,7 +176,6 @@ def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     return torch.from_numpy(position_enc).float()
 
 
-@record_history(enabled=False)
 class BOREP(nn.Module):
     """Class to compute Bag of Random Embedding Projections sentence embeddings from words embeddings."""
 
@@ -214,7 +216,7 @@ class BOREP(nn.Module):
         self.embed_size = embed_size
         self.proj_size = proj_size
         self.pos_encoding = pos_encoding
-
+        seed_everything(42)
         if self.pos_encoding:
             self.pos_code = position_encoding_init(max_length, self.embed_size).view(1, max_length, self.embed_size)
 
@@ -266,7 +268,6 @@ class BOREP(nn.Module):
         return out
 
 
-@record_history(enabled=False)
 class RandomLSTM(nn.Module):
     """Class to compute Random LSTM sentence embeddings from words embeddings."""
 
@@ -295,7 +296,7 @@ class RandomLSTM(nn.Module):
         super(RandomLSTM, self).__init__()
         if pooling not in self._poolers:
             raise ValueError("pooling - {} - not in the list of available types {}".format(pooling, self._poolers))
-
+        seed_everything(42)
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers=num_layers,
                             bidirectional=True, batch_first=True)
@@ -328,7 +329,6 @@ class RandomLSTM(nn.Module):
         return out
 
 
-@record_history(enabled=False)
 class BertEmbedder(nn.Module):
     """Class to compute `HuggingFace <https://huggingface.co>`_ transformers words or sentence embeddings."""
 
@@ -369,7 +369,7 @@ class BertEmbedder(nn.Module):
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         encoded_layers, _ = self.transformer(input_ids=inp['input_ids'],
                                              attention_mask=inp['attention_mask'],
-                                             token_type_ids=inp['token_type_ids'], return_dict=False)
+                                             token_type_ids=inp.get('token_type_ids'), return_dict=False)
 
         encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1).bool())
 

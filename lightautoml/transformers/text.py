@@ -10,7 +10,6 @@ import gensim
 import numpy as np
 import pandas as pd
 import torch
-from log_calls import record_history
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDRegressor, SGDClassifier
 
@@ -68,7 +67,6 @@ model_by_name = {'random_lstm': {'model': RandomLSTM,
                  }
 
 
-@record_history(enabled=False)
 def oof_task_check(dataset: LAMLDataset):
     """Check if task is binary or regression.
 
@@ -80,7 +78,6 @@ def oof_task_check(dataset: LAMLDataset):
     assert task.name in ['binary', 'reg'], 'Only binary and regression tasks supported in this transformer'
 
 
-@record_history(enabled=False)
 def text_check(dataset: LAMLDataset):
     """Check if all passed vars are text.
 
@@ -98,7 +95,6 @@ def text_check(dataset: LAMLDataset):
 
 
 # TODO: combine TunableTransformer with LAMLTransformer class?
-@record_history(enabled=False)
 class TunableTransformer(LAMLTransformer):
     """Base class for ML transformers.
 
@@ -152,7 +148,6 @@ class TunableTransformer(LAMLTransformer):
         self.default_params = {**self._default_params, **default_params}
 
 
-@record_history(enabled=False)
 class TfidfTextTransformer(TunableTransformer):
     """Simple Tfidf vectorizer."""
 
@@ -281,7 +276,6 @@ class TfidfTextTransformer(TunableTransformer):
         return dataset.empty().to_numpy().to_csr().concat(outputs)
 
 
-@record_history(enabled=False)
 class TokenizerTransformer(LAMLTransformer):
     """Simple tokenizer transformer."""
 
@@ -328,7 +322,6 @@ class TokenizerTransformer(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class OneToOneTransformer(TunableTransformer):
     """Out-of-fold sgd model prediction to reduce dimension of encoded text data."""
 
@@ -478,7 +471,6 @@ class OneToOneTransformer(TunableTransformer):
         return output
 
 
-@record_history(enabled=False)
 class ConcatTextTransformer(LAMLTransformer):
     """Concat text features transformer."""
     _fit_checks = (text_check,)
@@ -521,14 +513,13 @@ class ConcatTextTransformer(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class AutoNLPWrap(LAMLTransformer):
     """Calculate text embeddings."""
 
     _fit_checks = (text_check,)
     _transform_checks = ()
     _fname_prefix = 'emb'
-    fasttext_params = {'size': 64, 'window': 3, 'min_count': 1}
+    fasttext_params = {'vector_size': 64, 'window': 3, 'min_count': 1}
     _names = {'random_lstm', 'random_lstm_bert', 'pooled_bert', 'wat', 'borep'}
     _trainable = {'wat', 'borep', 'random_lstm'}
 
@@ -537,12 +528,23 @@ class AutoNLPWrap(LAMLTransformer):
         """Features list."""
         return self._features
 
-    def __init__(self, model_name: str, embedding_model: Optional[str] = None, cache_dir: str = './cache_NLP',
+    def __init__(self,
+                 model_name: str,
+                 embedding_model: Optional[str] = None,
+                 cache_dir: str = './cache_NLP',
                  bert_model: Optional[str] = None,
                  transformer_params: Optional[Dict] = None,
-                 subs: Optional[int] = None, multigpu: bool = False,
-                 random_state: int = 42, train_fasttext: bool = False, fasttext_params: Optional[Dict] = None,
-                 fasttext_epochs: int = 2, verbose: bool = False, device: Any = '0', **kwargs: Any):
+                 subs: Optional[int] = None,
+                 multigpu: bool = False,
+                 random_state: int = 42,
+                 train_fasttext: bool = False,
+                 fasttext_params: Optional[Dict] = None,
+                 fasttext_epochs: int = 2,
+                 sent_scaler: Optional[str] = None,
+                 verbose: bool = False,
+                 device: Any = '0',
+                 **kwargs: Any
+                ):
         """
 
         Args:
@@ -578,22 +580,15 @@ class AutoNLPWrap(LAMLTransformer):
         if fasttext_params is not None:
             self.fasttext_params.update(fasttext_params)
         self.dicts = {}
-
+        self.sent_scaler = sent_scaler
         self.verbose = verbose
-
-        if not torch.cuda.is_available() or self.device == 'cpu':
-            self.model_name = 'wat'
-        else:
-            self.model_name = model_name
-
+        self.model_name = model_name
         self.transformer_params = model_by_name[self.model_name]
-
         if transformer_params is not None:
             self.transformer_params.update(transformer_params)
+
         self._update_bert_model(bert_model)
-
         if embedding_model is not None:
-
             if isinstance(embedding_model, str):
                 try:
                     embedding_model = gensim.models.FastText.load(embedding_model)
@@ -606,13 +601,13 @@ class AutoNLPWrap(LAMLTransformer):
             self.transformer_params = self._update_transformers_emb_model(self.transformer_params, embedding_model)
 
         else:
-            self.train_fasttext = (self.model_name in self._trainable)
 
-        if torch.cuda.is_available() and self.model_name != 'wat':
-            self.transformer = DLTransformer
-        else:
-            self.model_name = 'wat'
+            self.train_fasttext = (self.model_name in self._trainable)
+        
+        if self.model_name == 'wat':
             self.transformer = WeightedAverageTransformer
+        else:
+            self.transformer = DLTransformer
 
     def _update_bert_model(self, bert_model: str):
         if bert_model is not None:
@@ -623,23 +618,38 @@ class AutoNLPWrap(LAMLTransformer):
             if 'model_params' in self.transformer_params:
                 self.transformer_params['model_params']['model_name'] = bert_model
         return self
-
-    def _update_transformers_emb_model(self, params: Dict, model, emb_size: Optional[int] = None):
+    
+    def _update_transformers_emb_model(self,
+                                       params: Dict,
+                                       model: Any,
+                                       emb_size: Optional[int] = None
+                                      ) -> Dict[str, Any]:
         if emb_size is None:
             try:
+                # Gensim checker [1]
                 emb_size = model.vector_size
             except:
-                emb_size = self.fasttext_params['size']
-
+                try:
+                    # Gensim checker[2]
+                    emb_size = model.vw.vector_size                    
+                except:
+                    try:
+                        # Natasha checker
+                        emb_size = model[model.vocab.words[0]].shape[0]
+                    except:
+                        try:
+                            # Dict of embeddings checker
+                            emb_size = next(iter(model.values())).shape[0]
+                        except:
+                            raise ValueError('Unrecognized embedding dimention, please specify it in model_params')
         try:
             model = model.wv
         except:
             pass
 
         if self.model_name == 'wat':
-            params['embedding_model'] = model
             params['embed_size'] = emb_size
-
+            params['embedding_model'] = model
         elif self.model_name in {'random_lstm', 'borep'}:
             params['dataset_params']['embedding_model'] = model
             params['dataset_params']['embed_size'] = emb_size
@@ -678,8 +688,10 @@ class AutoNLPWrap(LAMLTransformer):
             if self.train_fasttext:
                 embedding_model = gensim.models.FastText(**self.fasttext_params)
                 common_texts = [i.split(' ') for i in subs[i].values]
-                embedding_model.build_vocab(sentences=common_texts)
-                embedding_model.train(sentences=common_texts, total_examples=len(common_texts), epochs=self.fasttext_epochs)
+                embedding_model.build_vocab(corpus_iterable=common_texts)
+                embedding_model.train(corpus_iterable=common_texts,
+                                      total_examples=len(common_texts),
+                                      epochs=self.fasttext_epochs)
                 transformer_params = self._update_transformers_emb_model(transformer_params, embedding_model)
 
             transformer = self.transformer(verbose=self.verbose, device=self.device, multigpu=self.multigpu, **transformer_params)
@@ -738,4 +750,24 @@ class AutoNLPWrap(LAMLTransformer):
             outputs.append(output)
             logger.info(f'Feature {i} transformed')
         # create resulted
-        return dataset.empty().to_numpy().concat(outputs)
+        dataset = dataset.empty().to_numpy().concat(outputs)
+        # instance-wise sentence embedding normalization
+        dataset.data = dataset.data / self._sentence_norm(dataset.data, self.sent_scaler)
+        
+        return dataset
+    
+    @staticmethod
+    def _sentence_norm(x: np.ndarray,
+                       mode: Optional[str] = None
+                      ) -> Union[np.ndarray, float]:
+        """Get sentence embedding norm."""
+        if mode == 'l2':
+            return ((x**2).sum(axis=1, keepdims=True))**.5
+        elif mode == 'l1':
+            return np.abs(x).sum(axis=1, keepdims=True)
+        if mode is not None:
+            logger.warning(
+                'Unknown sentence scaler mode: sent_scaler={}, '
+                'no normalization will be used'.format(mode)
+            )
+        return 1

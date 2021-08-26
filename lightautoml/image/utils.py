@@ -1,10 +1,8 @@
 """Image utils."""
 
 from PIL import Image
-from log_calls import record_history
 
 
-@record_history(enabled=False)
 def pil_loader(path: str) -> Image:
     """Load image from pathes.
 

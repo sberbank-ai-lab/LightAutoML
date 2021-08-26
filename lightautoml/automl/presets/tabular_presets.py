@@ -5,12 +5,13 @@ from copy import copy, deepcopy
 from typing import Optional, Sequence, cast, Iterable
 
 import numpy as np
+import pandas as pd
 import torch
 from joblib import Parallel, delayed
-from log_calls import record_history
 from pandas import DataFrame
 
 from .base import AutoMLPreset, upd_params
+from .utils import calc_feats_permutation_imps
 from ..blend import WeightedBlender, MeanBlender
 from ...addons.utilization import TimeUtilization
 from ...dataset.np_pd_dataset import NumpyDataset
@@ -28,12 +29,12 @@ from ...pipelines.selection.permutation_importance_based import NpPermutationImp
 from ...reader.base import PandasToPandasReader
 from ...reader.tabular_batch_generator import read_data, read_batch, ReadableToDf
 from ...tasks import Task
+from ...utils.logging import get_logger
 
 _base_dir = os.path.dirname(__file__)
+logger = get_logger(__name__)
 
 
-
-@record_history(enabled=False)
 class TabularAutoML(AutoMLPreset):
     """
     Classic preset - work with tabular data.
@@ -227,6 +228,7 @@ class TabularAutoML(AutoMLPreset):
             selection_feats = LGBSimpleFeatures()
 
             selection_gbm = BoostLGBM(timer=sel_timer_0, **lgb_params)
+            selection_gbm.set_prefix('Selector')
 
             if selection_params['importance_type'] == 'permutation':
                 importance = NpPermutationImportanceEstimator()
@@ -242,6 +244,7 @@ class TabularAutoML(AutoMLPreset):
                 sel_timer_1 = self.timer.get_task_timer('lgb', time_score)
                 selection_feats = LGBSimpleFeatures()
                 selection_gbm = BoostLGBM(timer=sel_timer_1, **lgb_params)
+                selection_gbm.set_prefix('Selector')
 
                 # TODO: Check about reusing permutation importance
                 importance = NpPermutationImportanceEstimator()
@@ -270,7 +273,7 @@ class TabularAutoML(AutoMLPreset):
     def get_gbms(self, keys: Sequence[str], n_level: int = 1, pre_selector: Optional[SelectionPipeline] = None,
                  ):
 
-        gbm_feats = LGBAdvancedPipeline(output_categories=False, **self.gbm_pipeline_params)
+        gbm_feats = LGBAdvancedPipeline(**self.gbm_pipeline_params)
 
         ml_algos = []
         force_calc = []
@@ -337,10 +340,11 @@ class TabularAutoML(AutoMLPreset):
             levels.append(lvl)
 
         # blend everything
-        blender = WeightedBlender()
+        blender = WeightedBlender(max_nonzero_coef=self.general_params['weighted_blender_max_nonzero_coef'])
 
         # initialize
-        self._initialize(reader, levels, skip_conn=self.general_params['skip_conn'], blender=blender,
+        self._initialize(reader, levels, skip_conn=self.general_params['skip_conn'],
+                         blender=blender, return_all_predictions=self.general_params['return_all_predictions'],
                          timer=self.timer, verbose=self.verbose)
 
     def _get_read_csv_params(self):
@@ -411,7 +415,8 @@ class TabularAutoML(AutoMLPreset):
         return cast(NumpyDataset, oof_pred)
 
     def predict(self, data: ReadableToDf, features_names: Optional[Sequence[str]] = None,
-                batch_size: Optional[int] = None, n_jobs: Optional[int] = 1) -> NumpyDataset:
+                batch_size: Optional[int] = None, n_jobs: Optional[int] = 1,
+                return_all_predictions: Optional[bool] = None) -> NumpyDataset:
         """Get dataset with predictions.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.predict`
@@ -437,6 +442,8 @@ class TabularAutoML(AutoMLPreset):
               if cannot be inferred from `train_data`.
             batch_size: Batch size or ``None``.
             n_jobs: Number of jobs.
+            return_all_predictions: if True,
+              returns all model predictions from last level
 
         Returns:
             Dataset with predictions.
@@ -447,25 +454,63 @@ class TabularAutoML(AutoMLPreset):
 
         if batch_size is None and n_jobs == 1:
             data, _ = read_data(data, features_names, self.cpu_limit, read_csv_params)
-            pred = super().predict(data, features_names)
+            pred = super().predict(data, features_names, return_all_predictions)
             return cast(NumpyDataset, pred)
 
         data_generator = read_batch(data, features_names, n_jobs=n_jobs, batch_size=batch_size,
                                     read_csv_params=read_csv_params)
 
         if n_jobs == 1:
-            res = [self.predict(df, features_names) for df in data_generator]
+            res = [self.predict(df, features_names, return_all_predictions) for df in data_generator]
         else:
             # TODO: Check here for pre_dispatch param
             with Parallel(n_jobs, pre_dispatch=len(data_generator) + 1) as p:
-                res = p(delayed(self.predict)(df, features_names) for df in data_generator)
+                res = p(delayed(self.predict)(df, features_names, return_all_predictions) for df in data_generator)
 
         res = NumpyDataset(np.concatenate([x.data for x in res], axis=0), features=res[0].features, roles=res[0].roles)
 
         return res
 
+    def get_feature_scores(self,
+                           calc_method: str = 'fast',
+                           data: Optional[ReadableToDf] = None,
+                           features_names: Optional[Sequence[str]] = None,
+                           silent: bool = True
+                           ):
+        if calc_method == 'fast':
+            for level in self.levels:
+                for pipe in level:
+                    fi = pipe.pre_selection.get_features_score()
+                    if fi is not None:
+                        used_feats = set(self.collect_used_feats())
+                        fi = fi.reset_index()
+                        fi.columns = ['Feature', 'Importance']
+                        return fi[fi['Feature'].map(lambda x: x in used_feats)]
 
-@record_history(enabled=False)
+            else:
+                if not silent:
+                    logger.warning('No feature importances to show. Please use another calculation method')
+                return None
+
+        if calc_method != 'accurate':
+            if not silent:
+                logger.warning("Unknown calc_method. " +
+                               "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
+            return None
+
+        if data is None:
+            if not silent:
+                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+            return None
+
+        read_csv_params = self._get_read_csv_params()
+        data, _ = read_data(data, features_names, self.cpu_limit, read_csv_params)
+        used_feats = self.collect_used_feats()
+        fi = calc_feats_permutation_imps(self, used_feats, data, self.reader.target,
+                                         self.task.get_dataset_metric(), silent=silent)
+        return fi
+
+
 class TabularUtilizedAutoML(TimeUtilization):
     """Template to make TimeUtilization from TabularAutoML."""
 
@@ -479,8 +524,10 @@ class TabularUtilizedAutoML(TimeUtilization):
                  timing_params: Optional[dict] = None,
                  configs_list: Optional[Sequence[str]] = None,
                  drop_last: bool = True,
+                 return_all_predictions: bool = False,
                  max_runs_per_config: int = 5,
                  random_state: int = 42,
+                 outer_blender_max_nonzero_coef: float = 0.05,
                  **kwargs
                  ):
         """Simplifies using ``TimeUtilization`` module for ``TabularAutoMLPreset``.
@@ -496,6 +543,7 @@ class TabularUtilizedAutoML(TimeUtilization):
             configs_list: List of str path to configs files.
             drop_last: Usually last automl will be stopped with timeout.
               Flag that defines if we should drop it from ensemble.
+            return_all_predictions: skip blending phase
             max_runs_per_config: Maximum number of multistart loops.
             random_state: Initial random seed that will be set
               in case of search in config.
@@ -506,8 +554,53 @@ class TabularUtilizedAutoML(TimeUtilization):
                             ['conf_0_sel_type_0.yml', 'conf_1_sel_type_1.yml', 'conf_2_select_mode_1_no_typ.yml',
                              'conf_3_sel_type_1_no_inter_lgbm.yml', 'conf_4_sel_type_0_no_int.yml',
                              'conf_5_sel_type_1_tuning_full.yml', 'conf_6_sel_type_1_tuning_full_no_int_lgbm.yml']]
-            inner_blend = MeanBlender()
-            outer_blend = WeightedBlender()
-            super().__init__(TabularAutoML, task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params,
-                             configs_list, inner_blend, outer_blend, drop_last, max_runs_per_config, None, random_state,
-                             **kwargs)
+        inner_blend = MeanBlender()
+        outer_blend = WeightedBlender(max_nonzero_coef=outer_blender_max_nonzero_coef)
+        super().__init__(TabularAutoML, task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params,
+                         configs_list, inner_blend, outer_blend, drop_last, return_all_predictions,
+                         max_runs_per_config, None, random_state,
+                         **kwargs)
+
+    def get_feature_scores(self,
+                           calc_method: str = 'fast',
+                           data: Optional[ReadableToDf] = None,
+                           features_names: Optional[Sequence[str]] = None,
+                           silent: bool = True
+                           ):
+        if calc_method == 'fast':
+            feat_imps = []
+            for pipe in self.outer_pipes:
+                for model in pipe.ml_algos:
+                    fi = model.models[0][0].get_feature_scores('fast')
+                    if fi is not None:
+                        feat_imps.append(fi)
+            n_feat_imps = len(feat_imps)
+            if n_feat_imps == 0:
+                if not silent:
+                    logger.warning('No feature importances to show. Please use another calculation method')
+                return None
+            return (pd.concat(feat_imps).groupby('Feature')['Importance'].agg(sum).sort_values(
+                ascending=False) / n_feat_imps).reset_index()
+
+        if calc_method != 'accurate':
+            if not silent:
+                logger.warning("Unknown calc_method. " +
+                               "Currently supported methods for feature importances calculation are 'fast' and 'accurate'.")
+            return None
+
+        if data is None:
+            if not silent:
+                logger.warning('Data parameter is not setup for accurate calculation method. Aborting...')
+            return None
+
+        automl = self.outer_pipes[0].ml_algos[0].models[0][0]
+        read_csv_params = automl._get_read_csv_params()
+        data, _ = read_data(data, features_names, self.cpu_limit, read_csv_params)
+
+        used_feats = set()
+        for pipe in self.outer_pipes:
+            used_feats.update(pipe.ml_algos[0].models[0][0].collect_used_feats())
+
+        fi = calc_feats_permutation_imps(self, list(used_feats), data,
+                                         automl.reader.target, automl.task.get_dataset_metric(), silent=silent)
+        return fi

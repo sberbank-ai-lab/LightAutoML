@@ -4,7 +4,6 @@ from copy import deepcopy
 from typing import Optional
 
 import numpy as np
-from log_calls import record_history
 from pandas import Series
 
 from lightautoml.validation.base import TrainValidIterator
@@ -18,7 +17,6 @@ from ...utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
 def _create_chunks_from_list(lst, n):
     """Creates chunks of list.
 
@@ -33,7 +31,6 @@ def _create_chunks_from_list(lst, n):
     return chunks
 
 
-@record_history(enabled=False)
 class NpPermutationImportanceEstimator(ImportanceEstimator):
     """Permutation importance based estimator.
 
@@ -100,7 +97,6 @@ class NpPermutationImportanceEstimator(ImportanceEstimator):
         self.raw_importances = Series(permutation_importance).sort_values(ascending=False)
 
 
-@record_history(enabled=False)
 class NpIterativeFeatureSelector(SelectionPipeline):
     """Select features sequentially using chunks to find the best combination of chunks.
 

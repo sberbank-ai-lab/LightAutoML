@@ -9,6 +9,8 @@ general_params:
   nested_cv: False
   # skip connections
   skip_conn: True
+  return_all_predictions: False
+  weighted_blender_max_nonzero_coef: 0.05
 
 reader_params:
   samples: 100000
@@ -95,6 +97,7 @@ gbm_pipeline_params:
   subsample: 100000
   auto_unique_co: 10
   multiclass_te_co: 3
+  output_categories: False
 
 linear_pipeline_params:
   top_intersections: 0

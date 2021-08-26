@@ -3,7 +3,6 @@
 from typing import Any
 
 import torch
-from log_calls import record_history
 
 from .base import FeaturesPipeline
 from ..utils import get_columns_by_role
@@ -14,7 +13,6 @@ from ...transformers.image import ImageFeaturesTransformer, AutoCVWrap
 from ...transformers.numeric import StandardScaler, FillnaMedian, FillInf
 
 
-@record_history(enabled=False)
 class ImageDataFeatures:
     """Class contains basic features transformations for image data."""
 
@@ -45,7 +43,6 @@ class ImageDataFeatures:
             self.__dict__[k] = kwargs[k]
 
 
-@record_history(enabled=False)
 class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
     """Class contains simple color histogram features for image data."""
 
@@ -68,7 +65,6 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class ImageAutoFeatures(FeaturesPipeline, ImageDataFeatures):
     """Class contains efficient-net embeddings features for image data."""
 

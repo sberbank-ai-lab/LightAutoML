@@ -3,7 +3,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Dict, overload
 
-from log_calls import record_history
 
 from lightautoml.dataset.base import LAMLDataset
 # if TYPE_CHECKING:
@@ -11,7 +10,6 @@ from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.validation.base import TrainValidIterator
 
 
-@record_history(enabled=False)
 class ParamsTuner(ABC):
     """Base abstract class for hyperparameters tuners."""
 
@@ -50,7 +48,6 @@ class ParamsTuner(ABC):
         """
 
 
-@record_history(enabled=False)
 class DefaultTuner(ParamsTuner):
     """Default realization of ParamsTuner - just take algo's defaults."""
 

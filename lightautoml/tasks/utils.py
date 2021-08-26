@@ -3,10 +3,8 @@
 from typing import Callable
 
 import numpy as np
-from log_calls import record_history
 
 
-@record_history(enabled=False)
 def infer_gib(metric: Callable) -> bool:
     """Infer greater is better from metric.
 
@@ -32,7 +30,6 @@ def infer_gib(metric: Callable) -> bool:
     return g_val > b_val
 
 
-@record_history(enabled=False)
 def infer_gib_multiclass(metric: Callable) -> bool:
     """Infer greater is better from metric.
 

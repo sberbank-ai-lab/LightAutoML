@@ -3,12 +3,10 @@
 from typing import Callable
 
 import numpy as np
-from log_calls import record_history
 
 
 # TODO: Calc metrics on gpu slow down warning. Check it
 
-@record_history(enabled=False)
 class CBCustomMetric:
     """Metric wrapper class for CatBoost."""
 
@@ -39,6 +37,7 @@ class CBCustomMetric:
         target = np.array(target)
         pred = np.array(approxes[0])
         if self._bw_func is not None:
+            target = self._bw_func(target)
             pred = self._bw_func(pred)
 
         return pred, target
@@ -56,7 +55,6 @@ class CBCustomMetric:
             return score, weight
 
 
-@record_history(enabled=False)
 class CBRegressionMetric(CBCustomMetric):
     """Regression metric wrapper for CatBoost."""
 
@@ -68,7 +66,6 @@ class CBRegressionMetric(CBCustomMetric):
         return self._evaluate(approxes, target, weight)
 
 
-@record_history(enabled=False)
 class CBClassificationMetric(CBCustomMetric):
     """Classification metric wrapper for CatBoost."""
 
@@ -97,7 +94,6 @@ class CBClassificationMetric(CBCustomMetric):
         return self._evaluate(approxes, target, weight)
 
 
-@record_history(enabled=False)
 class CBMulticlassMetric(CBCustomMetric):
     """Multiclassification metric wrapper for CatBoost."""
 
