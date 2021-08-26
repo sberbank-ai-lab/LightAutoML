@@ -100,35 +100,55 @@ class GroupByBase:
 class GroupByNumDeltaMean(GroupByBase):    
     class_kind = 'delta_mean'    
     class_fit_func = np.nanmean
-    class_transform_func = lambda values: (values[1] - values[0])
-        
+    
+    @staticmethod
+    def class_transform_func(values):
+        return (values[1] - values[0])
+
 class GroupByNumDeltaMedian(GroupByBase):    
     class_kind = 'delta_median'    
     class_fit_func=np.nanmedian
-    class_transform_func=lambda values: (values[1] - values[0])
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[1] - values[0])
 
 class GroupByNumMin(GroupByBase):    
     class_kind = 'min'    
     class_fit_func=np.nanmin
-    class_transform_func=lambda values: (values[0])
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[0])
         
 class GroupByNumMax(GroupByBase):    
     class_kind = 'max'    
     class_fit_func=np.nanmax
-    class_transform_func=lambda values: (values[0])
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[0])
         
 class GroupByNumStd(GroupByBase):    
     class_kind = 'std'    
     class_fit_func=np.nanstd
-    class_transform_func=lambda values: (values[0])
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[0])
         
 class GroupByCatMode(GroupByBase):    
     class_kind = 'mode'    
     class_fit_func=GroupByTransformer.get_mode
-    class_transform_func=lambda values: (values[0])
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[0])
         
 class GroupByCatIsMode(GroupByBase):    
     class_kind = 'is_mode'    
     class_fit_func=GroupByTransformer.get_mode
-    class_transform_func=lambda values: (values[0] == values[1])
-  
+
+    @staticmethod
+    def class_transform_func(values):
+        return (values[0] == values[1])
