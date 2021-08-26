@@ -2,11 +2,15 @@
 
 from typing import Tuple
 import numpy as np
+from scipy.stats import mode
 
-from ..utils.logging import get_logger
+from ..utils.logging import get_logger, verbosity_to_loglevel
 
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
+
+def get_mode(x):
+    return mode(x)[0][0]
 
 class GroupByProcessor:    
     def __init__(self, keys):
@@ -139,7 +143,7 @@ class GroupByNumStd(GroupByBase):
         
 class GroupByCatMode(GroupByBase):    
     class_kind = 'mode'    
-    class_fit_func=GroupByTransformer.get_mode
+    class_fit_func=get_mode
 
     @staticmethod
     def class_transform_func(values):
@@ -147,7 +151,7 @@ class GroupByCatMode(GroupByBase):
         
 class GroupByCatIsMode(GroupByBase):    
     class_kind = 'is_mode'    
-    class_fit_func=GroupByTransformer.get_mode
+    class_fit_func=get_mode
 
     @staticmethod
     def class_transform_func(values):
