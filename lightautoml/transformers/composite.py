@@ -42,8 +42,8 @@ class GroupByFactory:
     @staticmethod
     def get_GroupBy(kind):
         assert kind is not None
-
-        for class_name in [
+        
+        available_classes = [
             GroupByNumDeltaMean, 
             GroupByNumDeltaMedian,
             GroupByNumMin,
@@ -51,11 +51,13 @@ class GroupByFactory:
             GroupByNumStd, 
             GroupByCatMode, 
             GroupByCatIsMode
-        ]:
+        ]
+
+        for class_name in available_classes:
             if kind == class_name.class_kind:
                 return class_name(class_name.class_kind, class_name.class_fit_func, class_name.class_transform_func)
 
-        raise ValueError(f'Unsupported kind: {kind}')        
+        raise ValueError(f'Unsupported kind: {kind}, available={[class_name.class_kind for class_name in available_classes]}')        
 
 class GroupByBase:        
     def __init__(self, kind, fit_func, transform_func):
@@ -101,37 +103,37 @@ class GroupByBase:
         return result
 
 class GroupByNumDeltaMean(GroupByBase):    
-    class_kind = 'num_delta_mean'    
+    class_kind = 'delta_mean'    
     class_fit_func = np.nanmean
     class_transform_func = lambda values: (values[1] - values[0])
         
 class GroupByNumDeltaMedian(GroupByBase):    
-    class_kind = 'num_delta_median'    
+    class_kind = 'delta_median'    
     class_fit_func=np.nanmedian
     class_transform_func=lambda values: (values[1] - values[0])
 
 class GroupByNumMin(GroupByBase):    
-    class_kind = 'num_min'    
+    class_kind = 'min'    
     class_fit_func=np.nanmin
     class_transform_func=lambda values: (values[0])
         
 class GroupByNumMax(GroupByBase):    
-    class_kind = 'num_max'    
+    class_kind = 'max'    
     class_fit_func=np.nanmax
     class_transform_func=lambda values: (values[0])
         
 class GroupByNumStd(GroupByBase):    
-    class_kind = 'num_std'    
+    class_kind = 'std'    
     class_fit_func=np.nanstd
     class_transform_func=lambda values: (values[0])
         
 class GroupByCatMode(GroupByBase):    
-    class_kind = 'cat_mode'    
+    class_kind = 'mode'    
     class_fit_func=GroupByTransformer.get_mode
     class_transform_func=lambda values: (values[0])
         
 class GroupByCatIsMode(GroupByBase):    
-    class_kind = 'cat_is_mode'    
+    class_kind = 'is_mode'    
     class_fit_func=GroupByTransformer.get_mode
     class_transform_func=lambda values: (values[0] == values[1])
                   
