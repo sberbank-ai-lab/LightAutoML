@@ -6,7 +6,7 @@ from .base import LAMLTransformer
 from ..pipelines.utils import get_columns_by_role
 from ..dataset.roles import NumericRole
 from ..utils.logging import get_logger, verbosity_to_loglevel
-from utils import GroupByProcessor, GroupByFactory, GroupByNumDeltaMean, GroupByNumDeltaMedian, GroupByNumMin, GroupByNumMax, GroupByNumStd,  GroupByCatMode,  GroupByCatIsMode
+from .utils import GroupByProcessor, GroupByFactory, GroupByNumDeltaMean, GroupByNumDeltaMedian, GroupByNumMin, GroupByNumMax, GroupByNumStd,  GroupByCatMode,  GroupByCatIsMode
 
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))

@@ -169,8 +169,3 @@ def test_groupby_transformer():
     not_empty = np.logical_not(np.isnan(oof_prediction))    
     logging.debug('OOF score: {}'.format(roc_auc_score(train['TARGET'][not_empty], oof_prediction[not_empty])))
     logging.debug('TEST score: {}'.format(roc_auc_score(test['TARGET'].values, test_pred.data[:, 0])))
-    
-    
-    
-    
-print('ok')
