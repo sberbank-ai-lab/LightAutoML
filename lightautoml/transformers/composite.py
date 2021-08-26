@@ -160,7 +160,7 @@ class GroupByTransformer(LAMLTransformer):
 
         return self._features
 
-    def __init__(self, **kwargs):
+    def __init__(self, num_groups=None, use_cat_groups=True, **kwargs):
         """
 
         Args:
@@ -169,6 +169,9 @@ class GroupByTransformer(LAMLTransformer):
         """
         
         super().__init__()
+       
+        self.num_groups = num_groups if num_groups is not None else [GroupByNumDeltaMean.class_kind, GroupByNumDeltaMedian.class_kind, GroupByNumMin.class_kind, GroupByNumMax.class_kind, GroupByNumStd.class_kind, ]
+        self.use_cat_groups = use_cat_groups
         
         self.dicts = {}        
 
@@ -210,8 +213,7 @@ class GroupByTransformer(LAMLTransformer):
             group_by_processor = GroupByProcessor(group_values)
             
             for feature_column in num_cols:
-                for class_name in [GroupByNumDeltaMean, GroupByNumDeltaMedian, GroupByNumMin, GroupByNumMax, GroupByNumStd, ]:
-                    kind = class_name.class_kind
+                for kind in self.num_groups:
                     feature = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
                     self.dicts[feature] = {
                         'group_column': group_column, 
@@ -221,35 +223,36 @@ class GroupByTransformer(LAMLTransformer):
                     }
                     feats.append(feature)
                 
-            for feature_column in cat_cols:
-                if group_column != feature_column:    
-                    kind = GroupByCatMode.class_kind
-                    
-                    # group results are the same for 'cat_mode' and 'cat_is_mode'
-                    groups_1 = GroupByFactory.get_GroupBy(kind).fit(data=dataset.data, group_by_processor=group_by_processor, feature_column=feature_column)
-                    
-                    feature1 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
-                    self.dicts[feature1] = {
-                        'group_column': group_column, 
-                        'feature_column': feature_column, 
-                        'groups': groups_1, 
-                        'kind': kind
-                    }
-                    
-                    kind = GroupByCatIsMode.class_kind
-                    
-                    # group results are the same for 'cat_mode' and 'cat_is_mode'
-                    groups_2 = GroupByFactory.get_GroupBy(kind)
-                    groups_2.set_dict(groups_1.get_dict())
-                    
-                    feature2 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
-                    self.dicts[feature2] = {
-                        'group_column': group_column, 
-                        'feature_column': feature_column, 
-                        'groups': groups_2, 
-                        'kind': kind
-                    }
-                    feats.extend([feature1, feature2])
+            if self.use_cat_groups:
+                for feature_column in cat_cols:
+                    if group_column != feature_column:    
+                        kind = GroupByCatMode.class_kind
+
+                        # group results are the same for 'cat_mode' and 'cat_is_mode'
+                        groups_1 = GroupByFactory.get_GroupBy(kind).fit(data=dataset.data, group_by_processor=group_by_processor, feature_column=feature_column)
+
+                        feature1 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
+                        self.dicts[feature1] = {
+                            'group_column': group_column, 
+                            'feature_column': feature_column, 
+                            'groups': groups_1, 
+                            'kind': kind
+                        }
+
+                        kind = GroupByCatIsMode.class_kind
+
+                        # group results are the same for 'cat_mode' and 'cat_is_mode'
+                        groups_2 = GroupByFactory.get_GroupBy(kind)
+                        groups_2.set_dict(groups_1.get_dict())
+
+                        feature2 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
+                        self.dicts[feature2] = {
+                            'group_column': group_column, 
+                            'feature_column': feature_column, 
+                            'groups': groups_2, 
+                            'kind': kind
+                        }
+                        feats.extend([feature1, feature2])
             
         self._features = feats
         
