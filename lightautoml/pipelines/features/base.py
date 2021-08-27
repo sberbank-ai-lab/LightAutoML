@@ -563,5 +563,3 @@ class TabularDataFeatures:
         top = list(df.index[:top_n])
 
         return top
-
-    print('ok')
