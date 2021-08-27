@@ -548,7 +548,7 @@ class TabularDataFeatures:
         if len(nums) == 0:
             return []
 
-        df = pd.DataFrame({'importance': 0, 'cardinality': 0}, index=nums)
+        df = DataFrame({'importance': 0, 'cardinality': 0}, index=nums)
         # importance if defined
         if self.feats_imp is not None:
             feats_imp = pd.Series(self.feats_imp.get_features_score()).sort_values(ascending=False)
@@ -564,4 +564,4 @@ class TabularDataFeatures:
 
         return top
 
-    
+    print('ok')
