@@ -42,66 +42,17 @@ class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
         
         super().__init__(feats_imp=feats_imp)
         
-        self.top_category = top_category
-        self.top_numeric = top_numeric
+        self.top_group_by_categorical = top_category
+        self.top_group_by_numerical = top_numeric
         
     def create_pipeline(self, train):
-        """create_pipeline"""
-        
-        logging.debug(f'GroupByPipeline.create_pipeline')
-
-        transformer_list = []
-
-        categories = get_columns_by_role(train, 'Category')
-        logging.debug(f'GroupByPipeline.create_pipeline.categories:{categories}')
-
-        numerics = get_columns_by_role(train, 'Numeric')
-        logging.debug(f'GroupByPipeline.create_pipeline.numerics:{numerics}')
-
-        cat_feats_to_select = []
-        num_feats_to_select = []
-        
-        if len(categories) > self.top_category:
-            cat_feats_to_select = self.get_top_categories(train, self.top_category)
-        elif len(categories) > 0:
-            cat_feats_to_select = categories
-        logging.debug(f'GroupByPipeline.create_pipeline.cat_feats_to_select:{cat_feats_to_select}')
-            
-        if len(numerics) > self.top_numeric:
-            num_feats_to_select = self.get_top_numeric(train, self.top_numeric)
-        elif len(numerics) > 0:
-            num_feats_to_select = numerics        
-        logging.debug(f'GroupByPipeline.create_pipeline.num_feats_to_select:{num_feats_to_select}')
-
-        if (len(cat_feats_to_select) > 0) and (len(num_feats_to_select) > 0):
-            groupby_processing = SequentialTransformer([
-                UnionTransformer([
-                    SequentialTransformer([
-                        ColumnsSelector(keys=categories),
-                        LabelEncoder(subs=None, random_state=42),
-                        ChangeRoles(NumericRole(np.float32)),
-                        FillnaMedian(),
-                        ChangeRoles(CategoryRole(np.float32)),
-                    ]),
-                    SequentialTransformer([
-                        ColumnsSelector(keys=num_feats_to_select)]),
-                    ]),                
-                GroupByTransformer(),
-            ])
-            
-            transformer_list.append(groupby_processing)
-        else:
-            raise ValueError('GroupByPipeline expects at least 1 categorial and 1 numeric features')                
-            
-        logging.debug(f'GroupByPipeline.create_pipeline.transformer_list:{transformer_list}')
-
-        return UnionTransformer(transformer_list)
+        return self.get_group_by(train)
     
     
 def test_groupby_transformer():
     np.random.seed(RANDOM_STATE)
     
-    logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.WARNING)
 
     data = pd.read_csv('../example_data/test_data_files/sampled_app_train.csv')
 
@@ -146,3 +97,4 @@ def test_groupby_transformer():
     not_empty = np.logical_not(np.isnan(oof_prediction))    
     logging.debug('OOF score: {}'.format(roc_auc_score(train['TARGET'][not_empty], oof_prediction[not_empty])))
     logging.debug('TEST score: {}'.format(roc_auc_score(test['TARGET'].values, test_pred.data[:, 0])))
+
