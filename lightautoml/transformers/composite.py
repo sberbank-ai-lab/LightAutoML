@@ -12,16 +12,23 @@ logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
                   
 class GroupByTransformer(LAMLTransformer):
-    """
+    """Transformer, that calculates group_by features.
 
-    create group_by features:
-    * group by categorical:
-        * numerical features:
-            * difference with group mode
-    * group by categorical:
-        * categorical features:
-            * group mode 
-            * is current value equal to group mode 
+    Types of group_by features:
+        - Group by categorical:
+            - Numerical features:
+                - Difference with group mode.
+                - Difference with group median.
+                - Group min.
+                - Group max.
+                - Group std.
+            - Categorical features:
+                - Group mode.
+                - Is current value equal to group mode.
+                
+    Attributes:
+        features list(str): generated features names.
+        
     """
         
     _fit_checks = ()
@@ -38,13 +45,16 @@ class GroupByTransformer(LAMLTransformer):
         """
 
         Args:
-            no
+            num_groups (list(str)): IDs of functions to use for numeric features.
+            use_cat_groups (boolean): flag to show use for category features.
 
         """
         
         super().__init__()
        
-        self.num_groups = num_groups if num_groups is not None else [GroupByNumDeltaMean.class_kind, GroupByNumDeltaMedian.class_kind, GroupByNumMin.class_kind, GroupByNumMax.class_kind, GroupByNumStd.class_kind, ]
+        self.num_groups = num_groups if num_groups is not None else [
+            GroupByNumDeltaMean.class_kind, GroupByNumDeltaMedian.class_kind, GroupByNumMin.class_kind, GroupByNumMax.class_kind, GroupByNumStd.class_kind, 
+        ]
         self.use_cat_groups = use_cat_groups
         
         self.dicts = {}        
@@ -67,11 +77,10 @@ class GroupByTransformer(LAMLTransformer):
         for check_func in self._fit_checks:
             check_func(dataset)
             
-        # set transformer features
-
         # convert to accepted dtype and get attributes
         dataset = dataset.to_pandas()
         
+        # set transformer features
         cat_cols = get_columns_by_role(dataset, 'Category')
         num_cols = get_columns_by_role(dataset, 'Numeric')
         logger.debug(f'GroupByTransformer.__fit.cat_cols={cat_cols}')
@@ -131,13 +140,13 @@ class GroupByTransformer(LAMLTransformer):
         return self
 
     def transform(self, dataset):
-        """Calculate groups statistics by categorial features.
+        """Calculate groups statistics.
 
         Args:
-            dataset: Numpy or Pandas dataset with categorial and numerical columns.
+            dataset: Numpy or Pandas dataset with category and numeric columns.
 
         Returns:
-            NumpyDataset of numeric features.
+            NumpyDataset of calculated group features (numeric).
         """
 
         logger.debug(f'GroupByTransformer.transform.begin')

@@ -10,9 +10,11 @@ logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
 
 def get_mode(x):
+    """Helper function to calculate mode."""    
     return mode(x)[0][0]
 
 class GroupByProcessor:    
+    """Helper class to calculate group_by features."""    
     def __init__(self, keys):
         super().__init__()
         
@@ -38,6 +40,21 @@ class GroupByProcessor:
             return [functions(vectors[idx].tolist()) for idx in (self.indices)]
         
 class GroupByFactory:    
+    """Factory to create group_by classes.
+    
+    Uses string identifiers to locate appropriate implementation.
+    
+    Example:        
+        GroupByFactory.get_GroupBy('delta_mean')
+
+    Returns:
+        Object of GroupByBase impementing selected feature.
+
+    Raises:
+        ValueError: if identifier is not found.    
+        
+    """    
+    
     @staticmethod
     def get_GroupBy(kind):
         assert kind is not None
@@ -59,7 +76,26 @@ class GroupByFactory:
         raise ValueError(f'Unsupported kind: {kind}, available={[class_name.class_kind for class_name in available_classes]}')        
 
 class GroupByBase:        
+    """Base class for all group_by features.
+    
+    Note:
+        Typically is created from GroupByFactory.
+    
+    Example:        
+        GroupByBase(GroupByNumDeltaMean.class_kind, GroupByNumDeltaMean.class_fit_func, GroupByNumDeltaMean.class_transform_func)        
+
+    """ 
+    
     def __init__(self, kind, fit_func, transform_func):
+        """
+        
+        Args:
+            kind (string): Id of group_by feature.
+            fit_func (function): function to calculate groups.
+            transform_func (function): function to calculate statistics based on fitted groups.
+
+        """ 
+
         super().__init__()
 
         self.kind = kind
@@ -75,6 +111,18 @@ class GroupByBase:
         self._dict = dict
         
     def fit(self, data, group_by_processor, feature_column):
+        """Calculate groups
+        
+        Note:
+            GroupByProcessor must be initialiaed before call to this function.
+        
+        Args:
+            data (dataset): input data to extract ``feature_column``.
+            group_by_processor (GroupByProcessor): processor, containig groups.
+            feature_column (string): name of column to calculate statistics.
+
+        """ 
+        
         assert data is not None
         assert group_by_processor is not None        
         assert feature_column is not None
@@ -89,6 +137,16 @@ class GroupByBase:
         return self
     
     def transform(self, data, value):
+        """Calculate features statistics
+        
+        Note:
+            ``fit`` function must be called before ``transform``.
+        
+        Args:
+            data (dataset): input data to extract ``value['group_column']`` and ``value['feature_column']``.
+            value (dict): colunm names.
+
+        """ 
         assert data is not None
         assert value is not None
         

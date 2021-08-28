@@ -576,7 +576,8 @@ class TabularDataFeatures:
                     ) -> Optional[LAMLTransformer]:
         """Get transformer that calculates group by features.
         
-        amount of features is limited to ``self.top_group_by_categorical`` and ``self.top_group_by_numerical`` fields
+        Note:
+            Amount of features is limited to ``self.top_group_by_categorical`` and ``self.top_group_by_numerical`` fields
         
         Args:
             train: Dataset with train data.

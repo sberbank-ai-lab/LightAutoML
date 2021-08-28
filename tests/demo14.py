@@ -37,7 +37,7 @@ N_THREADS = 4 # threads cnt for lgbm and linear models
 
 class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
     def __init__(self, feats_imp = None, top_category: int = 3, top_numeric: int = 3, **kwargs):
-        """
+        """Helper class to create pipeline with group_by transformer.
         """
         
         super().__init__(feats_imp=feats_imp)
