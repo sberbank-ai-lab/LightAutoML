@@ -26,7 +26,7 @@ class Distiller:
     """This class contains utilities to perform knowledge distillation from complex models to simpler models
     and data augmentation (not implemented yet).
 
-    A model to perform distillation from is called Teacher.
+    A model from which to perform distillation is called Teacher.
     A model to learn knowledge from the teacher is called Student.
     """
     @property
@@ -54,7 +54,7 @@ class Distiller:
             data: a dataset to fit the teacher to.
             **kwargs: optional params for fitting the teacher.
         """
-        self.fit_predict(self, data, **kwargs)
+        self.fit_predict(data, **kwargs)
     
     def fit_predict(self, data, **kwargs):
         """Fits the teacher to given data and returns labels for fitting the students.
@@ -118,11 +118,13 @@ class Distiller:
             self.students = list()
             for algo in [BoostCB, BoostLGBM]:
                 # TODO: implement students consistent with lightautoml
-                reader = PandasToPandasReader(Task('reg'), samples=None, max_nan_rate=1, max_constant_rate=1,
-                                              advanced_roles=True, drop_score_co=-1, n_jobs=1)
+                reader = self.teacher.reader
+                # reader = PandasToPandasReader(Task('reg'), samples=None, max_nan_rate=1, max_constant_rate=1,
+                #                               advanced_roles=True, drop_score_co=-1, n_jobs=1)
                 pipeline_lvl1 = MLPipeline(ml_algos=[algo(default_params={'verbose': 0})],
                                            pre_selection=None,
-                                           features_pipeline=LGBSimpleFeatures(),
+                                           features_pipeline=self.teacher.outer_pipes[0].features_pipeline,
+                                        #    features_pipeline=LGBSimpleFeatures(),
                                            post_selection=None)
                 self.students.append(AutoML(reader, [[pipeline_lvl1]], skip_conn=False, verbose=0))
 
