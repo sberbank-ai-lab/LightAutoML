@@ -618,11 +618,11 @@ class TabularDataFeatures:
         groupby_processing = SequentialTransformer([
             UnionTransformer([
                 SequentialTransformer([
-                    ColumnsSelector(keys=categories),
+                    ColumnsSelector(keys=cat_feats_to_select),
                     LabelEncoder(subs=None, random_state=42),
-                    ChangeRoles(NumericRole(np.float32)),
+                    ChangeRoles(NumericRole(np.float32)), # TODO: try int?
                     FillnaMedian(),
-                    ChangeRoles(CategoryRole(np.float32)),
+                    ChangeRoles(CategoryRole(np.float32)), # TODO: try int?
                 ]),
                 SequentialTransformer([
                     ColumnsSelector(keys=num_feats_to_select)]),

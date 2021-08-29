@@ -154,7 +154,7 @@ class GroupByBase:
 
         group_values = data[value['group_column']].to_numpy()        
         feature_values = data[value['feature_column']].to_numpy()
-        result = self.transform_func(tuple([np.vectorize(self._dict.get)(group_values), feature_values])).reshape(-1, 1)            
+        result = self.transform_func(tuple([np.nan_to_num(np.array(np.vectorize(self._dict.get)(group_values), dtype=float)), feature_values])).reshape(-1, 1)
             
         assert result is not None
         return result

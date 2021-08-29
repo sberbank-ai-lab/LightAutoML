@@ -93,7 +93,7 @@ class GroupByTransformer(LAMLTransformer):
             
             for feature_column in num_cols:
                 for kind in self.num_groups:
-                    feature = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
+                    feature = f'{self._fname_prefix}__{group_column}__{kind}__{feature_column}'
                     self.dicts[feature] = {
                         'group_column': group_column, 
                         'feature_column': feature_column, 
@@ -110,7 +110,7 @@ class GroupByTransformer(LAMLTransformer):
                         # group results are the same for 'cat_mode' and 'cat_is_mode'
                         groups_1 = GroupByFactory.get_GroupBy(kind).fit(data=dataset.data, group_by_processor=group_by_processor, feature_column=feature_column)
 
-                        feature1 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
+                        feature1 = f'{self._fname_prefix}__{group_column}__{kind}__{feature_column}'
                         self.dicts[feature1] = {
                             'group_column': group_column, 
                             'feature_column': feature_column, 
@@ -124,7 +124,7 @@ class GroupByTransformer(LAMLTransformer):
                         groups_2 = GroupByFactory.get_GroupBy(kind)
                         groups_2.set_dict(groups_1.get_dict())
 
-                        feature2 = f'{self._fname_prefix}__{group_column}_{kind}_{feature_column}'
+                        feature2 = f'{self._fname_prefix}__{group_column}__{kind}__{feature_column}'
                         self.dicts[feature2] = {
                             'group_column': group_column, 
                             'feature_column': feature_column, 
@@ -154,17 +154,13 @@ class GroupByTransformer(LAMLTransformer):
         # checks here
         super().transform(dataset)
         
-        # convert to accepted dtype and get attributes
-        cat_cols = get_columns_by_role(dataset, 'Category')
-        num_cols = get_columns_by_role(dataset, 'Numeric')
-        logger.debug(f'GroupByTransformer.__transform_new.cat_cols:{cat_cols}')
-        logger.debug(f'GroupByTransformer.__transform_new.num_cols:{num_cols}')
-
         # transform
         roles = NumericRole()
         outputs = []
         
         for feat, value in self.dicts.items():
+            # logger.debug(f'GroupByTransformer.__transform_new.feat:{feat}')
+
             new_arr = value['groups'].transform(data=dataset.data, value=value)
             
             output = dataset.empty().to_numpy()
