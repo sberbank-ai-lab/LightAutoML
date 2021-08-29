@@ -62,7 +62,6 @@ class Distiller:
             students = student
 
         for algo in students:
-            # TODO: implement students consistent with lightautoml
             reader = PandasToPandasReader(Task(self.teacher.task.name), samples=None, max_nan_rate=1, max_constant_rate=1,
                                           advanced_roles=True, drop_score_co=-1, n_jobs=1)
             pipeline_lvl1 = MLPipeline(ml_algos=[algo(default_params={'verbose': 0})],
