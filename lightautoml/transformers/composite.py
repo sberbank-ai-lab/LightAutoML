@@ -71,7 +71,7 @@ class GroupByTransformer(LAMLTransformer):
         """
 
         logger.debug(f'GroupByTransformer.__fit.begin')
-        logger.debug(f'GroupByTransformer.__fit.type(dataset.data.to_numpy())={type(dataset.data.to_numpy())}')
+        logger.debug(f'GroupByTransformer.__fit.type(dataset.data)={type(dataset.data)}')
 
         # set transformer names and add checks
         for check_func in self._fit_checks:
@@ -134,6 +134,8 @@ class GroupByTransformer(LAMLTransformer):
                         feats.extend([feature1, feature2])
             
         self._features = feats
+
+        logger.debug(f"self._features:({len(self._features)}) {self._features}")
         
         logger.debug(f'GroupByTransformer.__fit.end')
         
@@ -150,16 +152,19 @@ class GroupByTransformer(LAMLTransformer):
         """
 
         logger.debug(f'GroupByTransformer.transform.begin')
-        
+        logger.debug(f'GroupByTransformer.__transform.len(self.dicts):{len(self.dicts)}')
+
         # checks here
         super().transform(dataset)
         
+        # convert to accepted dtype and get attributes
+        dataset = dataset.to_pandas()
+
         # transform
         roles = NumericRole()
         outputs = []
         
         for feat, value in self.dicts.items():
-            # logger.debug(f'GroupByTransformer.__transform_new.feat:{feat}')
 
             new_arr = value['groups'].transform(data=dataset.data, value=value)
             

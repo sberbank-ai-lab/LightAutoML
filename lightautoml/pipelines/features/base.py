@@ -17,7 +17,7 @@ from ...transformers.categorical import MultiClassTargetEncoder, TargetEncoder, 
     LabelEncoder, \
     OrdinalEncoder
 from ...transformers.datetime import BaseDiff, DateSeasons
-from ...transformers.numeric import QuantileBinning, FillnaMedian
+from ...transformers.numeric import QuantileBinning, FillnaMedian, StandardScaler, FillInf, NaNFlags
 from ...transformers.composite import GroupByTransformer
 from ...utils.logging import get_logger, verbosity_to_loglevel
 
@@ -625,8 +625,13 @@ class TabularDataFeatures:
                     ChangeRoles(CategoryRole(np.float32)), # TODO: try int?
                 ]),
                 SequentialTransformer([
-                    ColumnsSelector(keys=num_feats_to_select)]),
-                ]),                
+                    ColumnsSelector(keys=num_feats_to_select),
+                    UnionTransformer([
+                        SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
+                        NaNFlags()
+                    ])
+                ]),
+            ]),
             GroupByTransformer(),
         ])
             
