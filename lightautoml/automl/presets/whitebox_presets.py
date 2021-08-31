@@ -1,17 +1,22 @@
 """Whitebox AutoML presets."""
 
-import os
-from copy import deepcopy
-from typing import Optional, Sequence, Any, cast, Iterable
-
 import logging
+import os
 
-from .base import AutoMLPreset, upd_params
+from copy import deepcopy
+from typing import Any
+from typing import Iterable
+from typing import Optional
+from typing import Sequence
+from typing import cast
+
 from ...dataset.np_pd_dataset import NumpyDataset
 from ...ml_algo.whitebox import WbMLAlgo
 from ...pipelines.ml.whitebox_ml_pipe import WBPipeline
 from ...reader.base import PandasToPandasReader
 from ...tasks import Task
+from .base import AutoMLPreset
+from .base import upd_params
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +45,8 @@ class WhiteBoxPreset(AutoMLPreset):
     for binary classification task.
 
     """
-    _default_config_path = 'whitebox_config.yml'
+
+    _default_config_path = "whitebox_config.yml"
 
     @property
     def whitebox(self):
@@ -52,15 +58,21 @@ class WhiteBoxPreset(AutoMLPreset):
         """
         return self.levels[0][0].whitebox
 
-    def __init__(self, task: Task, timeout: int = 3600, memory_limit: int = 16, cpu_limit: int = 4,
-                 gpu_ids: Optional[str] = None,
-                 verbose: int = 2,
-                 timing_params: Optional[dict] = None,
-                 config_path: Optional[str] = None,
-                 general_params: Optional[dict] = None,
-                 reader_params: Optional[dict] = None,
-                 read_csv_params: Optional[dict] = None,
-                 whitebox_params: Optional[dict] = None):
+    def __init__(
+        self,
+        task: Task,
+        timeout: int = 3600,
+        memory_limit: int = 16,
+        cpu_limit: int = 4,
+        gpu_ids: Optional[str] = None,
+        verbose: int = 2,
+        timing_params: Optional[dict] = None,
+        config_path: Optional[str] = None,
+        general_params: Optional[dict] = None,
+        reader_params: Optional[dict] = None,
+        read_csv_params: Optional[dict] = None,
+        whitebox_params: Optional[dict] = None,
+    ):
         """
 
         Commonly _params kwargs (ex. timing_params) set via
@@ -88,19 +100,32 @@ class WhiteBoxPreset(AutoMLPreset):
             whitebox_params: Params of WhiteBox algo (look at config file).
 
         """
-        super().__init__(task, timeout, memory_limit, cpu_limit, gpu_ids, verbose, timing_params, config_path)
+        super().__init__(
+            task,
+            timeout,
+            memory_limit,
+            cpu_limit,
+            gpu_ids,
+            verbose,
+            timing_params,
+            config_path,
+        )
 
         # upd manual params
-        for name, param in zip(['general_params',
-                                'reader_params',
-                                'read_csv_params',
-                                'whitebox_params',
-                                ],
-                               [general_params,
-                                reader_params,
-                                read_csv_params,
-                                whitebox_params,
-                                ]):
+        for name, param in zip(
+            [
+                "general_params",
+                "reader_params",
+                "read_csv_params",
+                "whitebox_params",
+            ],
+            [
+                general_params,
+                reader_params,
+                read_csv_params,
+                whitebox_params,
+            ],
+        ):
             if param is None:
                 param = {}
             self.__dict__[name] = upd_params(self.__dict__[name], param)
@@ -109,9 +134,11 @@ class WhiteBoxPreset(AutoMLPreset):
 
         # check all n_jobs params
         cpu_cnt = min(os.cpu_count(), self.cpu_limit)
-        self.whitebox_params['default_params']['n_jobs'] = min(self.whitebox_params['default_params']['n_jobs'], cpu_cnt)
-        self.reader_params['n_jobs'] = min(self.reader_params['n_jobs'], cpu_cnt)
-        self.whitebox_params['verbose'] = self.verbose
+        self.whitebox_params["default_params"]["n_jobs"] = min(
+            self.whitebox_params["default_params"]["n_jobs"], cpu_cnt
+        )
+        self.reader_params["n_jobs"] = min(self.reader_params["n_jobs"], cpu_cnt)
+        self.whitebox_params["verbose"] = self.verbose
 
     def create_automl(self, *args, **kwargs):
         """Create basic :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset` instance from data.
@@ -123,25 +150,31 @@ class WhiteBoxPreset(AutoMLPreset):
         """
         self.infer_auto_params()
         reader = PandasToPandasReader(task=self.task, **self.reader_params)
-        wb_timer = self.timer.get_task_timer('wb', 1)
+        wb_timer = self.timer.get_task_timer("wb", 1)
 
         whitebox_params = deepcopy(self.whitebox_params)
-        whitebox_params['fit_params'] = self.fit_params
-        whitebox_params['report'] = self.general_params['report']
+        whitebox_params["fit_params"] = self.fit_params
+        whitebox_params["report"] = self.general_params["report"]
 
         _whitebox = WbMLAlgo(timer=wb_timer, default_params=whitebox_params)
         whitebox = WBPipeline(_whitebox)
-        levels = [
-            [whitebox]
-        ]
+        levels = [[whitebox]]
 
         # initialize
-        self._initialize(reader, levels, skip_conn=False, timer=self.timer, verbose=self.verbose)
+        self._initialize(
+            reader, levels, skip_conn=False, timer=self.timer, verbose=self.verbose
+        )
 
-    def fit_predict(self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
-                    cv_iter: Optional[Iterable] = None,
-                    valid_data: Optional[Any] = None, valid_features: Optional[Sequence[str]] = None,
-                    **fit_params) -> NumpyDataset:
+    def fit_predict(
+        self,
+        train_data: Any,
+        roles: dict,
+        train_features: Optional[Sequence[str]] = None,
+        cv_iter: Optional[Iterable] = None,
+        valid_data: Optional[Any] = None,
+        valid_features: Optional[Sequence[str]] = None,
+        **fit_params
+    ) -> NumpyDataset:
         """Fit and get prediction on validation dataset.
 
         Almost same as :meth:`lightautoml.automl.base.AutoML.fit_predict`.
@@ -171,19 +204,26 @@ class WhiteBoxPreset(AutoMLPreset):
             Dataset with predictions. Call ``.data`` to get predictions array.
 
         """
-        assert cv_iter is None or len(cv_iter) == 2, 'Expect custom iterator with len 2'
+        assert cv_iter is None or len(cv_iter) == 2, "Expect custom iterator with len 2"
         if valid_data is None and cv_iter is None:
-            logger.info2("Validation data is not set. Train will be used as valid in report and valid prediction")
+            logger.info2(
+                "Validation data is not set. Train will be used as valid in report and valid prediction"
+            )
             valid_data = train_data
             valid_features = train_features
 
         self.fit_params = fit_params
-        pred = super().fit_predict(train_data, roles, train_features, cv_iter,
-                                   valid_data, valid_features)
+        pred = super().fit_predict(
+            train_data, roles, train_features, cv_iter, valid_data, valid_features
+        )
         return cast(NumpyDataset, pred)
 
-    def predict(self, data: Any, features_names: Optional[Sequence[str]] = None,
-                report: bool = False) -> NumpyDataset:
+    def predict(
+        self,
+        data: Any,
+        features_names: Optional[Sequence[str]] = None,
+        report: bool = False,
+    ) -> NumpyDataset:
         """Almost same as AutoML ``.predict`` with additional features.
 
         Additional features - generate extended WhiteBox

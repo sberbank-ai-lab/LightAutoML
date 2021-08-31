@@ -2,12 +2,16 @@
 
 import logging
 import warnings
+
 from time import time
-from typing import Optional, List, Union
+from typing import List
+from typing import Optional
+from typing import Union
 
 import numpy as np
 
 from .logging import DuplicateFilter
+
 
 logger = logging.getLogger(__name__)
 logger.addFilter(DuplicateFilter())
@@ -15,6 +19,7 @@ logger.addFilter(DuplicateFilter())
 
 class Timer:
     """Timer to limit the duration tasks."""
+
     _timeout = 1e10
     _overhead = 0
     _mode = 1
@@ -63,7 +68,13 @@ class PipelineTimer(Timer):
     It decides how much time spend to each algo
     """
 
-    def __init__(self, timeout: Optional[float] = None, overhead: float = .1, mode: int = 1, tuning_rate: float = 0.7):
+    def __init__(
+        self,
+        timeout: Optional[float] = None,
+        overhead: float = 0.1,
+        mode: int = 1,
+        tuning_rate: float = 0.7,
+    ):
         """Create global automl timer.
 
         Args:
@@ -112,8 +123,12 @@ class PipelineTimer(Timer):
 
         return (self.time_left - self._overhead) * (score / self._task_scores)
 
-    def get_task_timer(self, key: Optional[str] = None, score: float = 1.0) -> 'TaskTimer':
-        return TaskTimer(self, key, score, self._rate_overhead, self._mode, self.tuning_rate)
+    def get_task_timer(
+        self, key: Optional[str] = None, score: float = 1.0
+    ) -> "TaskTimer":
+        return TaskTimer(
+            self, key, score, self._rate_overhead, self._mode, self.tuning_rate
+        )
 
 
 class TaskTimer(Timer):
@@ -128,9 +143,15 @@ class TaskTimer(Timer):
         """Check if the task is running."""
         return self.start_time is not None
 
-    def __init__(self, pipe_timer: PipelineTimer, key: Optional[str] = None, score: float = 1.0,
-                 overhead: Optional[float] = 1, mode: int = 1,
-                 default_tuner_time_rate: float = 0.7):
+    def __init__(
+        self,
+        pipe_timer: PipelineTimer,
+        key: Optional[str] = None,
+        score: float = 1.0,
+        overhead: Optional[float] = 1,
+        mode: int = 1,
+        default_tuner_time_rate: float = 0.7,
+    ):
         """
 
 
@@ -235,7 +256,11 @@ class TaskTimer(Timer):
             if len(total_run_info) == 0:
                 return None
 
-            single_run_est = np.array(total_run_info).sum() / np.array(total_run_scores).sum() * self.score
+            single_run_est = (
+                np.array(total_run_info).sum()
+                / np.array(total_run_scores).sum()
+                * self.score
+            )
             return single_run_est * n_folds
 
         # case - algo runs at least ones
@@ -274,7 +299,9 @@ class TaskTimer(Timer):
     def __copy__(self):
 
         proxy_timer = PipelineTimer().start()
-        logger.warning('Copying TaskTimer may affect the parent PipelineTimer, so copy will create new unlimited TaskTimer')
+        logger.warning(
+            "Copying TaskTimer may affect the parent PipelineTimer, so copy will create new unlimited TaskTimer"
+        )
 
         return proxy_timer.get_task_timer(self.key)
 
@@ -282,7 +309,7 @@ class TaskTimer(Timer):
 
         return self.__copy__()
 
-    def split_timer(self, n_parts: int) -> List['TaskTimer']:
+    def split_timer(self, n_parts: int) -> List["TaskTimer"]:
         """Split the timer into equal-sized tasks.
 
         Args:
@@ -290,7 +317,10 @@ class TaskTimer(Timer):
 
         """
         new_tasks_score = self.score / n_parts
-        timers = [self.pipe_timer.get_task_timer(self.key, new_tasks_score) for _ in range(n_parts)]
+        timers = [
+            self.pipe_timer.get_task_timer(self.key, new_tasks_score)
+            for _ in range(n_parts)
+        ]
         self.pipe_timer.close_task(self.score)
 
         return timers

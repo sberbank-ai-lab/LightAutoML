@@ -1,18 +1,22 @@
 """Utils for logging."""
 
 import io
+import logging
 import os
 import sys
-import logging
 import warnings
 
 from .. import _logger
 
-formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
+
+formatter_debug = logging.Formatter(
+    f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s"
+)
 formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
 
 INFO2 = 17
 INFO3 = 13
+
 
 def add_logging_level(levelName, levelNum, methodName=None):
     """
@@ -27,7 +31,7 @@ def add_logging_level(levelName, levelNum, methodName=None):
 
     To avoid accidental clobberings of existing attributes, this method will
     raise an `AttributeError` if the level name is already an attribute of the
-    `logging` module or if the method name is already present 
+    `logging` module or if the method name is already present
 
     Example
     -------
@@ -44,15 +48,16 @@ def add_logging_level(levelName, levelNum, methodName=None):
         methodName = levelName.lower()
 
     if hasattr(logging, levelName):
-        raise AttributeError('{} already defined in logging module'.format(levelName))
+        raise AttributeError("{} already defined in logging module".format(levelName))
     if hasattr(logging, methodName):
-        raise AttributeError('{} already defined in logging module'.format(methodName))
+        raise AttributeError("{} already defined in logging module".format(methodName))
     if hasattr(logging.getLoggerClass(), methodName):
-        raise AttributeError('{} already defined in logger class'.format(methodName))
+        raise AttributeError("{} already defined in logger class".format(methodName))
 
     def logForLevel(self, message, *args, **kwargs):
         if self.isEnabledFor(levelNum):
             self._log(levelNum, message, args, **kwargs)
+
     def logToRoot(message, *args, **kwargs):
         logging.log(levelNum, message, *args, **kwargs)
 
@@ -61,8 +66,10 @@ def add_logging_level(levelName, levelNum, methodName=None):
     setattr(logging.getLoggerClass(), methodName, logForLevel)
     setattr(logging, methodName, logToRoot)
 
-add_logging_level('INFO2', INFO2)
-add_logging_level('INFO3', INFO3)
+
+add_logging_level("INFO2", INFO2)
+add_logging_level("INFO3", INFO3)
+
 
 class LoggerStream(io.IOBase):
     def __init__(self, new_write) -> None:
@@ -70,8 +77,9 @@ class LoggerStream(io.IOBase):
         self.new_write = new_write
 
     def write(self, message):
-        if message != '\n':
+        if message != "\n":
             self.new_write(message.rstrip())
+
 
 def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:
@@ -87,11 +95,13 @@ def verbosity_to_loglevel(verbosity: int):
 
     return log_level
 
+
 def get_stdout_level():
     for handler in _logger.handlers:
         if type(handler) == logging.StreamHandler:
             return handler.level
     return _logger.getEffectiveLevel()
+
 
 def set_stdout_level(level):
     _logger.setLevel(logging.DEBUG)
@@ -112,19 +122,23 @@ def set_stdout_level(level):
 
         _logger.addHandler(handler)
 
-def add_filehandler(filename: str, level = logging.DEBUG):
+
+def add_filehandler(filename: str, level=logging.DEBUG):
     if filename:
         has_file_handler = False
-        
+
         for handler in _logger.handlers:
             if type(handler) == logging.FileHandler:
-                if handler.baseFilename == filename or handler.baseFilename == os.path.join(os.getcwd(), filename):
+                if (
+                    handler.baseFilename == filename
+                    or handler.baseFilename == os.path.join(os.getcwd(), filename)
+                ):
                     has_file_handler = True
                 else:
                     _logger.handlers.remove(handler)
 
         if not has_file_handler:
-            file_handler = logging.FileHandler(filename, mode='w')
+            file_handler = logging.FileHandler(filename, mode="w")
 
             if level == logging.DEBUG:
                 file_handler.setFormatter(formatter_debug)
@@ -141,6 +155,7 @@ def add_filehandler(filename: str, level = logging.DEBUG):
         for handler in _logger.handlers:
             if type(handler) == logging.FileHandler:
                 _logger.handlers.remove(handler)
+
 
 class DuplicateFilter(object):
     def __init__(self):

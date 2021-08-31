@@ -1,17 +1,25 @@
 """Base AutoML class."""
 
-from typing import Sequence, Any, Optional, Iterable, Dict, List
-
 import logging
 
-from .blend import Blender, BestModelSelector
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+
 from ..dataset.base import LAMLDataset
 from ..dataset.utils import concatenate
 from ..pipelines.ml.base import MLPipeline
 from ..reader.base import Reader
-from ..utils.logging import verbosity_to_loglevel, set_stdout_level
+from ..utils.logging import set_stdout_level
+from ..utils.logging import verbosity_to_loglevel
 from ..utils.timer import PipelineTimer
 from ..validation.utils import create_validation_iterator
+from .blend import BestModelSelector
+from .blend import Blender
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +63,15 @@ class AutoML:
 
     """
 
-    def __init__(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                 blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False):
+    def __init__(
+        self,
+        reader: Reader,
+        levels: Sequence[Sequence[MLPipeline]],
+        timer: Optional[PipelineTimer] = None,
+        blender: Optional[Blender] = None,
+        skip_conn: bool = False,
+        return_all_predictions: bool = False,
+    ):
         """
 
         Args:
@@ -82,10 +97,19 @@ class AutoML:
                 - `3`: Debug.
 
         """
-        self._initialize(reader, levels, timer, blender, skip_conn, return_all_predictions)
+        self._initialize(
+            reader, levels, timer, blender, skip_conn, return_all_predictions
+        )
 
-    def _initialize(self, reader: Reader, levels: Sequence[Sequence[MLPipeline]], timer: Optional[PipelineTimer] = None,
-                    blender: Optional[Blender] = None, skip_conn: bool = False, return_all_predictions: bool = False):
+    def _initialize(
+        self,
+        reader: Reader,
+        levels: Sequence[Sequence[MLPipeline]],
+        timer: Optional[PipelineTimer] = None,
+        blender: Optional[Blender] = None,
+        skip_conn: bool = False,
+        return_all_predictions: bool = False,
+    ):
         """Same as __init__. Exists for delayed initialization in presets.
 
         Args:
@@ -106,7 +130,7 @@ class AutoML:
             verbose: Verbosity level. Default 2.
 
         """
-        assert len(levels) > 0, 'At least 1 level should be defined'
+        assert len(levels) > 0, "At least 1 level should be defined"
 
         self.timer = timer
         if timer is None:
@@ -123,16 +147,21 @@ class AutoML:
         for i, lvl in enumerate(self._levels):
 
             for j, pipe in enumerate(lvl):
-                pipe.upd_model_names('Lvl_{0}_Pipe_{1}'.format(i, j))
+                pipe.upd_model_names("Lvl_{0}_Pipe_{1}".format(i, j))
 
         self.skip_conn = skip_conn
         self.return_all_predictions = return_all_predictions
 
-    def fit_predict(self, train_data: Any, roles: dict, train_features: Optional[Sequence[str]] = None,
-                    cv_iter: Optional[Iterable] = None,
-                    valid_data: Optional[Any] = None,
-                    valid_features: Optional[Sequence[str]] = None,
-                    verbose: int = 0) -> LAMLDataset:
+    def fit_predict(
+        self,
+        train_data: Any,
+        roles: dict,
+        train_features: Optional[Sequence[str]] = None,
+        cv_iter: Optional[Iterable] = None,
+        valid_data: Optional[Any] = None,
+        valid_features: Optional[Sequence[str]] = None,
+        verbose: int = 0,
+    ) -> LAMLDataset:
         """Fit on input data and make prediction on validation part.
 
         Args:
@@ -154,17 +183,23 @@ class AutoML:
         self.timer.start()
         train_dataset = self.reader.fit_read(train_data, train_features, roles)
 
-        assert len(self._levels) <= 1 or train_dataset.folds is not None, \
-            'Not possible to fit more than 1 level without cv folds'
+        assert (
+            len(self._levels) <= 1 or train_dataset.folds is not None
+        ), "Not possible to fit more than 1 level without cv folds"
 
-        assert len(self._levels) <= 1 or valid_data is None, \
-            'Not possible to fit more than 1 level with holdout validation'
+        assert (
+            len(self._levels) <= 1 or valid_data is None
+        ), "Not possible to fit more than 1 level with holdout validation"
 
         valid_dataset = None
         if valid_data is not None:
-            valid_dataset = self.reader.read(valid_data, valid_features, add_array_attrs=True)
+            valid_dataset = self.reader.read(
+                valid_data, valid_features, add_array_attrs=True
+            )
 
-        train_valid = create_validation_iterator(train_dataset, valid_dataset, n_folds=None, cv_iter=cv_iter)
+        train_valid = create_validation_iterator(
+            train_dataset, valid_dataset, n_folds=None, cv_iter=cv_iter
+        )
         # for pycharm)
         level_predictions = None
         pipes = None
@@ -176,7 +211,9 @@ class AutoML:
             level_predictions = []
             flg_last_level = leven_number == len(self._levels)
 
-            logger.info(f'Layer \x1b[1m{leven_number}\x1b[0m train process start. Time left {self.timer.time_left:.2f} secs')
+            logger.info(
+                f"Layer \x1b[1m{leven_number}\x1b[0m train process start. Time left {self.timer.time_left:.2f} secs"
+            )
 
             for k, ml_pipe in enumerate(level):
 
@@ -184,16 +221,22 @@ class AutoML:
                 level_predictions.append(pipe_pred)
                 pipes.append(ml_pipe)
 
-                logger.info('Time left {:.2f} secs\n'.format(self.timer.time_left))
+                logger.info("Time left {:.2f} secs\n".format(self.timer.time_left))
 
                 if self.timer.time_limit_exceeded():
-                    logger.info('Time limit exceeded. Last level models will be blended and unused pipelines will be pruned.\n')
+                    logger.info(
+                        "Time limit exceeded. Last level models will be blended and unused pipelines will be pruned.\n"
+                    )
 
                     flg_last_level = True
                     break
             else:
                 if self.timer.child_out_of_time:
-                    logger.info('Time limit exceeded in one of the tasks. AutoML will blend level {0} models.\n'.format(leven_number))
+                    logger.info(
+                        "Time limit exceeded in one of the tasks. AutoML will blend level {0} models.\n".format(
+                            leven_number
+                        )
+                    )
                     flg_last_level = True
 
             # here is split on exit condition
@@ -208,18 +251,28 @@ class AutoML:
                         # convert to initital dataset type
                         level_predictions = valid_part.from_dataset(level_predictions)
                     except TypeError:
-                        raise TypeError('Can not convert prediction dataset type to input features. Set skip_conn=False')
+                        raise TypeError(
+                            "Can not convert prediction dataset type to input features. Set skip_conn=False"
+                        )
                     level_predictions = concatenate([level_predictions, valid_part])
-                train_valid = create_validation_iterator(level_predictions, None, n_folds=None, cv_iter=None)
+                train_valid = create_validation_iterator(
+                    level_predictions, None, n_folds=None, cv_iter=None
+                )
             else:
                 break
 
-            logger.info('\x1b[1mLayer {} training completed.\x1b[0m\n'.format(leven_number))
+            logger.info(
+                "\x1b[1mLayer {} training completed.\x1b[0m\n".format(leven_number)
+            )
 
-        blended_prediction, last_pipes = self.blender.fit_predict(level_predictions, pipes)
+        blended_prediction, last_pipes = self.blender.fit_predict(
+            level_predictions, pipes
+        )
         self.levels.append(last_pipes)
 
-        self.reader.upd_used_features(remove=list(set(self.reader.used_features) - set(self.collect_used_feats())))
+        self.reader.upd_used_features(
+            remove=list(set(self.reader.used_features) - set(self.collect_used_feats()))
+        )
 
         del self._levels
 
@@ -227,10 +280,12 @@ class AutoML:
             return concatenate(level_predictions)
         return blended_prediction
 
-    def predict(self,
-                data: Any,
-                features_names: Optional[Sequence[str]] = None,
-                return_all_predictions: Optional[bool] = None) -> LAMLDataset:
+    def predict(
+        self,
+        data: Any,
+        features_names: Optional[Sequence[str]] = None,
+        return_all_predictions: Optional[bool] = None,
+    ) -> LAMLDataset:
         """Predict with automl on new dataset.
 
         Args:
@@ -243,7 +298,9 @@ class AutoML:
             Dataset with predictions.
 
         """
-        dataset = self.reader.read(data, features_names=features_names, add_array_attrs=False)
+        dataset = self.reader.read(
+            data, features_names=features_names, add_array_attrs=False
+        )
 
         for n, level in enumerate(self.levels, 1):
             # check if last level
@@ -262,12 +319,16 @@ class AutoML:
                         # convert to initital dataset type
                         level_predictions = dataset.from_dataset(level_predictions)
                     except TypeError:
-                        raise TypeError('Can not convert prediction dataset type to input features. Set skip_conn=False')
+                        raise TypeError(
+                            "Can not convert prediction dataset type to input features. Set skip_conn=False"
+                        )
                     dataset = concatenate([level_predictions, dataset])
                 else:
                     dataset = level_predictions
             else:
-                if (return_all_predictions is None and self.return_all_predictions) or return_all_predictions:
+                if (
+                    return_all_predictions is None and self.return_all_predictions
+                ) or return_all_predictions:
                     return concatenate(level_predictions)
                 return self.blender.predict(level_predictions)
 

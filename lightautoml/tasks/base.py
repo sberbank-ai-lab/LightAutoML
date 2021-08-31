@@ -1,62 +1,55 @@
 """Contain Task object and metric wrappers."""
 
 import inspect
-from functools import partial
-from typing import Callable, Union, Optional, Dict, Any, TYPE_CHECKING
-
 import logging
+
+from functools import partial
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Union
+
 import numpy as np
 
-from lightautoml.tasks.losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
-from .common_metric import _valid_str_metric_names, _valid_metric_args
-from .utils import infer_gib, infer_gib_multiclass
+from lightautoml.tasks.losses import CBLoss
+from lightautoml.tasks.losses import LGBLoss
+from lightautoml.tasks.losses import SKLoss
+from lightautoml.tasks.losses import TORCHLoss
+
+from .common_metric import _valid_metric_args
+from .common_metric import _valid_str_metric_names
+from .utils import infer_gib
+from .utils import infer_gib_multiclass
 
 
 if TYPE_CHECKING:
-    from ..dataset.np_pd_dataset import NumpyDataset, PandasDataset
     from ..dataset.base import LAMLDataset
+    from ..dataset.np_pd_dataset import NumpyDataset
+    from ..dataset.np_pd_dataset import PandasDataset
 
     SklearnCompatible = Union[NumpyDataset, PandasDataset]
 
 logger = logging.getLogger(__name__)
 
-_valid_task_names = ['binary', 'reg', 'multiclass']
-_one_dim_output_tasks = ['binary', 'reg']
+_valid_task_names = ["binary", "reg", "multiclass"]
+_one_dim_output_tasks = ["binary", "reg"]
 
-_default_losses = {
+_default_losses = {"binary": "logloss", "reg": "mse", "multiclass": "crossentropy"}
 
-    'binary': 'logloss',
-    'reg': 'mse',
-    'multiclass': 'crossentropy'
+_default_metrics = {"binary": "auc", "reg": "mse", "multiclass": "crossentropy"}
 
-}
-
-_default_metrics = {
-
-    'binary': 'auc',
-    'reg': 'mse',
-    'multiclass': 'crossentropy'
-
-}
-
-_valid_loss_types = ['lgb', 'sklearn', 'torch', 'cb']
+_valid_loss_types = ["lgb", "sklearn", "torch", "cb"]
 
 _valid_str_loss_names = {
-
-    'binary': ['logloss'],
-    'reg': ['mse', 'mae', 'mape', 'rmsle', 'quantile', 'huber', 'fair'],
-    'multiclass': ['crossentropy', 'f1']
-
+    "binary": ["logloss"],
+    "reg": ["mse", "mae", "mape", "rmsle", "quantile", "huber", "fair"],
+    "multiclass": ["crossentropy", "f1"],
 }
 
 
-_valid_loss_args = {
-
-    'quantile': ['q'],
-    'huber': ['a'],
-    'fair': ['c']
-
-}
+_valid_loss_args = {"quantile": ["q"], "huber": ["a"], "fair": ["c"]}
 
 
 class LAMLMetric:
@@ -64,9 +57,10 @@ class LAMLMetric:
     Abstract class for metric.
     Metric should be called on dataset.
     """
+
     greater_is_better = True
 
-    def __call__(self, dataset: 'LAMLDataset', dropna: bool = False):
+    def __call__(self, dataset: "LAMLDataset", dropna: bool = False):
         """Call metric on dataset.
 
         Args:
@@ -80,7 +74,9 @@ class LAMLMetric:
             AttributeError: If metric isn't defined.
 
         """
-        assert hasattr(dataset, 'target'), 'Dataset should have target to calculate metric'
+        assert hasattr(
+            dataset, "target"
+        ), "Dataset should have target to calculate metric"
         raise NotImplementedError
 
 
@@ -96,7 +92,7 @@ class ArgsWrapper:
 
         """
         keys = inspect.signature(func).parameters
-        self.flg = 'sample_weight' in keys
+        self.flg = "sample_weight" in keys
         self.func = partial(func, **metric_params)
 
     def __call__(self, y_true, y_pred, sample_weight=None):
@@ -126,22 +122,25 @@ class SkMetric(LAMLMetric):
     @property
     def metric(self) -> Callable:
         """Metric function."""
-        assert self._metric is not None, 'Metric calculation is not defined'
+        assert self._metric is not None, "Metric calculation is not defined"
         return self._metric
 
     @property
     def name(self) -> str:
         """Name of used metric."""
         if self._name is None:
-            return 'AutoML Metric'
+            return "AutoML Metric"
         else:
             return self._name
 
-    def __init__(self, metric: Optional[Callable] = None,
-                 name: Optional[str] = None,
-                 greater_is_better: bool = True,
-                 one_dim: bool = True,
-                 **kwargs: Any):
+    def __init__(
+        self,
+        metric: Optional[Callable] = None,
+        name: Optional[str] = None,
+        greater_is_better: bool = True,
+        one_dim: bool = True,
+        **kwargs: Any
+    ):
         """
 
         Args:
@@ -163,7 +162,7 @@ class SkMetric(LAMLMetric):
 
         self.kwargs = kwargs
 
-    def __call__(self, dataset: 'SklearnCompatible', dropna: bool = False) -> float:
+    def __call__(self, dataset: "SklearnCompatible", dropna: bool = False) -> float:
         """Implement call sklearn metric on dataset.
 
         Args:
@@ -178,9 +177,13 @@ class SkMetric(LAMLMetric):
                 target specified as one-dimensioned, but it is not.
 
         """
-        assert hasattr(dataset, 'target'), 'Dataset should have target to calculate metric'
+        assert hasattr(
+            dataset, "target"
+        ), "Dataset should have target to calculate metric"
         if self.one_dim:
-            assert dataset.shape[1] == 1, 'Dataset should have single column if metric is one_dim'
+            assert (
+                dataset.shape[1] == 1
+            ), "Dataset should have single column if metric is one_dim"
         # TODO: maybe refactor this part?
         dataset = dataset.to_numpy()
         y_true = dataset.target
@@ -212,9 +215,15 @@ class Task:
         """ Name of task."""
         return self._name
 
-    def __init__(self, name: str, loss: Optional[Union[dict, str]] = None, loss_params: Optional[Dict] = None,
-                 metric: Optional[Union[str, Callable]] = None, metric_params: Optional[Dict] = None,
-                 greater_is_better: Optional[bool] = None):
+    def __init__(
+        self,
+        name: str,
+        loss: Optional[Union[dict, str]] = None,
+        loss_params: Optional[Dict] = None,
+        metric: Optional[Union[str, Callable]] = None,
+        metric_params: Optional[Dict] = None,
+        greater_is_better: Optional[bool] = None,
+    ):
         """
 
         Args:
@@ -293,7 +302,11 @@ class Task:
 
         """
 
-        assert name in _valid_task_names, 'Invalid task name: {}, allowed task names: {}'.format(name, _valid_task_names)
+        assert (
+            name in _valid_task_names
+        ), "Invalid task name: {}, allowed task names: {}".format(
+            name, _valid_task_names
+        )
         self._name = name
 
         # add losses
@@ -315,35 +328,50 @@ class Task:
                 # ??? "rewrite METRIC params" ???
                 if loss == metric:
                     metric_params = loss_params
-                    logger.info2('As loss and metric are equal, metric params are ignored.')
+                    logger.info2(
+                        "As loss and metric are equal, metric params are ignored."
+                    )
 
             else:
-                assert loss not in _valid_loss_args, \
-                    "Loss should be defined with arguments. Ex. loss='quantile', loss_params={'q': 0.7}."
+                assert (
+                    loss not in _valid_loss_args
+                ), "Loss should be defined with arguments. Ex. loss='quantile', loss_params={'q': 0.7}."
                 loss_params = None
 
-            assert loss in _valid_str_loss_names[self.name], 'Invalid loss name: {} for task {}.'.format(loss, self.name)
+            assert (
+                loss in _valid_str_loss_names[self.name]
+            ), "Invalid loss name: {} for task {}.".format(loss, self.name)
 
-            for loss_key, loss_factory in zip(['lgb', 'sklearn', 'torch', 'cb'], [LGBLoss, SKLoss, TORCHLoss, CBLoss]):
+            for loss_key, loss_factory in zip(
+                ["lgb", "sklearn", "torch", "cb"], [LGBLoss, SKLoss, TORCHLoss, CBLoss]
+            ):
                 try:
                     self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
                 except (AssertionError, TypeError, ValueError):
-                    logger.info2("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
+                    logger.info2(
+                        "{0} doesn't support in general case {1} and will not be used.".format(
+                            loss_key, loss
+                        )
+                    )
 
                 # self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
 
-            assert len(self.losses) > 0, 'None of frameworks supports {0} loss.'.format(loss)
+            assert len(self.losses) > 0, "None of frameworks supports {0} loss.".format(
+                loss
+            )
 
         elif type(loss) is dict:
             # case - dict passed directly
             # TODO: check loss parameters?
             #  Or it there will be assert when use functools.partial
             # assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
-            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(loss), 'Invalid loss key.'
+            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(
+                loss
+            ), "Invalid loss key."
             self.losses = loss
 
         else:
-            raise TypeError('Loss passed incorrectly.')
+            raise TypeError("Loss passed incorrectly.")
 
         # set callback metric for loss
         # if no metric - infer from task
@@ -353,7 +381,6 @@ class Task:
         self.metric_params = {}
         if metric_params is not None:
             self.metric_params = metric_params
-
 
         if type(metric) is str:
 
@@ -370,13 +397,15 @@ class Task:
             self.metric_name = None
 
         if greater_is_better is None:
-            infer_gib_fn = infer_gib_multiclass if name == 'multiclass' else infer_gib
+            infer_gib_fn = infer_gib_multiclass if name == "multiclass" else infer_gib
             greater_is_better = infer_gib_fn(self.metric_func)
 
         self.greater_is_better = greater_is_better
 
         for loss_key in self.losses:
-            self.losses[loss_key].set_callback_metric(metric, greater_is_better, self.metric_params, self.name)
+            self.losses[loss_key].set_callback_metric(
+                metric, greater_is_better, self.metric_params, self.name
+            )
 
     def get_dataset_metric(self) -> LAMLMetric:
         """Create metric for dataset.
@@ -389,8 +418,12 @@ class Task:
         """
         # for now - case of sklearn metric only
         one_dim = self.name in _one_dim_output_tasks
-        dataset_metric = SkMetric(self.metric_func, name=self.metric_name,
-                                  one_dim=one_dim, greater_is_better=self.greater_is_better)
+        dataset_metric = SkMetric(
+            self.metric_func,
+            name=self.metric_name,
+            one_dim=one_dim,
+            greater_is_better=self.greater_is_better,
+        )
 
         return dataset_metric
 
@@ -402,11 +435,15 @@ class Task:
             required_params = set()
         given_params = set(loss_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0,\
-            'For loss {0} given extra params {1}'.format(loss_name, extra_params)
+        assert len(extra_params) == 0, "For loss {0} given extra params {1}".format(
+            loss_name, extra_params
+        )
         needed_params = required_params - given_params
-        assert len(needed_params) == 0,\
-            'For loss {0} required params {1} are not defined'.format(loss_name, needed_params)
+        assert (
+            len(needed_params) == 0
+        ), "For loss {0} required params {1} are not defined".format(
+            loss_name, needed_params
+        )
 
     @staticmethod
     def _check_metric_from_params(metric_name, metric_params):
@@ -416,8 +453,12 @@ class Task:
             required_params = set()
         given_params = set(metric_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0, \
-            'For metric {0} given extra params {1}'.format(metric_name, extra_params)
+        assert len(extra_params) == 0, "For metric {0} given extra params {1}".format(
+            metric_name, extra_params
+        )
         needed_params = required_params - given_params
-        assert len(needed_params) == 0, \
-            'For metric {0} required params {1} are not defined'.format(metric_name, needed_params)
+        assert (
+            len(needed_params) == 0
+        ), "For metric {0} required params {1} are not defined".format(
+            metric_name, needed_params
+        )

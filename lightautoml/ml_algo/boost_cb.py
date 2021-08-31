@@ -1,25 +1,35 @@
 """Wrapped Catboost for tabular datasets."""
 
 import logging
+
 from copy import copy
-from typing import Tuple, Dict, Union, Callable
+from typing import Callable
+from typing import Dict
+from typing import Tuple
+from typing import Union
 
 import catboost as cb
 import numpy as np
+
 from pandas import Series
 
-from .base import TabularMLAlgo
-from .tuning.base import Distribution, SearchSpace
-from .tuning.optuna import OptunaTunableMixin
-from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..pipelines.selection.base import ImportanceEstimator
 from ..pipelines.utils import get_columns_by_role
 from ..utils.logging import LoggerStream
 from ..validation.base import TrainValidIterator
+from .base import TabularMLAlgo
+from .tuning.base import Distribution
+from .tuning.base import SearchSpace
+from .tuning.optuna import OptunaTunableMixin
+
 
 logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 logger_stream = LoggerStream(logger.debug)
+
 
 class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
@@ -36,7 +46,8 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     ``timer``: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
-    _name: str = 'CatBoost'
+
+    _name: str = "CatBoost"
 
     _default_params = {
         "task_type": "CPU",
@@ -61,7 +72,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         "nan_mode": "Min",
         # "silent": False,
         "verbose": True,
-        "allow_writing_files": False
+        "allow_writing_files": False,
     }
 
     def _infer_params(self) -> Tuple[dict, int, int, Callable, Callable]:
@@ -73,15 +84,15 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """
 
         params = copy(self.params)
-        early_stopping_rounds = params.pop('od_wait')
-        num_trees = params.pop('num_trees')
+        early_stopping_rounds = params.pop("od_wait")
+        num_trees = params.pop("num_trees")
 
-        loss = self.task.losses['cb']
+        loss = self.task.losses["cb"]
         fobj = loss.fobj_name
         feval = loss.metric_name
 
-        if fobj not in ['RMSE', 'LogLoss', 'CrossEntropy', 'Quantile', 'MAE', 'MAPE']:
-            params.pop('boost_from_average')
+        if fobj not in ["RMSE", "LogLoss", "CrossEntropy", "Quantile", "MAE", "MAPE"]:
+            params.pop("boost_from_average")
 
         # TODO: what if parameter of metric occurs in list of parameters of loss -> intersection...
 
@@ -102,18 +113,20 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         dataset = train_valid_iterator.train
         self.task = train_valid_iterator.train.task
 
-        if train_valid_iterator.train.dataset_type != 'CSRSparseDataset':
+        if train_valid_iterator.train.dataset_type != "CSRSparseDataset":
             self._nan_rate = train_valid_iterator.train.to_pandas().nan_rate()
 
         try:
-            self._le_cat_features = getattr(self, '_le_cat_features')
+            self._le_cat_features = getattr(self, "_le_cat_features")
         except AttributeError:
-            self._le_cat_features = get_columns_by_role(dataset, 'Category', label_encoded=True)
+            self._le_cat_features = get_columns_by_role(
+                dataset, "Category", label_encoded=True
+            )
 
         try:
-            self._text_features = getattr(self, '_text_features')
+            self._text_features = getattr(self, "_text_features")
         except AttributeError:
-            self._text_features = get_columns_by_role(dataset, 'Text')
+            self._text_features = get_columns_by_role(dataset, "Text")
 
         suggested_params = copy(self.default_params)
 
@@ -121,7 +134,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             return suggested_params
 
         init_lr, ntrees, es = 0.01, 2000, 100
-        if self.task.name == 'binary':
+        if self.task.name == "binary":
             # TODO: with an increase in the number of columns, the learning rate decreases
             if rows_num <= 6000:
                 init_lr = 0.02
@@ -155,7 +168,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
                 init_lr = 0.05
                 ntrees = 3000
 
-        elif self.task.name == 'multiclass':
+        elif self.task.name == "multiclass":
             init_lr = 0.03
             ntrees = 4000
 
@@ -168,18 +181,20 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             elif rows_num <= 10000:
                 ntrees = 3000
 
-        elif self.task.name == 'reg':
+        elif self.task.name == "reg":
             init_lr = 0.05
             ntrees = 2000
             es = 300
 
-        suggested_params['learning_rate'] = init_lr
-        suggested_params['num_trees'] = ntrees
-        suggested_params['od_wait'] = es
+        suggested_params["learning_rate"] = init_lr
+        suggested_params["num_trees"] = ntrees
+        suggested_params["od_wait"] = es
 
         return suggested_params
 
-    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
+    def _get_search_spaces(
+        self, suggested_params: Dict, estimated_n_trials: int
+    ) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -195,24 +210,21 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         optimization_search_space = {}
 
         try:
-            nan_rate = getattr(self, '_nan_rate')
+            nan_rate = getattr(self, "_nan_rate")
         except AttributeError:
             nan_rate = 0
 
-        optimization_search_space['max_depth'] = SearchSpace(
-            Distribution.INTUNIFORM,
-            low=3,
-            high=7
+        optimization_search_space["max_depth"] = SearchSpace(
+            Distribution.INTUNIFORM, low=3, high=7
         )
 
         if nan_rate > 0:
-            optimization_search_space['nan_mode'] = SearchSpace(
-                Distribution.CHOICE,
-                choices=['Max', 'Min']
+            optimization_search_space["nan_mode"] = SearchSpace(
+                Distribution.CHOICE, choices=["Max", "Min"]
             )
 
         if estimated_n_trials > 20:
-            optimization_search_space['l2_leaf_reg'] = SearchSpace(
+            optimization_search_space["l2_leaf_reg"] = SearchSpace(
                 Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
@@ -225,18 +237,14 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             # )
 
         if estimated_n_trials > 50:
-            optimization_search_space['min_data_in_leaf'] = SearchSpace(
-                Distribution.INTUNIFORM,
-                low=1,
-                high=20
+            optimization_search_space["min_data_in_leaf"] = SearchSpace(
+                Distribution.INTUNIFORM, low=1, high=20
             )
 
             # the only case when used this parameter is when categorical columns more than 0
             if len(self._le_cat_features) > 0:
-                optimization_search_space['one_hot_max_size'] = SearchSpace(
-                    Distribution.INTUNIFORM,
-                    low=3,
-                    high=10
+                optimization_search_space["one_hot_max_size"] = SearchSpace(
+                    Distribution.INTUNIFORM, low=3, high=10
                 )
 
         return optimization_search_space
@@ -244,33 +252,37 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     def _get_pool(self, dataset: TabularDataset):
 
         try:
-            self._le_cat_features = getattr(self, '_le_cat_features')
+            self._le_cat_features = getattr(self, "_le_cat_features")
         except AttributeError:
-            self._le_cat_features = get_columns_by_role(dataset, 'Category', label_encoded=True)
+            self._le_cat_features = get_columns_by_role(
+                dataset, "Category", label_encoded=True
+            )
         self._le_cat_features = self._le_cat_features if self._le_cat_features else None
 
         try:
-            self._text_features = getattr(self, '_text_features')
+            self._text_features = getattr(self, "_text_features")
         except AttributeError:
-            self._text_features = get_columns_by_role(dataset, 'Text')
+            self._text_features = get_columns_by_role(dataset, "Text")
         self._text_features = self._text_features if self._text_features else None
 
         dataset = dataset.to_pandas()
         data = dataset.data
         dtypes = data.dtypes.to_dict()
         if self._le_cat_features:
-            dtypes = {**dtypes, **{x: 'int' for x in self._le_cat_features}}
+            dtypes = {**dtypes, **{x: "int" for x in self._le_cat_features}}
         # for future
         if self._text_features:
-            dtypes = {**dtypes, **{x: 'int' for x in self._text_features}}
+            dtypes = {**dtypes, **{x: "int" for x in self._text_features}}
 
         data = data.astype(dtypes)
         if self._le_cat_features:
             # copy was made in prev astype
-            data.astype({x: 'category' for x in self._le_cat_features}, copy=False)
+            data.astype({x: "category" for x in self._le_cat_features}, copy=False)
 
         if dataset.target is not None:
-            target, weights = self.task.losses['cb'].fw_func(dataset.target, dataset.weights)
+            target, weights = self.task.losses["cb"].fw_func(
+                dataset.target, dataset.weights
+            )
         else:
             target, weights = dataset.target, dataset.weights
 
@@ -280,12 +292,14 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             weight=weights,
             feature_names=dataset.features,
             cat_features=self._le_cat_features,
-            text_features=self._text_features
+            text_features=self._text_features,
         )
 
         return pool
 
-    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[cb.CatBoost, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: TabularDataset, valid: TabularDataset
+    ) -> Tuple[cb.CatBoost, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -301,10 +315,17 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         cb_train = self._get_pool(train)
         cb_valid = self._get_pool(valid)
 
-        model = cb.CatBoost({**params, **{'num_trees': num_trees,
-                                          'objective': fobj,
-                                          'eval_metric': feval,
-                                          "od_wait": early_stopping_rounds}})
+        model = cb.CatBoost(
+            {
+                **params,
+                **{
+                    "num_trees": num_trees,
+                    "objective": fobj,
+                    "eval_metric": feval,
+                    "od_wait": early_stopping_rounds,
+                },
+            }
+        )
 
         model.fit(cb_train, eval_set=cb_valid, log_cout=logger_stream)
 
@@ -312,7 +333,9 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return model, val_pred
 
-    def predict_single_fold(self, model: cb.CatBoost, dataset: TabularDataset) -> np.ndarray:
+    def predict_single_fold(
+        self, model: cb.CatBoost, dataset: TabularDataset
+    ) -> np.ndarray:
         """Predict of target values for dataset.
 
         Args:
@@ -341,11 +364,14 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         """
         # TODO: Not worked if used text features, there is a ticket in their github
-        assert self.is_fitted, 'Model must be fitted to compute importance.'
+        assert self.is_fitted, "Model must be fitted to compute importance."
         imp = 0
         for model in self.models:
-            imp = imp + model.get_feature_importance(type='FeatureImportance', prettified=False,
-                                                     thread_count=self.params['thread_count'])
+            imp = imp + model.get_feature_importance(
+                type="FeatureImportance",
+                prettified=False,
+                thread_count=self.params["thread_count"],
+            )
 
         imp = imp / len(self.models)
 
@@ -362,24 +388,17 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
     def _predict(self, model: cb.CatBoost, pool: cb.Pool, params):
         pred = None
-        if self.task.name == 'multiclass':
+        if self.task.name == "multiclass":
             pred = model.predict(
-                pool,
-                prediction_type='Probability',
-                thread_count=params['thread_count']
+                pool, prediction_type="Probability", thread_count=params["thread_count"]
             )
-        elif self.task.name == 'binary':
+        elif self.task.name == "binary":
             pred = model.predict(
-                pool,
-                prediction_type='Probability',
-                thread_count=params['thread_count']
+                pool, prediction_type="Probability", thread_count=params["thread_count"]
             )[..., 1]
-        elif self.task.name == 'reg':
-            pred = model.predict(
-                pool,
-                thread_count=params['thread_count']
-            )
+        elif self.task.name == "reg":
+            pred = model.predict(pool, thread_count=params["thread_count"])
 
-        pred = self.task.losses['cb'].bw_func(pred)
+        pred = self.task.losses["cb"].bw_func(pred)
 
         return pred

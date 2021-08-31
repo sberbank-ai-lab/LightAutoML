@@ -1,18 +1,29 @@
 """Validation utils."""
 
-from typing import Optional, Callable, cast, Union
+from typing import Callable
+from typing import Optional
+from typing import Union
+from typing import cast
 
-
-from .base import DummyIterator, HoldoutIterator, TrainValidIterator
-from .np_iterators import get_numpy_iterator
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import CSRSparseDataset, NumpyDataset, PandasDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from .base import DummyIterator
+from .base import HoldoutIterator
+from .base import TrainValidIterator
+from .np_iterators import get_numpy_iterator
+
 
 NpDataset = Union[CSRSparseDataset, NumpyDataset, PandasDataset]
 
 
-def create_validation_iterator(train: LAMLDataset, valid: Optional[LAMLDataset] = None,
-                               n_folds: Optional[int] = None, cv_iter: Optional[Callable] = None) -> TrainValidIterator:
+def create_validation_iterator(
+    train: LAMLDataset,
+    valid: Optional[LAMLDataset] = None,
+    n_folds: Optional[int] = None,
+    cv_iter: Optional[Callable] = None,
+) -> TrainValidIterator:
     """Creates train-validation iterator.
 
     If train is one of common datasets types

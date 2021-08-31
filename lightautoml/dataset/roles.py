@@ -1,14 +1,20 @@
 """Role contains information about the column, which determines how it is processed."""
 
 from datetime import datetime
-from typing import Union, Callable, Optional, Sequence, Any
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Sequence
+from typing import Union
 
 import numpy as np
+
 
 Dtype = Union[Callable, type, str]
 
 
 # valid_features_str_names = []
+
 
 class ColumnRole:
     """Abstract class for column role.
@@ -19,9 +25,10 @@ class ColumnRole:
     on the way how it's handled.
 
     """
+
     dtype = object
     force_input = False
-    _name = 'Abstract'
+    _name = "Abstract"
 
     @property
     def name(self) -> str:
@@ -40,9 +47,13 @@ class ColumnRole:
             Representation string.
 
         """
-        params = [(x, self.__dict__[x]) for x in self.__dict__ if x not in ['dtype', 'name']]
+        params = [
+            (x, self.__dict__[x]) for x in self.__dict__ if x not in ["dtype", "name"]
+        ]
 
-        return '{0} role, dtype {1}. Additional params: {2}'.format(self.name, self.dtype, params)
+        return "{0} role, dtype {1}. Additional params: {2}".format(
+            self.name, self.dtype, params
+        )
 
     def __hash__(self) -> int:
         """Define how to hash - hash from str view.
@@ -66,7 +77,7 @@ class ColumnRole:
         return self.__repr__() == other.__repr__()
 
     @staticmethod
-    def from_string(name: str, **kwargs: Any) -> 'ColumnRole':
+    def from_string(name: str, **kwargs: Any) -> "ColumnRole":
         """Create default params role from string.
 
         Args:
@@ -78,54 +89,59 @@ class ColumnRole:
         """
         name = name.lower()
 
-        if name in ['target']:
+        if name in ["target"]:
             return TargetRole(**kwargs)
 
-        if name in ['numeric']:
+        if name in ["numeric"]:
             return NumericRole(**kwargs)
 
-        if name in ['category']:
+        if name in ["category"]:
             return CategoryRole(**kwargs)
 
-        if name in ['text']:
+        if name in ["text"]:
             return TextRole(**kwargs)
 
-        if name in ['datetime']:
+        if name in ["datetime"]:
             return DatetimeRole(**kwargs)
 
-        if name in ['base_date']:
-            kwargs = {**{'seasonality': (), 'base_date': True}, **kwargs}
+        if name in ["base_date"]:
+            kwargs = {**{"seasonality": (), "base_date": True}, **kwargs}
             return DatetimeRole(**kwargs)
 
-        if name in ['group']:
+        if name in ["group"]:
             return GroupRole()
 
-        if name in ['drop']:
+        if name in ["drop"]:
             return DropRole()
 
-        if name in ['id']:
-            kwargs = {**{'encoding_type': 'oof', 'unknown': 1}, **kwargs}
+        if name in ["id"]:
+            kwargs = {**{"encoding_type": "oof", "unknown": 1}, **kwargs}
             return CategoryRole(**kwargs)
 
-        if name in ['folds']:
+        if name in ["folds"]:
             return FoldsRole()
 
-        if name in ['weights']:
+        if name in ["weights"]:
             return WeightsRole()
 
-        if name in ['path']:
+        if name in ["path"]:
             return PathRole()
 
-        raise ValueError('Unknown string role: {}'.format(name))
+        raise ValueError("Unknown string role: {}".format(name))
 
 
 class NumericRole(ColumnRole):
     """Numeric role."""
-    _name = 'Numeric'
 
-    def __init__(self, dtype: Dtype = np.float32,
-                 force_input: bool = False,
-                 prob: bool = False, discretization: bool = False):
+    _name = "Numeric"
+
+    def __init__(
+        self,
+        dtype: Dtype = np.float32,
+        force_input: bool = False,
+        prob: bool = False,
+        discretization: bool = False,
+    ):
         """Create numeric role with specific numeric dtype.
 
         Args:
@@ -143,10 +159,18 @@ class NumericRole(ColumnRole):
 
 class CategoryRole(ColumnRole):
     """Category role."""
-    _name = 'Category'
 
-    def __init__(self, dtype: Dtype = object, encoding_type: str = 'auto', unknown: int = 5, force_input: bool = False,
-                 label_encoded: bool = False, ordinal: bool = False):
+    _name = "Category"
+
+    def __init__(
+        self,
+        dtype: Dtype = object,
+        encoding_type: str = "auto",
+        unknown: int = 5,
+        force_input: bool = False,
+        label_encoded: bool = False,
+        ordinal: bool = False,
+    ):
         """Create category role with specific dtype and attrs.
 
         Args:
@@ -155,7 +179,7 @@ class CategoryRole(ColumnRole):
             unknown: Cut-off freq to process rare categories as unseen.
             force_input: Select a feature for training,
               regardless of the selector results.
-        
+
         Note:
             Valid encoding_type:
 
@@ -164,7 +188,7 @@ class CategoryRole(ColumnRole):
                 - `'oof'` - out-of-fold target encoding
                 - `'freq'` - frequency encoding
                 - `'ohe'` - one hot encoding
-            
+
         """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
         # assert encoding_type == 'auto', 'For the moment only auto is supported'
@@ -179,10 +203,10 @@ class CategoryRole(ColumnRole):
 
 class TextRole(ColumnRole):
     """Text role."""
-    _name = 'Text'
 
-    def __init__(self, dtype: Dtype = str,
-                 force_input: bool = True):
+    _name = "Text"
+
+    def __init__(self, dtype: Dtype = str, force_input: bool = True):
         """Create text role with specific dtype and attrs.
 
         Args:
@@ -197,13 +221,23 @@ class TextRole(ColumnRole):
 
 class DatetimeRole(ColumnRole):
     """Datetime role."""
-    _name = 'Datetime'
 
-    def __init__(self, dtype: Dtype = np.datetime64, seasonality: Optional[Sequence[str]] = ('y', 'm', 'wd'),
-                 base_date: bool = False,
-                 date_format: Optional[str] = None, unit: Optional[str] = None, origin: Union[str, datetime] = 'unix',
-                 force_input: bool = False, base_feats: bool = True,
-                 country: Optional[str] = None, prov: Optional[str] = None, state: Optional[str] = None):
+    _name = "Datetime"
+
+    def __init__(
+        self,
+        dtype: Dtype = np.datetime64,
+        seasonality: Optional[Sequence[str]] = ("y", "m", "wd"),
+        base_date: bool = False,
+        date_format: Optional[str] = None,
+        unit: Optional[str] = None,
+        origin: Union[str, datetime] = "unix",
+        force_input: bool = False,
+        base_feats: bool = True,
+        country: Optional[str] = None,
+        prov: Optional[str] = None,
+        state: Optional[str] = None,
+    ):
         """Create datetime role with specific dtype and attrs.
 
         Args:
@@ -224,7 +258,7 @@ class DatetimeRole(ColumnRole):
             country: Datetime metadata to extract holidays.
             prov: Datetime metadata to extract holidays.
             state: Datetime metadata to extract holidays.
-        
+
         """
         self.dtype = dtype
         self.seasonality = []
@@ -250,9 +284,11 @@ class DatetimeRole(ColumnRole):
 #     Mixed role. If exact role extraction is difficult, it goes into both pipelines
 #     """
 
+
 class TargetRole(ColumnRole):
     """Target role."""
-    _name = 'Target'
+
+    _name = "Target"
 
     def __init__(self, dtype: Dtype = np.float32):
         """Create target role with specific numeric dtype.
@@ -266,24 +302,29 @@ class TargetRole(ColumnRole):
 
 class GroupRole(ColumnRole):
     """Group role."""
-    _name = 'Group'
+
+    _name = "Group"
 
 
 class DropRole(ColumnRole):
     """Drop role."""
-    _name = 'Drop'
+
+    _name = "Drop"
 
 
 class WeightsRole(ColumnRole):
     """Weights role."""
-    _name = 'Weights'
+
+    _name = "Weights"
 
 
 class FoldsRole(ColumnRole):
     """Folds role."""
-    _name = 'Folds'
+
+    _name = "Folds"
 
 
 class PathRole(ColumnRole):
     """Path role."""
-    _name = 'Path'
+
+    _name = "Path"

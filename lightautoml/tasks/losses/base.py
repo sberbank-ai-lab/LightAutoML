@@ -1,17 +1,22 @@
 """Base classes for metric and loss functions."""
 
 from functools import partial
-from typing import Callable, Tuple, Union, Optional, Dict, Any
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
-
-from ..utils import infer_gib
 from ..common_metric import _valid_str_metric_names
+from ..utils import infer_gib
 
 
 class MetricFunc:
     """
     Wrapper for metric.
     """
+
     def __init__(self, metric_func, m, bw_func):
         """
 
@@ -86,8 +91,12 @@ class Loss:
         """
         return self._bw_func
 
-    def metric_wrapper(self, metric_func: Callable, greater_is_better: Optional[bool],
-                       metric_params: Optional[Dict] = None) -> Callable:
+    def metric_wrapper(
+        self,
+        metric_func: Callable,
+        greater_is_better: Optional[bool],
+        metric_params: Optional[Dict] = None,
+    ) -> Callable:
         """Customize metric.
 
         Args:
@@ -109,8 +118,13 @@ class Loss:
 
         return MetricFunc(metric_func, m, self._bw_func)
 
-    def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None, task_name: Optional[Dict] = None):
+    def set_callback_metric(
+        self,
+        metric: Union[str, Callable],
+        greater_is_better: Optional[bool] = None,
+        metric_params: Optional[Dict] = None,
+        task_name: Optional[Dict] = None,
+    ):
         """Callback metric setter.
 
         Args:
@@ -128,7 +142,11 @@ class Loss:
 
         """
 
-        assert task_name in ['binary', 'reg', 'multiclass'], 'Incorrect task name: {}'.format(task_name)
+        assert task_name in [
+            "binary",
+            "reg",
+            "multiclass",
+        ], "Incorrect task name: {}".format(task_name)
         self.metric = metric
 
         if metric_params is None:
@@ -136,8 +154,12 @@ class Loss:
 
         if type(metric) is str:
             metric_dict = _valid_str_metric_names[task_name]
-            self.metric_func = self.metric_wrapper(metric_dict[metric], greater_is_better, metric_params)
+            self.metric_func = self.metric_wrapper(
+                metric_dict[metric], greater_is_better, metric_params
+            )
             self.metric_name = metric
         else:
-            self.metric_func = self.metric_wrapper(metric, greater_is_better, metric_params)
+            self.metric_func = self.metric_wrapper(
+                metric, greater_is_better, metric_params
+            )
             self.metric_name = None

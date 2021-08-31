@@ -1,6 +1,7 @@
+import logging
 import os
 import sys
-import logging
+
 
 _root_logger = logging.getLogger()
 _logger = logging.getLogger(__name__)
@@ -11,11 +12,23 @@ if not _root_logger.hasHandlers():
     _logger.addHandler(logging.StreamHandler(sys.stdout))
     _logger.propagate = False
 
-__all__ = ['automl', 'dataset', 'ml_algo', 'pipelines', 'image',
-           'reader', 'transformers', 'validation', 'text', 'tasks',
-           'utils', 'addons', 'report']
+__all__ = [
+    "automl",
+    "dataset",
+    "ml_algo",
+    "pipelines",
+    "image",
+    "reader",
+    "transformers",
+    "validation",
+    "text",
+    "tasks",
+    "utils",
+    "addons",
+    "report",
+]
 
-if os.getenv('DOCUMENTATION_ENV') is None:
+if os.getenv("DOCUMENTATION_ENV") is None:
     try:
         import importlib.metadata as importlib_metadata
     except ModuleNotFoundError:

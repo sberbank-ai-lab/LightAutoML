@@ -1,11 +1,15 @@
 """Base classes to implement hyperparameter tuning."""
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from enum import Enum
-from typing import Optional, Tuple, Dict, overload
-
+from typing import Dict
+from typing import Optional
+from typing import Tuple
+from typing import overload
 
 from lightautoml.dataset.base import LAMLDataset
+
 # if TYPE_CHECKING:
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.validation.base import TrainValidIterator
@@ -24,6 +28,7 @@ class Distribution(Enum):
     QNORMAL = 7
     LOGNORMAL = 8
 
+
 class SearchSpace:
     distribution_type: Distribution = None
     params: Dict = {}
@@ -32,10 +37,11 @@ class SearchSpace:
         self.distribution_type = distribution_type
         self.params = kwargs
 
+
 class ParamsTuner(ABC):
     """Base abstract class for hyperparameters tuners."""
 
-    _name: str = 'AbstractTuner'
+    _name: str = "AbstractTuner"
     _best_params: Dict = None
     _fit_on_holdout: bool = False  # if tuner should be fitted on holdout set
 
@@ -47,16 +53,23 @@ class ParamsTuner(ABC):
             Dict with best fitted params.
 
         """
-        assert hasattr(self, '_best_params'), 'ParamsTuner should be fitted first'
+        assert hasattr(self, "_best_params"), "ParamsTuner should be fitted first"
         return self._best_params
 
     @overload
-    def fit(self, ml_algo: 'MLAlgo', train_valid_iterator: Optional[TrainValidIterator] = None) -> Tuple['MLAlgo', LAMLDataset]:
+    def fit(
+        self,
+        ml_algo: "MLAlgo",
+        train_valid_iterator: Optional[TrainValidIterator] = None,
+    ) -> Tuple["MLAlgo", LAMLDataset]:
         ...
 
     @abstractmethod
-    def fit(self, ml_algo: 'MLAlgo', train_valid_iterator: Optional[TrainValidIterator] = None) -> \
-            Tuple[None, None]:
+    def fit(
+        self,
+        ml_algo: "MLAlgo",
+        train_valid_iterator: Optional[TrainValidIterator] = None,
+    ) -> Tuple[None, None]:
         """Tune model hyperparameters.
 
         Args:
@@ -73,9 +86,13 @@ class ParamsTuner(ABC):
 class DefaultTuner(ParamsTuner):
     """Default realization of ParamsTuner - just take algo's defaults."""
 
-    _name: str = 'DefaultTuner'
+    _name: str = "DefaultTuner"
 
-    def fit(self, ml_algo: 'MLAlgo', train_valid_iterator: Optional[TrainValidIterator] = None) -> Tuple[None, None]:
+    def fit(
+        self,
+        ml_algo: "MLAlgo",
+        train_valid_iterator: Optional[TrainValidIterator] = None,
+    ) -> Tuple[None, None]:
         """
         Default fit method - just save defaults.
 
@@ -86,5 +103,7 @@ class DefaultTuner(ParamsTuner):
         Returns:s
             Tuple (None, None).
         """
-        self._best_params = ml_algo.init_params_on_input(train_valid_iterator=train_valid_iterator)
+        self._best_params = ml_algo.init_params_on_input(
+            train_valid_iterator=train_valid_iterator
+        )
         return None, None

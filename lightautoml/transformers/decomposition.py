@@ -1,14 +1,21 @@
 """Dimension reduction transformers."""
 
-from typing import Union, List, Optional
+from typing import List
+from typing import Optional
+from typing import Union
 
 import numpy as np
-from sklearn.decomposition import PCA, TruncatedSVD
 
-from .base import LAMLTransformer
+from sklearn.decomposition import PCA
+from sklearn.decomposition import TruncatedSVD
+
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset, CSRSparseDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..dataset.roles import NumericRole
+from .base import LAMLTransformer
+
 
 # type - something that can be converted to pandas dataset
 NumpyTransformable = Union[NumpyDataset, PandasDataset]
@@ -29,7 +36,7 @@ def numeric_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == 'Numeric', 'Only numbers accepted in this transformer'
+        assert roles[f].name == "Numeric", "Only numbers accepted in this transformer"
 
 
 # TODO: merge into one transformer
@@ -38,14 +45,19 @@ class PCATransformer(LAMLTransformer):
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'pca'
+    _fname_prefix = "pca"
 
     @property
     def features(self) -> List[str]:
         """Features list."""
         return self._features
 
-    def __init__(self, subs: Optional[int] = None, random_state: int = 42, n_components: int = 500):
+    def __init__(
+        self,
+        subs: Optional[int] = None,
+        random_state: int = 42,
+        n_components: int = 500,
+    ):
         """
 
         Args:
@@ -76,13 +88,18 @@ class PCATransformer(LAMLTransformer):
         dataset = dataset.to_numpy()
         data = dataset.data
         self.n_components = np.minimum(self.n_components, data.shape[1] - 1)
-        self.pca = self._pca(n_components=self.n_components, random_state=self.random_state)
+        self.pca = self._pca(
+            n_components=self.n_components, random_state=self.random_state
+        )
         self.pca.fit(data)
 
-        orig_name = dataset.features[0].split('__')[-1]
+        orig_name = dataset.features[0].split("__")[-1]
 
-        feats = np.char.array([self._fname_prefix + '_']) + np.arange(self.n_components).astype(str) + np.char.array(
-            ['__' + orig_name])
+        feats = (
+            np.char.array([self._fname_prefix + "_"])
+            + np.arange(self.n_components).astype(str)
+            + np.char.array(["__" + orig_name])
+        )
 
         self._features = list(feats)
         return self
@@ -116,14 +133,19 @@ class SVDTransformer(LAMLTransformer):
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'svd'
+    _fname_prefix = "svd"
 
     @property
     def features(self) -> List[str]:
         """Features list."""
         return self._features
 
-    def __init__(self, subs: Optional[int] = None, random_state: int = 42, n_components: int = 100):
+    def __init__(
+        self,
+        subs: Optional[int] = None,
+        random_state: int = 42,
+        n_components: int = 100,
+    ):
         """
 
         Args:
@@ -153,13 +175,18 @@ class SVDTransformer(LAMLTransformer):
         # convert to accepted dtype and get attributes
         data = dataset.data
         self.n_components = np.minimum(self.n_components, data.shape[1] - 1)
-        self.svd = self._svd(n_components=self.n_components, random_state=self.random_state)
+        self.svd = self._svd(
+            n_components=self.n_components, random_state=self.random_state
+        )
         self.svd.fit(data)
 
-        orig_name = dataset.features[0].split('__')[-1]
+        orig_name = dataset.features[0].split("__")[-1]
 
-        feats = np.char.array([self._fname_prefix + '_']) + np.arange(self.n_components).astype(str) + np.char.array(
-            ['__' + orig_name])
+        feats = (
+            np.char.array([self._fname_prefix + "_"])
+            + np.arange(self.n_components).astype(str)
+            + np.char.array(["__" + orig_name])
+        )
 
         self._features = list(feats)
         return self
