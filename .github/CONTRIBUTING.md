@@ -14,10 +14,10 @@ it is important that you share your intention to contribute with the developers 
 - First, please look for discussions on this topic in [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues)
 before implementing anything inside the project.
 - Pick an issue and comment that you would like to work on it.
-- If there is no discussion on this topic, create one. 
+- If there is no discussion on this topic, create one.
   Please, include as much information as you can,
   any accompanying data (your tests, expected behavior, articles),
-  and maybe your proposed solution. 
+  and maybe your proposed solution.
 - If you need more details, please ask we will provide them ASAP.
 
 Once you implement and test your feature or bug-fix, please submit
@@ -25,7 +25,7 @@ a Pull Request to https://github.com/sberbank-ai-lab/LightAutoML.
 
 When adding functionality, please add examples that will fully explain it.
 Examples can be added in several ways:
-- [Inside the documentation](#writing-documentation) 
+- [Inside the documentation](#writing-documentation)
 - [Jupyter notebooks](#adding-tutorials)
 - [Your own tests](#testing)
 
@@ -34,7 +34,7 @@ Examples can be added in several ways:
 - [docs](docs) - For documenting we use [Sphinx](https://www.sphinx-doc.org/).
   It provides easy to use auto-documenting via docstrings.
   - [Tutorials](docs/tutorials) - Notebooks with tutorials.
-    
+
 - [lightautoml](lightautoml) - The code of LightAutoML library.
     - [addons](lightautoml/addons) - Extensions of core functionality.
     - [automl](lightautoml/automl) - The main module, which includes the AutoML class,
@@ -51,7 +51,7 @@ Examples can be added in several ways:
     - [transformers](lightautoml/transformers) - Feature transformations.
     - [utils](lightautoml/utils) - Common util tools (Timer, Profiler, Logging).
     - [validation](lightautoml/validation) - Validation module.
-    
+
 
 ## Developing LightAutoML
 
@@ -59,7 +59,7 @@ Examples can be added in several ways:
 
 If you are installing from the source, you will need Python 3.6.12 or later.
 We recommend you install an [Anaconda](https://www.anaconda.com/products/individual#download-section)
-to work with environments. 
+to work with environments.
 
 
 1. Once you install Anaconda, you need to set your own environment. For example:
@@ -122,7 +122,7 @@ cd LightAutoML
 ```
 
 
-2. Make environment and install requirements. 
+2. Make environment and install requirements.
 
 ```bash
 python3 -m venv docs_venv
@@ -148,18 +148,18 @@ There are some rules, that docstrings should fit.
 1. LightAutoML uses [Google-style docstring formatting](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
    The length of the line inside docstring should be limited
    to 80 characters to fit into Jupyter documentation popups.
-   
+
 2. Every non-one-line docstring should have a paragraph at its end, regardless of where it will be used:
    in the documentation for a class, module, function, class
    method, etc. One-liners or descriptions,
    that have no special directives (Args, Warning, Note, etc.) may have no paragraph at its end.
-   
+
 3. Once you added some module to LightAutoML,
    you should add some info about it at the beginning of the module.
    Example of this you can find in `docs/mock_docs.py`.
    Also, if you use submodules, please add description to `__init__.py`
    (it is usefull for Sphinx's autosummary).
-   
+
 4. Please use references to other submodules. You can do it by Sphinx directives.
    For more information: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html
 5. There is an example for documenting standalone functions.
@@ -202,9 +202,9 @@ def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
     Warning:
         One more warning. Also notes and warnings
         can be upper in the long description of function.
-        
+
     Example:
-        
+
         >>> print('MEME'.lower())
         meme
         >>> b = typical_function(1, np.ndarray([1, 2, 3]))
@@ -214,7 +214,7 @@ def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
 
     Raises:
         Exception: Exception description.
-        
+
     """
 
     return [a, 2, 3]
@@ -224,19 +224,19 @@ def typical_function(a: int, b: Union['np.ndarray', None] = None) -> List[int]:
 ```python3
 def generator_func(n: int):
     """Generator have a ``Yields`` section instead of ``Returns``.
-    
+
     Args:
         n: Number of interations.
-        
+
     Yields:
         The next number in the range of ``0`` to ``n-1``.
-    
+
     Example:
         Example description.
-    
+
         >>> print([i for i in generator_func(4)])
         [0, 1, 2, 3]
-    
+
     """
     x = 0
     while x < n:
@@ -252,37 +252,37 @@ import torch
 
 class ExampleClass:
     """The summary line for a class that fits only one line.
-    
-    Long description. 
-    
+
+    Long description.
+
     If the class has public attributes, they may be documented here
     in an ``Attributes`` section, like in ``Args`` section of function.
 
     Properties created with the ``@property`` decorator should be documented
     in the property's getter method. Use arrow to set the return type.
-    
+
     On the stage before __init__ we don't know anything about `Attributes`,
     so please, add description about it's types.
-    
+
     Attributes:
         attr1 (str): Description of `attr1`.
         attr2 (:obj:`int`, optional): Description of `attr2`.
-    
+
     """
 
     def __init__(self, param1: int, param2: 'np.ndarray', *args, **kwargs):
         """Example of docstring of the __init__ method.
-        
+
         Note:
             You can also add notes as ``Note`` section.
             Do not include the `self` parameter in the ``Args`` section.
-            
+
         Args:
             param1: Description of `param1`.
             param2: Description of `param2`.
             *args: Description of positional arguments.
             **kwargs: Description of key-word arguments.
-        
+
         """
         self.attr1 = param1
         self.attr2 = param2
@@ -290,20 +290,20 @@ class ExampleClass:
             self.attr2 = args[0]
         self.attr3 = kwargs # will not be documented.
         self.figure = 4 * self.attr1
-        
+
     @property
     def readonly_property(self) -> str:
-        """Properties should be documented in 
+        """Properties should be documented in
         their getter method.
-        
+
         """
         return 'lol'
-    
+
     @property
     def readwrite_property(self) -> List[str]:
         """Properties with both a getter and setter
         should only be documented in their getter method.
-        
+
         If the setter method contains notable behavior, it should be
         mentioned here.
         """
@@ -315,58 +315,58 @@ class ExampleClass:
 
     def some_method(self, param1: int, param2: float = np.pi) -> List[int]:
         """Just like a functions.
-        
+
         Long description.
-        
+
         Warning:
             This method do something. May be undefined-behaviour.
-        
+
         Args:
             param1: Some description of param1.
             param2: Some description of param2. Default value
                will be contained in signature of function.
-        
+
         Returns:
             Array with `1`, `2`, `3`.
-            
+
         """
         self.attr1 = param1
         self.attr2 += param2
-        
+
         return [1, 2, 3]
-    
-    
+
+
     def __special__(self):
         """By default we aren`t include dundered members.
-        
+
         Also there may be no docstring.
         """
         pass
-        
+
     def _private(self):
         """By default we aren't include private members.
-        
+
         Also there may be no docstring.
         """
         pass
-        
+
     @staticmethod
     def static_method(param1: int):
         """Description of static method.
-        
+
         Note:
             As like common method of class don`t use `self`.
-            
+
         Args:
             param1: Description of `param1`.
-            
+
         """
         print(param1)
 ```
 
 8. If you have a parameter that can take a finite number of values,
    if possible, describe each of them in the Note section.
-   
+
 ```python3
 import random
 
@@ -374,39 +374,39 @@ import random
 class A:
     """
     Some description.
-    
+
     Some long description.
-    
+
     Attributes:
         attr1 (:obj:`int`): Description of `attr1`.
         attr2 (:obj:`int`): Description of `attr2`.
-        
+
     """
     def __init__(self, weight_initialization: str = 'none'):
         """
-        
+
         Args:
             weight_initialization: Initialization type.
-        
+
         Note:
             There are several initialization types:
-            
+
                 - '`zeros`': fill ``attr1``
                   and ``attr2`` with zeros.
                 - '`ones`': fill ``attr1``
                   and ``attr2`` with ones.
                 - '`none`': fill ``attr1``
                   and ``attr2`` with random int in `\[0, 100\]`.
-        
+
         Raises:
             ValueError: If the entered initialization type is not supported.
-                
+
         """
         if weight_initialization not in ['zeros', 'ones', 'none']:
             raise ValueError(
                 f'{weight_initialization} - Unsupported weight initialization.')
-        
-        if weight_initialization == 'zeros':    
+
+        if weight_initialization == 'zeros':
             attr1 = 0
             attr2 = 0
         elif weight_initialization == 'ones':
@@ -427,7 +427,7 @@ file to the `docs/`.  And also mention it in `docs/index.rst`.
 
 If you add your own module, class or function, then you will need
 to add it description to the corresponding `.rst` in `docs`.
- 
+
 
 ### Adding Tutorials
 
@@ -435,4 +435,3 @@ We use [nbsphinx](https://nbsphinx.readthedocs.io/) extension for tutorials.
 Examples, you can find in `docs/notebooks`.
 Please, put your tutorial in this folder
 and after add it in `docs/Tutorials.rst`.
-
