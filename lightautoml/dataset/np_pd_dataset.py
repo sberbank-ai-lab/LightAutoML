@@ -33,7 +33,7 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 # sparse - do not replace init and set data, but move type assert in checks?
 
 class NumpyDataset(LAMLDataset):
-    """Dataset, that contains info in np.ndarray format."""
+    """Dataset that contains info in np.ndarray format."""
     # TODO: Checks here
     _init_checks = ()
     _data_checks = ()
