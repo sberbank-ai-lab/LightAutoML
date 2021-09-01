@@ -16,7 +16,7 @@ general_params:
   weighted_blender_max_nonzero_coef: 0.05
 
 reader_params:
-  # sample of data to perform analisys
+  # sample of data to perform analysis
   samples: 100000
   # minimum nan_rate in feature to keep feature
   max_nan_rate: 0.999
