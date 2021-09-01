@@ -7,19 +7,6 @@ lightautoml.utils
 
 Common util tools.
 
-Profiler
-------------------------------
-
-
-.. currentmodule:: lightautoml.utils.profiler
-
-.. autosummary::
-    :toctree: ./generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    Profiler
-
 Timer
 ------------------------------
 

@@ -39,12 +39,6 @@ LightAutoML provides easy-to-use pipeline creation, that enables:
 
 
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Contents
-
-    Tutorials <Tutorials>
-
 
 
 Indices and Tables
