@@ -30,7 +30,7 @@ def test_manual_pipeline():
     # Read data from file
     logging.debug("Read data from file")
     data = pd.read_csv(
-        "../example_data/test_data_files/sampled_app_train.csv",
+        "../examples/data/sampled_app_train.csv",
         usecols=[
             "TARGET",
             "NAME_CONTRACT_TYPE",

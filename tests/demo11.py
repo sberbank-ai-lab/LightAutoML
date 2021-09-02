@@ -21,7 +21,7 @@ def test_nlp_preset():
         format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
     )
 
-    data = pd.read_csv("../example_data/test_data_files/avito1k_train.csv")
+    data = pd.read_csv("../examples/data/avito1k_train.csv")
 
     train, test = train_test_split(data, test_size=500, random_state=42)
 

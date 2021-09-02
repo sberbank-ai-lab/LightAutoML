@@ -36,7 +36,7 @@ logging.basicConfig(
 
 
 def test_multiclass_task_with_catboost():
-    data = pd.read_csv("../example_data/test_data_files/sampled_app_train.csv")
+    data = pd.read_csv("../examples/data/sampled_app_train.csv")
 
     data["BIRTH_DATE"] = (
         np.datetime64("2018-01-01")

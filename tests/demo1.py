@@ -32,7 +32,7 @@ logging.basicConfig(
 
 def test_cutoff_selector_in_pipeline():
     logging.debug("Load data...")
-    data = pd.read_csv("../example_data/test_data_files/sampled_app_train.csv")
+    data = pd.read_csv("../examples/data/sampled_app_train.csv")
     logging.debug("Data loaded")
 
     logging.debug("Features modification from user side...")
