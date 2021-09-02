@@ -172,6 +172,7 @@ class AutoMLPreset(AutoML):
             valid_data: Optional validation dataset.
             valid_features: Optional validation dataset features if can't be
               inferred from `valid_data`.
+            verbose: Verbosity level that are passed to each automl.
 
         Returns:
             Dataset with predictions. Call ``.data`` to get predictions array.

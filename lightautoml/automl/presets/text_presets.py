@@ -147,7 +147,6 @@ class TabularNLPAutoML(TabularAutoML):
             memory_limit,
             cpu_limit,
             gpu_ids,
-            verbose,
             timing_params,
             config_path,
         )
