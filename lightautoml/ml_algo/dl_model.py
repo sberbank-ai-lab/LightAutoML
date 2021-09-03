@@ -264,9 +264,9 @@ class TorchModel(TabularMLAlgo):
         return suggested_params
 
     def get_dataloaders_from_dicts(self, data_dict):
-        logger.debug(f'n text: {len(self.params["text_features"])} ')
-        logger.debug(f'n cat: {len(self.params["cat_features"])} ')
-        logger.debug(f'n cont: {self.params["cont_dim"]} ')
+        logger.debug(f'number of text features: {len(self.params["text_features"])} ')
+        logger.debug(f'number of categorical features: {len(self.params["cat_features"])} ')
+        logger.debug(f'number of continuous features: {self.params["cont_dim"]} ')
 
         datasets = {}
         for stage, value in data_dict.items():

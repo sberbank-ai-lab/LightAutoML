@@ -239,6 +239,10 @@ class AutoML:
                     )
                     flg_last_level = True
 
+            logger.info(
+                "\x1b[1mLayer {} training completed.\x1b[0m\n".format(leven_number)
+            )
+
             # here is split on exit condition
             if not flg_last_level:
 
@@ -260,10 +264,6 @@ class AutoML:
                 )
             else:
                 break
-
-            logger.info(
-                "\x1b[1mLayer {} training completed.\x1b[0m\n".format(leven_number)
-            )
 
         blended_prediction, last_pipes = self.blender.fit_predict(
             level_predictions, pipes
