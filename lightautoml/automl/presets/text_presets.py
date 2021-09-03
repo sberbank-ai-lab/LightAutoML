@@ -77,7 +77,6 @@ class TabularNLPAutoML(TabularAutoML):
         memory_limit: int = 16,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
-        verbose: int = 2,
         timing_params: Optional[dict] = None,
         config_path: Optional[str] = None,
         general_params: Optional[dict] = None,
@@ -116,7 +115,6 @@ class TabularNLPAutoML(TabularAutoML):
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
-            verbose: Verbosity level that are passed to each automl.
             timing_params: Timing param dict.
             config_path: Path to config file.
             general_params: General param dict.
@@ -408,7 +406,6 @@ class TabularNLPAutoML(TabularAutoML):
             skip_conn=self.general_params["skip_conn"],
             blender=blender,
             timer=self.timer,
-            verbose=self.verbose,
         )
 
     def predict(

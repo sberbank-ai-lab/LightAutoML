@@ -50,6 +50,7 @@ Dataset = TypeVar("Dataset", bound=LAMLDataset)
 
 class NumpyDataset(LAMLDataset):
     """Dataset that contains info in np.ndarray format."""
+
     # TODO: Checks here
     _init_checks = ()
     _data_checks = ()

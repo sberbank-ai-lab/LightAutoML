@@ -73,7 +73,7 @@ Builded official documentation for LightAutoML is available [`here`](https://lig
 *******
 # Usage examples
 
-To find out how to work with LightAutoML, we have several tutorials:
+To find out how to work with LightAutoML, we have several [`tutorials`](examples/). You can run them in Google Colab:
 1. `Tutorial_1. Create your own pipeline.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_1.%20Create%20your%20own%20pipeline.ipynb) - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
 2. `Tutorial_2. AutoML pipeline preset.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_2.%20AutoML%20pipeline%20preset.ipynb) - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data. Using presets you can solve binary classification, multiclass classification and regression tasks, changing the first argument in Task.
 3. `Tutorial_3. Multiclass task.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_3.%20Multiclass%20task.ipynb) - shows how to build ML pipeline for multiclass ML task by hand
@@ -115,7 +115,7 @@ For more examples, in `tests` folder you can find different scenarios of LightAu
 ******
 # Contributing to LightAutoML
 
-If you are interested in contributing to LightAutoML, please read the [Contributing Guide](CONTRIBUTING.md) to get started.
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
 
 *******

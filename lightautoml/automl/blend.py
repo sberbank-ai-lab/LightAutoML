@@ -308,7 +308,7 @@ class WeightedBlender(Blender):
         self.max_iters = max_iters
         self.max_inner_iters = max_inner_iters
         self.max_nonzero_coef = max_nonzero_coef
-        self.wts = None
+        self.wts = [1]
 
     def _get_weighted_pred(
         self, splitted_preds: Sequence[NumpyDataset], wts: Optional[np.ndarray]
