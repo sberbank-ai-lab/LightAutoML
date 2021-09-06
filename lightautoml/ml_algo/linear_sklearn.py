@@ -88,6 +88,8 @@ class LinearLBFGS(TabularMLAlgo):
             model = TorchBasedLogisticRegression(output_size=self.n_classes, **params)
         elif self.task.name == "reg":
             model = TorchBasedLinearRegression(output_size=1, **params)
+        elif self.task.name == 'multi:reg':
+            model = TorchBasedLinearRegression(output_size=self.n_classes, **params)
         else:
             raise ValueError("Task not supported")
 

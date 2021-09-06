@@ -13,16 +13,9 @@ from typing import Union
 
 import numpy as np
 
-from lightautoml.tasks.losses import CBLoss
-from lightautoml.tasks.losses import LGBLoss
-from lightautoml.tasks.losses import SKLoss
-from lightautoml.tasks.losses import TORCHLoss
-
-from .common_metric import _valid_metric_args
-from .common_metric import _valid_str_metric_names
-from .utils import infer_gib
-from .utils import infer_gib_multiclass
-
+from .losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
+from .common_metric import _valid_str_metric_names, _valid_metric_args
+from .utils import infer_gib, infer_gib_multiclass
 
 if TYPE_CHECKING:
     from ..dataset.base import LAMLDataset
@@ -33,12 +26,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_valid_task_names = ["binary", "reg", "multiclass"]
+_valid_task_names = ["binary", "reg", "multiclass", "multi:reg"]
 _one_dim_output_tasks = ["binary", "reg"]
 
-_default_losses = {"binary": "logloss", "reg": "mse", "multiclass": "crossentropy"}
+_default_losses = {"binary": "logloss", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae"}
 
-_default_metrics = {"binary": "auc", "reg": "mse", "multiclass": "crossentropy"}
+_default_metrics = {"binary": "auc", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae"}
 
 _valid_loss_types = ["lgb", "sklearn", "torch", "cb"]
 
@@ -46,6 +39,7 @@ _valid_str_loss_names = {
     "binary": ["logloss"],
     "reg": ["mse", "mae", "mape", "rmsle", "quantile", "huber", "fair"],
     "multiclass": ["crossentropy", "f1"],
+    "multi:reg": ["mae", "mse"]
 }
 
 
@@ -397,15 +391,17 @@ class Task:
             self.metric_name = None
 
         if greater_is_better is None:
-            infer_gib_fn = infer_gib_multiclass if name == "multiclass" else infer_gib
+            infer_gib_fn = infer_gib_multiclass if (name == 'multiclass' or name == 'multi:reg') else infer_gib
             greater_is_better = infer_gib_fn(self.metric_func)
 
         self.greater_is_better = greater_is_better
 
         for loss_key in self.losses:
-            self.losses[loss_key].set_callback_metric(
-                metric, greater_is_better, self.metric_params, self.name
-            )
+            try:
+                self.losses[loss_key].set_callback_metric(metric, greater_is_better, self.metric_params, self.name)
+            except:
+                print(f'{self.name} isn`t supported in {loss_key}')
+
 
     def get_dataset_metric(self) -> LAMLMetric:
         """Create metric for dataset.

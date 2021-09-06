@@ -8,7 +8,7 @@ import numpy as np
 from ...dataset.np_pd_dataset import NumpyDataset
 from ...dataset.np_pd_dataset import PandasDataset
 from ...dataset.roles import CategoryRole
-from ...transformers.base import ChangeRoles
+from ...transformers.base import ChangeRoles, ColumnsSelector
 from ...transformers.base import LAMLTransformer
 from ...transformers.base import SequentialTransformer
 from ...transformers.base import UnionTransformer
@@ -19,6 +19,8 @@ from ...transformers.numeric import FillnaMedian
 from ...transformers.numeric import LogOdds
 from ...transformers.numeric import NaNFlags
 from ...transformers.numeric import StandardScaler
+from ...transformers.datetime import TimeToNum
+
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
 from .base import FeaturesPipeline
@@ -213,6 +215,33 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
             transformers_list.append(sparse_pipe)
 
         # final pipeline
+        union_all = UnionTransformer(transformers_list)
+
+        return union_all
+
+class LinearTrendFeatures(FeaturesPipeline):
+    def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
+        """Create linear pipeline.
+
+        Args:
+            train: Dataset with train features.
+
+        Returns:
+            Transformer.
+
+        """
+        transformers_list = []
+        # process datetimes
+        datetimes = [get_columns_by_role(train, 'Datetime')[0]]
+        if len(datetimes) > 0:
+            dt_processing = SequentialTransformer([
+
+                ColumnsSelector(keys=datetimes),
+                TimeToNum(),
+                StandardScaler()
+
+            ])
+            transformers_list.append(dt_processing)
         union_all = UnionTransformer(transformers_list)
 
         return union_all

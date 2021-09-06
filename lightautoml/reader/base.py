@@ -22,6 +22,7 @@ from pandas import Series
 from ..dataset.base import array_attr_roles
 from ..dataset.base import valid_array_attributes
 from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.seq_np_pd_dataset import SeqNumpyPandasDataset
 from ..dataset.roles import CategoryRole
 from ..dataset.roles import ColumnRole
 from ..dataset.roles import DatetimeRole
@@ -37,7 +38,7 @@ from .guess_roles import get_numeric_roles_stat
 from .guess_roles import rule_based_cat_handler_guess
 from .guess_roles import rule_based_roles_guess
 from .utils import set_sklearn_folds
-
+from .seq import TopInd, IDSInd
 
 logger = logging.getLogger(__name__)
 
@@ -633,3 +634,414 @@ class PandasToPandasReader(Reader):
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict
+
+
+class DictToNumpySeqReader(PandasToPandasReader):
+    """
+    Reader with sequential support to convert :class:`~pandas.DataFrame` to AutoML's :class:`~lightautoml.dataset.np_pd_dataset.PandasDataset`.
+    Stages:
+
+        - Same function for plain dataset as PandasToPandasReader.
+        - Parse sequential data (simple auto-typing).
+
+    """
+    def __init__(self, task: Task, samples: Optional[int] = 100000, max_nan_rate: float = 0.999, max_constant_rate: float = 0.999,
+                 cv: int = 5, random_state: int = 42, roles_params: Optional[dict] = None, n_jobs: int = 4,
+                 # params for advanced roles guess
+                 advanced_roles: bool = True, numeric_unique_rate: float = .999, max_to_3rd_rate: float = 1.1,
+                 binning_enc_rate: float = 2, raw_decr_rate: float = 1.1,
+                 max_score_rate: float = .2, abs_score_val: float = .04,
+                 drop_score_co: float = .01,
+                 seq_params=None,
+                 **kwargs: Any):
+        """
+
+        Args:
+            task: Task object.
+            samples: Number of elements used when checking role type.
+            max_nan_rate: Maximum nan-rate.
+            max_constant_rate: Maximum constant rate.
+            cv: CV Folds.
+            random_state: Random seed.
+            roles_params: dict of params of features roles. \
+                Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
+                It's optional and commonly comes from config
+            n_jobs: Int number of processes.
+            advanced_roles: Param of roles guess (experimental, do not change).
+            numeric_unqiue_rate: Param of roles guess (experimental, do not change).
+            max_to_3rd_rate: Param of roles guess (experimental, do not change).
+            binning_enc_rate: Param of roles guess (experimental, do not change).
+            raw_decr_rate: Param of roles guess (experimental, do not change).
+            max_score_rate: Param of roles guess (experimental, do not change).
+            abs_score_val: Param of roles guess (experimental, do not change).
+            drop_score_co: Param of roles guess (experimental, do not change).
+            seq_params: sequence-related params.
+            **kwargs: For now not used.
+
+        """
+
+        super().__init__(task)
+        self.samples = samples
+        self.max_nan_rate = max_nan_rate
+        self.max_constant_rate = max_constant_rate
+        self.cv = cv
+        self.random_state = random_state
+        self.n_jobs = n_jobs
+
+        self.roles_params = roles_params
+        if roles_params is None:
+            self.roles_params = {}
+        self.target = None
+        self.advanced_roles = advanced_roles
+        self.advanced_roles_params = {
+
+            'numeric_unique_rate': numeric_unique_rate,
+            'max_to_3rd_rate': max_to_3rd_rate,
+            'binning_enc_rate': binning_enc_rate,
+            'raw_decr_rate': raw_decr_rate,
+            'max_score_rate': max_score_rate,
+            'abs_score_val': abs_score_val,
+            'drop_score_co': drop_score_co
+
+        }
+        if seq_params is not None:
+            self.seq_params = seq_params
+        else:
+            self.seq_params = {
+                'seq': {'case': 'next_values', 'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True}}}
+        self.params = kwargs
+
+        self.ti = {}
+        self.meta = {}
+
+    def create_ids(self, seq_data, plain_data, dataset_name):
+        if self.seq_params[dataset_name]['case'] == 'next_values':
+            self.ti[dataset_name] = TopInd(scheme=self.seq_params[dataset_name].get('scheme', None),
+                                           **self.seq_params[dataset_name]['params'])
+            self.ti[dataset_name].read(seq_data, plain_data)
+
+        elif self.seq_params[dataset_name]['case'] == 'ids':
+            self.ti[dataset_name] = IDSInd(scheme=self.seq_params[dataset_name].get('scheme', None),
+                                           **self.seq_params[dataset_name]['params'])
+            self.ti[dataset_name].read(seq_data, plain_data)
+
+    def parse_seq(self, seq_dataset, plain_data, dataset_name, parsed_roles, roles):
+        self.create_ids(seq_dataset, plain_data, dataset_name)
+        self.meta[dataset_name] = {'seq_idx_data': self.ti[dataset_name].create_data(seq_dataset, plain_data=plain_data),
+                                   'seq_idx_target': self.ti[dataset_name].create_target(seq_dataset, plain_data=plain_data)}
+
+        if self.meta[dataset_name]['seq_idx_target'] is not None:
+            assert len(self.meta[dataset_name]['seq_idx_data']) == len(
+                self.meta[dataset_name]['seq_idx_target']), 'Time series ids don`t match'
+        subsample = seq_dataset
+        if self.samples is not None and self.samples < subsample.shape[0]:
+            subsample = subsample.sample(self.samples, axis=0, random_state=42)
+
+        seq_roles = {}
+        seq_features = []
+        for feat in seq_dataset.columns:
+            assert isinstance(feat, str), 'Feature names must be string,' \
+                                          ' find feature name: {}, with type: {}'.format(feat, type(feat))
+
+            if feat in parsed_roles:
+                r = parsed_roles[feat]
+                if type(r) == str:
+                    # get default role params if defined
+                    r = self._get_default_role_from_str(r)
+                # handle datetimes
+
+                if r.name == 'Datetime':
+                    # try if it's ok to infer date with given params
+                    try:
+                        _ = pd.to_datetime(subsample[feat], format=r.format, origin=r.origin, unit=r.unit)
+                    except ValueError:
+                        raise ValueError('Looks like given datetime parsing params are not correctly defined')
+
+                # replace default category dtype for numeric roles dtype if cat col dtype is numeric
+                if r.name == 'Category':
+                    # default category role
+                    cat_role = self._get_default_role_from_str('category')
+                    # check if role with dtypes was exactly defined
+                    try:
+                        flg_default_params = feat in roles['category']
+                    except KeyError:
+                        flg_default_params = False
+
+                    if flg_default_params and not np.issubdtype(cat_role.dtype, np.number) and \
+                            np.issubdtype(subsample.dtypes[feat], np.number):
+                        r.dtype = self._get_default_role_from_str('numeric').dtype
+
+                if r.name == 'Target':
+                    r = self._get_default_role_from_str('numeric')
+
+
+            else:
+                # if no - infer
+                if self._is_ok_feature(subsample[feat]):
+                    r = self._guess_role(subsample[feat])
+
+                else:
+                    r = DropRole()
+
+            parsed_roles[feat] = r
+
+            # set back
+            if r.name != 'Drop':
+                self._roles[feat] = r
+                self._used_features.append(feat)
+                seq_roles[feat] = r
+                seq_features.append(feat)
+            else:
+                self._dropped_features.append(feat)
+
+        assert len(seq_features) > 0, 'All features are excluded for some reasons'
+
+        self.meta[dataset_name]['roles'] = seq_roles
+        self.meta[dataset_name]['features'] = seq_features
+
+        seq_dataset = SeqNumpyPandasDataset(data=seq_dataset[self.meta[dataset_name]['features']],
+                                            features=self.meta[dataset_name]['features'],
+                                            roles=self.meta[dataset_name]['roles'],
+                                            idx=self.meta[dataset_name]['seq_idx_target'] if
+                                            self.meta[dataset_name]['seq_idx_target'] is not None else
+                                            self.meta[dataset_name]['seq_idx_data'],
+                                            name=dataset_name,
+                                            scheme=self.seq_params[dataset_name].get('scheme', None))
+        return seq_dataset, parsed_roles
+
+    def fit_read(self, train_data: Dict, features_names: Any = None, roles: UserDefinedRolesDict = None,
+                 **kwargs: Any) -> PandasDataset:
+        """Get dataset with initial feature selection.
+
+        Args:
+            train_data: Input data in dict format.
+            features_names: Ignored. Just to keep signature.
+            roles: Dict of features roles in format
+              ``{RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}``.
+            **kwargs: Can be used for target/group/weights.
+
+        Returns:
+            Dataset with selected features.
+
+        """
+        # logger.info('Train data shape: {}'.format(train_data.shape))
+
+        if roles is None:
+            roles = {}
+        # transform roles from user format {RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}
+        # to automl format {'feat0': RoleX, 'feat1': RoleX, 'TARGET': RoleY, ...}
+
+        plain_data, seq_data = train_data.get('plain', None), train_data.get('seq', None)
+        plain_features = set(plain_data.columns) if plain_data is not None else {}
+        parsed_roles = roles_parser(roles)
+        # transform str role definition to automl ColumnRole
+        attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
+
+        seq_datasets = {}
+        if seq_data is not None:
+            for dataset_name, dataset in seq_data.items():
+                seq_dataset, parsed_roles = self.parse_seq(dataset, plain_data, dataset_name, parsed_roles, roles)
+                seq_datasets[dataset_name] = seq_dataset
+        else:
+            seq_datasets = None
+            # seq_dataset = None
+            # self.seq_idx_data, self.seq_idx_target = None, None
+
+        for feat in parsed_roles:
+            r = parsed_roles[feat]
+            if type(r) == str:
+                # get default role params if defined
+                r = self._get_default_role_from_str(r)
+
+            # check if column is defined like target/group/weight etc ...
+            if feat in plain_features:
+                if r.name in attrs_dict:
+                    # defined in kwargs is rewrited.. TODO: Maybe raise warning if rewrited?
+                    # TODO: Think, what if multilabel or multitask? Multiple column target ..
+                    # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
+                    self._used_array_attrs[attrs_dict[r.name]] = feat
+                    kwargs[attrs_dict[r.name]] = plain_data[feat]
+                    r = DropRole()
+
+                # add new role
+                parsed_roles[feat] = r
+        # add target from seq dataset to plain
+        for seq_name, values in self.meta.items():
+            if values['seq_idx_target'] is not None:
+                kwargs['target'] = pd.DataFrame(
+                    seq_datasets[seq_name].to_sequence((slice(None), roles['target'])).data[:, :, 0].astype(float))
+                break
+
+        assert 'target' in kwargs, 'Target should be defined'
+        self.target = kwargs["target"].name if type(kwargs["target"]) == pd.Series else kwargs["target"].columns
+        kwargs['target'] = self._create_target(kwargs['target'])
+
+        # TODO: Check target and task
+        # get subsample if it needed
+        if plain_data is not None:
+
+            subsample = plain_data
+            if self.samples is not None and self.samples < subsample.shape[0]:
+                subsample = subsample.sample(self.samples, axis=0, random_state=42)
+
+            # infer roles
+            for feat in subsample.columns:
+                assert isinstance(feat, str), 'Feature names must be string,' \
+                                              ' find feature name: {}, with type: {}'.format(feat, type(feat))
+                if feat in parsed_roles:
+                    r = parsed_roles[feat]
+                    # handle datetimes
+                    if r.name == 'Datetime':
+                        # try if it's ok to infer date with given params
+                        try:
+                            _ = pd.to_datetime(subsample[feat], format=r.format, origin=r.origin, unit=r.unit)
+                        except ValueError:
+                            raise ValueError('Looks like given datetime parsing params are not correctly defined')
+
+                    # replace default category dtype for numeric roles dtype if cat col dtype is numeric
+                    if r.name == 'Category':
+                        # default category role
+                        cat_role = self._get_default_role_from_str('category')
+                        # check if role with dtypes was exactly defined
+                        try:
+                            flg_default_params = feat in roles['category']
+                        except KeyError:
+                            flg_default_params = False
+
+                        if flg_default_params and not np.issubdtype(cat_role.dtype, np.number) and \
+                                np.issubdtype(subsample.dtypes[feat], np.number):
+                            r.dtype = self._get_default_role_from_str('numeric').dtype
+
+                else:
+                    # if no - infer
+                    if self._is_ok_feature(subsample[feat]):
+                        r = self._guess_role(subsample[feat])
+
+                    else:
+                        r = DropRole()
+
+                # set back
+                if r.name != 'Drop':
+                    self._roles[feat] = r
+                    self._used_features.append(feat)
+                else:
+                    self._dropped_features.append(feat)
+
+            assert len(set(self.used_features) & set(subsample.columns)) > 0, 'All features are excluded for some reasons'
+            # assert len(self.used_array_attrs) > 0, 'At least target should be defined in train dataset'
+            # create folds
+
+        folds = set_sklearn_folds(self.task, kwargs['target'], cv=self.cv, random_state=self.random_state,
+                                  group=None if 'group' not in kwargs else kwargs['group'])
+        if folds is not None:
+            kwargs['folds'] = Series(folds,
+                                     index=plain_data.index if plain_data is not None else np.arange(len(kwargs['target'])))
+
+        # get dataset
+        self.plain_used_features = sorted(list(set(self.used_features) & set(plain_features)))
+        self.plain_roles = {key: value for key, value in self._roles.items() if key in set(self.plain_used_features)}
+
+        dataset = PandasDataset(plain_data[self.plain_used_features] if plain_data is not None else pd.DataFrame(),
+                                self.plain_roles, task=self.task,
+                                **kwargs)
+        if self.advanced_roles:
+            new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
+            droplist = [x for x in new_roles if new_roles[x].name == 'Drop' and not self._roles[x].force_input]
+            self.upd_used_features(remove=droplist)
+            self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
+            self.plain_used_features = sorted(list(set(self.used_features) & set(plain_features)))
+            self.plain_roles = {key: value for key, value in self._roles.items() if key in set(self.plain_used_features)}
+            dataset = PandasDataset(plain_data[self.plain_used_features] if plain_data is not None else pd.DataFrame(),
+                                    self.plain_roles,
+                                    task=self.task, **kwargs)
+
+        for seq_name, values in self.meta.items():
+            seq_datasets[seq_name].idx = values['seq_idx_data']
+
+        dataset.seq_data = seq_datasets
+
+        return dataset
+
+    def _create_target(self, target: Series):
+        """Validate target column and create class mapping is needed
+
+        Args:
+            target: Column with target values.
+
+        Returns:
+            Transformed target.
+
+        """
+        self.class_mapping = None
+
+        if (self.task.name != 'reg') and (self.task.name != 'multi:reg'):
+            # expect binary or multiclass here
+            target = pd.Series(target)
+            cnts = target.value_counts(dropna=False)
+            assert np.nan not in cnts.index, 'Nan in target detected'
+            unqiues = cnts.index.values
+            srtd = np.sort(unqiues)
+
+            # case - target correctly defined and no mapping
+            if (np.arange(srtd.shape[0]) == srtd).all():
+
+                assert srtd.shape[0] > 1, 'Less than 2 unique values in target'
+                if self.task.name == 'binary':
+                    assert srtd.shape[0] == 2, 'Binary task and more than 2 values in target'
+                return target
+
+            # case - create mapping
+            self.class_mapping = {n: x for (x, n) in enumerate(unqiues)}
+            return target.map(self.class_mapping).astype(np.int32)
+
+        assert not np.isnan(target.values).any(), 'Nan in target detected'
+        return target
+
+    def read(self, data, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
+        """Read dataset with fitted metadata.
+
+        Args:
+            data: Data.
+            features_names: Not used.
+            add_array_attrs: Additional attributes, like
+              target/group/weights/folds.
+
+        Returns:
+            Dataset with new columns.
+
+        """
+        plain_data, seq_data = data.get('plain', None), data.get('seq', None)
+        seq_datasets = {}
+        if seq_data is not None:
+            for dataset_name, dataset in seq_data.items():
+                test_idx = self.ti[dataset_name].create_test(dataset, plain_data=plain_data)
+                seq_dataset = SeqNumpyPandasDataset(data=dataset[self.meta[dataset_name]['features']],
+                                                    features=self.meta[dataset_name]['features'],
+                                                    roles=self.meta[dataset_name]['roles'],
+                                                    idx=test_idx, name=dataset_name,
+                                                    scheme=self.seq_params[dataset_name].get('scheme', None))
+                seq_datasets[dataset_name] = seq_dataset
+        else:
+            seq_datasets = None
+
+        kwargs = {}
+        if add_array_attrs:
+            for array_attr in self.used_array_attrs:
+                col_name = self.used_array_attrs[array_attr]
+                try:
+                    val = plain_data[col_name]
+                except KeyError:
+                    continue
+
+                if array_attr == 'target' and self.class_mapping is not None:
+                    val = Series(val.map(self.class_mapping).values, index=plain_data.index, name=col_name)
+                kwargs[array_attr] = val
+        # if (self.seq_idx_target is not None) and (seq_dataset is not None):
+        #    kwargs['target'] = seq_dataset.to_sequence((slice(None), self.used_array_attrs[array_attr])).data[:, :, 0]
+
+        dataset = PandasDataset(plain_data[self.plain_used_features] if plain_data is not None else pd.DataFrame(),
+                                self.plain_roles, task=self.task,
+                                **kwargs)
+
+        dataset.seq_data = seq_datasets  # list(seq_datasets.values())[0]
+        return dataset

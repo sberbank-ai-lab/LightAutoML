@@ -51,10 +51,11 @@ class SKLoss(Loss):
         assert loss in [
             "logloss",
             "mse",
+            "mae",
             "crossentropy",
             "rmsle",
         ], "Not supported in sklearn in general case."
-        self.flg_regressor = loss in ["mse", "rmsle"]
+        self.flg_regressor = loss in ["mse", "mae", "rmsle"]
 
         if loss in _sk_loss_mapping:
             self.loss, fw_func, bw_func = _sk_loss_mapping[loss]

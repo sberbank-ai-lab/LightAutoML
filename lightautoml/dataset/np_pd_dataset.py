@@ -134,7 +134,10 @@ class NumpyDataset(LAMLDataset):
         ), "Support only numeric types in numpy dataset."
 
         if self.data.dtype != self.dtype:
-            self.data = self.data.astype(self.dtype)
+            try:
+                self.data = self.data.astype(self.dtype)
+            except:
+                pass
 
     def __init__(
         self,
@@ -316,7 +319,8 @@ class NumpyDataset(LAMLDataset):
         )
         roles = self.roles
         # target and etc ..
-        params = dict(((x, Series(self.__dict__[x])) for x in self._array_like_attrs))
+        params = dict(((x, Series(self.__dict__[x]) if len(self.__dict__[x].shape) == 1 else DataFrame(self.__dict__[x])) for x in
+                       self._array_like_attrs))
         task = self.task
 
         return PandasDataset(data, roles, task, **params)

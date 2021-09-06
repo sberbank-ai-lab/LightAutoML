@@ -378,11 +378,14 @@ _valid_str_multiclass_metric_names = {
     "f1_micro": BestClassMulticlassWrapper(F1Factory("micro")),
     "f1_weighted": BestClassMulticlassWrapper(F1Factory("weighted")),
 }
-
+_valid_str_multireg_metric_names = {
+    'mse': mean_squared_error,
+    'mae': mean_absolute_error}
 _valid_str_metric_names = {
     "binary": _valid_str_binary_metric_names,
     "reg": _valid_str_reg_metric_names,
     "multiclass": _valid_str_multiclass_metric_names,
+    'multi:reg': _valid_str_multireg_metric_names,
 }
 
 _valid_metric_args = {"quantile": ["q"], "huber": ["a"], "fair": ["c"]}
