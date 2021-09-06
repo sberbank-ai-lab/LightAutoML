@@ -63,7 +63,7 @@ class SequenceAvgPooler(SequenceAbstractPooler):
         x_active = torch.sum(x_mask, dim=-2)
         x_active = x_active.masked_fill(x_active == 0, 1)
         values = torch.sum(x, dim=-2) / x_active.data
-        #values = torch.mean(x, dim=-2)
+        # values = torch.mean(x, dim=-2)
         return values
 
 

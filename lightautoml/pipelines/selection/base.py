@@ -1,17 +1,25 @@
 """Base class for selection pipelines."""
 
-from copy import copy, deepcopy
-from typing import Optional, List, Sequence, Any, Tuple, Union
+from copy import copy
+from copy import deepcopy
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 from pandas import Series
 
 from lightautoml.validation.base import TrainValidIterator
-from ..features.base import FeaturesPipeline
-from ..utils import map_pipeline_names
+
 from ...dataset.base import LAMLDataset
 from ...ml_algo.base import MLAlgo
-from ...ml_algo.tuning.base import ParamsTuner, DefaultTuner
+from ...ml_algo.tuning.base import DefaultTuner
+from ...ml_algo.tuning.base import ParamsTuner
 from ...ml_algo.utils import tune_and_fit_predict
+from ..features.base import FeaturesPipeline
+from ..utils import map_pipeline_names
 
 
 class ImportanceEstimator:
@@ -61,7 +69,7 @@ class SelectionPipeline:
             List of selected feature names.
 
         """
-        assert self._selected_features is not None, 'Should be fitted first'
+        assert self._selected_features is not None, "Should be fitted first"
         return self._selected_features
 
     @selected_features.setter
@@ -84,7 +92,7 @@ class SelectionPipeline:
             List of input features.
 
         """
-        assert self._in_features is not None, 'Should be fitted first'
+        assert self._in_features is not None, "Should be fitted first"
         return self._in_features
 
     @property
@@ -98,11 +106,14 @@ class SelectionPipeline:
         included = set(self._selected_features)
         return [x for x in self._in_features if x not in included]
 
-    def __init__(self,
-                 features_pipeline: Optional[FeaturesPipeline] = None,
-                 ml_algo: Optional[Union[MLAlgo, Tuple[MLAlgo, ParamsTuner]]] = None,
-                 imp_estimator: Optional[ImportanceEstimator] = None,
-                 fit_on_holdout: bool = False, **kwargs: Any):
+    def __init__(
+        self,
+        features_pipeline: Optional[FeaturesPipeline] = None,
+        ml_algo: Optional[Union[MLAlgo, Tuple[MLAlgo, ParamsTuner]]] = None,
+        imp_estimator: Optional[ImportanceEstimator] = None,
+        fit_on_holdout: bool = False,
+        **kwargs: Any
+    ):
         """Create features selection pipeline.
 
         Args:
@@ -132,8 +143,7 @@ class SelectionPipeline:
         self._in_features = None
         self.mapped_importances = None
 
-    def perform_selection(self,
-                          train_valid: Optional[TrainValidIterator]):
+    def perform_selection(self, train_valid: Optional[TrainValidIterator]):
         """Select features from train-valid iterator.
 
         Method is used to perform selection based
@@ -168,10 +178,13 @@ class SelectionPipeline:
             preds = None
             if self.ml_algo is not None:
                 if self.ml_algo.is_fitted:
-                    assert list(self.ml_algo.features) == list(train_valid.features), \
-                        "Features in feated MLAlgo should match exactly"
+                    assert list(self.ml_algo.features) == list(
+                        train_valid.features
+                    ), "Features in feated MLAlgo should match exactly"
                 else:
-                    self.ml_algo, preds = tune_and_fit_predict(self.ml_algo, self.tuner, train_valid)
+                    self.ml_algo, preds = tune_and_fit_predict(
+                        self.ml_algo, self.tuner, train_valid
+                    )
 
             if self.imp_estimator is not None:
                 self.imp_estimator.fit(train_valid, self.ml_algo, preds)
@@ -212,7 +225,9 @@ class SelectionPipeline:
         mapped = map_pipeline_names(self.in_features, raw_importances.index)
         mapped_importance = Series(raw_importances.values, index=mapped)
 
-        self.mapped_importances = mapped_importance.groupby(level=0).sum().sort_values(ascending=False)
+        self.mapped_importances = (
+            mapped_importance.groupby(level=0).sum().sort_values(ascending=False)
+        )
 
     def get_features_score(self):
         """Get input feature importances.
@@ -230,8 +245,7 @@ class EmptySelector(SelectionPipeline):
     def __init__(self):
         super().__init__()
 
-    def perform_selection(self,
-                          train_valid: Optional[TrainValidIterator]):
+    def perform_selection(self, train_valid: Optional[TrainValidIterator]):
         """Just save input features names.
 
         Args:
@@ -254,16 +268,16 @@ class PredefinedSelector(SelectionPipeline):
         super().__init__()
         self.columns_to_select = set(columns_to_select)
 
-    def perform_selection(self,
-                          train_valid: Optional[TrainValidIterator]):
+    def perform_selection(self, train_valid: Optional[TrainValidIterator]):
         """Select only specified columns.
 
         Args:
             train_valid: Used for validation of features presence.
 
         """
-        assert len(self.columns_to_select) == len(self.columns_to_select.intersection(set(train_valid.features))), \
-            'Columns to select not match with dataset features'
+        assert len(self.columns_to_select) == len(
+            self.columns_to_select.intersection(set(train_valid.features))
+        ), "Columns to select not match with dataset features"
         self._selected_features = list(self.columns_to_select)
 
 

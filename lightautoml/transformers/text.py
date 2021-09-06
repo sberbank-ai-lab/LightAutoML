@@ -1,70 +1,117 @@
 """Text features transformers."""
 
 import gc
+import logging
 import os
 import pickle
-from copy import deepcopy, copy
-from typing import Optional, Union, List, Dict, Any
+
+from copy import copy
+from copy import deepcopy
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import gensim
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import SGDRegressor, SGDClassifier
 
-from .base import LAMLTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import SGDRegressor
+
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset, CSRSparseDataset
-from ..dataset.roles import NumericRole, TextRole
-from ..text.dl_transformers import RandomLSTM, BOREP, BertEmbedder, DLTransformer
-from ..text.embed_dataset import EmbedDataset, BertDataset
-from ..text.tokenizer import BaseTokenizer, SimpleEnTokenizer
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.roles import NumericRole
+from ..dataset.roles import TextRole
+from ..text.dl_transformers import BOREP
+from ..text.dl_transformers import BertEmbedder
+from ..text.dl_transformers import DLTransformer
+from ..text.dl_transformers import RandomLSTM
+from ..text.embed_dataset import BertDataset
+from ..text.embed_dataset import EmbedDataset
+from ..text.tokenizer import BaseTokenizer
+from ..text.tokenizer import SimpleEnTokenizer
 from ..text.utils import get_textarr_hash
 from ..text.weighted_average_transformer import WeightedAverageTransformer
-from ..utils.logging import get_logger
+from .base import LAMLTransformer
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 NumpyOrSparse = Union[NumpyDataset, CSRSparseDataset]
 
-model_by_name = {'random_lstm': {'model': RandomLSTM,
-                                 'model_params': {'embed_size': 300, 'hidden_size': 256, 'pooling': 'mean', 'num_layers': 1},
-                                 'dataset': EmbedDataset,
-                                 'dataset_params': {'embedding_model': None, 'max_length': 200,
-                                                    'embed_size': 300},
-                                 'loader_params': {'batch_size': 1024, 'shuffle': False, 'num_workers': 4},
-                                 'embedding_model_params': {}
-                                 },
-                 'random_lstm_bert': {'model': RandomLSTM,
-                                      'model_params': {'embed_size': 768, 'hidden_size': 256, 'pooling': 'mean',
-                                                       'num_layers': 1},
-                                      'dataset': BertDataset,
-                                      'dataset_params': {'max_length': 256, 'model_name': 'bert-base-cased'},
-                                      'loader_params': {'batch_size': 320, 'shuffle': False, 'num_workers': 4},
-                                      'embedding_model': BertEmbedder,
-                                      'embedding_model_params': {'model_name': 'bert-base-cased', 'pooling': 'none'}
-                                      },
-                 'borep': {'model': BOREP,
-                           'model_params': {'embed_size': 300, 'proj_size': 300, 'pooling': 'mean', 'max_length': 200,
-                                            'init': 'orthogonal', 'pos_encoding': False},
-                           'dataset': EmbedDataset,
-                           'dataset_params': {'embedding_model': None, 'max_length': 200,
-                                              'embed_size': 300},
-                           'loader_params': {'batch_size': 1024, 'shuffle': False, 'num_workers': 4},
-                           'embedding_model_params': {}
-                           },
-                 'pooled_bert': {'model': BertEmbedder,
-                                 'model_params': {'model_name': 'bert-base-cased', 'pooling': 'mean'},
-                                 'dataset': BertDataset,
-                                 'dataset_params': {'max_length': 256, 'model_name': 'bert-base-cased'},
-                                 'loader_params': {'batch_size': 320, 'shuffle': False, 'num_workers': 4},
-                                 'embedding_model_params': {}
-                                 },
-                 'wat': {'embedding_model': None, 'embed_size': 300, 'weight_type': 'idf',
-                         'use_svd': True}
-                 }
+model_by_name = {
+    "random_lstm": {
+        "model": RandomLSTM,
+        "model_params": {
+            "embed_size": 300,
+            "hidden_size": 256,
+            "pooling": "mean",
+            "num_layers": 1,
+        },
+        "dataset": EmbedDataset,
+        "dataset_params": {
+            "embedding_model": None,
+            "max_length": 200,
+            "embed_size": 300,
+        },
+        "loader_params": {"batch_size": 1024, "shuffle": False, "num_workers": 4},
+        "embedding_model_params": {},
+    },
+    "random_lstm_bert": {
+        "model": RandomLSTM,
+        "model_params": {
+            "embed_size": 768,
+            "hidden_size": 256,
+            "pooling": "mean",
+            "num_layers": 1,
+        },
+        "dataset": BertDataset,
+        "dataset_params": {"max_length": 256, "model_name": "bert-base-cased"},
+        "loader_params": {"batch_size": 320, "shuffle": False, "num_workers": 4},
+        "embedding_model": BertEmbedder,
+        "embedding_model_params": {"model_name": "bert-base-cased", "pooling": "none"},
+    },
+    "borep": {
+        "model": BOREP,
+        "model_params": {
+            "embed_size": 300,
+            "proj_size": 300,
+            "pooling": "mean",
+            "max_length": 200,
+            "init": "orthogonal",
+            "pos_encoding": False,
+        },
+        "dataset": EmbedDataset,
+        "dataset_params": {
+            "embedding_model": None,
+            "max_length": 200,
+            "embed_size": 300,
+        },
+        "loader_params": {"batch_size": 1024, "shuffle": False, "num_workers": 4},
+        "embedding_model_params": {},
+    },
+    "pooled_bert": {
+        "model": BertEmbedder,
+        "model_params": {"model_name": "bert-base-cased", "pooling": "mean"},
+        "dataset": BertDataset,
+        "dataset_params": {"max_length": 256, "model_name": "bert-base-cased"},
+        "loader_params": {"batch_size": 320, "shuffle": False, "num_workers": 4},
+        "embedding_model_params": {},
+    },
+    "wat": {
+        "embedding_model": None,
+        "embed_size": 300,
+        "weight_type": "idf",
+        "use_svd": True,
+    },
+}
 
 
 def oof_task_check(dataset: LAMLDataset):
@@ -75,7 +122,10 @@ def oof_task_check(dataset: LAMLDataset):
 
     """
     task = dataset.task
-    assert task.name in ['binary', 'reg'], 'Only binary and regression tasks supported in this transformer'
+    assert task.name in [
+        "binary",
+        "reg",
+    ], "Only binary and regression tasks supported in this transformer"
 
 
 def text_check(dataset: LAMLDataset):
@@ -91,7 +141,7 @@ def text_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == 'Text', 'Only text accepted in this transformer'
+        assert roles[f].name == "Text", "Only text accepted in this transformer"
 
 
 # TODO: combine TunableTransformer with LAMLTransformer class?
@@ -100,6 +150,7 @@ class TunableTransformer(LAMLTransformer):
 
     Assume that parameters my set before training.
     """
+
     _default_params: dict = {}
     _params: dict = None
 
@@ -129,7 +180,9 @@ class TunableTransformer(LAMLTransformer):
         """
         return self.params
 
-    def __init__(self, default_params: Optional[dict] = None, freeze_defaults: bool = True):
+    def __init__(
+        self, default_params: Optional[dict] = None, freeze_defaults: bool = True
+    ):
         """
 
         Args:
@@ -153,9 +206,15 @@ class TfidfTextTransformer(TunableTransformer):
 
     _fit_checks = (text_check,)
     _transform_checks = ()
-    _fname_prefix = 'tfidf'
-    _default_params = {'min_df': 5, 'max_df': 1.0, 'max_features': 30_000, 'ngram_range': (1, 1), 'analyzer': 'word',
-                       'dtype': np.float32}
+    _fname_prefix = "tfidf"
+    _default_params = {
+        "min_df": 5,
+        "max_df": 1.0,
+        "max_features": 30_000,
+        "ngram_range": (1, 1),
+        "analyzer": "word",
+        "dtype": np.float32,
+    }
 
     @property
     def features(self) -> List[str]:
@@ -163,8 +222,13 @@ class TfidfTextTransformer(TunableTransformer):
 
         return self._features
 
-    def __init__(self, default_params: Optional[dict] = None, freeze_defaults: bool = True, subs: Optional[int] = None,
-                 random_state: int = 42):
+    def __init__(
+        self,
+        default_params: Optional[dict] = None,
+        freeze_defaults: bool = True,
+        subs: Optional[int] = None,
+        random_state: int = 42,
+    ):
         """
 
         Args:
@@ -205,7 +269,7 @@ class TfidfTextTransformer(TunableTransformer):
             return suggested_params
         rows_num = len(dataset.data)
         if rows_num > 50_000:
-            suggested_params['min_df'] = 25
+            suggested_params["min_df"] = 25
 
         return suggested_params
 
@@ -239,11 +303,13 @@ class TfidfTextTransformer(TunableTransformer):
         feats = []
         for n, i in enumerate(subs.columns):
             vect = self.vect(**self.params)
-            vect.fit(subs[i].fillna('').astype(str))
+            vect.fit(subs[i].fillna("").astype(str))
             features = list(
-                np.char.array([self._fname_prefix + '_']) + np.arange(len(vect.vocabulary_)).astype(str) + np.char.array(
-                    ['__' + i]))
-            self.dicts[i] = {'vect': vect, 'feats': features}
+                np.char.array([self._fname_prefix + "_"])
+                + np.arange(len(vect.vocabulary_)).astype(str)
+                + np.char.array(["__" + i])
+            )
+            self.dicts[i] = {"vect": vect, "feats": features}
             feats.extend(features)
         self._features = feats
         return self
@@ -268,9 +334,9 @@ class TfidfTextTransformer(TunableTransformer):
         roles = NumericRole()
         outputs = []
         for n, i in enumerate(df.columns):
-            new_arr = self.dicts[i]['vect'].transform(df[i].fillna('').astype(str))
+            new_arr = self.dicts[i]["vect"].transform(df[i].fillna("").astype(str))
             output = dataset.empty().to_numpy().to_csr()
-            output.set_data(new_arr, self.dicts[i]['feats'], roles)
+            output.set_data(new_arr, self.dicts[i]["feats"], roles)
             outputs.append(output)
         # create resulted
         return dataset.empty().to_numpy().to_csr().concat(outputs)
@@ -281,7 +347,7 @@ class TokenizerTransformer(LAMLTransformer):
 
     _fit_checks = (text_check,)
     _transform_checks = ()
-    _fname_prefix = 'tokenized'
+    _fname_prefix = "tokenized"
 
     def __init__(self, tokenizer: BaseTokenizer = SimpleEnTokenizer()):
         """
@@ -313,12 +379,16 @@ class TokenizerTransformer(LAMLTransformer):
         roles = TextRole()
         outputs = []
         for n, i in enumerate(df.columns):
-            pred = np.array(self.tokenizer.tokenize(df[i].fillna('').astype(str).tolist()))
-            new_df = pd.DataFrame(pred, columns=[self._fname_prefix + '__' + i])
+            pred = np.array(
+                self.tokenizer.tokenize(df[i].fillna("").astype(str).tolist())
+            )
+            new_df = pd.DataFrame(pred, columns=[self._fname_prefix + "__" + i])
             outputs.append(new_df)
         # create resulted
         output = dataset.empty().to_pandas()
-        output.set_data(pd.concat(outputs, axis=1), None, {feat: roles for feat in self.features})
+        output.set_data(
+            pd.concat(outputs, axis=1), None, {feat: roles for feat in self.features}
+        )
         return output
 
 
@@ -327,8 +397,8 @@ class OneToOneTransformer(TunableTransformer):
 
     _fit_checks = (oof_task_check,)
     _transform_checks = ()
-    _fname_prefix = 'sgd_oof'
-    _default_params = {'alpha': 0.0001, 'max_iter': 1, 'loss': 'log'}
+    _fname_prefix = "sgd_oof"
+    _default_params = {"alpha": 0.0001, "max_iter": 1, "loss": "log"}
 
     @property
     def features(self) -> List[str]:
@@ -351,8 +421,8 @@ class OneToOneTransformer(TunableTransformer):
         suggested_params = copy(self.default_params)
 
         self.task = dataset.task.name
-        if self.task != 'binary':
-            suggested_params['loss'] = 'squared_loss'
+        if self.task != "binary":
+            suggested_params["loss"] = "squared_loss"
 
             algo = SGDRegressor
         else:
@@ -362,7 +432,9 @@ class OneToOneTransformer(TunableTransformer):
 
         return suggested_params
 
-    def __init__(self, default_params: Optional[int] = None, freeze_defaults: bool = False):
+    def __init__(
+        self, default_params: Optional[int] = None, freeze_defaults: bool = False
+    ):
         super().__init__(default_params, freeze_defaults)
         """
 
@@ -422,7 +494,7 @@ class OneToOneTransformer(TunableTransformer):
         for n in range(n_folds):
             algo = self.algo(**self.params)
             algo.fit(data[folds != n], target[folds != n])
-            if self.task == 'binary':
+            if self.task == "binary":
                 pred = algo.predict_proba(data[folds == n])[:, 1]
             else:
                 pred = algo.predict(data[folds == n])
@@ -430,10 +502,10 @@ class OneToOneTransformer(TunableTransformer):
 
             self.models.append(deepcopy(algo))
 
-        orig_name = dataset.features[0].split('__')[-1]
-        self._features = [self._fname_prefix + '__' + orig_name]
+        orig_name = dataset.features[0].split("__")[-1]
+        self._features = [self._fname_prefix + "__" + orig_name]
         output = dataset.empty()
-        self.output_role = NumericRole(np.float32, prob=output.task.name == 'binary')
+        self.output_role = NumericRole(np.float32, prob=output.task.name == "binary")
         output.set_data(oof_feats[:, np.newaxis], self.features, self.output_role)
 
         return output
@@ -457,7 +529,7 @@ class OneToOneTransformer(TunableTransformer):
         # transform
         out = np.zeros(len(data), dtype=np.float32)
         for n, model in enumerate(self.models):
-            if self.task == 'binary':
+            if self.task == "binary":
                 pred = model.predict_proba(data)[:, 1]
             else:
                 pred = model.predict(data)
@@ -473,11 +545,12 @@ class OneToOneTransformer(TunableTransformer):
 
 class ConcatTextTransformer(LAMLTransformer):
     """Concat text features transformer."""
+
     _fit_checks = (text_check,)
     _transform_checks = ()
-    _fname_prefix = 'concated'
+    _fname_prefix = "concated"
 
-    def __init__(self, special_token: str = ' [SEP] '):
+    def __init__(self, special_token: str = " [SEP] "):
         """
 
         Args:
@@ -505,8 +578,13 @@ class ConcatTextTransformer(LAMLTransformer):
 
         # transform
         roles = TextRole()
-        new_df = pd.DataFrame(df[df.columns].fillna('').astype(str).apply(f'{self.special_token}'.join, axis=1),
-                              columns=[self._fname_prefix + '__' + '__'.join(df.columns)])
+        new_df = pd.DataFrame(
+            df[df.columns]
+            .fillna("")
+            .astype(str)
+            .apply(f"{self.special_token}".join, axis=1),
+            columns=[self._fname_prefix + "__" + "__".join(df.columns)],
+        )
         # create resulted
         output = dataset.empty().to_pandas()
         output.set_data(new_df, None, {feat: roles for feat in new_df.columns})
@@ -518,33 +596,34 @@ class AutoNLPWrap(LAMLTransformer):
 
     _fit_checks = (text_check,)
     _transform_checks = ()
-    _fname_prefix = 'emb'
-    fasttext_params = {'vector_size': 64, 'window': 3, 'min_count': 1}
-    _names = {'random_lstm', 'random_lstm_bert', 'pooled_bert', 'wat', 'borep'}
-    _trainable = {'wat', 'borep', 'random_lstm'}
+    _fname_prefix = "emb"
+    fasttext_params = {"vector_size": 64, "window": 3, "min_count": 1}
+    _names = {"random_lstm", "random_lstm_bert", "pooled_bert", "wat", "borep"}
+    _trainable = {"wat", "borep", "random_lstm"}
 
     @property
     def features(self) -> List[str]:
         """Features list."""
         return self._features
 
-    def __init__(self,
-                 model_name: str,
-                 embedding_model: Optional[str] = None,
-                 cache_dir: str = './cache_NLP',
-                 bert_model: Optional[str] = None,
-                 transformer_params: Optional[Dict] = None,
-                 subs: Optional[int] = None,
-                 multigpu: bool = False,
-                 random_state: int = 42,
-                 train_fasttext: bool = False,
-                 fasttext_params: Optional[Dict] = None,
-                 fasttext_epochs: int = 2,
-                 sent_scaler: Optional[str] = None,
-                 verbose: bool = False,
-                 device: Any = '0',
-                 **kwargs: Any
-                ):
+    def __init__(
+        self,
+        model_name: str,
+        embedding_model: Optional[str] = None,
+        cache_dir: str = "./cache_NLP",
+        bert_model: Optional[str] = None,
+        transformer_params: Optional[Dict] = None,
+        subs: Optional[int] = None,
+        multigpu: bool = False,
+        random_state: int = 42,
+        train_fasttext: bool = False,
+        fasttext_params: Optional[Dict] = None,
+        fasttext_epochs: int = 2,
+        sent_scaler: Optional[str] = None,
+        verbose: bool = False,
+        device: Any = "0",
+        **kwargs: Any,
+    ):
         """
 
         Args:
@@ -567,9 +646,11 @@ class AutoNLPWrap(LAMLTransformer):
 
         """
         if train_fasttext:
-            assert model_name in self._trainable, f'If train fasstext then model must be in {self._trainable}'
+            assert (
+                model_name in self._trainable
+            ), f"If train fasstext then model must be in {self._trainable}"
 
-        assert model_name in self._names, f'Model name must be one of {self._names}'
+        assert model_name in self._names, f"Model name must be one of {self._names}"
         self.device = device
         self.multigpu = multigpu
         self.cache_dir = cache_dir
@@ -594,36 +675,42 @@ class AutoNLPWrap(LAMLTransformer):
                     embedding_model = gensim.models.FastText.load(embedding_model)
                 except:
                     try:
-                        embedding_model = gensim.models.FastText.load_fasttext_format(embedding_model)
+                        embedding_model = gensim.models.FastText.load_fasttext_format(
+                            embedding_model
+                        )
                     except:
-                        embedding_model = gensim.models.KeyedVectors.load(embedding_model)
+                        embedding_model = gensim.models.KeyedVectors.load(
+                            embedding_model
+                        )
 
-            self.transformer_params = self._update_transformers_emb_model(self.transformer_params, embedding_model)
+            self.transformer_params = self._update_transformers_emb_model(
+                self.transformer_params, embedding_model
+            )
 
         else:
 
-            self.train_fasttext = (self.model_name in self._trainable)
-        
-        if self.model_name == 'wat':
+            self.train_fasttext = self.model_name in self._trainable
+
+        if self.model_name == "wat":
             self.transformer = WeightedAverageTransformer
         else:
             self.transformer = DLTransformer
 
     def _update_bert_model(self, bert_model: str):
         if bert_model is not None:
-            if 'dataset_params' in self.transformer_params:
-                self.transformer_params['dataset_params']['model_name'] = bert_model
-            if 'embedding_model_params' in self.transformer_params:
-                self.transformer_params['embedding_model_params']['model_name'] = bert_model
-            if 'model_params' in self.transformer_params:
-                self.transformer_params['model_params']['model_name'] = bert_model
+            if "dataset_params" in self.transformer_params:
+                self.transformer_params["dataset_params"]["model_name"] = bert_model
+            if "embedding_model_params" in self.transformer_params:
+                self.transformer_params["embedding_model_params"][
+                    "model_name"
+                ] = bert_model
+            if "model_params" in self.transformer_params:
+                self.transformer_params["model_params"]["model_name"] = bert_model
         return self
-    
-    def _update_transformers_emb_model(self,
-                                       params: Dict,
-                                       model: Any,
-                                       emb_size: Optional[int] = None
-                                      ) -> Dict[str, Any]:
+
+    def _update_transformers_emb_model(
+        self, params: Dict, model: Any, emb_size: Optional[int] = None
+    ) -> Dict[str, Any]:
         if emb_size is None:
             try:
                 # Gensim checker [1]
@@ -631,7 +718,7 @@ class AutoNLPWrap(LAMLTransformer):
             except:
                 try:
                     # Gensim checker[2]
-                    emb_size = model.vw.vector_size                    
+                    emb_size = model.vw.vector_size
                 except:
                     try:
                         # Natasha checker
@@ -641,19 +728,21 @@ class AutoNLPWrap(LAMLTransformer):
                             # Dict of embeddings checker
                             emb_size = next(iter(model.values())).shape[0]
                         except:
-                            raise ValueError('Unrecognized embedding dimention, please specify it in model_params')
+                            raise ValueError(
+                                "Unrecognized embedding dimention, please specify it in model_params"
+                            )
         try:
             model = model.wv
         except:
             pass
 
-        if self.model_name == 'wat':
-            params['embed_size'] = emb_size
-            params['embedding_model'] = model
-        elif self.model_name in {'random_lstm', 'borep'}:
-            params['dataset_params']['embedding_model'] = model
-            params['dataset_params']['embed_size'] = emb_size
-            params['model_params']['embed_size'] = emb_size
+        if self.model_name == "wat":
+            params["embed_size"] = emb_size
+            params["embedding_model"] = model
+        elif self.model_name in {"random_lstm", "borep"}:
+            params["dataset_params"]["embedding_model"] = model
+            params["dataset_params"]["embed_size"] = emb_size
+            params["model_params"]["embed_size"] = emb_size
 
         return params
 
@@ -687,22 +776,37 @@ class AutoNLPWrap(LAMLTransformer):
             transformer_params = deepcopy(self.transformer_params)
             if self.train_fasttext:
                 embedding_model = gensim.models.FastText(**self.fasttext_params)
-                common_texts = [i.split(' ') for i in subs[i].values]
+                common_texts = [i.split(" ") for i in subs[i].values]
                 embedding_model.build_vocab(corpus_iterable=common_texts)
-                embedding_model.train(corpus_iterable=common_texts,
-                                      total_examples=len(common_texts),
-                                      epochs=self.fasttext_epochs)
-                transformer_params = self._update_transformers_emb_model(transformer_params, embedding_model)
+                embedding_model.train(
+                    corpus_iterable=common_texts,
+                    total_examples=len(common_texts),
+                    epochs=self.fasttext_epochs,
+                )
+                transformer_params = self._update_transformers_emb_model(
+                    transformer_params, embedding_model
+                )
 
-            transformer = self.transformer(verbose=self.verbose, device=self.device, multigpu=self.multigpu, **transformer_params)
+            transformer = self.transformer(
+                verbose=self.verbose,
+                device=self.device,
+                multigpu=self.multigpu,
+                **transformer_params,
+            )
             emb_name = transformer.get_name()
             emb_size = transformer.get_out_shape()
 
-            feats = [self._fname_prefix + '_' + emb_name + '_' + str(x) + '__' + i for x in range(emb_size)]
+            feats = [
+                self._fname_prefix + "_" + emb_name + "_" + str(x) + "__" + i
+                for x in range(emb_size)
+            ]
 
-            self.dicts[i] = {'transformer': deepcopy(transformer.fit(subs[i])), 'feats': feats}
+            self.dicts[i] = {
+                "transformer": deepcopy(transformer.fit(subs[i])),
+                "feats": feats,
+            }
             names.extend(feats)
-            logger.info(f'Feature {i} fitted')
+            logger.info3(f"Feature {i} fitted")
 
             del transformer
             gc.collect()
@@ -732,42 +836,46 @@ class AutoNLPWrap(LAMLTransformer):
         outputs = []
         for n, i in enumerate(df.columns):
             if self.cache_dir is not None:
-                full_hash = get_textarr_hash(df[i]) + get_textarr_hash(self.dicts[i]['feats'])
-                fname = os.path.join(self.cache_dir, full_hash + '.pkl')
+                full_hash = get_textarr_hash(df[i]) + get_textarr_hash(
+                    self.dicts[i]["feats"]
+                )
+                fname = os.path.join(self.cache_dir, full_hash + ".pkl")
                 if os.path.exists(fname):
-                    logger.info(f'Load saved dataset for {i}')
-                    with open(fname, 'rb') as f:
+                    logger.info3(f"Load saved dataset for {i}")
+                    with open(fname, "rb") as f:
                         new_arr = pickle.load(f)
                 else:
-                    new_arr = self.dicts[i]['transformer'].transform(df[i])
-                    with open(fname, 'wb') as f:
+                    new_arr = self.dicts[i]["transformer"].transform(df[i])
+                    with open(fname, "wb") as f:
                         pickle.dump(new_arr, f)
             else:
-                new_arr = self.dicts[i]['transformer'].transform(df[i])
+                new_arr = self.dicts[i]["transformer"].transform(df[i])
 
             output = dataset.empty().to_numpy()
-            output.set_data(new_arr, self.dicts[i]['feats'], roles)
+            output.set_data(new_arr, self.dicts[i]["feats"], roles)
             outputs.append(output)
-            logger.info(f'Feature {i} transformed')
+            logger.info3(f"Feature {i} transformed")
         # create resulted
         dataset = dataset.empty().to_numpy().concat(outputs)
         # instance-wise sentence embedding normalization
-        dataset.data = dataset.data / self._sentence_norm(dataset.data, self.sent_scaler)
-        
+        dataset.data = dataset.data / self._sentence_norm(
+            dataset.data, self.sent_scaler
+        )
+
         return dataset
-    
+
     @staticmethod
-    def _sentence_norm(x: np.ndarray,
-                       mode: Optional[str] = None
-                      ) -> Union[np.ndarray, float]:
+    def _sentence_norm(
+        x: np.ndarray, mode: Optional[str] = None
+    ) -> Union[np.ndarray, float]:
         """Get sentence embedding norm."""
-        if mode == 'l2':
-            return ((x**2).sum(axis=1, keepdims=True))**.5
-        elif mode == 'l1':
+        if mode == "l2":
+            return ((x ** 2).sum(axis=1, keepdims=True)) ** 0.5
+        elif mode == "l1":
             return np.abs(x).sum(axis=1, keepdims=True)
         if mode is not None:
-            logger.warning(
-                'Unknown sentence scaler mode: sent_scaler={}, '
-                'no normalization will be used'.format(mode)
+            logger.info2(
+                "Unknown sentence scaler mode: sent_scaler={}, "
+                "no normalization will be used".format(mode)
             )
         return 1

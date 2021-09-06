@@ -1,11 +1,14 @@
 """Utils for new predict method in pytorch DataParallel."""
 
 import threading
+
 from itertools import chain
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 import torch
 import torch.nn as nn
+
 from torch._utils import ExceptionWrapper
 from torch.cuda._utils import _get_device_index
 
@@ -65,13 +68,16 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
         except Exception:
             with lock:
                 results[i] = ExceptionWrapper(
-                    where="in replica {} on device {}".format(i, device))
+                    where="in replica {} on device {}".format(i, device)
+                )
 
     if len(modules) > 1:
-        threads = [threading.Thread(target=_worker,
-                                    args=(i, module, input, kwargs, device))
-                   for i, (module, input, kwargs, device) in
-                   enumerate(zip(modules, inputs, kwargs_tup, devices))]
+        threads = [
+            threading.Thread(target=_worker, args=(i, module, input, kwargs, device))
+            for i, (module, input, kwargs, device) in enumerate(
+                zip(modules, inputs, kwargs_tup, devices)
+            )
+        ]
 
         for thread in threads:
             thread.start()
@@ -92,8 +98,13 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
 class CustomDataParallel(nn.DataParallel):
     """Extension for nn.DataParallel for supporting predict method of DL model."""
 
-    def __init__(self, module: nn.Module, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None,
-                 dim: Optional[int] = 0):
+    def __init__(
+        self,
+        module: nn.Module,
+        device_ids: Optional[List[int]] = None,
+        output_device: Optional[torch.device] = None,
+        dim: Optional[int] = 0,
+    ):
         super(CustomDataParallel, self).__init__(module, device_ids, output_device, dim)
         try:
             self.n_out = module.n_out
@@ -106,16 +117,20 @@ class CustomDataParallel(nn.DataParallel):
 
         for t in chain(self.module.parameters(), self.module.buffers()):
             if t.device != self.src_device_obj:
-                raise RuntimeError("module must have its parameters and buffers "
-                                   "on device {} (device_ids[0]) but found one of "
-                                   "them on device: {}".format(self.src_device_obj, t.device))
+                raise RuntimeError(
+                    "module must have its parameters and buffers "
+                    "on device {} (device_ids[0]) but found one of "
+                    "them on device: {}".format(self.src_device_obj, t.device)
+                )
 
         inputs, kwargs = self.scatter(inputs, kwargs, self.device_ids)
         if len(self.device_ids) == 1:
             return self.module.predict(*inputs[0], **kwargs[0])
-        replicas = self.replicate(self.module, self.device_ids[:len(inputs)])
+        replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
         outputs = self.parallel_apply_predict(replicas, inputs, kwargs)
         return self.gather(outputs, self.output_device)
 
     def parallel_apply_predict(self, replicas, inputs, kwargs):
-        return parallel_apply_predict(replicas, inputs, kwargs, self.device_ids[:len(replicas)])
+        return parallel_apply_predict(
+            replicas, inputs, kwargs, self.device_ids[: len(replicas)]
+        )

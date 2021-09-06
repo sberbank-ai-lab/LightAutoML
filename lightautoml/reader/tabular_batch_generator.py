@@ -2,12 +2,22 @@
 
 import os
 import warnings
+
 from copy import copy
-from typing import Optional, List, Tuple, Dict, Sequence, Union, Iterable, TypeVar
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+
+from joblib import Parallel
+from joblib import delayed
 from pandas import DataFrame
 from sqlalchemy import create_engine
 
@@ -23,7 +33,7 @@ def get_filelen(fname: str) -> int:
 
     """
     cnt_lines = -1
-    with open(fname, 'rb') as fin:
+    with open(fname, "rb") as fin:
         for line in fin:
             if len(line.strip()) > 0:
                 cnt_lines += 1
@@ -43,12 +53,13 @@ def get_batch_ids(arr, batch_size):
     """
     n = 0
     while n < len(arr):
-        yield arr[n: n + batch_size]
+        yield arr[n : n + batch_size]
         n += batch_size
 
 
-def get_file_offsets(file: str, n_jobs: Optional[int] = None, batch_size: Optional[int] = None
-                     ) -> Tuple[List[int], List[int]]:
+def get_file_offsets(
+    file: str, n_jobs: Optional[int] = None, batch_size: Optional[int] = None
+) -> Tuple[List[int], List[int]]:
     """
 
     Args:
@@ -60,10 +71,12 @@ def get_file_offsets(file: str, n_jobs: Optional[int] = None, batch_size: Option
         Offsets tuple.
 
     """
-    assert n_jobs is not None or batch_size is not None, 'One of n_jobs or batch size should be defined'
+    assert (
+        n_jobs is not None or batch_size is not None
+    ), "One of n_jobs or batch size should be defined"
 
     lens = []
-    with open(file, 'rb') as f:
+    with open(file, "rb") as f:
         # skip header
         header_len = len(f.readline())
         # get row lens
@@ -96,10 +109,13 @@ def _check_csv_params(**read_csv_params: dict):
         New parameters.
 
     """
-    for par in ['skiprows', 'nrows', 'index_col', 'header', 'names', 'chunksize']:
+    for par in ["skiprows", "nrows", "index_col", "header", "names", "chunksize"]:
         if par in read_csv_params:
             read_csv_params.pop(par)
-            warnings.warn('Parameter {0} will be ignored in parallel mode'.format(par), UserWarning)
+            warnings.warn(
+                "Parameter {0} will be ignored in parallel mode".format(par),
+                UserWarning,
+            )
 
     return read_csv_params
 
@@ -122,15 +138,23 @@ def read_csv_batch(file: str, offset, cnt, **read_csv_params):
         read_csv_params = {}
 
     try:
-        usecols = read_csv_params.pop('usecols')
+        usecols = read_csv_params.pop("usecols")
     except KeyError:
         usecols = None
 
     header = pd.read_csv(file, nrows=0, **read_csv_params).columns
 
-    with open(file, 'rb') as f:
+    with open(file, "rb") as f:
         f.seek(offset)
-        data = pd.read_csv(f, header=None, names=header, chunksize=None, nrows=cnt, usecols=usecols, **read_csv_params)
+        data = pd.read_csv(
+            f,
+            header=None,
+            names=header,
+            chunksize=None,
+            nrows=cnt,
+            usecols=usecols,
+            **read_csv_params
+        )
 
     return data
 
@@ -156,8 +180,10 @@ def read_csv(file: str, n_jobs: int = 1, **read_csv_params) -> DataFrame:
     offsets, cnts = get_file_offsets(file, n_jobs)
 
     with Parallel(n_jobs) as p:
-        res = p(delayed(read_csv_batch)(file, offset=offset, cnt=cnt, **read_csv_params)
-                for (offset, cnt) in zip(offsets, cnts))
+        res = p(
+            delayed(read_csv_batch)(file, offset=offset, cnt=cnt, **read_csv_params)
+            for (offset, cnt) in zip(offsets, cnts)
+        )
 
     res = pd.concat(res, ignore_index=True)
 
@@ -197,7 +223,9 @@ class FileBatch(Batch):
             Read data.
 
         """
-        data_part = read_csv_batch(self.file, cnt=self.cnt, offset=self.offset, **self.read_csv_params)
+        data_part = read_csv_batch(
+            self.file, cnt=self.cnt, offset=self.offset, **self.read_csv_params
+        )
 
         return data_part
 
@@ -247,14 +275,16 @@ class DfBatchGenerator(BatchGenerator):
     Batch generator from :class:`~pandas.DataFrame`.
     """
 
-    def __init__(self, data: DataFrame, n_jobs: int = 1, batch_size: Optional[int] = None):
+    def __init__(
+        self, data: DataFrame, n_jobs: int = 1, batch_size: Optional[int] = None
+    ):
         """
 
         Args:
             data: Data used for generator.
             n_jobs: Number of processes to handle.
             batch_size: Batch size. Default is ``None``, split by `n_jobs`.
-            
+
         """
         super().__init__(batch_size, n_jobs)
 
@@ -263,7 +293,11 @@ class DfBatchGenerator(BatchGenerator):
         if self.batch_size is not None:
             self.idxs = list(get_batch_ids(np.arange(data.shape[0]), batch_size))
         else:
-            self.idxs = [x for x in np.array_split(np.arange(data.shape[0]), n_jobs) if len(x) > 0]
+            self.idxs = [
+                x
+                for x in np.array_split(np.arange(data.shape[0]), n_jobs)
+                if len(x) > 0
+            ]
 
     def __len__(self) -> int:
 
@@ -281,7 +315,14 @@ class FileBatchGenerator(BatchGenerator):
     """
     Generator of batches from file.
     """
-    def __init__(self, file, n_jobs: int = 1, batch_size: Optional[int] = None, read_csv_params: dict = None):
+
+    def __init__(
+        self,
+        file,
+        n_jobs: int = 1,
+        batch_size: Optional[int] = None,
+        read_csv_params: dict = None,
+    ):
         """
 
         Args:
@@ -290,7 +331,7 @@ class FileBatchGenerator(BatchGenerator):
             batch_size: Batch size. Default is ``None``, split by `n_jobs`.
             read_csv_params: Params of reading csv file.
               Look for :func:`pandas.read_csv` params.
-            
+
         """
         super().__init__(batch_size, n_jobs)
 
@@ -306,11 +347,18 @@ class FileBatchGenerator(BatchGenerator):
         return len(self.cnts)
 
     def __getitem__(self, idx):
-        return FileBatch(self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params)
+        return FileBatch(
+            self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params
+        )
 
 
 class SqlDataSource:
-    def __init__(self, connection_string: str, query: str, index: Optional[Union[str, List[str]]] = None):
+    def __init__(
+        self,
+        connection_string: str,
+        query: str,
+        index: Optional[Union[str, List[str]]] = None,
+    ):
         """
 
         Data wrapper for SQL connection
@@ -354,8 +402,12 @@ class SqlDataSource:
 ReadableToDf = Union[str, np.ndarray, DataFrame, Dict[str, np.ndarray], Batch]
 
 
-def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
-              read_csv_params: Optional[dict] = None) -> Tuple[DataFrame, Optional[dict]]:
+def read_data(
+    data: ReadableToDf,
+    features_names: Optional[Sequence[str]] = None,
+    n_jobs: int = 1,
+    read_csv_params: Optional[dict] = None,
+) -> Tuple[DataFrame, Optional[dict]]:
     """Get :class:`~pandas.DataFrame` from different data formats.
 
     Note:
@@ -392,26 +444,28 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
 
     # case - dict of array args passed
     if isinstance(data, dict):
-        df = DataFrame(data['data'], columns=features_names)
+        df = DataFrame(data["data"], columns=features_names)
         upd_roles = {}
         for k in data:
-            if k != 'data':
-                name = '__{0}__'.format(k.upper())
-                assert name not in df.columns, 'Not supported feature name {0}'.format(name)
+            if k != "data":
+                name = "__{0}__".format(k.upper())
+                assert name not in df.columns, "Not supported feature name {0}".format(
+                    name
+                )
                 df[name] = data[k]
                 upd_roles[k] = name
         return df, upd_roles
 
     if isinstance(data, str):
-        if data.endswith('.feather'):
+        if data.endswith(".feather"):
             # TODO: check about feather columns arg
             data = pd.read_feather(data)
-            if read_csv_params['usecols'] is not None:
-                data = data[read_csv_params['usecols']]
+            if read_csv_params["usecols"] is not None:
+                data = data[read_csv_params["usecols"]]
             return data, None
 
-        if data.endswith('.parquet'):
-            return pd.read_parquet(data, columns=read_csv_params['usecols']), None
+        if data.endswith(".parquet"):
+            return pd.read_parquet(data, columns=read_csv_params["usecols"]), None
 
         else:
             return read_csv(data, n_jobs, **read_csv_params), None
@@ -419,11 +473,16 @@ def read_data(data: ReadableToDf, features_names: Optional[Sequence[str]] = None
     if isinstance(data, SqlDataSource):
         return data.data, None
 
-    raise ValueError('Input data format is not supported')
+    raise ValueError("Input data format is not supported")
 
 
-def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = None, n_jobs: int = 1,
-               batch_size: Optional[int] = None, read_csv_params: Optional[dict] = None) -> Iterable[BatchGenerator]:
+def read_batch(
+    data: ReadableToDf,
+    features_names: Optional[Sequence[str]] = None,
+    n_jobs: int = 1,
+    batch_size: Optional[int] = None,
+    read_csv_params: Optional[dict] = None,
+) -> Iterable[BatchGenerator]:
     """Read data for inference by batches for simple tabular data
 
     Note:
@@ -454,11 +513,17 @@ def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = Non
 
     # case - single array passed to inference
     if isinstance(data, np.ndarray):
-        return DfBatchGenerator(DataFrame(data, columns=features_names), n_jobs=n_jobs, batch_size=batch_size)
+        return DfBatchGenerator(
+            DataFrame(data, columns=features_names),
+            n_jobs=n_jobs,
+            batch_size=batch_size,
+        )
 
     if isinstance(data, str):
-        if not (data.endswith('.feather') or data.endswith('.parquet')):
-            return FileBatchGenerator(data, n_jobs, batch_size, read_csv_params)  # read_csv(data, n_jobs, **read_csv_params)
+        if not (data.endswith(".feather") or data.endswith(".parquet")):
+            return FileBatchGenerator(
+                data, n_jobs, batch_size, read_csv_params
+            )  # read_csv(data, n_jobs, **read_csv_params)
 
         else:
             data, _ = read_data(data, features_names, n_jobs, read_csv_params)
@@ -467,4 +532,4 @@ def read_batch(data: ReadableToDf, features_names: Optional[Sequence[str]] = Non
     if isinstance(data, SqlDataSource):
         return data.get_batch_generator(n_jobs, batch_size)
 
-    raise ValueError('Data type not supported')
+    raise ValueError("Data type not supported")

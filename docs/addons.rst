@@ -17,4 +17,3 @@ Utilization
     :template: classtemplate.rst
 
     ~utilization.TimeUtilization
-

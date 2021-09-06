@@ -1,3 +1,3 @@
 """Common util tools."""
 
-__all__ = ['timer']
+__all__ = ["timer"]

@@ -1,19 +1,29 @@
 """Linear models for tabular datasets."""
 
-from copy import copy, deepcopy
-from typing import Tuple, Union, Sequence
+import logging
+
+from copy import copy
+from copy import deepcopy
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression, ElasticNet, Lasso
 
-from .base import TabularMLAlgo, TabularDataset
-from .torch_based.linear_model import TorchBasedLinearEstimator, TorchBasedLinearRegression, \
-    TorchBasedLogisticRegression
+from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import LogisticRegression
+
 from ..dataset.np_pd_dataset import PandasDataset
-from ..utils.logging import get_logger
 from ..validation.base import TrainValidIterator
+from .base import TabularDataset
+from .base import TabularMLAlgo
+from .torch_based.linear_model import TorchBasedLinearEstimator
+from .torch_based.linear_model import TorchBasedLinearRegression
+from .torch_based.linear_model import TorchBasedLogisticRegression
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 
@@ -37,29 +47,49 @@ class LinearLBFGS(TabularMLAlgo):
     timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
-    _name: str = 'LinearL2'
+
+    _name: str = "LinearL2"
 
     _default_params = {
-
-        'tol': 1e-6,
-        'max_iter': 100,
-        'cs': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1, 5, 10,
-               50, 100, 500, 1000, 5000, 10000, 50000, 100000],
-        'early_stopping': 2
-
+        "tol": 1e-6,
+        "max_iter": 100,
+        "cs": [
+            1e-5,
+            5e-5,
+            1e-4,
+            5e-4,
+            1e-3,
+            5e-3,
+            1e-2,
+            5e-2,
+            1e-1,
+            5e-1,
+            1,
+            5,
+            10,
+            50,
+            100,
+            500,
+            1000,
+            5000,
+            10000,
+            50000,
+            100000,
+        ],
+        "early_stopping": 2,
     }
 
     def _infer_params(self) -> TorchBasedLinearEstimator:
 
         params = copy(self.params)
-        params['loss'] = self.task.losses['torch'].loss
-        params['metric'] = self.task.losses['torch'].metric_func
-        if self.task.name in ['binary', 'multiclass']:
+        params["loss"] = self.task.losses["torch"].loss
+        params["metric"] = self.task.losses["torch"].metric_func
+        if self.task.name in ["binary", "multiclass"]:
             model = TorchBasedLogisticRegression(output_size=self.n_classes, **params)
-        elif self.task.name == 'reg':
+        elif self.task.name == "reg":
             model = TorchBasedLinearRegression(output_size=1, **params)
         else:
-            raise ValueError('Task not supported')
+            raise ValueError("Task not supported")
 
         return model
 
@@ -67,18 +97,28 @@ class LinearLBFGS(TabularMLAlgo):
 
         suggested_params = copy(self.default_params)
         train = train_valid_iterator.train
-        suggested_params['categorical_idx'] = [n for (n, x) in enumerate(train.features) if train.roles[x].name == 'Category']
+        suggested_params["categorical_idx"] = [
+            n
+            for (n, x) in enumerate(train.features)
+            if train.roles[x].name == "Category"
+        ]
 
-        suggested_params['embed_sizes'] = ()
-        if len(suggested_params['categorical_idx']) > 0:
-            suggested_params['embed_sizes'] = train.data[:, suggested_params['categorical_idx']].max(axis=0).astype(np.int32) + 1
+        suggested_params["embed_sizes"] = ()
+        if len(suggested_params["categorical_idx"]) > 0:
+            suggested_params["embed_sizes"] = (
+                train.data[:, suggested_params["categorical_idx"]]
+                .max(axis=0)
+                .astype(np.int32)
+                + 1
+            )
 
-        suggested_params['data_size'] = train.shape[1]
+        suggested_params["data_size"] = train.shape[1]
 
         return suggested_params
 
-    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset
-                                ) -> Tuple[TorchBasedLinearEstimator, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: TabularDataset, valid: TabularDataset
+    ) -> Tuple[TorchBasedLinearEstimator, np.ndarray]:
         """Train on train dataset and predict on holdout dataset.
 
         Args:
@@ -95,13 +135,22 @@ class LinearLBFGS(TabularMLAlgo):
 
         model = self._infer_params()
 
-        model.fit(train.data, train.target, train.weights, valid.data, valid.target, valid.weights)
+        model.fit(
+            train.data,
+            train.target,
+            train.weights,
+            valid.data,
+            valid.target,
+            valid.weights,
+        )
 
         val_pred = model.predict(valid.data)
 
         return model, val_pred
 
-    def predict_single_fold(self, model: TorchBasedLinearEstimator, dataset: TabularDataset) -> np.ndarray:
+    def predict_single_fold(
+        self, model: TorchBasedLinearEstimator, dataset: TabularDataset
+    ) -> np.ndarray:
         """Implements prediction on single fold.
 
         Args:
@@ -119,42 +168,45 @@ class LinearLBFGS(TabularMLAlgo):
 
 class LinearL1CD(TabularMLAlgo):
     """Coordinate descent based on sklearn implementation."""
-    _name: str = 'LinearElasticNet'
+
+    _name: str = "LinearElasticNet"
 
     _default_params = {
-
-        'tol': 1e-3,
-        'max_iter': 100,
-        'cs': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000, 10000, 100000, 1000000],
-        'early_stopping': 2,
-        'l1_ratios': (1,),
-        'solver': 'saga'
-
+        "tol": 1e-3,
+        "max_iter": 100,
+        "cs": [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000, 10000, 100000, 1000000],
+        "early_stopping": 2,
+        "l1_ratios": (1,),
+        "solver": "saga",
     }
 
-    def _infer_params(self) -> Tuple[LinearEstimator, Sequence[float], Sequence[float], int]:
+    def _infer_params(
+        self,
+    ) -> Tuple[LinearEstimator, Sequence[float], Sequence[float], int]:
 
         params = copy(self.params)
-        l1_ratios = params.pop('l1_ratios')
-        early_stopping = params.pop('early_stopping')
-        cs = params.pop('cs')
+        l1_ratios = params.pop("l1_ratios")
+        early_stopping = params.pop("early_stopping")
+        cs = params.pop("cs")
 
-        if self.task.name in ['binary', 'multiclass']:
+        if self.task.name in ["binary", "multiclass"]:
 
             if l1_ratios == (1,):
-                model = LogisticRegression(warm_start=True, penalty='l1', **params)
+                model = LogisticRegression(warm_start=True, penalty="l1", **params)
             else:
-                model = LogisticRegression(warm_start=True, penalty='elasticnet', **params)
+                model = LogisticRegression(
+                    warm_start=True, penalty="elasticnet", **params
+                )
 
-        elif self.task.name == 'reg':
-            params.pop('solver')
+        elif self.task.name == "reg":
+            params.pop("solver")
             if l1_ratios == (1,):
                 model = Lasso(warm_start=True, **params)
             else:
                 model = ElasticNet(warm_start=True, **params)
 
         else:
-            raise AttributeError('Task not supported')
+            raise AttributeError("Task not supported")
 
         return model, cs, l1_ratios, early_stopping
 
@@ -172,31 +224,33 @@ class LinearL1CD(TabularMLAlgo):
         suggested_params = copy(self.default_params)
         task = train_valid_iterator.train.task
 
-        assert 'sklearn' in task.losses, 'Sklearn loss should be defined'
+        assert "sklearn" in task.losses, "Sklearn loss should be defined"
 
-        if task.name == 'reg':
+        if task.name == "reg":
             # suggested_params['cs'] = list(map(lambda x: 1 / (2 * x), suggested_params['cs']))
-            suggested_params['cs'] = [1 / (2 * i) for i in suggested_params['cs']]
+            suggested_params["cs"] = [1 / (2 * i) for i in suggested_params["cs"]]
 
         return suggested_params
 
     def _predict_w_model_type(self, model, data):
 
-        if self.task.name == 'binary':
+        if self.task.name == "binary":
             pred = model.predict_proba(data)[:, 1]
 
-        elif self.task.name == 'reg':
+        elif self.task.name == "reg":
             pred = model.predict(data)
 
-        elif self.task.name == 'multiclass':
+        elif self.task.name == "multiclass":
             pred = model.predict_proba(data)
 
         else:
-            raise ValueError('Task not suppoted')
+            raise ValueError("Task not suppoted")
 
         return pred
 
-    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[LinearEstimator, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: TabularDataset, valid: TabularDataset
+    ) -> Tuple[LinearEstimator, np.ndarray]:
         """Train on train dataset and predict on holdout dataset.
 
         Args:
@@ -213,8 +267,12 @@ class LinearL1CD(TabularMLAlgo):
 
         _model, cs, l1_ratios, early_stopping = self._infer_params()
 
-        train_target, train_weight = self.task.losses['sklearn'].fw_func(train.target, train.weights)
-        valid_target, valid_weight = self.task.losses['sklearn'].fw_func(valid.target, valid.weights)
+        train_target, train_weight = self.task.losses["sklearn"].fw_func(
+            train.target, train.weights
+        )
+        valid_target, valid_weight = self.task.losses["sklearn"].fw_func(
+            valid.target, valid.weights
+        )
 
         model = deepcopy(_model)
 
@@ -222,12 +280,12 @@ class LinearL1CD(TabularMLAlgo):
         best_pred = None
         best_model = None
 
-        metric = self.task.losses['sklearn'].metric_func
+        metric = self.task.losses["sklearn"].metric_func
 
         for l1_ratio in sorted(l1_ratios, reverse=True):
 
             try:
-                model.set_params(**{'l1_ratio': l1_ratio})
+                model.set_params(**{"l1_ratio": l1_ratio})
             except ValueError:
                 pass
 
@@ -241,23 +299,28 @@ class LinearL1CD(TabularMLAlgo):
             for n, c in enumerate(cs):
 
                 try:
-                    model.set_params(**{'C': c})
+                    model.set_params(**{"C": c})
                 except ValueError:
-                    model.set_params(**{'alpha': c})
+                    model.set_params(**{"alpha": c})
 
                 model.fit(train.data, train_target, train_weight)
 
                 if np.allclose(model.coef_, 0):
                     if n == (len(cs) - 1):
-                        logger.warning('All model coefs are 0. Model with l1_ratio {0} is dummy'.format(l1_ratio), UserWarning)
+                        logger.info2(
+                            "All model coefs are 0. Model with l1_ratio {0} is dummy".format(
+                                l1_ratio
+                            ),
+                            UserWarning,
+                        )
                     else:
-                        logger.debug('C = {0} all model coefs are 0'.format(c))
+                        logger.debug("C = {0} all model coefs are 0".format(c))
                         continue
 
                 pred = self._predict_w_model_type(model, valid.data)
                 score = metric(valid_target, pred, valid_weight)
 
-                logger.debug('C = {0}, l1_ratio = {1}, score = {2}'.format(c, 1, score))
+                logger.debug("C = {0}, l1_ratio = {1}, score = {2}".format(c, 1, score))
 
                 # TODO: check about greater and equal
                 if score >= c_best_score:
@@ -269,16 +332,16 @@ class LinearL1CD(TabularMLAlgo):
                     es += 1
 
                 if es >= early_stopping:
-                    logger.debug('Early stopping..')
+                    logger.debug("Early stopping..")
                     break
 
                 if self.timer.time_limit_exceeded():
-                    logger.info('Time limit exceeded')
+                    logger.info3("Time limit exceeded")
                     break
 
                 # TODO: Think about is it ok to check time inside train loop?
                 if (model.coef_ != 0).all():
-                    logger.debug('All coefs are nonzero')
+                    logger.debug("All coefs are nonzero")
                     break
 
             if c_best_score >= best_score:
@@ -287,14 +350,16 @@ class LinearL1CD(TabularMLAlgo):
                 best_model = deepcopy(c_best_model)
 
             if self.timer.time_limit_exceeded():
-                logger.info('Time limit exceeded')
+                logger.info3("Time limit exceeded")
                 break
 
-        val_pred = self.task.losses['sklearn'].bw_func(best_pred)
+        val_pred = self.task.losses["sklearn"].bw_func(best_pred)
 
         return best_model, val_pred
 
-    def predict_single_fold(self, model: LinearEstimator, dataset: TabularDataset) -> np.ndarray:
+    def predict_single_fold(
+        self, model: LinearEstimator, dataset: TabularDataset
+    ) -> np.ndarray:
         """Implements prediction on single fold.
 
         Args:
@@ -305,6 +370,8 @@ class LinearL1CD(TabularMLAlgo):
             Predictions for input dataset.
 
         """
-        pred = self.task.losses['sklearn'].bw_func(self._predict_w_model_type(model, dataset.data))
+        pred = self.task.losses["sklearn"].bw_func(
+            self._predict_w_model_type(model, dataset.data)
+        )
 
         return pred

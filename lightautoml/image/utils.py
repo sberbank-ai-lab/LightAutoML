@@ -13,6 +13,6 @@ def pil_loader(path: str) -> Image:
         Loaded PIL Image in rgb.
 
     """
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        return img.convert("RGB")

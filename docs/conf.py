@@ -6,98 +6,118 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
 import sys
-import datetime
 
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir)
 sys.path.insert(0, LIB_PATH)
 
-project = 'LightAutoML'
-copyright = '%s, Sber AI Lab' % str(datetime.datetime.now().year)
-author = 'Sber AI Lab'
+project = "LightAutoML"
+copyright = "%s, Sber AI Lab" % str(datetime.datetime.now().year)
+author = "Sber AI Lab"
 
-os.environ['DOCUMENTATION_ENV'] = 'True'
+os.environ["DOCUMENTATION_ENV"] = "True"
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',  # will be used for tables
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',  # structure
-    'sphinx.ext.viewcode',  # for [source] button
-
-    'nbsphinx',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",  # will be used for tables
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",  # structure
+    "sphinx.ext.viewcode",  # for [source] button
+    "nbsphinx",
     # 'nbsphinx_link',
-    'sphinx_autodoc_typehints'
+    "sphinx_autodoc_typehints",
 ]
 
 exclude_patterns = [
-    '_build/*',
+    "_build/*",
 ]
 
 # Delete external references
-autosummary_mock_imports = ['numpy', 'pandas', 'catboost',
-                            'scipy', 'sklearn', 'torch',
-                            'lightgbm', 'networkx', 'holidays',
-                            'joblib', 'yaml', 'gensim',
-                            'optuna', 'PIL', 'cv2', 'albumentations',
-                            'efficientnet_pytorch', 'tqdm',
-                            'nltk', 'transformers', 'autowoe',
-                            'matplotlib', 'seaborn', 'json2html',
-                            'sqlalchemy'
-                            ]
+autosummary_mock_imports = [
+    "numpy",
+    "pandas",
+    "catboost",
+    "scipy",
+    "sklearn",
+    "torch",
+    "lightgbm",
+    "networkx",
+    "holidays",
+    "joblib",
+    "yaml",
+    "gensim",
+    "optuna",
+    "PIL",
+    "cv2",
+    "albumentations",
+    "efficientnet_pytorch",
+    "tqdm",
+    "nltk",
+    "transformers",
+    "autowoe",
+    "matplotlib",
+    "seaborn",
+    "json2html",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # code style
-pygments_style = 'default'
+pygments_style = "default"
 
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
 
 # autodoc
 # function names that will not be included in documentation
-EXCLUDED_MEMBERS = ','.join(['get_own_record_history_wrapper',
-                             'get_record_history_wrapper',
-                             'record_history_omit',
-                             'record_history_only'])
+EXCLUDED_MEMBERS = ",".join(
+    [
+        "get_own_record_history_wrapper",
+        "get_record_history_wrapper",
+        "record_history_omit",
+        "record_history_only",
+    ]
+)
 
 autodoc_default_options = {
-    'ignore-module-all': True,
-    'show-inheritance': True,
-    'exclude-members': EXCLUDED_MEMBERS
+    "ignore-module-all": True,
+    "show-inheritance": True,
+    "exclude-members": EXCLUDED_MEMBERS,
 }
 
 # order of members in docs, usefully for methods in class
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # typing, use in signature
-autodoc_typehints = 'none'
+autodoc_typehints = "none"
 
 # to omit some __init__ methods in classes where it not defined
-autoclass_content = 'class'
+autoclass_content = "class"
 
 # all warnings will be produced as errors
 autodoc_warningiserror = True
@@ -134,18 +154,18 @@ set_type_checking_flag = True
 always_document_param_types = False
 
 intersphinx_mapping = {
-    'python':  ('https://docs.python.org/3', None),
-    'numpy':   ('https://numpy.org/doc/stable', None),
-    'torch':   ('https://pytorch.org/docs/stable/', None),
-    'scipy':   ('https://docs.scipy.org/doc/scipy/reference/', None),
-    'pandas':  ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'sklearn': ('https://scikit-learn.org/stable/', None),
-    'PIL':     ('https://pillow.readthedocs.io/en/stable/', None)
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
+    "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
 }
 
 autodoc_type_aliases = {
-    'RoleType': 'lightautoml.dataset.roles.ColumnRole',
-    'NpDataset': 'lightautoml.text.utils.NpDataset',
+    "RoleType": "lightautoml.dataset.roles.ColumnRole",
+    "NpDataset": "lightautoml.text.utils.NpDataset",
 }
 
 
@@ -156,5 +176,5 @@ def skip_member(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    app.add_css_file('style.css')  # customizing default theme
-    app.connect('autodoc-skip-member', skip_member)
+    app.add_css_file("style.css")  # customizing default theme
+    app.connect("autodoc-skip-member", skip_member)

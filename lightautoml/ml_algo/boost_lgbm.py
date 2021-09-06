@@ -1,21 +1,31 @@
 """Wrapped LightGBM for tabular datasets."""
 
 import logging
+
+from contextlib import redirect_stdout
 from copy import copy
-from typing import Optional, Callable, Tuple, Dict
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Tuple
 
 import lightgbm as lgb
 import numpy as np
-from optuna.trial import Trial
+
 from pandas import Series
 
-from .base import TabularMLAlgo, TabularDataset
-from .tuning.optuna import OptunaTunableMixin
 from ..pipelines.selection.base import ImportanceEstimator
-from ..utils.logging import get_logger
+from ..utils.logging import LoggerStream
 from ..validation.base import TrainValidIterator
+from .base import TabularDataset
+from .base import TabularMLAlgo
+from .tuning.base import Distribution
+from .tuning.base import SearchSpace
+from .tuning.optuna import OptunaTunableMixin
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
+logger_stream = LoggerStream(logger.debug)
 
 
 class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
@@ -33,30 +43,33 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
-    _name: str = 'LightGBM'
+
+    _name: str = "LightGBM"
 
     _default_params = {
-        'task': 'train',
+        "task": "train",
         "learning_rate": 0.05,
         "num_leaves": 128,
         "feature_fraction": 0.7,
         "bagging_fraction": 0.7,
-        'bagging_freq': 1,
+        "bagging_freq": 1,
         "max_depth": -1,
         "verbosity": -1,
         "reg_alpha": 1,
         "reg_lambda": 0.0,
         "min_split_gain": 0.0,
-        'zero_as_missing': False,
-        'num_threads': 4,
-        'max_bin': 255,
-        'min_data_in_bin': 3,
-        'num_trees': 3000,
-        'early_stopping_rounds': 100,
-        'random_state': 42
+        "zero_as_missing": False,
+        "num_threads": 4,
+        "max_bin": 255,
+        "min_data_in_bin": 3,
+        "num_trees": 3000,
+        "early_stopping_rounds": 100,
+        "random_state": 42,
     }
 
-    def _infer_params(self) -> Tuple[dict, int, int, int, Optional[Callable], Optional[Callable]]:
+    def _infer_params(
+        self,
+    ) -> Tuple[dict, int, int, int, Optional[Callable], Optional[Callable]]:
         """Infer all parameters in lightgbm format.
 
         Returns:
@@ -66,29 +79,21 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         """
         # TODO: Check how it works with custom tasks
         params = copy(self.params)
-        early_stopping_rounds = params.pop('early_stopping_rounds')
-        num_trees = params.pop('num_trees')
+        early_stopping_rounds = params.pop("early_stopping_rounds")
+        num_trees = params.pop("num_trees")
 
-        root_logger = logging.getLogger()
-        level = root_logger.getEffectiveLevel()
-
-        if level in (logging.CRITICAL, logging.ERROR, logging.WARNING):
-            verbose_eval = False
-        elif level == logging.INFO:
-            verbose_eval = 100
-        else:
-            verbose_eval = 10
+        verbose_eval = True
 
         # get objective params
-        loss = self.task.losses['lgb']
-        params['objective'] = loss.fobj_name
+        loss = self.task.losses["lgb"]
+        params["objective"] = loss.fobj_name
         fobj = loss.fobj
 
         # get metric params
-        params['metric'] = loss.metric_name
+        params["metric"] = loss.metric_name
         feval = loss.feval
 
-        params['num_class'] = self.n_classes
+        params["num_class"] = self.n_classes
         # add loss and tasks params if defined
         params = {**params, **loss.fobj_params, **loss.metric_params}
 
@@ -117,12 +122,12 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             # if user change defaults manually - keep it
             return suggested_params
 
-        if task == 'reg':
+        if task == "reg":
             suggested_params = {
                 "learning_rate": 0.05,
                 "num_leaves": 32,
                 "feature_fraction": 0.9,
-                "bagging_fraction": 0.9
+                "bagging_fraction": 0.9,
             }
 
         if rows_num <= 10000:
@@ -149,32 +154,34 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             es = 100
 
         if rows_num > 300000:
-            suggested_params['num_leaves'] = 128 if task == 'reg' else 244
+            suggested_params["num_leaves"] = 128 if task == "reg" else 244
         elif rows_num > 100000:
-            suggested_params['num_leaves'] = 64 if task == 'reg' else 128
+            suggested_params["num_leaves"] = 64 if task == "reg" else 128
         elif rows_num > 50000:
-            suggested_params['num_leaves'] = 32 if task == 'reg' else 64
+            suggested_params["num_leaves"] = 32 if task == "reg" else 64
             # params['reg_alpha'] = 1 if task == 'reg' else 0.5
         elif rows_num > 20000:
-            suggested_params['num_leaves'] = 32 if task == 'reg' else 32
-            suggested_params['reg_alpha'] = 0.5 if task == 'reg' else 0.0
+            suggested_params["num_leaves"] = 32 if task == "reg" else 32
+            suggested_params["reg_alpha"] = 0.5 if task == "reg" else 0.0
         elif rows_num > 10000:
-            suggested_params['num_leaves'] = 32 if task == 'reg' else 64
-            suggested_params['reg_alpha'] = 0.5 if task == 'reg' else 0.2
+            suggested_params["num_leaves"] = 32 if task == "reg" else 64
+            suggested_params["reg_alpha"] = 0.5 if task == "reg" else 0.2
         elif rows_num > 5000:
-            suggested_params['num_leaves'] = 24 if task == 'reg' else 32
-            suggested_params['reg_alpha'] = 0.5 if task == 'reg' else 0.5
+            suggested_params["num_leaves"] = 24 if task == "reg" else 32
+            suggested_params["reg_alpha"] = 0.5 if task == "reg" else 0.5
         else:
-            suggested_params['num_leaves'] = 16 if task == 'reg' else 16
-            suggested_params['reg_alpha'] = 1 if task == 'reg' else 1
+            suggested_params["num_leaves"] = 16 if task == "reg" else 16
+            suggested_params["reg_alpha"] = 1 if task == "reg" else 1
 
-        suggested_params['learning_rate'] = init_lr
-        suggested_params['num_trees'] = ntrees
-        suggested_params['early_stopping_rounds'] = es
+        suggested_params["learning_rate"] = init_lr
+        suggested_params["num_trees"] = ntrees
+        suggested_params["early_stopping_rounds"] = es
 
         return suggested_params
 
-    def sample_params_values(self, trial: Trial, suggested_params: Dict, estimated_n_trials: int) -> Dict:
+    def _get_search_spaces(
+        self, suggested_params: Dict, estimated_n_trials: int
+    ) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -186,51 +193,50 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             dict with sampled hyperparameters.
 
         """
-        logger.debug('Suggested parameters:')
-        logger.debug(suggested_params)
+        optimization_search_space = {}
 
-        trial_values = copy(suggested_params)
-
-        trial_values['feature_fraction'] = trial.suggest_uniform(
-            name='feature_fraction',
+        optimization_search_space["feature_fraction"] = SearchSpace(
+            Distribution.UNIFORM,
             low=0.5,
             high=1.0,
         )
 
-        trial_values['num_leaves'] = trial.suggest_int(
-            name='num_leaves',
+        optimization_search_space["num_leaves"] = SearchSpace(
+            Distribution.INTUNIFORM,
             low=16,
             high=255,
         )
 
         if estimated_n_trials > 30:
-            trial_values['bagging_fraction'] = trial.suggest_uniform(
-                name='bagging_fraction',
+            optimization_search_space["bagging_fraction"] = SearchSpace(
+                Distribution.UNIFORM,
                 low=0.5,
                 high=1.0,
             )
 
-            trial_values['min_sum_hessian_in_leaf'] = trial.suggest_loguniform(
-                name='min_sum_hessian_in_leaf',
+            optimization_search_space["min_sum_hessian_in_leaf"] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-3,
                 high=10.0,
             )
 
         if estimated_n_trials > 100:
-            trial_values['reg_alpha'] = trial.suggest_loguniform(
-                name='reg_alpha',
+            optimization_search_space["reg_alpha"] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
             )
-            trial_values['reg_lambda'] = trial.suggest_loguniform(
-                name='reg_lambda',
+            optimization_search_space["reg_lambda"] = SearchSpace(
+                Distribution.LOGUNIFORM,
                 low=1e-8,
                 high=10.0,
             )
 
-        return trial_values
+        return optimization_search_space
 
-    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[lgb.Booster, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: TabularDataset, valid: TabularDataset
+    ) -> Tuple[lgb.Booster, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -242,23 +248,46 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         """
 
-        params, num_trees, early_stopping_rounds, verbose_eval, fobj, feval = self._infer_params()
+        (
+            params,
+            num_trees,
+            early_stopping_rounds,
+            verbose_eval,
+            fobj,
+            feval,
+        ) = self._infer_params()
 
-        train_target, train_weight = self.task.losses['lgb'].fw_func(train.target, train.weights)
-        valid_target, valid_weight = self.task.losses['lgb'].fw_func(valid.target, valid.weights)
+        train_target, train_weight = self.task.losses["lgb"].fw_func(
+            train.target, train.weights
+        )
+        valid_target, valid_weight = self.task.losses["lgb"].fw_func(
+            valid.target, valid.weights
+        )
 
         lgb_train = lgb.Dataset(train.data, label=train_target, weight=train_weight)
         lgb_valid = lgb.Dataset(valid.data, label=valid_target, weight=valid_weight)
 
-        model = lgb.train(params, lgb_train, num_boost_round=num_trees, valid_sets=[lgb_valid], valid_names=['valid'],
-                          fobj=fobj, feval=feval, early_stopping_rounds=early_stopping_rounds, verbose_eval=verbose_eval
-                          )
+        with redirect_stdout(logger_stream):
+            model = lgb.train(
+                params,
+                lgb_train,
+                num_boost_round=num_trees,
+                valid_sets=[lgb_valid],
+                valid_names=["valid"],
+                fobj=fobj,
+                feval=feval,
+                early_stopping_rounds=early_stopping_rounds,
+                verbose_eval=verbose_eval,
+            )
+
         val_pred = model.predict(valid.data)
-        val_pred = self.task.losses['lgb'].bw_func(val_pred)
+        val_pred = self.task.losses["lgb"].bw_func(val_pred)
 
         return model, val_pred
 
-    def predict_single_fold(self, model: lgb.Booster, dataset: TabularDataset) -> np.ndarray:
+    def predict_single_fold(
+        self, model: lgb.Booster, dataset: TabularDataset
+    ) -> np.ndarray:
         """Predict target values for dataset.
 
         Args:
@@ -269,7 +298,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             Predicted target values.
 
         """
-        pred = self.task.losses['lgb'].bw_func(model.predict(dataset.data))
+        pred = self.task.losses["lgb"].bw_func(model.predict(dataset.data))
 
         return pred
 
@@ -283,7 +312,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         imp = 0
         for model in self.models:
-            imp = imp + model.feature_importance(importance_type='gain')
+            imp = imp + model.feature_importance(importance_type="gain")
 
         imp = imp / len(self.models)
 

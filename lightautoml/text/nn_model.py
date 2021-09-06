@@ -1,23 +1,33 @@
 """Neural Net modules for differen data types."""
 
 
-from typing import Dict, Optional, Callable
+from typing import Callable
+from typing import Dict
+from typing import Optional
 from typing import Sequence
 
 import numpy as np
 import torch
 import torch.nn as nn
+
 from transformers import AutoModel
 
-from .dl_transformers import pooling_by_name
 from ..tasks.base import Task
+from .dl_transformers import pooling_by_name
 
 
 class UniversalDataset:
     """Dataset class for mixed data."""
 
-    def __init__(self, data: Dict[str, np.ndarray], y: np.ndarray, w: Optional[np.ndarray] = None, tokenizer: Optional = None,
-                 max_length: int = 256, stage: str = 'test'):
+    def __init__(
+        self,
+        data: Dict[str, np.ndarray],
+        y: np.ndarray,
+        w: Optional[np.ndarray] = None,
+        tokenizer: Optional = None,
+        max_length: int = 256,
+        stage: str = "test",
+    ):
         """Class for preparing input for DL model with mixed data.
 
         Args:
@@ -40,18 +50,25 @@ class UniversalDataset:
         return len(self.y)
 
     def __getitem__(self, index: int) -> Dict[str, np.ndarray]:
-        res = {'label': self.y[index]}
-        res.update({key: value[index] for key, value in self.data.items() if key != 'text'})
-        if (self.tokenizer is not None) and ('text' in self.data):
-            sent = self.data['text'][index, 0]  # only one column
-            _split = sent.split('[SEP]')
+        res = {"label": self.y[index]}
+        res.update(
+            {key: value[index] for key, value in self.data.items() if key != "text"}
+        )
+        if (self.tokenizer is not None) and ("text" in self.data):
+            sent = self.data["text"][index, 0]  # only one column
+            _split = sent.split("[SEP]")
             sent = _split if len(_split) == 2 else (sent,)
-            data = self.tokenizer.encode_plus(*sent, add_special_tokens=True, max_length=self.max_length,
-                                              padding='max_length', truncation=True)
+            data = self.tokenizer.encode_plus(
+                *sent,
+                add_special_tokens=True,
+                max_length=self.max_length,
+                padding="max_length",
+                truncation=True
+            )
 
             res.update({i: np.array(data[i]) for i in data.keys()})
         if self.w is not None:
-            res['weight'] = self.w[index]
+            res["weight"] = self.w[index]
 
         return res
 
@@ -82,7 +99,7 @@ class TextBert(nn.Module):
 
     _poolers = {"cls", "max", "mean", "sum", "none"}
 
-    def __init__(self, model_name: str = 'bert-base-uncased', pooling: str = 'cls'):
+    def __init__(self, model_name: str = "bert-base-uncased", pooling: str = "cls"):
         """Class for working with text data based on HuggingFace transformers.
 
         Args:
@@ -105,7 +122,11 @@ class TextBert(nn.Module):
         """
         super(TextBert, self).__init__()
         if pooling not in self._poolers:
-            raise ValueError("pooling - {} - not in the list of available types {}".format(pooling, self._poolers))
+            raise ValueError(
+                "pooling - {} - not in the list of available types {}".format(
+                    pooling, self._poolers
+                )
+            )
 
         self.transformer = AutoModel.from_pretrained(model_name)
         self.n_out = self.transformer.config.hidden_size
@@ -124,12 +145,17 @@ class TextBert(nn.Module):
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         # last hidden layer
-        encoded_layers, _ = self.transformer(input_ids=inp['input_ids'],
-                                             attention_mask=inp['attention_mask'],
-                                             token_type_ids=inp.get('token_type_ids'), return_dict=False)
+        encoded_layers, _ = self.transformer(
+            input_ids=inp["input_ids"],
+            attention_mask=inp["attention_mask"],
+            token_type_ids=inp.get("token_type_ids"),
+            return_dict=False,
+        )
 
         # pool the outputs into a vector
-        encoded_layers = self.pooling(encoded_layers, inp['attention_mask'].unsqueeze(-1).bool())
+        encoded_layers = self.pooling(
+            encoded_layers, inp["attention_mask"].unsqueeze(-1).bool()
+        )
         mean_last_hidden_state = self.activation(encoded_layers)
         mean_last_hidden_state = self.dropout(mean_last_hidden_state)
         return mean_last_hidden_state
@@ -138,8 +164,13 @@ class TextBert(nn.Module):
 class CatEmbedder(nn.Module):
     """Category data model."""
 
-    def __init__(self, cat_dims: Sequence[int], emb_dropout: bool = 0.1, emb_ratio: int = 3,
-                 max_emb_size: int = 50):
+    def __init__(
+        self,
+        cat_dims: Sequence[int],
+        emb_dropout: bool = 0.1,
+        emb_ratio: int = 3,
+        max_emb_size: int = 50,
+    ):
         """Class for working with category data using embedding layer.
 
         Args:
@@ -151,9 +182,12 @@ class CatEmbedder(nn.Module):
 
         """
         super(CatEmbedder, self).__init__()
-        emb_dims = [(int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio)))) for x in cat_dims]
+        emb_dims = [
+            (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))
+            for x in cat_dims
+        ]
         self.no_of_embs = sum([y for x, y in emb_dims])
-        assert (self.no_of_embs != 0), 'The input is empty.'
+        assert self.no_of_embs != 0, "The input is empty."
         # Embedding layers
         self.emb_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in emb_dims])
         self.emb_dropout_layer = nn.Dropout(emb_dropout)
@@ -168,7 +202,13 @@ class CatEmbedder(nn.Module):
         return self.no_of_embs
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
-        output = torch.cat([emb_layer(inp['cat'][:, i]) for i, emb_layer in enumerate(self.emb_layers)], dim=1)
+        output = torch.cat(
+            [
+                emb_layer(inp["cat"][:, i])
+                for i, emb_layer in enumerate(self.emb_layers)
+            ],
+            dim=1,
+        )
         output = self.emb_dropout_layer(output)
         return output
 
@@ -189,7 +229,7 @@ class ContEmbedder(nn.Module):
         self.bn = None
         if input_bn:
             self.bn = nn.BatchNorm1d(num_dims)
-        assert (num_dims != 0), 'The input is empty.'
+        assert num_dims != 0, "The input is empty."
 
     def get_out_shape(self) -> int:
         """Output shape.
@@ -201,7 +241,7 @@ class ContEmbedder(nn.Module):
         return self.n_out
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
-        output = inp['cont']
+        output = inp["cont"]
         if self.bn is not None:
             output = self.bn(output)
         return output
@@ -210,11 +250,19 @@ class ContEmbedder(nn.Module):
 class TorchUniversalModel(nn.Module):
     """Mixed data model."""
 
-    def __init__(self, loss: Callable, task: Task, n_out: int = 1,
-                 cont_embedder: Optional = None, cont_params: Optional[Dict] = None,
-                 cat_embedder: Optional = None, cat_params: Optional[Dict] = None,
-                 text_embedder: Optional = None, text_params: Optional[Dict] = None,
-                 bias: Optional[Sequence] = None):
+    def __init__(
+        self,
+        loss: Callable,
+        task: Task,
+        n_out: int = 1,
+        cont_embedder: Optional = None,
+        cont_params: Optional[Dict] = None,
+        cat_embedder: Optional = None,
+        cat_params: Optional[Dict] = None,
+        text_embedder: Optional = None,
+        text_params: Optional[Dict] = None,
+        bias: Optional[Sequence] = None,
+    ):
         """Class for preparing input for DL model with mixed data.
 
         Args:
@@ -258,14 +306,16 @@ class TorchUniversalModel(nn.Module):
             self.fc.bias.data = nn.Parameter(bias)
             self.fc.weight.data = nn.Parameter(torch.zeros(self.n_out, n_in))
 
-        if (self.task.name == 'binary') or (self.task.name == 'multilabel'):
+        if (self.task.name == "binary") or (self.task.name == "multilabel"):
             self.fc = nn.Sequential(self.fc, Clump(), nn.Sigmoid())
-        elif self.task.name == 'multiclass':
+        elif self.task.name == "multiclass":
             self.fc = nn.Sequential(self.fc, Clump(), nn.Softmax(dim=1))
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         x = self.predict(inp)
-        loss = self.loss(inp['label'].view(inp['label'].shape[0], -1), x, inp.get('weight', None))
+        loss = self.loss(
+            inp["label"].view(inp["label"].shape[0], -1), x, inp.get("weight", None)
+        )
         return loss
 
     def predict(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:

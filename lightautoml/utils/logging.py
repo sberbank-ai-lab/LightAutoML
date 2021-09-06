@@ -1,68 +1,160 @@
-"""Logging."""
+"""Utils for logging."""
 
+import io
 import logging
+import os
 import sys
 import warnings
 
-logging.captureWarnings(True)
-
-debug_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-default_log_format = f"%(message)s"
+from .. import _logger
 
 
-def verbosity_to_loglevel(verbosity):
+formatter_debug = logging.Formatter(
+    f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s"
+)
+formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
+
+INFO2 = 17
+INFO3 = 13
+
+
+def add_logging_level(levelName, levelNum, methodName=None):
+    """
+    Comprehensively adds a new logging level to the `logging` module and the
+    currently configured logging class.
+
+    `levelName` becomes an attribute of the `logging` module with the value
+    `levelNum`. `methodName` becomes a convenience method for both `logging`
+    itself and the class returned by `logging.getLoggerClass()` (usually just
+    `logging.Logger`). If `methodName` is not specified, `levelName.lower()` is
+    used.
+
+    To avoid accidental clobberings of existing attributes, this method will
+    raise an `AttributeError` if the level name is already an attribute of the
+    `logging` module or if the method name is already present
+
+    Example
+    -------
+    >>> addLoggingLevel('TRACE', logging.DEBUG - 5)
+    >>> logging.getLogger(__name__).setLevel("TRACE")
+    >>> logging.getLogger(__name__).trace('that worked')
+    >>> logging.trace('so did this')
+    >>> logging.TRACE
+    5
+
+    """
+    assert (levelNum > 0) and (levelNum < 50)
+    if not methodName:
+        methodName = levelName.lower()
+
+    if hasattr(logging, levelName):
+        raise AttributeError("{} already defined in logging module".format(levelName))
+    if hasattr(logging, methodName):
+        raise AttributeError("{} already defined in logging module".format(methodName))
+    if hasattr(logging.getLoggerClass(), methodName):
+        raise AttributeError("{} already defined in logger class".format(methodName))
+
+    def logForLevel(self, message, *args, **kwargs):
+        if self.isEnabledFor(levelNum):
+            self._log(levelNum, message, args, **kwargs)
+
+    def logToRoot(message, *args, **kwargs):
+        logging.log(levelNum, message, *args, **kwargs)
+
+    logging.addLevelName(levelNum, levelName)
+    setattr(logging, levelName, levelNum)
+    setattr(logging.getLoggerClass(), methodName, logForLevel)
+    setattr(logging, methodName, logToRoot)
+
+
+add_logging_level("INFO2", INFO2)
+add_logging_level("INFO3", INFO3)
+
+
+class LoggerStream(io.IOBase):
+    def __init__(self, new_write) -> None:
+        super().__init__()
+        self.new_write = new_write
+
+    def write(self, message):
+        if message != "\n":
+            self.new_write(message.rstrip())
+
+
+def verbosity_to_loglevel(verbosity: int):
     if verbosity <= 0:
         log_level = logging.ERROR
-        warnings.filterwarnings("ignore")
     elif verbosity == 1:
-        log_level = logging.WARNING
-    elif verbosity == 2:
         log_level = logging.INFO
+    elif verbosity == 2:
+        log_level = logging.INFO2
+    elif verbosity == 3:
+        log_level = logging.INFO3
     else:
         log_level = logging.DEBUG
 
     return log_level
 
 
-def get_file_handler():
-    file_handler = logging.FileHandler("x.log")
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(default_log_format))
-    return file_handler
+def get_stdout_level():
+    for handler in _logger.handlers:
+        if type(handler) == logging.StreamHandler:
+            return handler.level
+    return _logger.getEffectiveLevel()
 
 
-def get_stream_handler(stream, level=None, handler_filter=None):
-    stream_handler = logging.StreamHandler(stream)
-    stream_handler.setFormatter(logging.Formatter(default_log_format))
+def set_stdout_level(level):
+    _logger.setLevel(logging.DEBUG)
 
-    if level:
-        stream_handler.setLevel(level)
+    has_console_handler = False
 
-    if handler_filter:
-        stream_handler.addFilter(handler_filter)
+    for handler in _logger.handlers:
+        if type(handler) == logging.StreamHandler:
+            if handler.level == level:
+                has_console_handler = True
+            else:
+                _logger.handlers.remove(handler)
 
-    return stream_handler
+    if not has_console_handler:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter_default)
+        handler.setLevel(level)
+
+        _logger.addHandler(handler)
 
 
-def get_logger(name=None, level=None):
-    class InfoFilter(logging.Filter):
-        def filter(self, rec):
-            return rec.levelno in (logging.DEBUG, logging.INFO)
+def add_filehandler(filename: str, level=logging.DEBUG):
+    if filename:
+        has_file_handler = False
 
-    logger = logging.getLogger(name)
+        for handler in _logger.handlers:
+            if type(handler) == logging.FileHandler:
+                if (
+                    handler.baseFilename == filename
+                    or handler.baseFilename == os.path.join(os.getcwd(), filename)
+                ):
+                    has_file_handler = True
+                else:
+                    _logger.handlers.remove(handler)
 
-    if level:
-        logger.setLevel(level)
+        if not has_file_handler:
+            file_handler = logging.FileHandler(filename, mode="w")
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+            if level == logging.DEBUG:
+                file_handler.setFormatter(formatter_debug)
+            else:
+                file_handler.setFormatter(formatter_default)
 
-    logger.addHandler(get_stream_handler(stream=None, level=logging.WARNING))
-    logger.addHandler(get_stream_handler(stream=sys.stdout, level=logging.DEBUG, handler_filter=InfoFilter()))
+            file_handler.setLevel(level)
 
-    logger.propagate = False
+            # if handler_filter:
+            #     file_handler.addFilter(handler_filter)
 
-    return logger
+            _logger.addHandler(file_handler)
+    else:
+        for handler in _logger.handlers:
+            if type(handler) == logging.FileHandler:
+                _logger.handlers.remove(handler)
 
 
 class DuplicateFilter(object):
