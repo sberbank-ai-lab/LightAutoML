@@ -493,7 +493,13 @@ class TabularAutoML(AutoMLPreset):
             valid_data: Optional validation dataset.
             valid_features: Optional validation dataset features
               if cannot be inferred from `valid_data`.
-            verbose: Verbosity level that are passed to each automl.
+            verbose: Controls the verbosity: the higher, the more messages.
+                <1  : messages are not displayed;
+                >=1 : the computation process for layers is displayed;
+                >=2 : the information about folds processing is also displayed;
+                >=3 : the hyperparameters optimization process is also displayed;
+                >=4 : the training process for every algorithm is displayed; 
+            log_file: Filename to write logging messages. If log_file is specified, 
 
         Returns:
             Dataset with predictions. Call ``.data`` to get predictions array.

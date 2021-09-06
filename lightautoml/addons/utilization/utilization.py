@@ -127,7 +127,12 @@ class TimeUtilization:
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: Cpu limit that that are passed to each automl.
             gpu_ids: Gpu_ids that are passed to each automl.
-            verbose: Verbosity level that are passed to each automl.
+            verbose: Controls the verbosity: the higher, the more messages.
+                <1  : messages are not displayed;
+                >=1 : the computation process for layers is displayed;
+                >=2 : the information about folds processing is also displayed;
+                >=3 : the hyperparameters optimization process is also displayed;
+                >=4 : the training process for every algorithm is displayed;
             timing_params: Timing_params level that are passed to each automl.
             configs_list: List of str path to configs files.
             inner_blend: Blender instance to blend automl's with same configs

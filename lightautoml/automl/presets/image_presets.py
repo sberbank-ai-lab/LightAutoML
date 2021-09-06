@@ -103,7 +103,12 @@ class TabularCVAutoML(TabularAutoML):
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
-            verbose: Verbosity level that are passed to each automl.
+            verbose: Controls the verbosity: the higher, the more messages.
+                <1  : messages are not displayed;
+                >=1 : the computation process for layers is displayed;
+                >=2 : the information about folds processing is also displayed;
+                >=3 : the hyperparameters optimization process is also displayed;
+                >=4 : the training process for every algorithm is displayed;
             timing_params: Timing param dict.
             config_path: Path to config file.
             general_params: General param dict

@@ -305,9 +305,6 @@ class TabularMLAlgo(MLAlgo):
             logger.info(
                 f"Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m"
             )
-            logger.info3(
-                f"Time history {self.timer.get_run_results()}. Time left {self.timer.time_left}"
-            )
 
         if iterator_len > 1 or "Tuned" not in self._name:
             logger.info(
