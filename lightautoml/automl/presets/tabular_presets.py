@@ -498,8 +498,8 @@ class TabularAutoML(AutoMLPreset):
                 >=1 : the computation process for layers is displayed;
                 >=2 : the information about folds processing is also displayed;
                 >=3 : the hyperparameters optimization process is also displayed;
-                >=4 : the training process for every algorithm is displayed; 
-            log_file: Filename to write logging messages. If log_file is specified, 
+                >=4 : the training process for every algorithm is displayed;
+            log_file: Filename for writing logging messages. If log_file is specified, the messages will be saved in a the file. If the file exists, it will be overwritten.
 
         Returns:
             Dataset with predictions. Call ``.data`` to get predictions array.
