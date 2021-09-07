@@ -4,18 +4,6 @@ def rolling_window(a, window, step=1, from_last=True):
     'from_last == True - will cut first step-1 elements'
     return np.lib.stride_tricks.sliding_window_view(a, window)[(len(a) - window) % step if from_last else 0:][::step]
 
-
-class TSIndex:
-    def __init__(self):
-        pass
-
-    def data(self):
-        pass
-
-    def target(self):
-        pass
-
-
 class CreateInd:
     def __init__(self, top_k=5):
         self.top_k = top_k

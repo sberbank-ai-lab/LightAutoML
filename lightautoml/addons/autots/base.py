@@ -58,7 +58,7 @@ class AutoTS:
 
                 oof_trend = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params.get('trend_size', 7):],
                                                            'seq': None},
-                                                          roles=roles, verbose=0)
+                                                          roles=roles, verbose=4)
             else:
                 oof_trend = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles, verbose=0)
                 median = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
@@ -72,7 +72,9 @@ class AutoTS:
         reader_seq = DictToNumpySeqReader(task=self.task, cv=2, seq_params=self.seq_params)
         feats_seq = LGBSeqSimpleFeatures()
         model = RandomForestSklearn(default_params={'verbose': 0})
-        model2 = LinearLBFGS(default_params={'cs': [1]})
+        #model2 = LinearLBFGS(default_params={'cs': [1]})
+        model2 = LinearLBFGS()
+
         model3 = BoostCB()
         pipeline_lvl1 = MLPipeline([model], pre_selection=None, features_pipeline=feats_seq, post_selection=None)
         pipeline2_lvl1 = MLPipeline([model2], pre_selection=None, features_pipeline=feats_seq, post_selection=None)
@@ -82,16 +84,25 @@ class AutoTS:
                                  skip_conn=False,
                                  blender=WeightedBlender())
 
-        oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles, verbose=0)
+        oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles, verbose=4)
         return oof_pred_seq, median
 
-    def predict(self, train_data, train_trend, test_data):
+    def predict(self, train_data, train_trend=None, test_data=None):
+
         if self.params.get('trend', True):
             test_pred_trend = self.automl_trend.predict({'plain': test_data, 'seq': None}).data[:, 0]
+        elif test_data is None:
+            test_pred_trend = 0
+            train_trend = 0
         else:
             test_pred_trend = np.zeros(len(test_data))
+
         train_detrend = train_data.copy()
         train_detrend.loc[:, self.roles['target']] = train_detrend.loc[:, self.roles['target']] - train_trend
         test_pred_detrend = self.automl_seq.predict({'seq': {'seq0': train_detrend}})
-        final_pred = test_pred_trend + test_pred_detrend.data.flatten()
+
+        if test_pred_detrend.data.shape[0] == 1:
+            final_pred = test_pred_trend + test_pred_detrend.data.flatten()
+        else:
+            final_pred = test_pred_trend + test_pred_detrend.data
         return final_pred, test_pred_trend

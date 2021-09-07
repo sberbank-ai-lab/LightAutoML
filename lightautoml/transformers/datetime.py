@@ -26,6 +26,7 @@ date_attrs = {
     "m": "month",
     "d": "day",
     "wd": "weekday",
+    "doy": "dayofyear",
     "hour": "hour",
     "min": "minute",
     "sec": "second",

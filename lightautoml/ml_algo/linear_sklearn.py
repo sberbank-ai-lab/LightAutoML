@@ -163,6 +163,8 @@ class LinearLBFGS(TabularMLAlgo):
             Predictions for input dataset.
 
         """
+        if type(dataset) is PandasDataset:
+            dataset = dataset.to_numpy()
         pred = model.predict(dataset.data)
 
         return pred

@@ -171,7 +171,7 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
 
         metric = self.task.losses['sklearn'].metric_func
         score = metric(valid.target, val_pred, valid.weights)
-        logging.info('Score for RF model: {:5f}'.format(score))
+        logger.info('Score for RF model: {:5f}'.format(score))
 
         return model, val_pred
 
