@@ -65,7 +65,7 @@ class GroupByFactory:
         ValueError: if identifier is not found.
 
     """
-    
+
     @staticmethod
     def get_GroupBy(kind):
         assert kind is not None
@@ -102,7 +102,7 @@ class GroupByBase:
     Example:
         GroupByBase(GroupByNumDeltaMean.class_kind, GroupByNumDeltaMean.class_fit_func, GroupByNumDeltaMean.class_transform_func)
 
-    """ 
+    """
 
     def __init__(self, kind, fit_func, transform_func):
         """

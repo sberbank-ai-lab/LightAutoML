@@ -27,6 +27,7 @@ from lightautoml.transformers.composite import GroupByTransformer
 from lightautoml.transformers.numeric import FillnaMedian
 from lightautoml.validation.np_iterators import TimeSeriesIterator
 
+
 ################################
 # Features:
 # - group_by transformer
