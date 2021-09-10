@@ -44,7 +44,8 @@ class GroupByProcessor:
             ]
         else:
             return [functions(vectors[idx].tolist()) for idx in (self.indices)]
-        
+
+
 class GroupByFactory:    
     """Factory to create group_by classes.
     
@@ -72,7 +73,7 @@ class GroupByFactory:
             GroupByNumMax,
             GroupByNumStd, 
             GroupByCatMode, 
-            GroupByCatIsMode
+            GroupByCatIsMode,
         ]
 
         for class_name in available_classes:
@@ -80,11 +81,11 @@ class GroupByFactory:
                 return class_name(
                     class_name.class_kind,
                     class_name.class_fit_func,
-                    class_name.class_transform_func
+                    class_name.class_transform_func,
                 )
 
         raise ValueError(
-            f'Unsupported kind: {kind}, available={[class_name.class_kind for class_name in available_classes]}'
+            f"Unsupported kind: {kind}, available={[class_name.class_kind for class_name in available_classes]}"
         )
 
 class GroupByBase:        
@@ -169,8 +170,8 @@ class GroupByBase:
         
         assert self.transform_func is not None
 
-        group_values = data[value['group_column']].to_numpy()        
-        feature_values = data[value['feature_column']].to_numpy()
+        group_values = data[value["group_column"]].to_numpy()
+        feature_values = data[value["feature_column"]].to_numpy()
         result = self.transform_func(
             tuple(
                 [
@@ -179,7 +180,7 @@ class GroupByBase:
                             np.vectorize(self._dict.get)(group_values), dtype=float
                         )
                     ),
-                    feature_values
+                    feature_values,
                 ]
             )
         ).reshape(-1, 1)
@@ -189,25 +190,25 @@ class GroupByBase:
 
 
 class GroupByNumDeltaMean(GroupByBase):    
-    class_kind = 'delta_mean'    
+    class_kind = "delta_mean"
     class_fit_func = np.nanmean
     
     @staticmethod
     def class_transform_func(values):
-        return (values[1] - values[0])
+        return values[1] - values[0]
 
 
 class GroupByNumDeltaMedian(GroupByBase):    
-    class_kind = 'delta_median'    
+    class_kind = "delta_median"
     class_fit_func=np.nanmedian
 
     @staticmethod
     def class_transform_func(values):
-        return (values[1] - values[0])
+        return values[1] - values[0]
 
 
 class GroupByNumMin(GroupByBase):    
-    class_kind = 'min'    
+    class_kind = "min"
     class_fit_func=np.nanmin
 
     @staticmethod
@@ -216,36 +217,36 @@ class GroupByNumMin(GroupByBase):
 
 
 class GroupByNumMax(GroupByBase):    
-    class_kind = 'max'    
+    class_kind = "max"
     class_fit_func=np.nanmax
 
     @staticmethod
     def class_transform_func(values):
-        return (values[0])
+        return values[0]
 
 
 class GroupByNumStd(GroupByBase):    
-    class_kind = 'std'    
+    class_kind = "std"
     class_fit_func=np.nanstd
 
     @staticmethod
     def class_transform_func(values):
-        return (values[0])
+        return values[0]
 
 
 class GroupByCatMode(GroupByBase):    
-    class_kind = 'mode'    
+    class_kind = "mode"
     class_fit_func=get_mode
 
     @staticmethod
     def class_transform_func(values):
-        return (values[0])
+        return values[0]
 
 
 class GroupByCatIsMode(GroupByBase):    
-    class_kind = 'is_mode'    
+    class_kind = "is_mode"
     class_fit_func=get_mode
 
     @staticmethod
     def class_transform_func(values):
-        return (values[0] == values[1])
+        return values[0] == values[1]

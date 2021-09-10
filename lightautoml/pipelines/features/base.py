@@ -38,8 +38,8 @@ from ...transformers.datetime import DateSeasons
 from ...transformers.numeric import FillInf
 from ...transformers.numeric import FillnaMedian
 from ...transformers.numeric import NaNFlags
-from ...transformers.numeric import StandardScaler
 from ...transformers.numeric import QuantileBinning
+from ...transformers.numeric import StandardScaler
 from ...utils.logging import get_logger
 from ...utils.logging import verbosity_to_loglevel
 from ..utils import get_columns_by_role
@@ -624,7 +624,7 @@ class TabularDataFeatures:
         # sort
         df = df.sort_values(
             by=["importance", "cardinality"],
-            ascending=[False, self.ascending_by_cardinality]
+            ascending=[False, self.ascending_by_cardinality],
         )
         # get top n
         top = list(df.index[:top_n])
@@ -632,10 +632,10 @@ class TabularDataFeatures:
         return top
 
     def get_group_by(
-            self,
-            train: NumpyOrPandas,
-            feats_to_select_categorical: Optional[List[str]] = None,
-            feats_to_select_numerical: Optional[List[str]] = None,
+        self,
+        train: NumpyOrPandas,
+        feats_to_select_categorical: Optional[List[str]] = None,
+        feats_to_select_numerical: Optional[List[str]] = None,
     ) -> Optional[LAMLTransformer]:
         """Get transformer that calculates group by features.
         
@@ -665,7 +665,11 @@ class TabularDataFeatures:
             cat_feats_to_select = feats_to_select_categorical
             
         assert len(cat_feats_to_select) > 0
-        logger.debug("GroupByPipeline.create_pipeline.cat_feats_to_select:{0}".format(cat_feats_to_select))
+        logger.debug(
+            "GroupByPipeline.create_pipeline.cat_feats_to_select:{0}".format(
+                cat_feats_to_select
+            )
+        )
             
         num_feats_to_select = []
         if feats_to_select_numerical is None:
@@ -681,7 +685,9 @@ class TabularDataFeatures:
                 
         assert len(num_feats_to_select) > 0
         logger.debug(
-            "GroupByPipeline.create_pipeline.num_feats_to_select:{0}".format(num_feats_to_select)
+            "GroupByPipeline.create_pipeline.num_feats_to_select:{0}".format(
+                num_feats_to_select
+            )
         )
 
         groupby_processing = SequentialTransformer(
@@ -692,9 +698,9 @@ class TabularDataFeatures:
                             [
                                 ColumnsSelector(keys=cat_feats_to_select),
                                 LabelEncoder(subs=None, random_state=42),
-                                ChangeRoles(NumericRole(np.float32)), # TODO: try int?
+                                ChangeRoles(NumericRole(np.float32)),  # TODO: try int?
                                 FillnaMedian(),
-                                ChangeRoles(CategoryRole(np.float32)), # TODO: try int?
+                                ChangeRoles(CategoryRole(np.float32)),  # TODO: try int?
                             ]
                         ),
                         SequentialTransformer(
@@ -702,7 +708,13 @@ class TabularDataFeatures:
                                 ColumnsSelector(keys=num_feats_to_select),
                                 UnionTransformer(
                                     [
-                                        SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
+                                        SequentialTransformer(
+                                            [
+                                                FillInf(),
+                                                FillnaMedian(),
+                                                StandardScaler()
+                                            ]
+                                        ),
                                         NaNFlags()
                                     ]
                                 )

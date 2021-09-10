@@ -4,17 +4,18 @@ import numpy as np
 
 from ..dataset.roles import NumericRole
 from ..pipelines.utils import get_columns_by_role
-from ..utils.logging import get_logger, verbosity_to_loglevel
+from ..utils.logging import get_logger
+from ..utils.logging import verbosity_to_loglevel
 from .base import LAMLTransformer
-from .utils import GroupByProcessor
+from .utils import GroupByCatIsMode
+from .utils import GroupByCatMode
 from .utils import GroupByFactory
 from .utils import GroupByNumDeltaMean
 from .utils import GroupByNumDeltaMedian
-from .utils import GroupByNumMin
 from .utils import GroupByNumMax
+from .utils import GroupByNumMin
 from .utils import GroupByNumStd
-from .utils import GroupByCatMode
-from .utils import GroupByCatIsMode
+from .utils import GroupByProcessor
 
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
@@ -117,9 +118,9 @@ class GroupByTransformer(LAMLTransformer):
                         "groups": GroupByFactory.get_GroupBy(kind).fit(
                             data=dataset.data,
                             group_by_processor=group_by_processor,
-                            feature_column=feature_column
+                            feature_column=feature_column,
                         ),
-                        "kind": kind
+                        "kind": kind,
                     }
                     feats.append(feature)
                 
@@ -140,7 +141,7 @@ class GroupByTransformer(LAMLTransformer):
                             "group_column": group_column,
                             "feature_column": feature_column,
                             "groups": groups_1,
-                            "kind": kind
+                            "kind": kind,
                         }
 
                         kind = GroupByCatIsMode.class_kind
@@ -154,13 +155,15 @@ class GroupByTransformer(LAMLTransformer):
                             "group_column": group_column,
                             "feature_column": feature_column,
                             "groups": groups_2,
-                            "kind": kind
+                            "kind": kind,
                         }
                         feats.extend([feature1, feature2])
             
         self._features = feats
 
-        logger.debug("self._features:({0}) {1}".format(len(self._features), self._features))
+        logger.debug(
+            "self._features:({0}) {1}".format(len(self._features), self._features)
+        )
         
         logger.debug("GroupByTransformer.__fit.end")
         
