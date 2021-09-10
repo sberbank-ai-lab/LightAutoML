@@ -20,95 +20,100 @@ Currently we work with datasets, where **each row is an object with its specific
 
 Let's solve the popular Kaggle Titanic competition below. There are two main ways to solve machine learning problems using LightAutoML:
 * Use ready preset for tabular data:
+```python
+import pandas as pd
+from sklearn.metrics import f1_score
 
-    ```python
-    import pandas as pd
-    from sklearn.metrics import f1_score
+from lightautoml.automl.presets.tabular_presets import TabularAutoML
+from lightautoml.tasks import Task
 
-    from lightautoml.automl.presets.tabular_presets import TabularAutoML
-    from lightautoml.tasks import Task
+df_train = pd.read_csv('../input/titanic/train.csv')
+df_test = pd.read_csv('../input/titanic/test.csv')
 
-    df_train = pd.read_csv('../input/titanic/train.csv')
-    df_test = pd.read_csv('../input/titanic/test.csv')
+automl = TabularAutoML(
+    task = Task(
+        name = 'binary',
+        metric = lambda y_true, y_pred: f1_score(y_true, (y_pred > 0.5)*1))
+)
+oof_pred = automl.fit_predict(
+    df_train,
+    roles = {'target': 'Survived', 'drop': ['PassengerId']}
+)
+test_pred = automl.predict(df_test)
 
-    automl = TabularAutoML(
-        task = Task(
-            name = 'binary',
-            metric = lambda y_true, y_pred: f1_score(y_true, (y_pred > 0.5)*1))
-    )
-    oof_pred = automl.fit_predict(
-        df_train,
-        roles = {'target': 'Survived', 'drop': ['PassengerId']}
-    )
-    test_pred = automl.predict(df_test)
+pd.DataFrame({
+    'PassengerId':df_test.PassengerId,
+    'Survived': (test_pred.data[:, 0] > 0.5)*1
+}).to_csv('submit.csv', index = False)
+```
 
-    pd.DataFrame({
-        'PassengerId':df_test.PassengerId,
-        'Survived': (test_pred.data[:, 0] > 0.5)*1
-    }).to_csv('submit.csv', index = False)
-    ```
+* Build your own custom pipeline:
+```python
+import pandas as pd
+from sklearn.metrics import f1_score
 
-* Build your own custom pipeline
-    ```python
-    import pandas as pd
-    from sklearn.metrics import f1_score
+from lightautoml.automl.presets.tabular_presets import TabularAutoML
+from lightautoml.tasks import Task
 
-    from lightautoml.automl.presets.tabular_presets import TabularAutoML
-    from lightautoml.tasks import Task
+df_train = pd.read_csv('../input/titanic/train.csv')
+df_test = pd.read_csv('../input/titanic/test.csv')
 
-    df_train = pd.read_csv('../input/titanic/train.csv')
-    df_test = pd.read_csv('../input/titanic/test.csv')
+# define that machine learning problem is binary classification
+task = Task("binary")
 
-    # define that machine learning problem is binary classification
-    task = Task("binary")
+reader = PandasToPandasReader(task, cv=N_FOLDS, random_state=RANDOM_STATE)
 
-    reader = PandasToPandasReader(task, cv=N_FOLDS, random_state=RANDOM_STATE)
+# create a feature selector
+model0 = BoostLGBM(
+    default_params={'learning_rate': 0.05, 'num_leaves': 64,
+    'seed': 42, 'num_threads': N_THREADS}
+)
+pipe0 = LGBSimpleFeatures()
+mbie = ModelBasedImportanceEstimator()
+selector = ImportanceCutoffSelector(pipe0, model0, mbie, cutoff=0)
 
-    # create a feature selector
-    model0 = BoostLGBM(
-        default_params={'learning_rate': 0.05, 'num_leaves': 64, 'seed': 42, 'num_threads': N_THREADS}
-    )
-    pipe0 = LGBSimpleFeatures()
-    mbie = ModelBasedImportanceEstimator()
-    selector = ImportanceCutoffSelector(pipe0, model0, mbie, cutoff=0)
+# build first level pipeline for AutoML
+pipe = LGBSimpleFeatures()
+# stop after 20 iterations or after 30 seconds
+params_tuner1 = OptunaTuner(n_trials=20, timeout=30)
+model1 = BoostLGBM(
+    default_params={'learning_rate': 0.05, 'num_leaves': 128,
+    'seed': 1, 'num_threads': N_THREADS}
+)
+model2 = BoostLGBM(
+    default_params={'learning_rate': 0.025, 'num_leaves': 64,
+    'seed': 2, 'num_threads': N_THREADS}
+)
+pipeline_lvl1 = MLPipeline([
+    (model1, params_tuner1),
+    model2
+], pre_selection=selector, features_pipeline=pipe, post_selection=None)
 
-    # build first level pipeline for AutoML
-    pipe = LGBSimpleFeatures()
-    params_tuner1 = OptunaTuner(n_trials=20, timeout=30) # stop after 20 iterations or after 30 seconds
-    model1 = BoostLGBM(
-        default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': N_THREADS}
-    )
-    model2 = BoostLGBM(
-        default_params={'learning_rate': 0.025, 'num_leaves': 64, 'seed': 2, 'num_threads': N_THREADS}
-    )
-    pipeline_lvl1 = MLPipeline([
-        (model1, params_tuner1),
-        model2
-    ], pre_selection=selector, features_pipeline=pipe, post_selection=None)
+# build second level pipeline for AutoML
+pipe1 = LGBSimpleFeatures()
+model = BoostLGBM(
+    default_params={'learning_rate': 0.05, 'num_leaves': 64,
+    'max_bin': 1024, 'seed': 3, 'num_threads': N_THREADS},
+    freeze_defaults=True
+)
+pipeline_lvl2 = MLPipeline([model], pre_selection=None, features_pipeline=pipe1,
+ post_selection=None)
 
-    # build second level pipeline for AutoML
-    pipe1 = LGBSimpleFeatures()
-    model = BoostLGBM(
-        default_params={'learning_rate': 0.05, 'num_leaves': 64, 'max_bin': 1024, 'seed': 3, 'num_threads': N_THREADS},
-        freeze_defaults=True
-    )
-    pipeline_lvl2 = MLPipeline([model], pre_selection=None, features_pipeline=pipe1, post_selection=None)
+# build AutoML pipeline
+automl = AutoML(reader, [
+    [pipeline_lvl1],
+    [pipeline_lvl2],
+], skip_conn=False)
 
-    # build AutoML pipeline
-    automl = AutoML(reader, [
-        [pipeline_lvl1],
-        [pipeline_lvl2],
-    ], skip_conn=False)
+# train AutoML and get predictions
+oof_pred = automl.fit_predict(df_train, roles = {'target': 'Survived', 'drop': ['PassengerId']})
+test_pred = automl.predict(df_test)
 
-    # train AutoML and get predictions
-    oof_pred = automl.fit_predict(df_train, roles = {'target': 'Survived', 'drop': ['PassengerId']})
-    test_pred = automl.predict(df_test)
-
-    pd.DataFrame({
-        'PassengerId':df_test.PassengerId,
-        'Survived': (test_pred.data[:, 0] > 0.5)*1
-    }).to_csv('submit.csv', index = False)
-    ```
+pd.DataFrame({
+    'PassengerId':df_test.PassengerId,
+    'Survived': (test_pred.data[:, 0] > 0.5)*1
+}).to_csv('submit.csv', index = False)
+```
 LighAutoML framework has a lot of ready-to-use parts and extensive customization options, to learn more check out the [resources](#Resources) section.
 
 # Resources
