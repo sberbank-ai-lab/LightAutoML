@@ -656,7 +656,7 @@ class TabularDataFeatures:
             cat_feats_to_select = feats_to_select_categorical
             
         assert len(cat_feats_to_select) > 0
-        logger.debug(f'GroupByPipeline.create_pipeline.cat_feats_to_select:{cat_feats_to_select}')
+        logger.debug(f"GroupByPipeline.create_pipeline.cat_feats_to_select:{cat_feats_to_select}")
             
         num_feats_to_select = []
         if feats_to_select_numerical is None:
@@ -669,7 +669,7 @@ class TabularDataFeatures:
             num_feats_to_select = feats_to_select_numerical
                 
         assert len(num_feats_to_select) > 0
-        logger.debug(f'GroupByPipeline.create_pipeline.num_feats_to_select:{num_feats_to_select}')
+        logger.debug(f"GroupByPipeline.create_pipeline.num_feats_to_select:{num_feats_to_select}")
 
         groupby_processing = SequentialTransformer([
             UnionTransformer([
