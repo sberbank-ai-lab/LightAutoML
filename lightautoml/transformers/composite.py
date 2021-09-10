@@ -70,8 +70,8 @@ class GroupByTransformer(LAMLTransformer):
 
         """
 
-        logger.debug(f"GroupByTransformer.__fit.begin")
-        logger.debug(f"GroupByTransformer.__fit.type(dataset.data)={type(dataset.data)}")
+        logger.debug("GroupByTransformer.__fit.begin")
+        logger.debug("GroupByTransformer.__fit.type(dataset.data)={0}".format(type(dataset.data)))
 
         # set transformer names and add checks
         for check_func in self._fit_checks:
@@ -83,8 +83,8 @@ class GroupByTransformer(LAMLTransformer):
         # set transformer features
         cat_cols = get_columns_by_role(dataset, 'Category')
         num_cols = get_columns_by_role(dataset, 'Numeric')
-        logger.debug(f"GroupByTransformer.__fit.cat_cols={cat_cols}")
-        logger.debug(f"GroupByTransformer.__fit.num_cols:{num_cols}")
+        logger.debug("GroupByTransformer.__fit.cat_cols={0}".format(cat_cols))
+        logger.debug("GroupByTransformer.__fit.num_cols:{0}".format(num_cols))
         
         feats = []
         for group_column in cat_cols:
@@ -135,9 +135,9 @@ class GroupByTransformer(LAMLTransformer):
             
         self._features = feats
 
-        logger.debug(f"self._features:({len(self._features)}) {self._features}")
+        logger.debug("self._features:({0}) {1}".format(len(self._features), self._features))
         
-        logger.debug(f"GroupByTransformer.__fit.end")
+        logger.debug("GroupByTransformer.__fit.end")
         
         return self
 
@@ -151,8 +151,8 @@ class GroupByTransformer(LAMLTransformer):
             NumpyDataset of calculated group features (numeric).
         """
 
-        logger.debug(f"GroupByTransformer.transform.begin")
-        logger.debug(f"GroupByTransformer.__transform.len(self.dicts):{len(self.dicts)}")
+        logger.debug("GroupByTransformer.transform.begin")
+        logger.debug("GroupByTransformer.__transform.len(self.dicts):{0}".format(len(self.dicts)))
 
         # checks here
         super().transform(dataset)
@@ -172,7 +172,7 @@ class GroupByTransformer(LAMLTransformer):
             output.set_data(new_arr, [feat], roles)
             outputs.append(output)
 
-        logger.debug(f"GroupByTransformer.transform.end")
+        logger.debug("GroupByTransformer.transform.end")
             
         # create resulted        
         return dataset.empty().to_numpy().concat(outputs)
