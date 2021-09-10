@@ -16,56 +16,100 @@ Currently we work with datasets, where **each row is an object with its specific
 
 **Note**: for automatic creation of interpretable models we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library made by our group as well.
 
-# Example
+# Quick tour
 
-[Kaggle Titanic **12-code-lines** competition solution (78% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-extreme-short-titanic-solution):
+Let's solve the popular Kaggle Titanic competition below. There are two main ways to solve machine learning problems using LightAutoML:
+* Use ready preset for tabular data:
 
-```python
-import pandas as pd
-from sklearn.metrics import f1_score
-from lightautoml.automl.presets.tabular_presets import TabularAutoML
-from lightautoml.tasks import Task
+    ```python
+    import pandas as pd
+    from sklearn.metrics import f1_score
 
-df_train, df_test = pd.read_csv('../input/titanic/train.csv'), pd.read_csv('../input/titanic/test.csv')
+    from lightautoml.automl.presets.tabular_presets import TabularAutoML
+    from lightautoml.tasks import Task
 
-automl = TabularAutoML(task = Task('binary', metric = lambda y_true, y_pred: f1_score(y_true, (y_pred > 0.5)*1)))
-oof_pred = automl.fit_predict(df_train,  roles = {'target': 'Survived', 'drop': ['PassengerId']})
-test_pred = automl.predict(df_test)
+    df_train = pd.read_csv('../input/titanic/train.csv')
+    df_test = pd.read_csv('../input/titanic/test.csv')
 
-pd.DataFrame({'PassengerId':df_test.PassengerId, 'Survived': (test_pred.data[:, 0] > 0.5)*1}).to_csv('submit.csv', index = False)
-```
+    automl = TabularAutoML(
+        task = Task(
+            name = 'binary',
+            metric = lambda y_true, y_pred: f1_score(y_true, (y_pred > 0.5)*1))
+    )
+    oof_pred = automl.fit_predict(
+        df_train,
+        roles = {'target': 'Survived', 'drop': ['PassengerId']}
+    )
+    test_pred = automl.predict(df_test)
 
-# Installation
-### Installation via pip from PyPI
-To install LAMA framework on your machine:
-```bash
-pip install -U lightautoml
-```
-### Installation from sources with virtual environment creation
-If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
-```bash
-bash build_package.sh
-```
-To check this variant of installation and run all the demo scripts, use the command below:
-```bash
-bash test_package.sh
-```
-To install optional support for generating reports in pdf format run following commands:
-```bash
-# MacOS
-brew install cairo pango gdk-pixbuf libffi
+    pd.DataFrame({
+        'PassengerId':df_test.PassengerId,
+        'Survived': (test_pred.data[:, 0] > 0.5)*1
+    }).to_csv('submit.csv', index = False)
+    ```
 
-# Debian / Ubuntu
-sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+* Build your own custom pipeline
+    ```python
+    import pandas as pd
+    from sklearn.metrics import f1_score
 
-# Fedora
-sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+    from lightautoml.automl.presets.tabular_presets import TabularAutoML
+    from lightautoml.tasks import Task
 
-# Windows
-# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+    df_train = pd.read_csv('../input/titanic/train.csv')
+    df_test = pd.read_csv('../input/titanic/test.csv')
 
-poetry install -E pdf
-```
+    # define that machine learning problem is binary classification
+    task = Task("binary")
+
+    reader = PandasToPandasReader(task, cv=N_FOLDS, random_state=RANDOM_STATE)
+
+    # create a feature selector
+    model0 = BoostLGBM(
+        default_params={'learning_rate': 0.05, 'num_leaves': 64, 'seed': 42, 'num_threads': N_THREADS}
+    )
+    pipe0 = LGBSimpleFeatures()
+    mbie = ModelBasedImportanceEstimator()
+    selector = ImportanceCutoffSelector(pipe0, model0, mbie, cutoff=0)
+
+    # build first level pipeline for AutoML
+    pipe = LGBSimpleFeatures()
+    params_tuner1 = OptunaTuner(n_trials=20, timeout=30) # stop after 20 iterations or after 30 seconds
+    model1 = BoostLGBM(
+        default_params={'learning_rate': 0.05, 'num_leaves': 128, 'seed': 1, 'num_threads': N_THREADS}
+    )
+    model2 = BoostLGBM(
+        default_params={'learning_rate': 0.025, 'num_leaves': 64, 'seed': 2, 'num_threads': N_THREADS}
+    )
+    pipeline_lvl1 = MLPipeline([
+        (model1, params_tuner1),
+        model2
+    ], pre_selection=selector, features_pipeline=pipe, post_selection=None)
+
+    # build second level pipeline for AutoML
+    pipe1 = LGBSimpleFeatures()
+    model = BoostLGBM(
+        default_params={'learning_rate': 0.05, 'num_leaves': 64, 'max_bin': 1024, 'seed': 3, 'num_threads': N_THREADS},
+        freeze_defaults=True
+    )
+    pipeline_lvl2 = MLPipeline([model], pre_selection=None, features_pipeline=pipe1, post_selection=None)
+
+    # build AutoML pipeline
+    automl = AutoML(reader, [
+        [pipeline_lvl1],
+        [pipeline_lvl2],
+    ], skip_conn=False)
+
+    # train AutoML and get predictions
+    oof_pred = automl.fit_predict(df_train, roles = {'target': 'Survived', 'drop': ['PassengerId']})
+    test_pred = automl.predict(df_test)
+
+    pd.DataFrame({
+        'PassengerId':df_test.PassengerId,
+        'Survived': (test_pred.data[:, 0] > 0.5)*1
+    }).to_csv('submit.csv', index = False)
+    ```
+LighAutoML framework has a lot of ready-to-use parts and extensive customization options, to learn more check out the [resources](#Resources) section.
 
 # Resources
 * Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/).
@@ -104,6 +148,38 @@ poetry install -E pdf
 * Articles about LightAutoML
     - (English) [LightAutoML vs Titanic: 80% accuracy in several lines of code (Medium)](https://alexmryzhkov.medium.com/lightautoml-preset-usage-tutorial-2cce7da6f936)
     - (English) [Hands-On Python Guide to LightAutoML – An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
+
+# Installation
+### Installation via pip from PyPI
+To install LAMA framework on your machine:
+```bash
+pip install -U lightautoml
+```
+### Installation from sources with virtual environment creation
+If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
+```bash
+bash build_package.sh
+```
+To check this variant of installation and run all the demo scripts, use the command below:
+```bash
+bash test_package.sh
+```
+To install optional support for generating reports in pdf format run following commands:
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+
+poetry install -E pdf
+```
 
 # Contributing to LightAutoML
 If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
