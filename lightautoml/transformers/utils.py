@@ -1,11 +1,14 @@
 """utils for transformers."""
 
 from typing import Tuple
+
 import numpy as np
+
 from scipy.stats import mode
 
 from ..utils.logging import get_logger
 from ..utils.logging import verbosity_to_loglevel
+
 
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
@@ -16,7 +19,7 @@ def get_mode(x):
     return mode(x)[0][0]
 
 
-class GroupByProcessor:    
+class GroupByProcessor:
     """Helper class to calculate group_by features."""
 
     def __init__(self, keys):
@@ -49,24 +52,24 @@ class GroupByProcessor:
 
 class GroupByFactory:
     """Factory to create group_by classes.
-    
+
     Uses string identifiers to locate appropriate implementation.
 
-    Example:        
+    Example:
         GroupByFactory.get_GroupBy('delta_mean')
 
     Returns:
         Object of GroupByBase impementing selected feature.
 
     Raises:
-        ValueError: if identifier is not found.    
+        ValueError: if identifier is not found.
 
-    """    
+    """
     
     @staticmethod
     def get_GroupBy(kind):
         assert kind is not None
-        
+
         available_classes = [
             GroupByNumDeltaMean,
             GroupByNumDeltaMedian,
@@ -89,14 +92,15 @@ class GroupByFactory:
             f"Unsupported kind: {kind}, available={[class_name.class_kind for class_name in available_classes]}"
         )
 
+
 class GroupByBase:
     """Base class for all group_by features.
 
     Note:
         Typically is created from GroupByFactory.
 
-    Example:        
-        GroupByBase(GroupByNumDeltaMean.class_kind, GroupByNumDeltaMean.class_fit_func, GroupByNumDeltaMean.class_transform_func)        
+    Example:
+        GroupByBase(GroupByNumDeltaMean.class_kind, GroupByNumDeltaMean.class_fit_func, GroupByNumDeltaMean.class_transform_func)
 
     """ 
 
@@ -126,17 +130,17 @@ class GroupByBase:
 
     def fit(self, data, group_by_processor, feature_column):
         """Calculate groups
-        
+
         Note:
             GroupByProcessor must be initialiaed before call to this function.
-        
+
         Args:
             data (dataset): input data to extract ``feature_column``.
             group_by_processor (GroupByProcessor): processor, containig groups.
             feature_column (string): name of column to calculate statistics.
 
-        """ 
-        
+        """
+
         assert data is not None
         assert group_by_processor is not None
         assert feature_column is not None
@@ -150,11 +154,11 @@ class GroupByBase:
                 group_by_processor.apply(self.fit_func, feature_values),
             )
         )
-            
+
         assert self._dict is not None
-        
+
         return self
-    
+
     def transform(self, data, value):
         """Calculate features statistics
 
@@ -165,7 +169,7 @@ class GroupByBase:
             data (dataset): input data to extract ``value['group_column']`` and ``value['feature_column']``.
             value (dict): colunm names.
 
-        """ 
+        """
         assert data is not None
         assert value is not None
         
@@ -193,7 +197,7 @@ class GroupByBase:
 class GroupByNumDeltaMean(GroupByBase):
     class_kind = "delta_mean"
     class_fit_func = np.nanmean
-    
+
     @staticmethod
     def class_transform_func(values):
         return values[1] - values[0]
@@ -214,7 +218,7 @@ class GroupByNumMin(GroupByBase):
 
     @staticmethod
     def class_transform_func(values):
-        return (values[0])
+        return values[0]
 
 
 class GroupByNumMax(GroupByBase):

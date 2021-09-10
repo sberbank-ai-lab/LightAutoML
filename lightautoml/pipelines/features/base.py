@@ -681,10 +681,10 @@ class TabularDataFeatures:
                     train, self.top_group_by_numerical
                 )
             else:
-                num_feats_to_select = numerics        
+                num_feats_to_select = numerics
         else:
             num_feats_to_select = feats_to_select_numerical
-                
+
         assert len(num_feats_to_select) > 0
         logger.debug(
             "GroupByPipeline.create_pipeline.num_feats_to_select:{0}".format(

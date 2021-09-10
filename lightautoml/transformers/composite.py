@@ -195,7 +195,7 @@ class GroupByTransformer(LAMLTransformer):
         # transform
         roles = NumericRole()
         outputs = []
-        
+
         for feat, value in self.dicts.items():
 
             new_arr = value["groups"].transform(data=dataset.data, value=value)

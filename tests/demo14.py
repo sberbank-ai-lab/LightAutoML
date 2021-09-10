@@ -4,6 +4,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
@@ -35,12 +36,12 @@ N_FOLDS = 3  # folds cnt for AutoML
 RANDOM_STATE = 42  # fixed random state for various reasons
 N_THREADS = 4  # threads cnt for lgbm and linear models
 
+
 class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
     def __init__(
         self, feats_imp=None, top_category: int = 3, top_numeric: int = 3, **kwargs
     ):
-        """Helper class to create pipeline with group_by transformer.
-        """
+        """Helper class to create pipeline with group_by transformer."""
 
         super().__init__(feats_imp=feats_imp)
 
@@ -94,7 +95,7 @@ def test_groupby_transformer():
     reader = PandasToPandasReader(
         task, cv=N_FOLDS, random_state=RANDOM_STATE, advanced_roles=False
     )
-    
+
     model = BoostLGBM(
         default_params={
             "learning_rate": 0.05,
@@ -103,9 +104,9 @@ def test_groupby_transformer():
             "num_threads": N_THREADS,
         }
     )
-    
+
     pipe = GroupByPipeline(None, top_category=4, top_numeric=4)
-    
+
     pipeline = MLPipeline(
         [
             (model),
@@ -128,7 +129,7 @@ def test_groupby_transformer():
         cv_iter=cv_iter,
         roles=roles,
     )
-    
+
     test_pred = automl.predict(test)
 
     logging.debug("Check scores...")
