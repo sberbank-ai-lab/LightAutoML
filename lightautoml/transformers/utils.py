@@ -112,7 +112,7 @@ class GroupByBase:
             fit_func (function): function to calculate groups.
             transform_func (function): function to calculate statistics based on fitted groups.
 
-        """ 
+        """
 
         super().__init__()
 
@@ -172,7 +172,7 @@ class GroupByBase:
         """
         assert data is not None
         assert value is not None
-        
+
         assert self.transform_func is not None
 
         group_values = data[value["group_column"]].to_numpy()
