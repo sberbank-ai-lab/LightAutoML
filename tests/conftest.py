@@ -33,6 +33,7 @@ def sampled_app_train_test(nrows=None):
             "DAYS_BIRTH",
             "DAYS_EMPLOYED",
         ],
+        nrows=nrows,
     )
 
     data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(

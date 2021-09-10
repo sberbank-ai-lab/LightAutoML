@@ -21,7 +21,7 @@ from lightautoml.pipelines.selection.importance_based import (
 from lightautoml.validation.np_iterators import FoldsIterator
 
 
-# @pytest.mark.integtest
+@pytest.mark.integtest
 def test_manual_pipeline(sampled_app_train_test, sampled_app_roles, binary_task):
 
     train, test = sampled_app_train_test
