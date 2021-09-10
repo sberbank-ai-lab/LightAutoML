@@ -1,9 +1,14 @@
 """Metrics and loss functions for Torch based models."""
 
 from functools import partial
-from typing import Callable, Union, Optional, Dict, Any
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Union
 
 import torch
+
 from torch import nn
 
 from .base import Loss
@@ -23,11 +28,16 @@ class TorchLossWrapper(nn.Module):
 
     def __init__(self, func: Callable, flatten=False, log=False, **kwargs: Any):
         super(TorchLossWrapper, self).__init__()
-        self.base_loss = func(reduction='none', **kwargs)
+        self.base_loss = func(reduction="none", **kwargs)
         self.flatten = flatten
         self.log = log
 
-    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        y_true: torch.Tensor,
+        y_pred: torch.Tensor,
+        sample_weight: Optional[torch.Tensor] = None,
+    ):
         if self.flatten:
             y_true = y_true[:, 0].type(torch.int64)
 
@@ -46,7 +56,11 @@ class TorchLossWrapper(nn.Module):
         return outp.mean()
 
 
-def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+def torch_rmsle(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+):
     """Computes Root Mean Squared Logarithmic Error.
 
     Args:
@@ -72,8 +86,12 @@ def torch_rmsle(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return outp.mean()
 
 
-def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
-                   q: float = 0.9):
+def torch_quantile(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+    q: float = 0.9,
+):
     """Computes Mean Quantile Error.
 
     Args:
@@ -101,8 +119,12 @@ def torch_quantile(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Op
     return err.mean()
 
 
-def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
-               c: float = 0.9):
+def torch_fair(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+    c: float = 0.9,
+):
     """Computes Mean Fair Error.
 
     Args:
@@ -128,8 +150,12 @@ def torch_fair(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
     return err.mean()
 
 
-def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None,
-                a: float = 0.9):
+def torch_huber(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+    a: float = 0.9,
+):
     """Computes Mean Huber Error.
 
     Args:
@@ -144,7 +170,7 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     """
     err = y_pred - y_true
     s = torch.abs(err) < a
-    err = torch.where(s, .5 * (err ** 2), a * torch.abs(err) - .5 * (a ** 2))
+    err = torch.where(s, 0.5 * (err ** 2), a * torch.abs(err) - 0.5 * (a ** 2))
 
     if len(err.shape) == 2:
         err = err.sum(dim=1)
@@ -156,7 +182,11 @@ def torch_huber(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optio
     return err.mean()
 
 
-def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+def torch_f1(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+):
     """Computes F1 macro.
 
     Args:
@@ -177,9 +207,13 @@ def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional
         sample_weight = sample_weight.unsqueeze(-1)
         sm = sample_weight.mean()
         tp = (tp * sample_weight).mean(dim=0) / sm
-        f1 = (2 * tp) / ((y_pred * sample_weight).mean(dim=0) / sm + (y_true_ohe * sample_weight).mean(dim=0) / sm + 1e-7)
+        f1 = (2 * tp) / (
+            (y_pred * sample_weight).mean(dim=0) / sm
+            + (y_true_ohe * sample_weight).mean(dim=0) / sm
+            + 1e-7
+        )
 
-        return - f1.mean()
+        return -f1.mean()
 
     tp = torch.mean(tp, dim=0)
 
@@ -187,10 +221,14 @@ def torch_f1(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional
 
     f1[f1 != f1] = 0
 
-    return - f1.mean()
+    return -f1.mean()
 
 
-def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Optional[torch.Tensor] = None):
+def torch_mape(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    sample_weight: Optional[torch.Tensor] = None,
+):
     """Computes Mean Absolute Percentage Error.
 
     Args:
@@ -216,19 +254,16 @@ def torch_mape(y_true: torch.Tensor, y_pred: torch.Tensor, sample_weight: Option
 
 
 _torch_loss_dict = {
-
-    'mse': (nn.MSELoss, False, False),
-    'mae': (nn.L1Loss, False, False),
-    'logloss': (nn.BCELoss, False, False),
-    'crossentropy': (nn.CrossEntropyLoss, True, True),
-    'rmsle': (torch_rmsle, False, False),
-    'mape': (torch_mape, False, False),
-    'quantile': (torch_quantile, False, False),
-    'fair': (torch_fair, False, False),
-    'huber': (torch_huber, False, False),
-
-    'f1': (torch_f1, False, False)
-
+    "mse": (nn.MSELoss, False, False),
+    "mae": (nn.L1Loss, False, False),
+    "logloss": (nn.BCELoss, False, False),
+    "crossentropy": (nn.CrossEntropyLoss, True, True),
+    "rmsle": (torch_rmsle, False, False),
+    "mape": (torch_mape, False, False),
+    "quantile": (torch_quantile, False, False),
+    "fair": (torch_fair, False, False),
+    "huber": (torch_huber, False, False),
+    "f1": (torch_f1, False, False),
 }
 
 
@@ -247,7 +282,7 @@ class TORCHLoss(Loss):
         if loss_params is not None:
             self.loss_params = loss_params
 
-        if loss in ['mse', 'mae', 'logloss', 'crossentropy']:
+        if loss in ["mse", "mae", "logloss", "crossentropy"]:
             self.loss = TorchLossWrapper(*_torch_loss_dict[loss], **self.loss_params)
         elif type(loss) is str:
             self.loss = partial(_torch_loss_dict[loss][0], **self.loss_params)

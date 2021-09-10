@@ -1,11 +1,19 @@
 """Basic classes for validation iterators."""
 
 from copy import copy
-from typing import Any, Generator, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
-
+from typing import Any
+from typing import Generator
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import TypeVar
+from typing import cast
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.pipelines.features.base import FeaturesPipeline
+
 
 # from ..pipelines.selection.base import SelectionPipeline
 
@@ -59,7 +67,9 @@ class TrainValidIterator:
         """Abstract method. Get validation sample."""
         raise NotImplementedError
 
-    def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> 'TrainValidIterator':
+    def apply_feature_pipeline(
+        self, features_pipeline: FeaturesPipeline
+    ) -> "TrainValidIterator":
         """Apply features pipeline on train data.
 
         Args:
@@ -74,7 +84,7 @@ class TrainValidIterator:
         return train_valid
 
     # TODO: add typing
-    def apply_selector(self, selector) -> 'TrainValidIterator':
+    def apply_selector(self, selector) -> "TrainValidIterator":
         """Select features on train data.
 
         Check if selector is fitted.
@@ -94,7 +104,7 @@ class TrainValidIterator:
         train_valid.train = selector.select(train_valid.train)
         return train_valid
 
-    def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
+    def convert_to_holdout_iterator(self) -> "HoldoutIterator":
         """Abstract method. Convert iterator to HoldoutIterator."""
         raise NotImplementedError
 
@@ -138,7 +148,7 @@ class DummyIterator(TrainValidIterator):
         """
         return self.train
 
-    def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
+    def convert_to_holdout_iterator(self) -> "HoldoutIterator":
         """Convert iterator to hold-out-iterator.
 
         Returns:
@@ -189,7 +199,9 @@ class HoldoutIterator(TrainValidIterator):
         """
         return self.valid
 
-    def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> 'HoldoutIterator':
+    def apply_feature_pipeline(
+        self, features_pipeline: FeaturesPipeline
+    ) -> "HoldoutIterator":
         """Inplace apply features pipeline to iterator components.
 
         Args:
@@ -199,12 +211,14 @@ class HoldoutIterator(TrainValidIterator):
             New iterator.
 
         """
-        train_valid = cast('HoldoutIterator', super().apply_feature_pipeline(features_pipeline))
+        train_valid = cast(
+            "HoldoutIterator", super().apply_feature_pipeline(features_pipeline)
+        )
         train_valid.valid = features_pipeline.transform(train_valid.valid)
 
         return train_valid
 
-    def apply_selector(self, selector) -> 'HoldoutIterator':
+    def apply_selector(self, selector) -> "HoldoutIterator":
         """Same as for basic class, but also apply to validation.
 
         Args:
@@ -214,12 +228,12 @@ class HoldoutIterator(TrainValidIterator):
             New iterator.
 
         """
-        train_valid = cast('HoldoutIterator', super().apply_selector(selector))
+        train_valid = cast("HoldoutIterator", super().apply_selector(selector))
         train_valid.valid = selector.select(train_valid.valid)
 
         return train_valid
 
-    def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
+    def convert_to_holdout_iterator(self) -> "HoldoutIterator":
         """Do nothing, just return itself.
 
         Returns:
@@ -264,7 +278,10 @@ class CustomIterator(TrainValidIterator):
             Data generator.
 
         """
-        generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator)
+        generator = (
+            (val_idx, self.train[tr_idx], self.train[val_idx])
+            for (tr_idx, val_idx) in self.iterator
+        )
 
         return generator
 
@@ -277,7 +294,7 @@ class CustomIterator(TrainValidIterator):
         """
         return self.train
 
-    def convert_to_holdout_iterator(self) -> 'HoldoutIterator':
+    def convert_to_holdout_iterator(self) -> "HoldoutIterator":
         """Convert iterator to hold-out-iterator.
 
         Use first train/valid split for :class:`~lightautoml.validation.base.HoldoutIterator` creation.

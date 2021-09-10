@@ -123,4 +123,3 @@ Image
 
     ImageFeaturesTransformer
     AutoCVWrap
-

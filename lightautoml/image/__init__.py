@@ -1,3 +1,3 @@
 """Provides an internal interface for working with image features."""
 
-__all__ = ['image']
+__all__ = ["image"]

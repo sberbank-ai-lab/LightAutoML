@@ -1,23 +1,45 @@
 """Reader and its derivatives."""
 
-from copy import deepcopy, copy
-from typing import Any, Union, Dict, List, Sequence, TypeVar, Optional, cast
+import logging
+
+from copy import copy
+from copy import deepcopy
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import TypeVar
+from typing import Union
+from typing import cast
 
 import numpy as np
 import pandas as pd
-from pandas import Series, DataFrame
 
-from .guess_roles import get_numeric_roles_stat, calc_encoding_rules, rule_based_roles_guess, \
-    get_category_roles_stat, calc_category_rules, rule_based_cat_handler_guess, get_null_scores
-from .utils import set_sklearn_folds
-from ..dataset.base import valid_array_attributes, array_attr_roles
+from pandas import DataFrame
+from pandas import Series
+
+from ..dataset.base import array_attr_roles
+from ..dataset.base import valid_array_attributes
 from ..dataset.np_pd_dataset import PandasDataset
-from ..dataset.roles import ColumnRole, DropRole, DatetimeRole, CategoryRole, NumericRole
+from ..dataset.roles import CategoryRole
+from ..dataset.roles import ColumnRole
+from ..dataset.roles import DatetimeRole
+from ..dataset.roles import DropRole
+from ..dataset.roles import NumericRole
 from ..dataset.utils import roles_parser
 from ..tasks import Task
-from ..utils.logging import get_logger
+from .guess_roles import calc_category_rules
+from .guess_roles import calc_encoding_rules
+from .guess_roles import get_category_roles_stat
+from .guess_roles import get_null_scores
+from .guess_roles import get_numeric_roles_stat
+from .guess_roles import rule_based_cat_handler_guess
+from .guess_roles import rule_based_roles_guess
+from .utils import set_sklearn_folds
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 # roles, how it's passed to automl
 RoleType = TypeVar("RoleType", bound=ColumnRole)
@@ -28,7 +50,9 @@ UserDefinedRole = Optional[Union[str, RoleType]]
 
 UserDefinedRolesDict = Dict[UserDefinedRole, Sequence[str]]
 UserDefinedRolesSequence = Sequence[UserDefinedRole]
-UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
+UserRolesDefinition = Optional[
+    Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]
+]
 
 
 class Reader:
@@ -76,8 +100,13 @@ class Reader:
         """Dict of used array attributes."""
         return self._used_array_attrs
 
-    def fit_read(self, train_data: Any, features_names: Optional[List[str]] = None, roles: UserRolesDefinition = None,
-                 **kwargs: Any):
+    def fit_read(
+        self,
+        train_data: Any,
+        features_names: Optional[List[str]] = None,
+        roles: UserRolesDefinition = None,
+        **kwargs: Any
+    ):
         """Abstract function to get dataset with initial feature selection."""
         raise NotImplementedError
 
@@ -85,7 +114,11 @@ class Reader:
         """Abstract function to add validation columns."""
         raise NotImplementedError
 
-    def upd_used_features(self, add: Optional[Sequence[str]] = None, remove: Optional[Sequence[str]] = None):
+    def upd_used_features(
+        self,
+        add: Optional[Sequence[str]] = None,
+        remove: Optional[Sequence[str]] = None,
+    ):
         """Updates the list of used features.
 
         Args:
@@ -101,7 +134,7 @@ class Reader:
         self._used_features = list(curr_feats)
 
     @classmethod
-    def from_reader(cls, reader: 'Reader', **kwargs) -> 'Reader':
+    def from_reader(cls, reader: "Reader", **kwargs) -> "Reader":
         """Create reader for new data type from existed.
 
         Note - for now only Pandas reader exists, made for future plans.
@@ -117,20 +150,20 @@ class Reader:
         new_reader = cls(reader.task, **kwargs)
 
         for attr in reader.__dict__:
-            if attr[0] == '_':
+            if attr[0] == "_":
                 cls.__dict__[attr] = getattr(reader, attr)
 
         return new_reader
-    
+
     def cols_by_type(self, col_type: str) -> List[str]:
         """Get roles names by it's type.
-        
+
         Args:
             col_type: Column type, for example 'Text'.
-            
+
         Returns:
             Array with column names.
-            
+
         """
         names = []
         for col, role in self.roles.items():
@@ -154,14 +187,27 @@ class PandasToPandasReader(Reader):
 
     """
 
-    def __init__(self, task: Task, samples: Optional[int] = 100000, max_nan_rate: float = 0.999, max_constant_rate: float = 0.999,
-                 cv: int = 5, random_state: int = 42, roles_params: Optional[dict] = None, n_jobs: int = 4,
-                 # params for advanced roles guess
-                 advanced_roles: bool = True, numeric_unique_rate: float = .999, max_to_3rd_rate: float = 1.1,
-                 binning_enc_rate: float = 2, raw_decr_rate: float = 1.1,
-                 max_score_rate: float = .2, abs_score_val: float = .04,
-                 drop_score_co: float = .01,
-                 **kwargs: Any):
+    def __init__(
+        self,
+        task: Task,
+        samples: Optional[int] = 100000,
+        max_nan_rate: float = 0.999,
+        max_constant_rate: float = 0.999,
+        cv: int = 5,
+        random_state: int = 42,
+        roles_params: Optional[dict] = None,
+        n_jobs: int = 4,
+        # params for advanced roles guess
+        advanced_roles: bool = True,
+        numeric_unique_rate: float = 0.999,
+        max_to_3rd_rate: float = 1.1,
+        binning_enc_rate: float = 2,
+        raw_decr_rate: float = 1.1,
+        max_score_rate: float = 0.2,
+        abs_score_val: float = 0.04,
+        drop_score_co: float = 0.01,
+        **kwargs: Any
+    ):
         """
 
         Args:
@@ -201,21 +247,24 @@ class PandasToPandasReader(Reader):
 
         self.advanced_roles = advanced_roles
         self.advanced_roles_params = {
-
-            'numeric_unique_rate': numeric_unique_rate,
-            'max_to_3rd_rate': max_to_3rd_rate,
-            'binning_enc_rate': binning_enc_rate,
-            'raw_decr_rate': raw_decr_rate,
-            'max_score_rate': max_score_rate,
-            'abs_score_val': abs_score_val,
-            'drop_score_co': drop_score_co
-
+            "numeric_unique_rate": numeric_unique_rate,
+            "max_to_3rd_rate": max_to_3rd_rate,
+            "binning_enc_rate": binning_enc_rate,
+            "raw_decr_rate": raw_decr_rate,
+            "max_score_rate": max_score_rate,
+            "abs_score_val": abs_score_val,
+            "drop_score_co": drop_score_co,
         }
 
         self.params = kwargs
 
-    def fit_read(self, train_data: DataFrame, features_names: Any = None, roles: UserDefinedRolesDict = None,
-                 **kwargs: Any) -> PandasDataset:
+    def fit_read(
+        self,
+        train_data: DataFrame,
+        features_names: Any = None,
+        roles: UserDefinedRolesDict = None,
+        **kwargs: Any
+    ) -> PandasDataset:
         """Get dataset with initial feature selection.
 
         Args:
@@ -229,7 +278,7 @@ class PandasToPandasReader(Reader):
             Dataset with selected features.
 
         """
-        logger.info('Train data shape: {}'.format(train_data.shape))
+        logger.info("\x1b[1mTrain data shape: {}\x1b[0m\n".format(train_data.shape))
 
         if roles is None:
             roles = {}
@@ -257,9 +306,9 @@ class PandasToPandasReader(Reader):
             # add new role
             parsed_roles[feat] = r
 
-        assert 'target' in kwargs, 'Target should be defined'
-        self.target = kwargs['target'].name
-        kwargs['target'] = self._create_target(kwargs['target'])
+        assert "target" in kwargs, "Target should be defined"
+        self.target = kwargs["target"].name
+        kwargs["target"] = self._create_target(kwargs["target"])
 
         # TODO: Check target and task
         # get subsample if it needed
@@ -269,31 +318,43 @@ class PandasToPandasReader(Reader):
 
         # infer roles
         for feat in subsample.columns:
-            assert isinstance(feat, str), 'Feature names must be string,' \
-                                          ' find feature name: {}, with type: {}'.format(feat, type(feat))
+            assert isinstance(feat, str), (
+                "Feature names must be string,"
+                " find feature name: {}, with type: {}".format(feat, type(feat))
+            )
             if feat in parsed_roles:
                 r = parsed_roles[feat]
                 # handle datetimes
-                if r.name == 'Datetime':
+                if r.name == "Datetime":
                     # try if it's ok to infer date with given params
                     try:
-                        _ = pd.to_datetime(subsample[feat], format=r.format, origin=r.origin, unit=r.unit)
+                        _ = pd.to_datetime(
+                            subsample[feat],
+                            format=r.format,
+                            origin=r.origin,
+                            unit=r.unit,
+                        )
                     except ValueError:
-                        raise ValueError('Looks like given datetime parsing params are not correctly defined')
+                        raise ValueError(
+                            "Looks like given datetime parsing params are not correctly defined"
+                        )
 
                 # replace default category dtype for numeric roles dtype if cat col dtype is numeric
-                if r.name == 'Category':
+                if r.name == "Category":
                     # default category role
-                    cat_role = self._get_default_role_from_str('category')
+                    cat_role = self._get_default_role_from_str("category")
                     # check if role with dtypes was exactly defined
                     try:
-                        flg_default_params = feat in roles['category']
+                        flg_default_params = feat in roles["category"]
                     except KeyError:
                         flg_default_params = False
 
-                    if flg_default_params and not np.issubdtype(cat_role.dtype, np.number) and \
-                            np.issubdtype(subsample.dtypes[feat], np.number):
-                        r.dtype = self._get_default_role_from_str('numeric').dtype
+                    if (
+                        flg_default_params
+                        and not np.issubdtype(cat_role.dtype, np.number)
+                        and np.issubdtype(subsample.dtypes[feat], np.number)
+                    ):
+                        r.dtype = self._get_default_role_from_str("numeric").dtype
 
             else:
                 # if no - infer
@@ -304,29 +365,42 @@ class PandasToPandasReader(Reader):
                     r = DropRole()
 
             # set back
-            if r.name != 'Drop':
+            if r.name != "Drop":
                 self._roles[feat] = r
                 self._used_features.append(feat)
             else:
                 self._dropped_features.append(feat)
 
-        assert len(self.used_features) > 0, 'All features are excluded for some reasons'
+        assert len(self.used_features) > 0, "All features are excluded for some reasons"
         # assert len(self.used_array_attrs) > 0, 'At least target should be defined in train dataset'
         # create folds
 
-        folds = set_sklearn_folds(self.task, kwargs['target'].values, cv=self.cv, random_state=self.random_state,
-                                  group=None if 'group' not in kwargs else kwargs['group'])
+        folds = set_sklearn_folds(
+            self.task,
+            kwargs["target"].values,
+            cv=self.cv,
+            random_state=self.random_state,
+            group=None if "group" not in kwargs else kwargs["group"],
+        )
         if folds is not None:
-            kwargs['folds'] = Series(folds, index=train_data.index)
+            kwargs["folds"] = Series(folds, index=train_data.index)
 
         # get dataset
-        dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
+        dataset = PandasDataset(
+            train_data[self.used_features], self.roles, task=self.task, **kwargs
+        )
         if self.advanced_roles:
             new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
-            droplist = [x for x in new_roles if new_roles[x].name == 'Drop' and not self._roles[x].force_input]
+            droplist = [
+                x
+                for x in new_roles
+                if new_roles[x].name == "Drop" and not self._roles[x].force_input
+            ]
             self.upd_used_features(remove=droplist)
             self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
-            dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
+            dataset = PandasDataset(
+                train_data[self.used_features], self.roles, task=self.task, **kwargs
+            )
 
         return dataset
 
@@ -342,10 +416,10 @@ class PandasToPandasReader(Reader):
         """
         self.class_mapping = None
 
-        if self.task.name != 'reg':
+        if self.task.name != "reg":
             # expect binary or multiclass here
             cnts = target.value_counts(dropna=False)
-            assert np.nan not in cnts.index, 'Nan in target detected'
+            assert np.nan not in cnts.index, "Nan in target detected"
             unqiues = cnts.index.values
             srtd = np.sort(unqiues)
             self._n_classes = len(unqiues)
@@ -353,16 +427,18 @@ class PandasToPandasReader(Reader):
             # case - target correctly defined and no mapping
             if (np.arange(srtd.shape[0]) == srtd).all():
 
-                assert srtd.shape[0] > 1, 'Less than 2 unique values in target'
-                if self.task.name == 'binary':
-                    assert srtd.shape[0] == 2, 'Binary task and more than 2 values in target'
+                assert srtd.shape[0] > 1, "Less than 2 unique values in target"
+                if self.task.name == "binary":
+                    assert (
+                        srtd.shape[0] == 2
+                    ), "Binary task and more than 2 values in target"
                 return target
 
             # case - create mapping
             self.class_mapping = {n: x for (x, n) in enumerate(unqiues)}
             return target.map(self.class_mapping).astype(np.int32)
 
-        assert not np.isnan(target.values).any(), 'Nan in target detected'
+        assert not np.isnan(target.values).any(), "Nan in target detected"
         return target
 
     def _get_default_role_from_str(self, name) -> RoleType:
@@ -399,7 +475,7 @@ class PandasToPandasReader(Reader):
         """
         # TODO: Plans for advanced roles guessing
         # check if default numeric dtype defined
-        num_dtype = self._get_default_role_from_str('numeric').dtype
+        num_dtype = self._get_default_role_from_str("numeric").dtype
         # check if feature is number
         try:
             _ = feature.astype(num_dtype)
@@ -410,11 +486,16 @@ class PandasToPandasReader(Reader):
             pass
 
         # check if default format is defined
-        date_format = self._get_default_role_from_str('datetime').format
+        date_format = self._get_default_role_from_str("datetime").format
         # check if it's datetime
         try:
             # TODO: check all notnans and set coerce errors
-            _ = cast(pd.Series, pd.to_datetime(feature, infer_datetime_format=False, format=date_format)).dt.tz_localize('UTC')
+            _ = cast(
+                pd.Series,
+                pd.to_datetime(
+                    feature, infer_datetime_format=False, format=date_format
+                ),
+            ).dt.tz_localize("UTC")
             return DatetimeRole(np.datetime64, date_format=date_format)
         except (ValueError, AttributeError):
             # else category
@@ -432,11 +513,15 @@ class PandasToPandasReader(Reader):
         """
         if feature.isnull().mean() >= self.max_nan_rate:
             return False
-        if (feature.value_counts().values[0] / feature.shape[0]) >= self.max_constant_rate:
+        if (
+            feature.value_counts().values[0] / feature.shape[0]
+        ) >= self.max_constant_rate:
             return False
         return True
 
-    def read(self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
+    def read(
+        self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False
+    ) -> PandasDataset:
         """Read dataset with fitted metadata.
 
         Args:
@@ -458,15 +543,23 @@ class PandasToPandasReader(Reader):
                 except KeyError:
                     continue
 
-                if array_attr == 'target' and self.class_mapping is not None:
-                    val = Series(val.map(self.class_mapping).values, index=data.index, name=col_name)
+                if array_attr == "target" and self.class_mapping is not None:
+                    val = Series(
+                        val.map(self.class_mapping).values,
+                        index=data.index,
+                        name=col_name,
+                    )
                 kwargs[array_attr] = val
 
-        dataset = PandasDataset(data[self.used_features], roles=self.roles, task=self.task, **kwargs)
+        dataset = PandasDataset(
+            data[self.used_features], roles=self.roles, task=self.task, **kwargs
+        )
 
         return dataset
 
-    def advanced_roles_guess(self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None) -> RolesDict:
+    def advanced_roles_guess(
+        self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None
+    ) -> RolesDict:
         """Advanced roles guess over user's definition and reader's simple guessing.
 
         Strategy - compute feature's NormalizedGini
@@ -488,44 +581,55 @@ class PandasToPandasReader(Reader):
         top_scores = []
         new_roles_dict = dataset.roles
         advanced_roles_params = deepcopy(self.advanced_roles_params)
-        drop_co = advanced_roles_params.pop('drop_score_co')
+        drop_co = advanced_roles_params.pop("drop_score_co")
         # guess roles nor numerics
 
-        stat = get_numeric_roles_stat(dataset, manual_roles=manual_roles,
-                                      random_state=self.random_state,
-                                      subsample=self.samples,
-                                      n_jobs=self.n_jobs
-                                      )
+        stat = get_numeric_roles_stat(
+            dataset,
+            manual_roles=manual_roles,
+            random_state=self.random_state,
+            subsample=self.samples,
+            n_jobs=self.n_jobs,
+        )
 
         if len(stat) > 0:
             # upd stat with rules
 
             stat = calc_encoding_rules(stat, **advanced_roles_params)
             new_roles_dict = {**new_roles_dict, **rule_based_roles_guess(stat)}
-            top_scores.append(stat['max_score'])
+            top_scores.append(stat["max_score"])
         #
         # # # guess categories handling type
-        stat = get_category_roles_stat(dataset, random_state=self.random_state,
-                                       subsample=self.samples, n_jobs=self.n_jobs)
+        stat = get_category_roles_stat(
+            dataset,
+            random_state=self.random_state,
+            subsample=self.samples,
+            n_jobs=self.n_jobs,
+        )
         if len(stat) > 0:
             # upd stat with rules
             # TODO: add sample params
 
             stat = calc_category_rules(stat)
             new_roles_dict = {**new_roles_dict, **rule_based_cat_handler_guess(stat)}
-            top_scores.append(stat['max_score'])
+            top_scores.append(stat["max_score"])
         #
         # # get top scores of feature
         if len(top_scores) > 0:
             top_scores = pd.concat(top_scores, axis=0)
             # TODO: Add sample params
 
-            null_scores = get_null_scores(dataset, list(top_scores.index), random_state=self.random_state,
-                                          subsample=self.samples)
+            null_scores = get_null_scores(
+                dataset,
+                list(top_scores.index),
+                random_state=self.random_state,
+                subsample=self.samples,
+            )
             top_scores = pd.concat([null_scores, top_scores], axis=1).max(axis=1)
             rejected = list(top_scores[top_scores < drop_co].index)
-            logger.info('Feats was rejected during automatic roles guess: {0}'.format(rejected))
+            logger.info3(
+                "Feats was rejected during automatic roles guess: {0}".format(rejected)
+            )
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict
-    

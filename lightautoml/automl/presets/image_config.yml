@@ -172,8 +172,3 @@ autocv_features:
   is_advprop: True
   batch_size: 128
   verbose: True
-
-
-
-
-

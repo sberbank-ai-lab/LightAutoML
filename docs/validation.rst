@@ -38,4 +38,3 @@ Iterators Getters and Utils
 
     ~utils.create_validation_iterator
     ~np_iterators.get_numpy_iterator
-

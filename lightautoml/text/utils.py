@@ -2,21 +2,28 @@
 
 import os
 import random
-from typing import Dict, List, Sequence
+
+from typing import Dict
+from typing import List
+from typing import Sequence
 
 import numpy as np
 import torch
+
 from sklearn.utils.murmurhash import murmurhash3_32
 
-_dtypes_mapping = {'label': 'float',
-                   'cat': 'long',
-                   'cont': 'float',
-                   'weight': 'float',
-                   'input_ids': 'long',
-                   'attention_mask': 'long',
-                   'token_type_ids': 'long',
-                   'text': 'float',  # embeddings
-                   'length': 'long'}
+
+_dtypes_mapping = {
+    "label": "float",
+    "cat": "long",
+    "cont": "float",
+    "weight": "float",
+    "input_ids": "long",
+    "attention_mask": "long",
+    "token_type_ids": "long",
+    "text": "float",  # embeddings
+    "length": "long",
+}
 
 
 def inv_sigmoid(x: np.ndarray) -> np.ndarray:
@@ -59,7 +66,7 @@ def is_shuffle(stage: str) -> bool:
         Bool value.
 
     """
-    is_sh = {'train': True, 'val': False, 'test': False}
+    is_sh = {"train": True, "val": False, "test": False}
     return is_sh[stage]
 
 
@@ -72,7 +79,7 @@ def seed_everything(seed: int = 42, deterministic: bool = True):
 
     """
     random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -94,28 +101,28 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
     device = []
     ids = []
     if (not torch.cuda.is_available()) or (dvs is None):
-        return torch.device('cpu'), None
+        return torch.device("cpu"), None
 
     if not isinstance(dvs, (list, tuple)):
         dvs = [dvs]
 
     for _device in dvs:
         if isinstance(_device, str):
-            if _device.startswith('cuda:'):
-                ids.append(int(_device.split('cuda:')[-1]))
-            elif _device == 'cuda':
+            if _device.startswith("cuda:"):
+                ids.append(int(_device.split("cuda:")[-1]))
+            elif _device == "cuda":
                 ids.append(0)
-            elif _device == 'cpu':
-                return torch.device('cpu'), None
+            elif _device == "cpu":
+                return torch.device("cpu"), None
             else:
                 ids.append(int(_device))
                 _device = torch.device(int(_device))
 
         elif isinstance(_device, int):
             ids.append(_device)
-            _device = torch.device('cuda:{}'.format(_device))
+            _device = torch.device("cuda:{}".format(_device))
         elif isinstance(_device, torch.device):
-            if _device.type == 'cpu':
+            if _device.type == "cpu":
                 return _device, None
             else:
                 if _device.index is None:
@@ -123,7 +130,7 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
                 else:
                     ids.append(_device.index)
         else:
-            raise ValueError('Unknown device type: {}'.format(_device))
+            raise ValueError("Unknown device type: {}".format(_device))
 
         device.append(_device)
 
@@ -147,7 +154,9 @@ def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
 def collate_dict(batch: List[Dict[str, np.ndarray]]) -> Dict[str, torch.Tensor]:
     """custom_collate for dicts."""
     keys = list(batch[0].keys())
-    transposed_data = list(map(list, zip(*[tuple([i[name] for name in i.keys()]) for i in batch])))
+    transposed_data = list(
+        map(list, zip(*[tuple([i[name] for name in i.keys()]) for i in batch]))
+    )
     return {key: custom_collate(transposed_data[n]) for n, key in enumerate(keys)}
 
 
@@ -162,7 +171,7 @@ def single_text_hash(x: str) -> str:
 
     """
     numhash = murmurhash3_32(x, seed=13)
-    texthash = str(numhash) if numhash > 0 else 'm' + str(abs(numhash))
+    texthash = str(numhash) if numhash > 0 else "m" + str(abs(numhash))
     return texthash
 
 
@@ -179,8 +188,8 @@ def get_textarr_hash(x: Sequence[str]) -> str:
     full_hash = single_text_hash(str(x))
     n = 0
     for text in x:
-        if text != '':
-            full_hash += '_' + single_text_hash(text)
+        if text != "":
+            full_hash += "_" + single_text_hash(text)
             n += 1
             if n >= 3:
                 break
