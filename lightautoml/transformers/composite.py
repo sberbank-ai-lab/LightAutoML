@@ -17,9 +17,11 @@ from .utils import GroupByNumMin
 from .utils import GroupByNumStd
 from .utils import GroupByProcessor
 
+
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
-                  
+
+
 class GroupByTransformer(LAMLTransformer):
     """Transformer, that calculates group_by features.
 
@@ -34,12 +36,12 @@ class GroupByTransformer(LAMLTransformer):
             - Categorical features:
                 - Group mode.
                 - Is current value equal to group mode.
-                
+
     Attributes:
         features list(str): generated features names.
-        
+
     """
-        
+
     _fit_checks = ()
     _transform_checks = ()
     _fname_prefix = "grb"
@@ -58,9 +60,9 @@ class GroupByTransformer(LAMLTransformer):
             use_cat_groups (boolean): flag to show use for category features.
 
         """
-        
+
         super().__init__()
-       
+
         self.num_groups = (
             num_groups
             if num_groups is not None
@@ -73,9 +75,9 @@ class GroupByTransformer(LAMLTransformer):
             ]
         )
         self.use_cat_groups = use_cat_groups
-        self.dicts = {}        
+        self.dicts = {}
 
-    def fit(self, dataset):    
+    def fit(self, dataset):
         """Fit transformer and return it's instance.
 
         Args:
@@ -94,21 +96,21 @@ class GroupByTransformer(LAMLTransformer):
         # set transformer names and add checks
         for check_func in self._fit_checks:
             check_func(dataset)
-            
+
         # convert to accepted dtype and get attributes
         dataset = dataset.to_pandas()
-        
+
         # set transformer features
         cat_cols = get_columns_by_role(dataset, "Category")
         num_cols = get_columns_by_role(dataset, "Numeric")
         logger.debug("GroupByTransformer.__fit.cat_cols={0}".format(cat_cols))
         logger.debug("GroupByTransformer.__fit.num_cols:{0}".format(num_cols))
-        
+
         feats = []
         for group_column in cat_cols:
             group_values = dataset.data[group_column].to_numpy()
             group_by_processor = GroupByProcessor(group_values)
-            
+
             for feature_column in num_cols:
                 for kind in self.num_groups:
                     feature = f"{self._fname_prefix}__{group_column}__{kind}__{feature_column}"
@@ -123,10 +125,10 @@ class GroupByTransformer(LAMLTransformer):
                         "kind": kind,
                     }
                     feats.append(feature)
-                
+
             if self.use_cat_groups:
                 for feature_column in cat_cols:
-                    if group_column != feature_column:    
+                    if group_column != feature_column:
                         kind = GroupByCatMode.class_kind
 
                         # group results are the same for "cat_mode" and "cat_is_mode"
@@ -158,15 +160,15 @@ class GroupByTransformer(LAMLTransformer):
                             "kind": kind,
                         }
                         feats.extend([feature1, feature2])
-            
+
         self._features = feats
 
         logger.debug(
             "self._features:({0}) {1}".format(len(self._features), self._features)
         )
-        
+
         logger.debug("GroupByTransformer.__fit.end")
-        
+
         return self
 
     def transform(self, dataset):
@@ -186,7 +188,7 @@ class GroupByTransformer(LAMLTransformer):
 
         # checks here
         super().transform(dataset)
-        
+
         # convert to accepted dtype and get attributes
         dataset = dataset.to_pandas()
 
@@ -197,12 +199,12 @@ class GroupByTransformer(LAMLTransformer):
         for feat, value in self.dicts.items():
 
             new_arr = value["groups"].transform(data=dataset.data, value=value)
-            
+
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, [feat], roles)
             outputs.append(output)
 
         logger.debug("GroupByTransformer.transform.end")
-            
-        # create resulted        
+
+        # create resulted
         return dataset.empty().to_numpy().concat(outputs)

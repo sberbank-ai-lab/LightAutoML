@@ -17,10 +17,10 @@ from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.pipelines.utils import get_columns_by_role
 from lightautoml.reader.base import PandasToPandasReader
 from lightautoml.tasks import Task
+from lightautoml.transformers.base import ChangeRoles
+from lightautoml.transformers.base import ColumnsSelector
 from lightautoml.transformers.base import SequentialTransformer
 from lightautoml.transformers.base import UnionTransformer
-from lightautoml.transformers.base import ColumnsSelector
-from lightautoml.transformers.base import ChangeRoles
 from lightautoml.transformers.categorical import LabelEncoder
 from lightautoml.transformers.composite import GroupByTransformer
 from lightautoml.transformers.numeric import FillnaMedian
@@ -37,23 +37,23 @@ N_THREADS = 4  # threads cnt for lgbm and linear models
 
 class GroupByPipeline(FeaturesPipeline, TabularDataFeatures):
     def __init__(
-        self, feats_imp = None, top_category: int = 3, top_numeric: int = 3, **kwargs
+        self, feats_imp=None, top_category: int = 3, top_numeric: int = 3, **kwargs
     ):
         """Helper class to create pipeline with group_by transformer.
         """
-        
+
         super().__init__(feats_imp=feats_imp)
-        
+
         self.top_group_by_categorical = top_category
         self.top_group_by_numerical = top_numeric
-        
+
     def create_pipeline(self, train):
         return self.get_group_by(train)
-    
-    
+
+
 def test_groupby_transformer():
     np.random.seed(RANDOM_STATE)
-    
+
     logging.basicConfig(
         format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.WARNING
     )
@@ -61,12 +61,12 @@ def test_groupby_transformer():
     data = pd.read_csv("../example_data/test_data_files/sampled_app_train.csv")
 
     data["BIRTH_DATE"] = (
-            np.datetime64("2018-01-01")
-            + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
+        np.datetime64("2018-01-01")
+        + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
     ).astype(str)
     data["EMP_DATE"] = (
-            np.datetime64("2018-01-01")
-            + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+        np.datetime64("2018-01-01")
+        + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
     ).astype(str)
 
     data["report_dt"] = np.datetime64("2018-01-01")
@@ -90,7 +90,7 @@ def test_groupby_transformer():
     roles = {
         "target": "TARGET",
     }
-    
+
     reader = PandasToPandasReader(
         task, cv=N_FOLDS, random_state=RANDOM_STATE, advanced_roles=False
     )
@@ -100,7 +100,7 @@ def test_groupby_transformer():
             "learning_rate": 0.05,
             "num_leaves": 128,
             "seed": 1,
-            "num_threads": N_THREADS
+            "num_threads": N_THREADS,
         }
     )
     
@@ -112,7 +112,7 @@ def test_groupby_transformer():
         ],
         features_pipeline=pipe,
     )
-    
+
     automl = AutoML(
         reader,
         [
@@ -121,7 +121,7 @@ def test_groupby_transformer():
         skip_conn=False,
         verbose=1,
     )
-    
+
     oof_pred = automl.fit_predict(
         train,
         train_features=["AMT_CREDIT", "AMT_ANNUITY"],
@@ -133,7 +133,7 @@ def test_groupby_transformer():
 
     logging.debug("Check scores...")
     oof_prediction = oof_pred.data[:, 0]
-    not_empty = np.logical_not(np.isnan(oof_prediction))    
+    not_empty = np.logical_not(np.isnan(oof_prediction))
     logging.debug(
         "OOF score: {}".format(
             roc_auc_score(train["TARGET"][not_empty], oof_prediction[not_empty])
@@ -144,4 +144,3 @@ def test_groupby_transformer():
             roc_auc_score(test["TARGET"].values, test_pred.data[:, 0])
         )
     )
-

@@ -45,10 +45,12 @@ from ...utils.logging import verbosity_to_loglevel
 from ..utils import get_columns_by_role
 from ..utils import map_pipeline_names
 
+
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 logger = get_logger(__name__)
 logger.setLevel(verbosity_to_loglevel(3))
+
 
 class FeaturesPipeline:
     """Abstract class.
@@ -638,10 +640,10 @@ class TabularDataFeatures:
         feats_to_select_numerical: Optional[List[str]] = None,
     ) -> Optional[LAMLTransformer]:
         """Get transformer that calculates group by features.
-        
+
         Note:
             Amount of features is limited to ``self.top_group_by_categorical`` and ``self.top_group_by_numerical`` fields
-        
+
         Args:
             train: Dataset with train data.
             feats_to_select_categorical: features to handle. If ``None`` - default filter.
@@ -663,14 +665,14 @@ class TabularDataFeatures:
                 cat_feats_to_select = categories
         else:
             cat_feats_to_select = feats_to_select_categorical
-            
+
         assert len(cat_feats_to_select) > 0
         logger.debug(
             "GroupByPipeline.create_pipeline.cat_feats_to_select:{0}".format(
                 cat_feats_to_select
             )
         )
-            
+
         num_feats_to_select = []
         if feats_to_select_numerical is None:
             numerics = get_columns_by_role(train, "Numeric")
@@ -712,12 +714,12 @@ class TabularDataFeatures:
                                             [
                                                 FillInf(),
                                                 FillnaMedian(),
-                                                StandardScaler()
+                                                StandardScaler(),
                                             ]
                                         ),
-                                        NaNFlags()
+                                        NaNFlags(),
                                     ]
-                                )
+                                ),
                             ]
                         ),
                     ]
@@ -725,5 +727,5 @@ class TabularDataFeatures:
                 GroupByTransformer(),
             ]
         )
-            
+
         return groupby_processing
