@@ -2,7 +2,13 @@ import numpy as np
 
 def rolling_window(a, window, step=1, from_last=True):
     'from_last == True - will cut first step-1 elements'
-    return np.lib.stride_tricks.sliding_window_view(a, window)[(len(a) - window) % step if from_last else 0:][::step]
+    def sliding_window_view(a, window):
+        shape = a.shape[:-1] + (a.shape[-1] - window + 1,) + (window,)
+        strides = a.strides[:-1] + (a.strides[-1],) + a.strides[-1:]
+        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+    sliding_window = sliding_window_view(a, window) if np.__version__ < '1.20' else np.lib.stride_tricks.sliding_window_view(a, window)
+    return sliding_window[(len(a) - window) % step if from_last else 0:][::step]
+
 
 class CreateInd:
     def __init__(self, top_k=5):

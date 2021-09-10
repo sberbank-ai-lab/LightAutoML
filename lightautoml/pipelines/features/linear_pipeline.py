@@ -19,7 +19,9 @@ from ...transformers.numeric import FillnaMedian
 from ...transformers.numeric import LogOdds
 from ...transformers.numeric import NaNFlags
 from ...transformers.numeric import StandardScaler
+from ...transformers.datetime import FutureTrendTransformer
 from ...transformers.datetime import TimeToNum
+
 
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
@@ -220,6 +222,10 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         return union_all
 
 class LinearTrendFeatures(FeaturesPipeline):
+    def __init__(self, n_target, **kwargs):
+        self.n_target = n_target
+        super().__init__(**kwargs)
+
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create linear pipeline.
 
@@ -235,7 +241,8 @@ class LinearTrendFeatures(FeaturesPipeline):
         datetimes = [get_columns_by_role(train, 'Datetime')[0]]
         if len(datetimes) > 0:
             dt_processing = SequentialTransformer([
-
+                
+                FutureTrendTransformer(key=datetimes[0], n_target=self.n_target),
                 ColumnsSelector(keys=datetimes),
                 TimeToNum(),
                 StandardScaler()

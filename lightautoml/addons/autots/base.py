@@ -41,7 +41,8 @@ class AutoTS:
         if self.params.get('trend', True):
             reader_trend = DictToNumpySeqReader(task=self.task_trend, cv=2, seq_params={})
 
-            feats_trend = LinearTrendFeatures()
+            # feats_trend = LinearTrendFeatures()
+            feats_trend = LinearTrendFeatures(n_target=self.seq_params['seq0']['params']['n_target'])
             model_trend = LinearLBFGS()
             pipeline_trend = MLPipeline([model_trend],
                                         pre_selection=None,
