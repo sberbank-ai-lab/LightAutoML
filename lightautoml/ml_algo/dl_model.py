@@ -14,7 +14,7 @@ import torch.nn as nn
 from optuna import Trial
 from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
-from .nn_models import DenseLightModel, DenseModel, ResNetModel, MLP, LinearLayer
+from .nn_models import DenseLightModel, DenseModel, ResNetModel, MLP, LinearLayer, SNN
 from .tuning.base import Distribution, SearchSpace
 from .tuning.optuna import OptunaTunableMixin
 
@@ -40,7 +40,7 @@ from ..ml_algo.torch_based.act_funcs import TS
 logger = logging.getLogger(__name__)
 
 model_by_name = {'dense_light': DenseLightModel, 'dense': DenseModel, 'resnet': ResNetModel,
-                 'mlp': MLP, 'dense_layer': LinearLayer}
+                 'mlp': MLP, 'dense_layer': LinearLayer, 'snn': SNN}
 
 
 class TorchModel(TabularMLAlgo, OptunaTunableMixin):

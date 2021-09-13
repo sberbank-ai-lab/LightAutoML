@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
+import numpy as np
 
 
 class GaussianNoise(nn.Module):
@@ -356,3 +357,38 @@ class ResNetModel(nn.Module):
         out = self.fc(out)
         out = out.view(out.shape[0], -1)
         return out
+
+
+class SNN(nn.Module):
+    def __init__(self, n_in, n_out, hidden_size=512, n_layers=3, dropout_prob=0.1,
+                 use_dropout=True, **kwargs):
+        super().__init__()
+        layers = OrderedDict()
+        for i in range(n_layers - 1):
+            if i == 0:
+                layers[f"fc{i}"] = nn.Linear(n_in, hidden_size, bias=False)
+            else:
+                layers[f"fc{i}"] = nn.Linear(hidden_size, hidden_size, bias=False)
+            layers[f"selu_{i}"] = nn.SELU()
+
+            if use_dropout:
+                layers[f"dropout_{i}"] = nn.AlphaDropout(p=dropout_prob)
+
+        layers[f"fc_{i + 1}"] = nn.Linear(hidden_size, n_out, bias=True)
+        self.network = nn.Sequential(layers)
+        self.reset_parameters()
+
+    def forward(self, x):
+        out = self.network(x)
+        out = out.view(out.shape[0], -1)
+        return out
+
+    def reset_parameters(self):
+        for layer in self.network:
+            if not isinstance(layer, nn.Linear):
+                continue
+            nn.init.normal_(layer.weight, std=1 / np.sqrt(layer.out_features))
+            if layer.bias is not None:
+                fan_in, _ = nn.init._calculate_fan_in_and_fan_out(layer.weight)
+                bound = 1 / np.sqrt(fan_in)
+                nn.init.uniform_(layer.bias, -bound, bound)
