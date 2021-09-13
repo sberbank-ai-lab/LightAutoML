@@ -3,6 +3,7 @@
 from typing import Union
 
 import numpy as np
+from sklearn.preprocessing import QuantileTransformer as SklQntTr
 
 from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import NumpyDataset
@@ -364,3 +365,58 @@ class QuantileBinning(LAMLTransformer):
         )
 
         return output
+
+
+class QuantileTransformer(LAMLTransformer):
+    _fit_checks = (numeric_check,)
+    _transform_checks = ()
+    _fname_prefix = 'qntl_tr'
+    # TODO: Make normal docs
+
+    def __init__(self, n_quantiles=None, subsample=1e9, output_distribution='normal',
+                 noise: float = 1e-3, qnt_factor=30):
+        self.params = {
+            'n_quantiles': n_quantiles,
+            'subsample': subsample,
+            'copy': False,
+            'output_distribution': output_distribution,
+            'noise': noise,
+        }
+        self.qnt_factor = qnt_factor
+        self.transformer = None
+
+    def fit(self, dataset: NumpyTransformable):
+        for check_func in self._fit_checks:
+            check_func(dataset)
+
+        np_dataset = dataset.to_numpy().data
+        if self.params['noise'] is not None:
+            stds = np.std(np_dataset, axis=0, keepdims=True)
+            noise_std = self.params['noise'] / np.maximum(stds, self.params['noise'])
+            np_dataset += noise_std * np.random.randn(*np_dataset.shape)
+
+        if self.params['n_quantiles'] is None:
+            self.params['n_quantiles'] = max(min(np_dataset.shape[0] // self.qnt_factor, 1000), 10)
+
+        skl_params = self.params
+        del skl_params['noise']
+        self.transformer = SklQntTr(**skl_params)
+        self.transformer.fit(np_dataset)
+        self._features = dataset.features
+        return self
+
+    def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
+        # checks here
+        super().transform(dataset)
+        # convert to accepted dtype and get attributes
+        dataset = dataset.to_numpy()
+
+        # transform
+        new_arr = self.transformer.transform(dataset.data)
+
+        # create resulted
+        output = dataset.empty().to_numpy()
+        output.set_data(new_arr, self.features, NumericRole(np.float32))
+
+        return output
+
