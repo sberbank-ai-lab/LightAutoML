@@ -1,6 +1,5 @@
 """Neural Net modules for differen data types."""
 
-
 from typing import Callable
 from typing import Dict
 from typing import Optional
@@ -204,7 +203,7 @@ class CatEmbedder(nn.Module):
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         output = torch.cat(
             [
-                emb_layer(inp["cat"][:, i])
+                emb_layer(inp["cat"][:, i] - 1)
                 for i, emb_layer in enumerate(self.emb_layers)
             ],
             dim=1,
@@ -252,6 +251,7 @@ class TorchUniversalModel(nn.Module):
 
     def __init__(
         self,
+        torch_model: nn.Module,
         loss: Callable,
         task: Task,
         n_out: int = 1,
@@ -262,6 +262,8 @@ class TorchUniversalModel(nn.Module):
         text_embedder: Optional = None,
         text_params: Optional[Dict] = None,
         bias: Optional[Sequence] = None,
+        custom_loss=False,
+        **kwargs,
     ):
         """Class for preparing input for DL model with mixed data.
 
@@ -281,6 +283,7 @@ class TorchUniversalModel(nn.Module):
         super(TorchUniversalModel, self).__init__()
         self.n_out = n_out
         self.loss = loss
+        self.custom_loss = custom_loss
         self.task = task
 
         self.cont_embedder = None
@@ -299,23 +302,26 @@ class TorchUniversalModel(nn.Module):
             n_in += self.text_embedder.get_out_shape()
 
         self.bn = nn.BatchNorm1d(n_in)
-        self.fc = torch.nn.Linear(n_in, self.n_out)
-
-        if bias is not None:
-            bias = torch.Tensor(bias)
-            self.fc.bias.data = nn.Parameter(bias)
-            self.fc.weight.data = nn.Parameter(torch.zeros(self.n_out, n_in))
+        self.torch_model = torch_model(**{**kwargs,
+                                          **{'n_in': n_in, 'n_out': self.n_out,
+                                             'loss': loss, 'task': task}})
 
         if (self.task.name == "binary") or (self.task.name == "multilabel"):
-            self.fc = nn.Sequential(self.fc, Clump(), nn.Sigmoid())
+            self.torch_model = nn.Sequential(self.torch_model, Clump(), nn.Sigmoid())
         elif self.task.name == "multiclass":
-            self.fc = nn.Sequential(self.fc, Clump(), nn.Softmax(dim=1))
+            self.torch_model = nn.Sequential(self.torch_model, Clump(), nn.Softmax(dim=1))
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         x = self.predict(inp)
-        loss = self.loss(
-            inp["label"].view(inp["label"].shape[0], -1), x, inp.get("weight", None)
-        )
+
+        if self.custom_loss:
+            loss = self.loss(
+                x, inp["label"].view(inp["label"].shape[0], -1)
+            )
+        else:
+            loss = self.loss(
+                inp["label"].view(inp["label"].shape[0], -1), x, inp.get("weight", None)
+            )
         return loss
 
     def predict(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -333,5 +339,6 @@ class TorchUniversalModel(nn.Module):
             output = torch.cat(outputs, dim=1)
         else:
             output = outputs[0]
-        logits = self.fc(output)
-        return logits.view(logits.shape[0], -1)
+
+        logits = self.torch_model(output)
+        return logits

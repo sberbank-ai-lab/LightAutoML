@@ -61,7 +61,6 @@ class OptunaTunableMixin(ABC):
             self.optimization_search_space = self._get_search_spaces(
                 suggested_params, estimated_n_trials
             )
-
         return self._sample(trial, suggested_params)
 
     def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
@@ -70,14 +69,29 @@ class OptunaTunableMixin(ABC):
         trial_values = copy(suggested_params)
 
         for parameter, SearchSpace in self.optimization_search_space.items():
-            if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                trial_values[parameter] = getattr(
-                    trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
-                )(name=parameter, **SearchSpace.params)
+            if isinstance(SearchSpace, dict):
+                sub_dict = {}
+                for subparameter, SubSearchSpace in SearchSpace.items():
+                    if SubSearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                        trial_values[subparameter] = getattr(
+                            trial, OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type]
+                        )(name=subparameter, **SubSearchSpace.params)
+                        sub_dict[subparameter] = trial_values[subparameter]
+                    else:
+                        raise ValueError(
+                            f"Optuna does not support distribution {SubSearchSpace.distribution_type}"
+                        )
+                trial_values[parameter] = sub_dict
+
             else:
-                raise ValueError(
-                    f"Optuna does not support distribution {SearchSpace.distribution_type}"
-                )
+                if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                    trial_values[parameter] = getattr(
+                        trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
+                    )(name=parameter, **SearchSpace.params)
+                else:
+                    raise ValueError(
+                        f"Optuna does not support distribution {SearchSpace.distribution_type}"
+                    )
 
         return trial_values
 
@@ -272,7 +286,9 @@ class OptunaTuner(ParamsTuner):
 
             # need to update best params here
             self._best_params = self.study.best_params
-            ml_algo.params = self._best_params
+            default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
+            ml_algo.params = {**default_input_params, **ml_algo.params, **self._best_params}
+            self._best_params = ml_algo.params
 
             logger.info(
                 f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed"

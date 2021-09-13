@@ -6,12 +6,17 @@ import os
 import uuid
 
 from copy import copy
+from typing import Dict
 
 import numpy as np
 import torch
-
+import torch.nn as nn
+from optuna import Trial
 from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
+from .nn_models import DenseLightModel, DenseModel, ResNetModel, MLP, LinearLayer
+from .tuning.base import Distribution, SearchSpace
+from .tuning.optuna import OptunaTunableMixin
 
 from ..ml_algo.base import TabularDataset
 from ..ml_algo.base import TabularMLAlgo
@@ -30,11 +35,15 @@ from ..text.utils import is_shuffle
 from ..text.utils import parse_devices
 from ..text.utils import seed_everything
 
+from ..ml_algo.torch_based.act_funcs import TS
 
 logger = logging.getLogger(__name__)
 
+model_by_name = {'dense_light': DenseLightModel, 'dense': DenseModel, 'resnet': ResNetModel,
+                 'mlp': MLP, 'dense_layer': LinearLayer}
 
-class TorchModel(TabularMLAlgo):
+
+class TorchModel(TabularMLAlgo, OptunaTunableMixin):
     """Neural net for tabular datasets.
 
     default_params:
@@ -76,38 +85,38 @@ class TorchModel(TabularMLAlgo):
     timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
-
-    _name: str = "TorchNN"
+    _name: str = 'TorchNN'
 
     _default_params = {
-        "bs": 16,
-        "num_workers": 4,
-        "max_length": 256,
-        "opt_params": {
-            "lr": 1e-4,
-        },
-        "scheduler_params": {"patience": 5, "factor": 0.5, "verbose": True},
-        "is_snap": False,
-        "snap_params": {"k": 1, "early_stopping": True, "patience": 1, "swa": False},
-        "init_bias": True,
-        "n_epochs": 20,
-        "input_bn": False,
-        "emb_dropout": 0.1,
-        "emb_ratio": 3,
-        "max_emb_size": 50,
-        "bert_name": None,
-        "pooling": "cls",
-        "device": [0],
-        "use_cont": True,
-        "use_cat": True,
-        "use_text": True,
-        "lang": "en",
-        "deterministic": True,
-        "multigpu": False,
-        "random_state": 42,
-        "path_to_save": os.path.join("./models/", "model"),
-        "verbose_inside": None,
-        "verbose": 1,
+        'bs': 16,
+        'num_workers': 4,
+        'max_length': 256,
+        'opt': torch.optim.Adam,
+        'opt_params': {'lr': 1e-4},
+        'scheduler_params': {'patience': 5, 'factor': 0.5, 'verbose': True},
+        'is_snap': False,
+        'snap_params': {'k': 1, 'early_stopping': True, 'patience': 1, 'swa': False},
+        'init_bias': True,
+        'n_epochs': 20,
+        'input_bn': False,
+        'emb_dropout': 0.1,
+        'emb_ratio': 3,
+        'max_emb_size': 256,
+        'bert_name': None,
+        'pooling': 'cls',
+        'device': torch.device('cuda:0'),
+        'use_cont': True,
+        'use_cat': True,
+        'use_text': True,
+        'lang': 'en',
+        'deterministic': True,
+        'multigpu': False,
+        'random_state': 42,
+        'efficient': False,
+        'model': None,
+        'path_to_save': os.path.join('./models/', 'model'),
+        'verbose_inside': None,
+        'verbose': 1
     }
 
     def _infer_params(self):
@@ -122,16 +131,39 @@ class TorchModel(TabularMLAlgo):
         if params["bert_name"] is None:
             params["bert_name"] = _model_name_by_lang[params["lang"]]
 
-        params["loss"] = self.task.losses["torch"].loss
+        if self.params.get("loss", False):
+            self.custom_loss = True
+            params["loss"] = self.params["loss"]
+        else:
+            self.custom_loss = False
+            params["loss"] = self.task.losses["torch"].loss
+
+        params["custom_loss"] = self.custom_loss
         params["metric"] = self.task.losses["torch"].metric_func
 
         is_text = (
-            (len(params["text_features"]) > 0)
-            and (params["use_text"])
-            and (params["device"].type == "cuda")
+                (len(params["text_features"]) > 0)
+                and (params["use_text"])
+                and (params["device"].type == "cuda")
         )
         is_cat = (len(params["cat_features"]) > 0) and (params["use_cat"])
         is_cont = (len(params["cont_features"]) > 0) and (params["use_cont"])
+
+        torch_model = params["model"]
+
+        if isinstance(torch_model, str):
+            assert torch_model in model_by_name, "Wrong model name"
+            torch_model = model_by_name[torch_model]
+            self.use_custom_model = True
+
+        if isinstance(torch_model, nn.Module):
+            self.use_custom_model = True
+
+        if torch_model is None:
+            self.use_custom_model = False
+            torch_model = model_by_name['dense_light']
+
+        assert issubclass(torch_model, nn.Module), "Wrong model format, only support torch models"
 
         model = Trainer(
             net=TorchUniversalModel,
@@ -163,8 +195,10 @@ class TorchModel(TabularMLAlgo):
                 if is_text
                 else None,
                 "bias": params["bias"],
+                "torch_model": torch_model,
+                **params
             },
-            opt=torch.optim.Adam,
+            opt=params["opt"],
             opt_params=params["opt_params"],
             n_epochs=params["n_epochs"],
             device=params["device"],
@@ -242,7 +276,7 @@ class TorchModel(TabularMLAlgo):
         )
         for cat_feature in suggested_params["cat_features"]:
             num_unique_categories = (
-                max(train_valid_iterator.train[:, cat_feature].data) + 1
+                max(train_valid_iterator.train[:, cat_feature].data)
             )
             cat_dims.append(num_unique_categories)
         suggested_params["cat_dims"] = cat_dims
@@ -320,7 +354,10 @@ class TorchModel(TabularMLAlgo):
             Tuple (model, predicted_values).
 
         """
-        seed_everything(self.params["random_state"], self.params["deterministic"])
+        seed_everything(self.params['random_state'], self.params['deterministic'])
+        task_name = train.task.name
+        target = train.target
+        self.params['bias'] = self.get_mean_target(target, task_name) if self.params['init_bias'] else None
         model = self._infer_params()
 
         model_path = (
@@ -329,7 +366,7 @@ class TorchModel(TabularMLAlgo):
             else None
         )
         # init datasets
-        dataloaders = self.get_dataloaders_from_dicts({"train": train, "val": valid})
+        dataloaders = self.get_dataloaders_from_dicts({'train': train.to_pandas(), 'val': valid.to_pandas()})
 
         val_pred = model.fit(dataloaders)
 
@@ -356,8 +393,8 @@ class TorchModel(TabularMLAlgo):
 
         """
 
-        seed_everything(self.params["random_state"], self.params["deterministic"])
-        dataloaders = self.get_dataloaders_from_dicts({"test": dataset})
+        seed_everything(self.params['random_state'], self.params['deterministic'])
+        dataloaders = self.get_dataloaders_from_dicts({'test': dataset.to_pandas()})
 
         if isinstance(model, (str, dict)):
             model = self._infer_params().load_state(model)
@@ -370,3 +407,254 @@ class TorchModel(TabularMLAlgo):
         torch.cuda.empty_cache()
 
         return pred
+
+    def _get_search_spaces(
+            self, suggested_params: Dict, estimated_n_trials: int
+    ) -> Dict:
+        """Sample hyperparameters from suggested.
+
+        Args:
+            trial: Optuna trial object.
+            suggested_params: Dict with parameters.
+            estimated_n_trials: Maximum number of hyperparameter estimations.
+
+        Returns:
+            dict with sampled hyperparameters.
+
+        """
+        op_search_space = {}
+
+        op_search_space["opt_params"] = {
+            "lr": SearchSpace(
+                Distribution.LOGUNIFORM,
+                low=1e-5,
+                high=1e-2
+            ),
+            "weight_decay": SearchSpace(
+                Distribution.LOGUNIFORM,
+                low=0,
+                high=1e-2
+            )
+        }
+
+        op_search_space["bs"] = SearchSpace(
+            Distribution.INTUNIFORM,
+            low=64,
+            high=1024
+        )
+
+        # TODO: Add if to agree with user's model params
+        # op_search_space["opt"] = SearchSpace(
+        #     Distribution.CHOICE,
+        #     [torch.optim.Adam, torch.optim.AdamW]
+        # )
+        #
+        # op_search_space["act_fun"] = SearchSpace(
+        #     Distribution.CHOICE,
+        #     [nn.ReLU, TS, nn.LeakyReLU, nn.Hardswish]
+        # )
+        #
+        # op_search_space["init_bias"] = SearchSpace(
+        #     Distribution.CHOICE,
+        #     [True, False]
+        # )
+
+        # if not self.use_custom_model:
+        #     op_search_space["model"] = SearchSpace(
+        #         Distribution.CHOICE,
+        #         ["dense_light", "dense", "resnet"]
+        #     )
+        #
+        #     if self.params.get("is_cat", False) and len(self.params["cat_dims"]) > 0:
+        #         op_search_space["emb_dropout"] = SearchSpace(
+        #             Distribution.UNIFORM,
+        #             low=0,
+        #             high=0.2
+        #         )
+        #         op_search_space["emb_ratio"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=2,
+        #             high=6
+        #         )
+        #
+        #     if op_search_space["model"] == "dense_light":
+        #         op_search_space["num_layers"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=1,
+        #             high=8
+        #         )
+        #
+        #         hidden_size = ()
+        #         drop_rate = ()
+        #         hid_high = 1024
+        #
+        #         # if op_search_space["num_layers"] > 4:
+        #         #     hid_high = 512
+        #
+        #         for layer in range(op_search_space["num_layers"]):
+        #             hidden_name = "hidden_size_" + str(layer)
+        #             drop_name = "drop_rate_" + str(layer)
+        #
+        #             op_search_space[hidden_name] = SearchSpace(
+        #                 Distribution.INTUNIFORM,
+        #                 low=1,
+        #                 high=hid_high
+        #             )
+        #             op_search_space[drop_name] = SearchSpace(
+        #                 Distribution.UNIFORM,
+        #                 low=0.0,
+        #                 high=0.5
+        #             )
+        #
+        #             hidden_size = hidden_size + (op_search_space[hidden_name],)
+        #             drop_rate = drop_rate + (op_search_space[drop_name],)
+        #
+        #         op_search_space["hidden_size"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [hidden_size]
+        #         )
+        #         op_search_space["drop_rate"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [drop_rate]
+        #         )
+        #         op_search_space["noise_std"] = SearchSpace(
+        #             Distribution.LOGUNIFORM,
+        #             low=0,
+        #             high=1e-2
+        #         )
+        #
+        #     elif op_search_space["model"] == "dense":
+        #         op_search_space["num_blocks"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=1,
+        #             high=8
+        #         )
+        #
+        #         block_config = ()
+        #         drop_rate = ()
+        #
+        #         block_high = 8
+        #
+        #         # if op_search_space["num_blocks"] > 4:
+        #         #     block_high = 4
+        #
+        #         for block in range(op_search_space["num_blocks"]):
+        #             block_name = "block_size_" + str(block)
+        #             drop_name = "drop_rate_" + str(block)
+        #
+        #             op_search_space[block_name] = SearchSpace(
+        #                 Distribution.INTUNIFORM,
+        #                 low=1,
+        #                 high=block_high
+        #             )
+        #             op_search_space[drop_name] = SearchSpace(
+        #                 Distribution.UNIFORM,
+        #                 low=0.0,
+        #                 high=0.5
+        #             )
+        #
+        #             block_config = block_config + (op_search_space[block_name],)
+        #             drop_rate = drop_rate + (op_search_space[drop_name],)
+        #
+        #         op_search_space["block_config"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [block_config]
+        #         )
+        #
+        #         op_search_space["drop_rate"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [drop_rate]
+        #         )
+        #
+        #         op_search_space["num_init_features"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=1,
+        #             high=1024
+        #         )
+        #
+        #         op_search_space["compression"] = SearchSpace(
+        #             Distribution.UNIFORM,
+        #             low=0.0,
+        #             high=0.9
+        #         )
+        #
+        #         gr_high = 64
+        #         bn_size = 32
+        #
+        #         # if op_search_space["num_blocks"] > 4:
+        #         #     gr_high = 32
+        #         #     bn_size = 16
+        #
+        #         op_search_space["growth_rate"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=8,
+        #             high=gr_high
+        #         )
+        #
+        #         op_search_space["bn_size"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=2,
+        #             high=bn_size
+        #         )
+        #
+        #     elif op_search_space["model"] == "resnet":
+        #         op_search_space["num_layers"] = SearchSpace(
+        #             Distribution.INTUNIFORM,
+        #             low=1,
+        #             high=16
+        #         )
+        #
+        #         hidden_factor = ()
+        #         drop_rate = ()
+        #         hid_high = 40
+        #
+        #         # if op_search_space["num_layers"] > 5:
+        #         #     hid_high = 20
+        #
+        #         for layer in range(op_search_space["num_layers"]):
+        #             hidden_name = "hidden_factor_" + str(layer)
+        #             drop_name = "drop_rate_" + str(layer)
+        #
+        #             op_search_space[hidden_name] = SearchSpace(
+        #                 Distribution.UNIFORM,
+        #                 low=1.0,
+        #                 high=hid_high
+        #             )
+        #             op_search_space[drop_name + "_1"] = SearchSpace(
+        #                 Distribution.UNIFORM,
+        #                 low=0.0,
+        #                 high=0.5
+        #             )
+        #             op_search_space[drop_name + "_2"] = SearchSpace(
+        #                 Distribution.UNIFORM,
+        #                 low=0.0,
+        #                 high=0.5
+        #             )
+        #
+        #             hidden_factor = hidden_factor + (op_search_space[hidden_name],)
+        #             drop_rate = drop_rate + (
+        #                 (op_search_space[drop_name + "_1"], op_search_space[drop_name + "_2"]),)
+        #
+        #         op_search_space["hidden_factor"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [hidden_factor]
+        #         )
+        #
+        #         op_search_space["drop_rate"] = SearchSpace(
+        #             Distribution.CHOICE,
+        #             [drop_rate]
+        #         )
+        #
+        #         op_search_space["noise_std"] = SearchSpace(
+        #             Distribution.LOGUNIFORM,
+        #             low=0,
+        #             high=1e-2
+        #         )
+
+        #         op_search_space["drop_connect_rate"] = SearchSpace(
+        #              Distribution.UNIFORM,
+        #              low=0.0,
+        #              high=0.5
+        #          )
+
+        return op_search_space
