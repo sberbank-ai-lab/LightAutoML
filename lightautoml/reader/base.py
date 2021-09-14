@@ -930,12 +930,13 @@ class DictToNumpySeqReader(PandasToPandasReader):
             assert len(set(self.used_features) & set(subsample.columns)) > 0, 'All features are excluded for some reasons'
             # assert len(self.used_array_attrs) > 0, 'At least target should be defined in train dataset'
             # create folds
+        if self.cv is not None:    
 
-        folds = set_sklearn_folds(self.task, kwargs['target'], cv=self.cv, random_state=self.random_state,
+            folds = set_sklearn_folds(self.task, kwargs['target'], cv=self.cv, random_state=self.random_state,
                                   group=None if 'group' not in kwargs else kwargs['group'])
-        if folds is not None:
             kwargs['folds'] = Series(folds,
                                      index=plain_data.index if plain_data is not None else np.arange(len(kwargs['target'])))
+
 
         # get dataset
         self.plain_used_features = sorted(list(set(self.used_features) & set(plain_features)))
@@ -1032,7 +1033,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     val = plain_data[col_name]
                 except KeyError:
                     continue
-
+                
                 if array_attr == 'target' and self.class_mapping is not None:
                     val = Series(val.map(self.class_mapping).values, index=plain_data.index, name=col_name)
                 kwargs[array_attr] = val

@@ -39,7 +39,7 @@ class AutoTS:
 
         # fit trend
         if self.params.get('trend', True):
-            reader_trend = DictToNumpySeqReader(task=self.task_trend, cv=2, seq_params={})
+            reader_trend = DictToNumpySeqReader(task=self.task_trend, cv=None, seq_params={})
 
             # feats_trend = LinearTrendFeatures()
             feats_trend = LinearTrendFeatures(n_target=self.seq_params['seq0']['params']['n_target'])
@@ -57,12 +57,13 @@ class AutoTS:
                 median = train_data[roles['target']].rolling(self.params.get('rolling_size', 7)).apply(np.median)
                 median = median.fillna(median[~median.isna()].values[0]).values
 
-                oof_trend = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params.get('trend_size', 7):],
+                oof_trend = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params.get('trend_size', 7):], 
                                                            'seq': None},
-                                                          roles=roles, verbose=4)
+                                                          roles=roles, verbose=0)
             else:
-                oof_trend = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles, verbose=0)
-                median = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
+                # oof_trend = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles, verbose=0)
+                median = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, 
+                                              roles=roles, verbose=0).data[:, 0]
         else:
             median = np.zeros(len(train_data))
 
@@ -73,7 +74,7 @@ class AutoTS:
         reader_seq = DictToNumpySeqReader(task=self.task, cv=2, seq_params=self.seq_params)
         feats_seq = LGBSeqSimpleFeatures()
         model = RandomForestSklearn(default_params={'verbose': 0})
-        #model2 = LinearLBFGS(default_params={'cs': [1]})
+        # model2 = LinearLBFGS(default_params={'cs': [1]})
         model2 = LinearLBFGS()
 
         model3 = BoostCB()
@@ -88,15 +89,18 @@ class AutoTS:
         oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles, verbose=4)
         return oof_pred_seq, median
 
-    def predict(self, train_data, train_trend=None, test_data=None):
-
+    def predict(self, train_data):
+        MIN_PREDICT_HISTORY = 5 * self.seq_params['seq0']['params']['history']
         if self.params.get('trend', True):
-            test_pred_trend = self.automl_trend.predict({'plain': test_data, 'seq': None}).data[:, 0]
-        elif test_data is None:
-            test_pred_trend = 0
-            train_trend = 0
+            test_pred_trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
+            if self.params.get('use_rolling', True) and len(train_data) > MIN_PREDICT_HISTORY:
+                train_trend = train_data[self.roles['target']].rolling(self.params.get('rolling_size', 7)).apply(np.median)
+                train_trend = train_trend.fillna(train_trend[~train_trend.isna()].values[0]).values
+            else:
+                train_trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
         else:
-            test_pred_trend = np.zeros(len(test_data))
+            test_pred_trend = np.zeros(self.seq_params['seq0']['params']['n_target'])
+            train_trend = np.zeros(len(train_data))
 
         train_detrend = train_data.copy()
         train_detrend.loc[:, self.roles['target']] = train_detrend.loc[:, self.roles['target']] - train_trend
