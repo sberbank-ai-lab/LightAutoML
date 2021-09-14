@@ -288,26 +288,3 @@ class DateSeasons(LAMLTransformer):
         output.set_data(new_arr, self.features, self.output_role)
 
         return output
-
-
-
-class FutureTrendTransformer(LAMLTransformer):
-    
-    def __init__(self, key, n_target=7):
-        self.datetime_key = key
-        self.n_target = n_target
-        
-    def fit_transform(self, dataset):
-        for check_func in self._fit_checks:
-            check_func(dataset)
-        data = dataset.to_pandas().data
-        self.step = data[self.datetime_key][1] - data[self.datetime_key][0]
-        return dataset
-    
-    def transform(self, dataset) -> PandasDataset:
-        super().transform(dataset)
-        last_datetime = dataset.to_pandas().data[self.datetime_key].values[-1]
-        new_data = pd.DataFrame([last_datetime + (i+1)*self.step for i in range(self.n_target)], 
-                                columns=[self.datetime_key])
-        output = PandasDataset(data=new_data, roles={self.datetime_key: DatetimeRole()})
-        return output
