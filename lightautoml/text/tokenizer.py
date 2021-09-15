@@ -13,9 +13,11 @@ from typing import Union
 
 try:
     import nltk
+
     from nltk.stem import SnowballStemmer
 except:
     import warnings
+
     warnings.warn("'nltk' - package isn't installed")
 
 

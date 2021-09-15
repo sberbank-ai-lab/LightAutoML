@@ -16,10 +16,12 @@ from sklearn.base import TransformerMixin
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+
 try:
     from transformers import AutoModel
 except:
     import warnings
+
     warnings.warn("'transformers' - package isn't installed")
 
 from copy import deepcopy

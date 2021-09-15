@@ -1,7 +1,9 @@
 """AutoML presets for image data."""
 
 from lightautoml.utils.installation import __validate_extra_deps
-__validate_extra_deps('cv', error=True)
+
+
+__validate_extra_deps("cv", error=True)
 
 
 import os
