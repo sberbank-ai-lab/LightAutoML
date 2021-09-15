@@ -1,6 +1,6 @@
 general_params:
   # possible values are list of lists, that describes levels
-  # possible values are ['lgb', 'lgb_tuned', 'linear_l2', 'cb', 'cb_tuned']. List will be extended later
+  # possible values are ['lgb', 'lgb_tuned', 'linear_l2', 'cb', 'cb_tuned', 'rf' , 'rf_tuned']. List will be extended later
   # or 'auto' - configuration will be infered from data
   # ex.[['lgb', 'lgb_tuned', 'linear_l2', 'cb', 'cb_tuned'], ['lgb', 'linear_l2']] is 3 algos on 1 level, 2 algos on 2 level and blender on 3 level
   # to define more than 1 level nested_cv_params.cv should be > 1
@@ -104,11 +104,17 @@ lgb_params:
 
 # params for BoostCB MLAlgo. Note - params are default and may be changed during train if not freeze_defaults
 cb_params:
-  # Look for lightgbm train params here. (thread_count will be rewrited by global preset's cpu limit)
+  # Look for cb train params here. (thread_count will be rewrited by global preset's cpu limit)
   default_params:
     # task type - auto based on gpu available
     task_type: 'CPU'
     thread_count: 100
+  freeze_defaults: False
+  
+# params for RandomForest MLAlgo. Note - params are default and may be changed during train if not freeze_defaults
+rf_params:
+  # Look for RF train params here. (thread_count will be rewrited by global preset's cpu limit)
+  default_params:
   freeze_defaults: False
 
 # params for LinearLBFGS MLAlgo

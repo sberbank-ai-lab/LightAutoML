@@ -26,7 +26,7 @@ from lightautoml.transformers.base import LAMLTransformer
 from lightautoml.transformers.base import SequentialTransformer
 from lightautoml.transformers.categorical import FreqEncoder
 from lightautoml.transformers.categorical import LabelEncoder
-from lightautoml.transformers.categorical import MultiClassTargetEncoder
+from lightautoml.transformers.categorical import MultiClassTargetEncoder, MultiRegTargetEncoder
 from lightautoml.transformers.categorical import OrdinalEncoder
 from lightautoml.transformers.categorical import TargetEncoder
 from lightautoml.transformers.numeric import QuantileBinning
@@ -136,6 +136,10 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
         target = target[:, np.newaxis] == np.arange(n_out)[np.newaxis, :]
         target = cast(np.ndarray, target).astype(np.float32)
         encoder = MultiClassTargetEncoder
+        
+    elif train.task.name == "multi:reg":
+        target = cast(np.ndarray, target).astype(np.float32)
+        encoder = MultiRegTargetEncoder
     else:
         encoder = TargetEncoder
 

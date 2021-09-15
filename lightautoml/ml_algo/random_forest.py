@@ -83,15 +83,18 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
         rows_num = len(train_valid_iterator.train)
         features_num = len(train_valid_iterator.features)
         task = train_valid_iterator.train.task.name
-
         suggested_params = copy(self.default_params)
+        
+        if 'criterion' not in suggested_params:
+            suggested_params['criterion'] = 'mse' if ((task == 'reg') or (task == 'multi:reg')) else 'gini'
 
         if self.freeze_defaults:
             # if user change defaults manually - keep it
             return suggested_params
 
-        if 'criterion' not in suggested_params:
-            suggested_params['criterion'] = 'mse' if (task == 'reg') or (task == 'milti:reg') else 'gini'
+
+
+                
 
         # just for speed training
         if rows_num <= 10000:
@@ -101,9 +104,9 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
 
         # say no to overfitting
         if rows_num > 10000:
-            suggested_params['min_samples_leaf'] = 8 if (task == 'reg') or (task == 'milti:reg') else 16
+            suggested_params['min_samples_leaf'] = 8 if ((task == 'reg') or (task == 'multi:reg')) else 16
         else:
-            suggested_params['min_samples_leaf'] = 32 if (task == 'reg') or (task == 'milti:reg') else 64
+            suggested_params['min_samples_leaf'] = 32 if ((task == 'reg') or (task == 'multi:reg')) else 64
 
         # how many features to check
         if features_num > 50:

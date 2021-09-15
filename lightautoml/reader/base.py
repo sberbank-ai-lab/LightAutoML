@@ -300,15 +300,25 @@ class PandasToPandasReader(Reader):
                 # defined in kwargs is rewrited.. TODO: Maybe raise warning if rewrited?
                 # TODO: Think, what if multilabel or multitask? Multiple column target ..
                 # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
-                self._used_array_attrs[attrs_dict[r.name]] = feat
-                kwargs[attrs_dict[r.name]] = train_data[feat]
+                if (self.task.name == 'multi:reg') and (attrs_dict[r.name] == 'target'):
+                    if attrs_dict[r.name] in kwargs:
+                        kwargs[attrs_dict[r.name]].append(feat)
+                        self._used_array_attrs[attrs_dict[r.name]].append(feat)
+                    else:
+                        kwargs[attrs_dict[r.name]] = [feat]
+                        self._used_array_attrs[attrs_dict[r.name]] = [feat]
+                else:
+                    self._used_array_attrs[attrs_dict[r.name]] = feat
+                    kwargs[attrs_dict[r.name]] = train_data[feat]
                 r = DropRole()
 
             # add new role
             parsed_roles[feat] = r
+            
 
         assert "target" in kwargs, "Target should be defined"
-        self.target = kwargs["target"].name
+        kwargs["target"] = train_data[kwargs["target"]]
+        self.target = kwargs["target"].name if type(kwargs["target"]) == pd.Series else kwargs["target"].columns
         kwargs["target"] = self._create_target(kwargs["target"])
 
         # TODO: Check target and task
@@ -417,7 +427,8 @@ class PandasToPandasReader(Reader):
         """
         self.class_mapping = None
 
-        if self.task.name != "reg":
+        if (self.task.name != 'reg') and (self.task.name != 'multi:reg'):
+
             # expect binary or multiclass here
             cnts = target.value_counts(dropna=False)
             assert np.nan not in cnts.index, "Nan in target detected"
@@ -859,8 +870,17 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     # defined in kwargs is rewrited.. TODO: Maybe raise warning if rewrited?
                     # TODO: Think, what if multilabel or multitask? Multiple column target ..
                     # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
-                    self._used_array_attrs[attrs_dict[r.name]] = feat
-                    kwargs[attrs_dict[r.name]] = plain_data[feat]
+                    
+                    if (self.task.name == 'multi:reg') and (attrs_dict[r.name] == 'target'):
+                        if attrs_dict[r.name] in kwargs:
+                            kwargs[attrs_dict[r.name]].append(feat)
+                            self._used_array_attrs[attrs_dict[r.name]].append(feat)
+                        else:
+                            kwargs[attrs_dict[r.name]] = [feat]
+                            self._used_array_attrs[attrs_dict[r.name]] = [feat]
+                    else:
+                        self._used_array_attrs[attrs_dict[r.name]] = feat
+                        kwargs[attrs_dict[r.name]] = plain_data[feat]
                     r = DropRole()
 
                 # add new role
@@ -872,7 +892,12 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     seq_datasets[seq_name].to_sequence((slice(None), roles['target'])).data[:, :, 0].astype(float))
                 break
 
+        
         assert 'target' in kwargs, 'Target should be defined'
+        if isinstance(kwargs["target"], list):
+            kwargs["target"] = plain_data[kwargs["target"]]
+
+
         self.target = kwargs["target"].name if type(kwargs["target"]) == pd.Series else kwargs["target"].columns
         kwargs['target'] = self._create_target(kwargs['target'])
 

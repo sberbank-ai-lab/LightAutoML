@@ -18,6 +18,8 @@ from ...transformers.base import UnionTransformer
 from ...transformers.categorical import OrdinalEncoder, LabelEncoder
 from ...transformers.datetime import TimeToNum
 from ...transformers.seq import GetSeqTransformer, SeqLagTransformer, SeqStatisticsTransformer, SeqNumCountsTransformer
+from ...transformers.numeric import FillInf
+from ...transformers.numeric import FillnaMedian
 
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
@@ -391,6 +393,7 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         multiclass_te_co: int = 3,
         auto_unique_co: int = 10,
         output_categories: bool = False,
+        fill_na = False,
         **kwargs
     ):
         """
@@ -416,6 +419,7 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
             output_categories=output_categories,
             ascending_by_cardinality=False,
         )
+        self.fill_na = fill_na
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create tree pipeline.
@@ -517,5 +521,9 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
 
         # final pipeline
         union_all = UnionTransformer([x for x in transformer_list if x is not None])
+        if self.fill_na:
+            union_all = SequentialTransformer([union_all,
+                                               SequentialTransformer([FillInf(), FillnaMedian()])
+                                  ])
 
         return union_all
