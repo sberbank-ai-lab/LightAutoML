@@ -270,8 +270,8 @@ class TabularMLAlgo(MLAlgo):
         # save n_classes to infer params
         self.n_classes = outp_dim
 
-        preds_arr = np.zeros((preds_ds.shape[0], outp_dim), dtype=np.float32)
-        counter_arr = np.zeros((preds_ds.shape[0], 1), dtype=np.float32)
+        preds_arr = np.zeros((preds_ds.target.shape[0], outp_dim), dtype=np.float32)
+        counter_arr = np.zeros((preds_ds.target.shape[0], 1), dtype=np.float32)
 
         # TODO: Make parallel version later
         for n, (idx, train, valid) in enumerate(train_valid_iterator):

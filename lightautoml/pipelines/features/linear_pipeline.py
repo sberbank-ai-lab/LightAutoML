@@ -19,7 +19,6 @@ from ...transformers.numeric import FillnaMedian
 from ...transformers.numeric import LogOdds
 from ...transformers.numeric import NaNFlags
 from ...transformers.numeric import StandardScaler
-from ...transformers.datetime import FutureTrendTransformer
 from ...transformers.datetime import TimeToNum
 
 
@@ -242,7 +241,6 @@ class LinearTrendFeatures(FeaturesPipeline):
         if len(datetimes) > 0:
             dt_processing = SequentialTransformer([
                 
-                FutureTrendTransformer(key=datetimes[0], n_target=self.n_target),
                 ColumnsSelector(keys=datetimes),
                 TimeToNum(),
                 StandardScaler()
