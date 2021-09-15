@@ -71,7 +71,7 @@ class AutoTS:
             reader_trend = DictToNumpySeqReader(task=self.task_trend, cv=None, seq_params={})
 
             # feats_trend = LinearTrendFeatures()
-            feats_trend = LinearTrendFeatures(n_target=self.n_target)
+            feats_trend = LinearTrendFeatures()
             model_trend = LinearLBFGS()
             pipeline_trend = MLPipeline([model_trend],
                                         pre_selection=None,
@@ -123,12 +123,10 @@ class AutoTS:
 
     def predict(self, train_data):
         MIN_PREDICT_HISTORY = 5 * self.n_history
-        
-        last_datetime = pd.to_datetime(train_data[self.datetime_key]).values[-1]
-        test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
-                                columns=[self.datetime_key])
-        
         if self.params.get('trend', True):
+            last_datetime = pd.to_datetime(train_data[self.datetime_key]).values[-1]
+            test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
+                                     columns=[self.datetime_key])
             test_pred_trend = self.automl_trend.predict({'plain': test_data, 'seq': None}).data[:, 0]
             if self.params.get('use_rolling', True) and len(train_data) > MIN_PREDICT_HISTORY:
                 train_trend = train_data[self.roles['target']].rolling(self.params.get('rolling_size', 7)).apply(np.median)
