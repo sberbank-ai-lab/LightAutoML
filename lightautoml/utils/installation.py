@@ -5,11 +5,11 @@ try:
 except ModuleNotFoundError:
     from importlib_metadata import PackageNotFoundError, distribution
 
+import logging
 from typing import Dict, List
 
-from lightautoml.utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def __validate_extra_deps(extra_section: str, error: bool = False) -> None:
