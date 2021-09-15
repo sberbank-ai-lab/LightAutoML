@@ -13,10 +13,12 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+
 try:
     import gensim
 except:
     import warnings
+
     warnings.warn("'gensim' - package isn't installed")
 
 import numpy as np
@@ -713,12 +715,9 @@ class AutoNLPWrap(LAMLTransformer):
                 self.transformer_params["model_params"]["model_name"] = bert_model
         return self
 
-
-    def _update_transformers_emb_model(self,
-                                       params: Dict,
-                                       model: Any,
-                                       emb_size: Optional[int] = None
-                                      ) -> Dict[str, Any]:
+    def _update_transformers_emb_model(
+        self, params: Dict, model: Any, emb_size: Optional[int] = None
+    ) -> Dict[str, Any]:
         if emb_size is None:
             try:
                 # Gensim checker [1]
@@ -866,7 +865,9 @@ class AutoNLPWrap(LAMLTransformer):
         # create resulted
         dataset = dataset.empty().to_numpy().concat(outputs)
         # instance-wise sentence embedding normalization
-        dataset.data = dataset.data / self._sentence_norm(dataset.data, self.sent_scaler)
+        dataset.data = dataset.data / self._sentence_norm(
+            dataset.data, self.sent_scaler
+        )
 
         return dataset
 

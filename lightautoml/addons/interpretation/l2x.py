@@ -14,11 +14,13 @@ from typing import Union
 import gensim
 import numpy as np
 import pandas as pd
-from html import escape
+
+
 try:
     import gensim
 except:
     import warnings
+
     warnings.warn("'gensim' - package isn't installed")
 
 import torch
@@ -385,11 +387,12 @@ class L2XTextExplainer:
     def temperature(self):
         return self.T
 
-    def fit(self,
-            train_data: pd.DataFrame,
-            valid_data: Optional[pd.DataFrame] = None,
-            cols_to_explain: Optional[Union[str, List[str]]] = None
-           ):
+    def fit(
+        self,
+        train_data: pd.DataFrame,
+        valid_data: Optional[pd.DataFrame] = None,
+        cols_to_explain: Optional[Union[str, List[str]]] = None,
+    ):
         """
         Fit model for all columns in cols_to_explain.
 

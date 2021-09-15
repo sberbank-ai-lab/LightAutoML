@@ -1,12 +1,15 @@
 """Tools for partial installation."""
 
 try:
-    from importlib.metadata import PackageNotFoundError, distribution
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import distribution
 except ModuleNotFoundError:
     from importlib_metadata import PackageNotFoundError, distribution
 
 import logging
-from typing import Dict, List
+
+from typing import Dict
+from typing import List
 
 
 logger = logging.getLogger(__name__)
@@ -20,12 +23,12 @@ def __validate_extra_deps(extra_section: str, error: bool = False) -> None:
         error: How to process error
 
     """
-    md = distribution('lightautoml').metadata
+    md = distribution("lightautoml").metadata
     extra_pattern = 'extra == "{}"'.format(extra_section)
     reqs_info = []
-    for k,v in md.items():
-        if k == 'Requires-Dist' and extra_pattern in v:
-            req = v.split(';')[0].split()[0]
+    for k, v in md.items():
+        if k == "Requires-Dist" and extra_pattern in v:
+            req = v.split(";")[0].split()[0]
             reqs_info.append(req)
 
     for req_info in reqs_info:
@@ -35,9 +38,10 @@ def __validate_extra_deps(extra_section: str, error: bool = False) -> None:
         except PackageNotFoundError as e:
             # Print warning
             logger.warning(
-                "'%s' extra dependecy package '%s' isn't installed. "\
+                "'%s' extra dependecy package '%s' isn't installed. "
                 "Look at README.md in repo 'LightAutoML' for installation instructions.",
-                extra_section, lib_name
+                extra_section,
+                lib_name,
             )
 
             if error:
