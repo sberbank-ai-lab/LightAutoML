@@ -31,7 +31,11 @@ def test_logging(
     if log_file:
         log_file = os.path.join(tmpdir, "log_file.log")
 
-    automl = TabularAutoML(task=binary_task)
+    automl = TabularAutoML(
+        task=binary_task,
+        tuning_params={"max_tuning_iter": 3, "max_tuning_time": 30},
+        lgb_params={"default_params": {"num_trees": 5}},
+    )
 
     automl.fit_predict(
         train,
