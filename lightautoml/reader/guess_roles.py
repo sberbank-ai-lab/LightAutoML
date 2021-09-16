@@ -15,21 +15,21 @@ from joblib import delayed
 from pandas import DataFrame
 from pandas import Series
 
-from lightautoml.dataset.np_pd_dataset import NumpyDataset
-from lightautoml.dataset.np_pd_dataset import PandasDataset
-from lightautoml.dataset.roles import CategoryRole
-from lightautoml.dataset.roles import ColumnRole
-from lightautoml.dataset.roles import NumericRole
-from lightautoml.reader.utils import set_sklearn_folds
-from lightautoml.transformers.base import ChangeRoles
-from lightautoml.transformers.base import LAMLTransformer
-from lightautoml.transformers.base import SequentialTransformer
-from lightautoml.transformers.categorical import FreqEncoder
-from lightautoml.transformers.categorical import LabelEncoder
-from lightautoml.transformers.categorical import MultiClassTargetEncoder, MultioutputTargetEncoder
-from lightautoml.transformers.categorical import OrdinalEncoder
-from lightautoml.transformers.categorical import TargetEncoder
-from lightautoml.transformers.numeric import QuantileBinning
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.roles import CategoryRole
+from ..dataset.roles import ColumnRole
+from ..dataset.roles import NumericRole
+from ..reader.utils import set_sklearn_folds
+from ..transformers.base import ChangeRoles
+from ..transformers.base import LAMLTransformer
+from ..transformers.base import SequentialTransformer
+from ..transformers.categorical import FreqEncoder
+from ..transformers.categorical import LabelEncoder
+from ..transformers.categorical import MultiClassTargetEncoder, MultioutputTargetEncoder
+from ..transformers.categorical import OrdinalEncoder
+from ..transformers.categorical import TargetEncoder
+from ..transformers.numeric import QuantileBinning
 
 
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]

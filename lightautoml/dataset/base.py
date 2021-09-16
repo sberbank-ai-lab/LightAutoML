@@ -14,8 +14,8 @@ from ..tasks.base import Task
 from .roles import ColumnRole
 
 
-valid_array_attributes = ("target", "group", "folds", "weights")
-array_attr_roles = ("Target", "Group", "Folds", "Weights")
+valid_array_attributes = ("target", "group", "folds", "weights", "date", 'id')
+array_attr_roles = ("Target", "Group", "Folds", "Weights", "Date", 'Id')
 # valid_tasks = ('reg', 'binary', 'multiclass') # TODO: Add multiclass and multilabel. Refactor for some dataset and pipes needed
 # valid_tasks = ('reg', 'binary')
 
@@ -469,10 +469,16 @@ class LAMLDataset:
         features = []
         roles = {}
 
+        atrs = set(dataset._array_like_attrs)
         for ds in datasets:
             data.append(ds.data)
             features.extend(ds.features)
             roles = {**roles, **ds.roles}
+            for atr in ds._array_like_attrs:
+                if atr not in atrs:
+                    dataset._array_like_attrs.append(atr)
+                    dataset.__dict__[atr] = ds.__dict__[atr]
+                    atrs.update({atr})
 
         data = cls._hstack(data)
         dataset.set_data(data, features, roles)

@@ -14,7 +14,7 @@ from ...transformers.base import ColumnsSelector
 from ...transformers.base import ConvertDataset
 from ...transformers.base import LAMLTransformer
 from ...transformers.base import SequentialTransformer
-from ...transformers.base import UnionTransformer
+from ...transformers.base import UnionTransformer, SetAttribute, EmptyTransformer
 from ...transformers.categorical import OrdinalEncoder, LabelEncoder
 from ...transformers.datetime import TimeToNum
 from ...transformers.seq import GetSeqTransformer, SeqLagTransformer, SeqStatisticsTransformer, SeqNumCountsTransformer
@@ -118,6 +118,19 @@ class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
     def get_seq_pipeline(self, train):
         transformers_list = []
         # process categories
+
+        # process datetimes
+        datetimes = get_columns_by_role(train, 'Datetime')
+        if len(datetimes) > 0:
+            dt_processing = SequentialTransformer([
+                ColumnsSelector(keys=datetimes),
+                TimeToNum()
+
+            ])
+            transformers_list.append(dt_processing)
+            transformers_list.append(self.get_datetime_diffs(train))
+            transformers_list.append(self.get_datetime_seasons(train, NumericRole(np.float32)))
+
         categories = get_columns_by_role(train, 'Category')
         if len(categories) > 0:
             cat_processing = SequentialTransformer([
@@ -128,19 +141,6 @@ class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
 
             ])
             transformers_list.append(cat_processing)
-
-        # process datetimes
-        datetimes = get_columns_by_role(train, 'Datetime')
-        if len(datetimes) > 0:
-            dt_processing = SequentialTransformer([
-
-                ColumnsSelector(keys=datetimes),
-                TimeToNum()
-
-            ])
-            transformers_list.append(dt_processing)
-            transformers_list.append(self.get_datetime_diffs(train))
-            transformers_list.append(self.get_datetime_seasons(train, NumericRole(np.float32)))
 
         numerics = get_columns_by_role(train, 'Numeric')
         if len(numerics) > 0:
@@ -154,12 +154,14 @@ class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
         simple_seq_transforms = UnionTransformer(transformers_list)
 
         # to seq dataset
-        simple_seq_transforms = UnionTransformer([ColumnsSelector(keys=[]), simple_seq_transforms])
+        seq = ColumnsSelector(keys=[])#SequentialTransformer([EmptyTransformer(), ColumnsSelector(keys=[])])
+        simple_seq_transforms = UnionTransformer([seq, simple_seq_transforms])
 
         # get seq features
         all_feats = SequentialTransformer([GetSeqTransformer(name=train.name),
+                                           SetAttribute('date', datetimes[0]),
                                            simple_seq_transforms,  # preprocessing
-                                           SeqLagTransformer(n_lags=30)  # plain features
+                                           SeqLagTransformer(n_lags=30),  # plain features
                                            ])
 
         return all_feats

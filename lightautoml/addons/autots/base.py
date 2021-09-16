@@ -181,7 +181,7 @@ class AutoTS:
             self.trend_params.update(trend_params)
         self.TM = TrendModel(params=self.trend_params)
 
-    def fit_predict(self, train_data, roles):
+    def fit_predict(self, train_data, roles, verbose=0):
         self.roles = roles
         train_trend = self.TM.fit_predict(train_data, roles)
         if hasattr(self.TM, 'automl_trend'):
@@ -206,10 +206,10 @@ class AutoTS:
                                  skip_conn=False,
                                  blender=WeightedBlender())
 
-        oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles)
+        oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles, verbose=verbose)
         return oof_pred_seq, train_trend
 
-    def predict(self, data):
+    def predict(self, data, return_raw=False):
         if self.trend_params['trend'] == True:
             last_datetime = pd.to_datetime(data[self.datetime_key]).values[-1]
             test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
@@ -222,6 +222,8 @@ class AutoTS:
         detrend = data.copy()
         detrend.loc[:, self.roles['target']] = detrend.loc[:, self.roles['target']] - trend
         test_pred_detrend = self.automl_seq.predict({'seq': {'seq0': detrend}})
+        if return_raw:
+            return test_pred_detrend
 
         if test_pred_detrend.data.shape[0] == 1:
             final_pred = test_pred_trend + test_pred_detrend.data.flatten()

@@ -220,7 +220,15 @@ class SeqNumpyPandasDataset(PandasDataset):
             dataset = self.empty()
         else:
             dataset = copy(self)
-            dataset._initialize(self.task)
+            params = dict(
+                (
+                    (x, self._get_rows(self.__dict__[x], rows))
+                    for x in self._array_like_attrs
+                )
+            )
+            dataset._initialize(self.task,
+                                **params
+                                )
 
         dataset.set_data(data, roles, idx=idx_new)
 
@@ -437,10 +445,16 @@ class SeqNumpyPandasDataset(PandasDataset):
         features = []
         roles = {}
 
+        atrs = set(dataset._array_like_attrs)
         for ds in datasets:
             data.append(ds.data)
             features.extend(ds.features)
             roles = {**roles, **ds.roles}
+            for atr in ds._array_like_attrs:
+                if atr not in atrs:
+                    dataset._array_like_attrs.append(atr)
+                    dataset.__dict__[atr] = ds.__dict__[atr]
+                    atrs.update({atr})
 
         data = cls._hstack(data)
         dataset.set_data(data, roles, idx=idx)

@@ -108,6 +108,10 @@ class ColumnRole:
             kwargs = {**{"seasonality": (), "base_date": True}, **kwargs}
             return DatetimeRole(**kwargs)
 
+        if name in ["date"]:
+            kwargs = {**{"seasonality": (), "base_date": True}, **kwargs}
+            return DateRole(**kwargs)
+
         if name in ["group"]:
             return GroupRole()
 
@@ -115,8 +119,8 @@ class ColumnRole:
             return DropRole()
 
         if name in ["id"]:
-            kwargs = {**{"encoding_type": "oof", "unknown": 1}, **kwargs}
-            return CategoryRole(**kwargs)
+            #kwargs = {**{"encoding_type": "oof", "unknown": 1}, **kwargs}
+            return IdRole()
 
         if name in ["folds"]:
             return FoldsRole()
@@ -328,3 +332,13 @@ class PathRole(ColumnRole):
     """Path role."""
 
     _name = "Path"
+
+class DateRole(DatetimeRole):
+    """Date role."""
+
+    _name = "Date"
+
+class IdRole(CategoryRole):
+    """Id role."""
+
+    _name = "Id"

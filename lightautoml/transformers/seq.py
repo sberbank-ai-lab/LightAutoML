@@ -48,6 +48,7 @@ class SeqLagTransformer(LAMLTransformer):
         #    check_func(dataset)
         # set transformer features
         sample_data = dataset.to_sequence([0]).data
+
         # convert to accepted dtype and get attributes
         self.n_lags = np.minimum(self.n_lags, sample_data.data.shape[1])
 
@@ -70,14 +71,24 @@ class SeqLagTransformer(LAMLTransformer):
         # checks here
         super().transform(dataset)
         # convert to accepted dtype and get attributes
+
         data = dataset.to_sequence().data[:, -self.n_lags:, :]
+
+        params = {}
+        for attribute in dataset._array_like_attrs:
+            _data = []
+            _d = getattr(dataset, attribute).values
+            for row in np.arange(len(dataset)):
+                _data.append(_d[dataset.idx[row]][-1])
+            _data = np.array(_data)
+            params[attribute] = _data
         # transform
         data = np.moveaxis(data, 1, 2).reshape(len(data), -1)
 
         #print('name', dataset.name)
         #print('scheme', dataset.scheme)
         # create resulted
-        return NumpyDataset(data, self.features, NumericRole(np.float32))
+        return NumpyDataset(data, self.features, NumericRole(np.float32), **params)
 
 class SeqNumCountsTransformer(LAMLTransformer):
     """NC."""
@@ -242,9 +253,13 @@ class GetSeqTransformer(LAMLTransformer):
         dataset = dataset.seq_data.get(self.name)
         data = dataset.data
         data.columns = self._features
+        kwargs = {}
+        for attr in dataset._array_like_attrs:
+            kwargs[attr] = dataset.__dict__[attr]
+
         # create resulted
         result = SeqNumpyPandasDataset(data=data, features=self.features, roles=self.roles, idx=dataset.idx,
                                        name=dataset.name,
-                                       scheme=dataset.scheme)
+                                       scheme=dataset.scheme, **kwargs)
 
         return result

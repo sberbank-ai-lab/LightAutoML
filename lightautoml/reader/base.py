@@ -55,6 +55,8 @@ UserRolesDefinition = Optional[
     Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]
 ]
 
+attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
+
 
 class Reader:
     """
@@ -102,11 +104,11 @@ class Reader:
         return self._used_array_attrs
 
     def fit_read(
-        self,
-        train_data: Any,
-        features_names: Optional[List[str]] = None,
-        roles: UserRolesDefinition = None,
-        **kwargs: Any
+            self,
+            train_data: Any,
+            features_names: Optional[List[str]] = None,
+            roles: UserRolesDefinition = None,
+            **kwargs: Any
     ):
         """Abstract function to get dataset with initial feature selection."""
         raise NotImplementedError
@@ -116,9 +118,9 @@ class Reader:
         raise NotImplementedError
 
     def upd_used_features(
-        self,
-        add: Optional[Sequence[str]] = None,
-        remove: Optional[Sequence[str]] = None,
+            self,
+            add: Optional[Sequence[str]] = None,
+            remove: Optional[Sequence[str]] = None,
     ):
         """Updates the list of used features.
 
@@ -189,25 +191,25 @@ class PandasToPandasReader(Reader):
     """
 
     def __init__(
-        self,
-        task: Task,
-        samples: Optional[int] = 100000,
-        max_nan_rate: float = 0.999,
-        max_constant_rate: float = 0.999,
-        cv: int = 5,
-        random_state: int = 42,
-        roles_params: Optional[dict] = None,
-        n_jobs: int = 4,
-        # params for advanced roles guess
-        advanced_roles: bool = True,
-        numeric_unique_rate: float = 0.999,
-        max_to_3rd_rate: float = 1.1,
-        binning_enc_rate: float = 2,
-        raw_decr_rate: float = 1.1,
-        max_score_rate: float = 0.2,
-        abs_score_val: float = 0.04,
-        drop_score_co: float = 0.01,
-        **kwargs: Any
+            self,
+            task: Task,
+            samples: Optional[int] = 100000,
+            max_nan_rate: float = 0.999,
+            max_constant_rate: float = 0.999,
+            cv: int = 5,
+            random_state: int = 42,
+            roles_params: Optional[dict] = None,
+            n_jobs: int = 4,
+            # params for advanced roles guess
+            advanced_roles: bool = True,
+            numeric_unique_rate: float = 0.999,
+            max_to_3rd_rate: float = 1.1,
+            binning_enc_rate: float = 2,
+            raw_decr_rate: float = 1.1,
+            max_score_rate: float = 0.2,
+            abs_score_val: float = 0.04,
+            drop_score_co: float = 0.01,
+            **kwargs: Any
     ):
         """
 
@@ -260,11 +262,11 @@ class PandasToPandasReader(Reader):
         self.params = kwargs
 
     def fit_read(
-        self,
-        train_data: DataFrame,
-        features_names: Any = None,
-        roles: UserDefinedRolesDict = None,
-        **kwargs: Any
+            self,
+            train_data: DataFrame,
+            features_names: Any = None,
+            roles: UserDefinedRolesDict = None,
+            **kwargs: Any
     ) -> PandasDataset:
         """Get dataset with initial feature selection.
 
@@ -287,7 +289,6 @@ class PandasToPandasReader(Reader):
         # to automl format {'feat0': RoleX, 'feat1': RoleX, 'TARGET': RoleY, ...}
         parsed_roles = roles_parser(roles)
         # transform str role definition to automl ColumnRole
-        attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
 
         for feat in parsed_roles:
             r = parsed_roles[feat]
@@ -314,7 +315,6 @@ class PandasToPandasReader(Reader):
 
             # add new role
             parsed_roles[feat] = r
-            
 
         assert "target" in kwargs, "Target should be defined"
         kwargs["target"] = train_data[kwargs["target"]]
@@ -361,9 +361,9 @@ class PandasToPandasReader(Reader):
                         flg_default_params = False
 
                     if (
-                        flg_default_params
-                        and not np.issubdtype(cat_role.dtype, np.number)
-                        and np.issubdtype(subsample.dtypes[feat], np.number)
+                            flg_default_params
+                            and not np.issubdtype(cat_role.dtype, np.number)
+                            and np.issubdtype(subsample.dtypes[feat], np.number)
                     ):
                         r.dtype = self._get_default_role_from_str("numeric").dtype
 
@@ -435,11 +435,11 @@ class PandasToPandasReader(Reader):
                 target_col, class_mapping = self.check_class_target(target[col])
                 self.class_mapping[col] = class_mapping
                 target[col] = target_col.values
-    
+
         else:
             assert not np.isnan(target.values).any(), 'Nan in target detected'
         return target
-        
+
     def check_class_target(self, target):
 
         target = pd.Series(target)
@@ -532,13 +532,13 @@ class PandasToPandasReader(Reader):
         if feature.isnull().mean() >= self.max_nan_rate:
             return False
         if (
-            feature.value_counts().values[0] / feature.shape[0]
+                feature.value_counts().values[0] / feature.shape[0]
         ) >= self.max_constant_rate:
             return False
         return True
 
     def read(
-        self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False
+            self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False
     ) -> PandasDataset:
         """Read dataset with fitted metadata.
 
@@ -576,7 +576,7 @@ class PandasToPandasReader(Reader):
         return dataset
 
     def advanced_roles_guess(
-        self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None
+            self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None
     ) -> RolesDict:
         """Advanced roles guess over user's definition and reader's simple guessing.
 
@@ -662,6 +662,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
         - Parse sequential data (simple auto-typing).
 
     """
+
     def __init__(self, task: Task, samples: Optional[int] = 100000, max_nan_rate: float = 0.999, max_constant_rate: float = 0.999,
                  cv: int = 5, random_state: int = 42, roles_params: Optional[dict] = None, n_jobs: int = 4,
                  # params for advanced roles guess
@@ -734,6 +735,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
     def create_ids(self, seq_data, plain_data, dataset_name):
         if self.seq_params[dataset_name]['case'] == 'next_values':
             self.ti[dataset_name] = TopInd(scheme=self.seq_params[dataset_name].get('scheme', None),
+                                           roles=self.meta[dataset_name]['roles'],
                                            **self.seq_params[dataset_name]['params'])
             self.ti[dataset_name].read(seq_data, plain_data)
 
@@ -743,19 +745,14 @@ class DictToNumpySeqReader(PandasToPandasReader):
             self.ti[dataset_name].read(seq_data, plain_data)
 
     def parse_seq(self, seq_dataset, plain_data, dataset_name, parsed_roles, roles):
-        self.create_ids(seq_dataset, plain_data, dataset_name)
-        self.meta[dataset_name] = {'seq_idx_data': self.ti[dataset_name].create_data(seq_dataset, plain_data=plain_data),
-                                   'seq_idx_target': self.ti[dataset_name].create_target(seq_dataset, plain_data=plain_data)}
-
-        if self.meta[dataset_name]['seq_idx_target'] is not None:
-            assert len(self.meta[dataset_name]['seq_idx_data']) == len(
-                self.meta[dataset_name]['seq_idx_target']), 'Time series ids don`t match'
         subsample = seq_dataset
         if self.samples is not None and self.samples < subsample.shape[0]:
             subsample = subsample.sample(self.samples, axis=0, random_state=42)
 
         seq_roles = {}
         seq_features = []
+        kwargs = {}
+        used_array_attrs = {}
         for feat in seq_dataset.columns:
             assert isinstance(feat, str), 'Feature names must be string,' \
                                           ' find feature name: {}, with type: {}'.format(feat, type(feat))
@@ -767,7 +764,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     r = self._get_default_role_from_str(r)
                 # handle datetimes
 
-                if r.name == 'Datetime':
+                if r.name == 'Datetime' or r.name == 'Date':
                     # try if it's ok to infer date with given params
                     try:
                         _ = pd.to_datetime(subsample[feat], format=r.format, origin=r.origin, unit=r.unit)
@@ -802,6 +799,14 @@ class DictToNumpySeqReader(PandasToPandasReader):
 
             parsed_roles[feat] = r
 
+            if r.name in attrs_dict:
+                if attrs_dict[r.name] in ['target']:
+                    pass
+                else:
+                    kwargs[attrs_dict[r.name]] = seq_dataset[feat]
+                    used_array_attrs[attrs_dict[r.name]] = feat
+                    r = DropRole()
+
             # set back
             if r.name != 'Drop':
                 self._roles[feat] = r
@@ -812,9 +817,19 @@ class DictToNumpySeqReader(PandasToPandasReader):
                 self._dropped_features.append(feat)
 
         assert len(seq_features) > 0, 'All features are excluded for some reasons'
-
+        self.meta[dataset_name] = {}
         self.meta[dataset_name]['roles'] = seq_roles
         self.meta[dataset_name]['features'] = seq_features
+        self.meta[dataset_name]['attributes'] = used_array_attrs
+
+        self.create_ids(seq_dataset, plain_data, dataset_name)
+        self.meta[dataset_name].update(**{'seq_idx_data': self.ti[dataset_name].create_data(seq_dataset, plain_data=plain_data),
+                                          'seq_idx_target': self.ti[dataset_name].create_target(seq_dataset,
+                                                                                                plain_data=plain_data)})
+
+        if self.meta[dataset_name]['seq_idx_target'] is not None:
+            assert len(self.meta[dataset_name]['seq_idx_data']) == len(
+                self.meta[dataset_name]['seq_idx_target']), 'Time series ids don`t match'
 
         seq_dataset = SeqNumpyPandasDataset(data=seq_dataset[self.meta[dataset_name]['features']],
                                             features=self.meta[dataset_name]['features'],
@@ -823,7 +838,8 @@ class DictToNumpySeqReader(PandasToPandasReader):
                                             self.meta[dataset_name]['seq_idx_target'] is not None else
                                             self.meta[dataset_name]['seq_idx_data'],
                                             name=dataset_name,
-                                            scheme=self.seq_params[dataset_name].get('scheme', None))
+                                            scheme=self.seq_params[dataset_name].get('scheme', None),
+                                            **kwargs)
         return seq_dataset, parsed_roles
 
     def fit_read(self, train_data: Dict, features_names: Any = None, roles: UserDefinedRolesDict = None,
@@ -852,7 +868,6 @@ class DictToNumpySeqReader(PandasToPandasReader):
         plain_features = set(plain_data.columns) if plain_data is not None else {}
         parsed_roles = roles_parser(roles)
         # transform str role definition to automl ColumnRole
-        attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
 
         seq_datasets = {}
         if seq_data is not None:
@@ -876,7 +891,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     # defined in kwargs is rewrited.. TODO: Maybe raise warning if rewrited?
                     # TODO: Think, what if multilabel or multitask? Multiple column target ..
                     # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
-                    
+
                     if ((self.task.name == 'multi:reg') or (self.task.name == 'multilabel')) and (attrs_dict[r.name] == 'target'):
                         if attrs_dict[r.name] in kwargs:
                             kwargs[attrs_dict[r.name]].append(feat)
@@ -898,11 +913,9 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     seq_datasets[seq_name].to_sequence((slice(None), roles['target'])).data[:, :, 0].astype(float))
                 break
 
-        
         assert 'target' in kwargs, 'Target should be defined'
         if isinstance(kwargs["target"], list):
             kwargs["target"] = plain_data[kwargs["target"]]
-
 
         self.target = kwargs["target"].name if type(kwargs["target"]) == pd.Series else kwargs["target"].columns
         kwargs['target'] = self._create_target(kwargs['target'])
@@ -961,13 +974,11 @@ class DictToNumpySeqReader(PandasToPandasReader):
             assert len(set(self.used_features) & set(subsample.columns)) > 0, 'All features are excluded for some reasons'
             # assert len(self.used_array_attrs) > 0, 'At least target should be defined in train dataset'
             # create folds
-        if self.cv is not None:    
-
+        if self.cv is not None:
             folds = set_sklearn_folds(self.task, kwargs['target'], cv=self.cv, random_state=self.random_state,
-                                  group=None if 'group' not in kwargs else kwargs['group'])
+                                      group=None if 'group' not in kwargs else kwargs['group'])
             kwargs['folds'] = Series(folds,
                                      index=plain_data.index if plain_data is not None else np.arange(len(kwargs['target'])))
-
 
         # get dataset
         self.plain_used_features = sorted(list(set(self.used_features) & set(plain_features)))
@@ -1014,11 +1025,11 @@ class DictToNumpySeqReader(PandasToPandasReader):
                 target_col, class_mapping = self.check_class_target(target[col])
                 self.class_mapping[col] = class_mapping
                 target[col] = target_col.values
-    
+
         else:
             assert not np.isnan(target.values).any(), 'Nan in target detected'
         return target
-        
+
     def check_class_target(self, target):
         target = pd.Series(target)
         cnts = target.value_counts(dropna=False)
@@ -1055,11 +1066,19 @@ class DictToNumpySeqReader(PandasToPandasReader):
         if seq_data is not None:
             for dataset_name, dataset in seq_data.items():
                 test_idx = self.ti[dataset_name].create_test(dataset, plain_data=plain_data)
+                kwargs = {}
+                columns = set(dataset.columns)
+                for role, col in self.meta[dataset_name]['attributes'].items():
+                    if col in columns:
+                        kwargs[role] = dataset[col]
+
                 seq_dataset = SeqNumpyPandasDataset(data=dataset[self.meta[dataset_name]['features']],
                                                     features=self.meta[dataset_name]['features'],
                                                     roles=self.meta[dataset_name]['roles'],
                                                     idx=test_idx, name=dataset_name,
-                                                    scheme=self.seq_params[dataset_name].get('scheme', None))
+                                                    scheme=self.seq_params[dataset_name].get('scheme', None),
+                                                    **kwargs)
+
                 seq_datasets[dataset_name] = seq_dataset
         else:
             seq_datasets = None
@@ -1072,7 +1091,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     val = plain_data[col_name]
                 except KeyError:
                     continue
-                
+
                 if array_attr == 'target' and self.class_mapping is not None:
                     val = Series(val.map(self.class_mapping).values, index=plain_data.index, name=col_name)
                 kwargs[array_attr] = val
