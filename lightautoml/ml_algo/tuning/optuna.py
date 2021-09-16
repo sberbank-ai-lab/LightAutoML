@@ -20,8 +20,6 @@ from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.ml_algo.tuning.base import Distribution
 from lightautoml.ml_algo.tuning.base import ParamsTuner
-from lightautoml.ml_algo.tuning.base import SearchSpace
-from lightautoml.pipelines import ml
 from lightautoml.validation.base import HoldoutIterator
 from lightautoml.validation.base import TrainValidIterator
 
@@ -107,14 +105,15 @@ class OptunaTuner(ParamsTuner):
         estimated_tuning_time = ml_algo.timer.estimate_tuner_time(
             len(train_valid_iterator)
         )
-        # TODO: Check for minimal runtime!
-        estimated_tuning_time = max(estimated_tuning_time, 1)
+        if estimated_tuning_time:
+            # TODO: Check for minimal runtime!
+            estimated_tuning_time = max(estimated_tuning_time, 1)
+            self._upd_timeout(estimated_tuning_time)
 
         logger.info(
-            f"Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time:.2f} secs"
+            f"Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {self.timeout:.2f} secs"
         )
 
-        self._upd_timeout(estimated_tuning_time)
         metric_name = train_valid_iterator.train.task.get_dataset_metric().name
         ml_algo = deepcopy(ml_algo)
 
@@ -150,7 +149,7 @@ class OptunaTuner(ParamsTuner):
             self.study = optuna.create_study(direction=self.direction, sampler=sampler)
 
             self.study.optimize(
-                func=self.get_objective(
+                func=self._get_objective(
                     ml_algo=ml_algo,
                     estimated_n_trials=self.estimated_n_trials,
                     train_valid_iterator=train_valid_iterator,
@@ -182,7 +181,7 @@ class OptunaTuner(ParamsTuner):
         except optuna.exceptions.OptunaError:
             return None, None
 
-    def get_objective(
+    def _get_objective(
         self,
         ml_algo: TunableAlgo,
         estimated_n_trials: int,
@@ -223,7 +222,7 @@ class OptunaTuner(ParamsTuner):
                     ),
                 )
             else:
-                _ml_algo.params = self.sample(
+                _ml_algo.params = self._sample(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
                     suggested_params=_ml_algo.init_params_on_input(
@@ -239,7 +238,7 @@ class OptunaTuner(ParamsTuner):
 
         return objective
 
-    def sample(
+    def _sample(
         self,
         optimization_search_space,
         trial: optuna.trial.Trial,
