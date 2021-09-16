@@ -27,7 +27,6 @@ from .tuning.base import SearchSpace
 
 logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
-logger_stream = LoggerStream(logger.debug)
 
 
 class BoostCB(TabularMLAlgo, ImportanceEstimator):
@@ -326,7 +325,9 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
             }
         )
 
-        model.fit(cb_train, eval_set=cb_valid, log_cout=logger_stream)
+        model.fit(
+            cb_train, eval_set=cb_valid, log_cout=LoggerStream(logger, verbose_eval=100)
+        )
 
         val_pred = self._predict(model, cb_valid, params)
 

@@ -24,7 +24,6 @@ from .tuning.base import SearchSpace
 
 
 logger = logging.getLogger(__name__)
-logger_stream = LoggerStream(logger.debug)
 
 
 class BoostLGBM(TabularMLAlgo, ImportanceEstimator):
@@ -266,7 +265,7 @@ class BoostLGBM(TabularMLAlgo, ImportanceEstimator):
         lgb_train = lgb.Dataset(train.data, label=train_target, weight=train_weight)
         lgb_valid = lgb.Dataset(valid.data, label=valid_target, weight=valid_weight)
 
-        with redirect_stdout(logger_stream):
+        with redirect_stdout(LoggerStream(logger, verbose_eval=100)):
             model = lgb.train(
                 params,
                 lgb_train,

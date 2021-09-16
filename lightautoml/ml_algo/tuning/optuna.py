@@ -140,7 +140,7 @@ class OptunaTuner(ParamsTuner):
                 self.n_trials, self.timeout // self.mean_trial_time
             )
             logger.info3(
-                f"Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
+                f"\x1b[1mTrial {len(study.trials)}\x1b[0m with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
             )
 
         try:
