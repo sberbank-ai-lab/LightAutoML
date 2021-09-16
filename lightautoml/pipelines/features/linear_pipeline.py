@@ -221,8 +221,7 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         return union_all
 
 class LinearTrendFeatures(FeaturesPipeline):
-    def __init__(self, n_target, **kwargs):
-        self.n_target = n_target
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
