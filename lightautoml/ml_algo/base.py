@@ -265,7 +265,7 @@ class TabularMLAlgo(MLAlgo):
         outp_dim = 1
         if self.task.name == "multiclass":
             outp_dim = int(np.max(preds_ds.target) + 1)
-        elif self.task.name == 'multi:reg':
+        elif (self.task.name == 'multi:reg') or (self.task.name == 'multilabel'):
             outp_dim = preds_ds.target.shape[1]
         # save n_classes to infer params
         self.n_classes = outp_dim
@@ -284,6 +284,7 @@ class TabularMLAlgo(MLAlgo):
             self.timer.set_control_point()
 
             model, pred = self.fit_predict_single_fold(train, valid)
+        
             self.models.append(model)
             preds_arr[idx] += pred.reshape((pred.shape[0], -1))
             counter_arr[idx] += 1

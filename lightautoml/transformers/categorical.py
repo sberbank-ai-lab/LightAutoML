@@ -724,9 +724,9 @@ class MultiClassTargetEncoder(LAMLTransformer):
 
         return output
 
-class MultiRegTargetEncoder(LAMLTransformer):
+class MultioutputTargetEncoder(LAMLTransformer):
     """
-    Out-of-fold target encoding for multi:reg task.
+    Out-of-fold target encoding for multi:reg and multilabel task.
 
     Limitation:
 
@@ -737,7 +737,7 @@ class MultiRegTargetEncoder(LAMLTransformer):
 
     _fit_checks = ()
     _transform_checks = ()
-    _fname_prefix = "multiregoof"
+    _fname_prefix = "multioutgoof"
 
     @property
     def features(self) -> List[str]:
@@ -749,7 +749,7 @@ class MultiRegTargetEncoder(LAMLTransformer):
         self.alphas = alphas
 
     @staticmethod
-    def score_func(candidates: np.ndarray, target: np.ndarray) -> int:
+    def reg_score_func(candidates: np.ndarray, target: np.ndarray) -> int:
         """
 
 
@@ -765,6 +765,26 @@ class MultiRegTargetEncoder(LAMLTransformer):
 
         scores = ((target - candidates) ** 2).mean(axis=0)        
         
+        idx = scores[0].argmin()
+
+        return idx
+    
+    @staticmethod
+    def class_score_func(candidates: np.ndarray, target: np.ndarray) -> int:
+        """
+
+
+        Args:
+            candidates: np.ndarray.
+            target: np.ndarray.
+
+        Returns:
+            index of best encoder.
+
+        """
+        
+        target = target[:, :, np.newaxis]
+        scores = -(target * np.log(candidates) + (1 - target) * np.log(1 - candidates)).mean(axis=0)
         idx = scores[0].argmin()
 
         return idx
@@ -786,6 +806,11 @@ class MultiRegTargetEncoder(LAMLTransformer):
 
         # convert to accepted dtype and get attributes
         dataset = dataset.to_numpy()
+        score_func = (
+            self.class_score_func
+            if dataset.task.name == "multilabel"
+            else self.reg_score_func
+        )
         data = dataset.data
         target = dataset.target.astype(np.float32)
         n_classes = int(target.shape[1])
@@ -853,7 +878,7 @@ class MultiRegTargetEncoder(LAMLTransformer):
             # norm over 1 axis
             candidates /= candidates.sum(axis=1, keepdims=True)
 
-            idx = self.score_func(candidates, target)
+            idx = score_func(candidates, target)
             oof_feats[:, n] = candidates[..., idx]
             enc = (
                 (t_sum[..., 0] + alphas[0, 0, idx] * prior)
@@ -867,7 +892,7 @@ class MultiRegTargetEncoder(LAMLTransformer):
         output.set_data(
             oof_feats.reshape((data.shape[0], -1)),
             self.features,
-            NumericRole(np.float32, prob=True),
+            NumericRole(np.float32, prob = dataset.task.name == "multilabel"),
         )
 
         return output
@@ -897,7 +922,7 @@ class MultiRegTargetEncoder(LAMLTransformer):
 
         # create resulted
         output = dataset.empty()
-        output.set_data(out, self.features, NumericRole(np.float32, prob=True))
+        output.set_data(out, self.features, NumericRole(np.float32, prob=dataset.task.name == "multilabel"))
 
         return output
 

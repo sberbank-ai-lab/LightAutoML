@@ -84,7 +84,7 @@ class LinearLBFGS(TabularMLAlgo):
         params = copy(self.params)
         params["loss"] = self.task.losses["torch"].loss
         params["metric"] = self.task.losses["torch"].metric_func
-        if self.task.name in ["binary", "multiclass"]:
+        if self.task.name in ["binary", "multiclass", "multilabel"]:
             model = TorchBasedLogisticRegression(output_size=self.n_classes, **params)
         elif self.task.name == "reg":
             model = TorchBasedLinearRegression(output_size=1, **params)
@@ -244,7 +244,7 @@ class LinearL1CD(TabularMLAlgo):
         elif self.task.name == "reg":
             pred = model.predict(data)
 
-        elif self.task.name == "multiclass":
+        elif (self.task.name == "multiclass") or (self.task.name == "multilabel"):
             pred = model.predict_proba(data)
 
         else:

@@ -201,8 +201,8 @@ class TabularAutoML(AutoMLPreset):
             if self.task.name == "multiclass" and multilevel_avail:
                 self.general_params["use_algos"].append(["linear_l2", "lgb"])
             
-            if self.task.name == 'multi:reg':
-                self.general_params["use_algos"] = [["rf", "linear_l2", "cb", "rf_tuned", "cb_tuned"]]
+            if (self.task.name == 'multi:reg') or (self.task.name == 'multilabel'):
+                self.general_params["use_algos"] = [["linear_l2", "cb", "rf", "rf_tuned", "cb_tuned"]]
 
         if not self.general_params["nested_cv"]:
             self.nested_cv_params["cv"] = 1
@@ -285,7 +285,7 @@ class TabularAutoML(AutoMLPreset):
             sel_timer_0 = self.timer.get_task_timer("lgb", time_score)
             selection_feats = LGBSimpleFeatures()
             
-            if self.task.name == 'multi:reg':
+            if (self.task.name == 'multi:reg') or (self.task.name == 'multilabel'):
                 selection_gbm = BoostCB(timer=sel_timer_0, **cb_params)
                 model_name = 'cb'
             else:

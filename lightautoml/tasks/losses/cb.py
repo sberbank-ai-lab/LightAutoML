@@ -28,6 +28,8 @@ def cb_str_loss_wrapper(name: str, **params: Optional[Dict]):
 def fw_rmsle(x, y):
     return np.log1p(x), y
 
+def bw_clipping(x):
+    return np.clip(x, 0, 1)
 
 _cb_loss_mapping = {
     "mse": ("RMSE", None, None),
@@ -78,11 +80,15 @@ _cb_multireg_metric_dict = {
     'mse': 'MultiRMSE',
     'mae': 'MultiRMSE',
 }
+
+_cb_multilabel_metric_dict = {'logloss': 'MultiRMSE'}
+
 _cb_metrics_dict = {
     "binary": _cb_binary_metrics_dict,
     "reg": _cb_reg_metrics_dict,
     "multiclass": _cb_multiclass_metrics_dict,
-    'multi:reg': _cb_multireg_metric_dict
+    'multi:reg': _cb_multireg_metric_dict,
+    'multilabel': _cb_multilabel_metric_dict
 }
 
 
@@ -181,6 +187,7 @@ class CBLoss(Loss):
             "reg",
             "multiclass",
             'multi:reg',
+            "multilabel"
         ], "Unknown task name: {}".format(task_name)
 
         self.metric_params = {}
@@ -194,6 +201,11 @@ class CBLoss(Loss):
                 logger.info2('CatBoost supports only MultiRMSE metric and loss for multi:reg task.')
                 self.fobj = None
                 self.fobj_name = 'MultiRMSE'
+            if task_name == 'multilabel':
+                logger.info2('CatBoost does not support multilabel task, so we train on MultiRMSE with clipping.')
+                self.fobj = None
+                self.fobj_name = 'MultiRMSE'
+                self._bw_func = bw_clipping
 
             if metric in _cb_metric_params_mapping:
                 metric_params = {

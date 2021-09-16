@@ -92,10 +92,6 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
             # if user change defaults manually - keep it
             return suggested_params
 
-
-
-                
-
         # just for speed training
         if rows_num <= 10000:
             suggested_params['n_estimators'] = 500
@@ -171,6 +167,8 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
             val_pred = model.predict_proba(valid.data)
             if task == 'binary':
                 val_pred = val_pred[:, 1]
+            elif task == 'multilabel':
+                val_pred = np.moveaxis(np.array(val_pred)[:, :, 1], 1, 0)
 
         metric = self.task.losses['sklearn'].metric_func
         score = metric(valid.target, val_pred, valid.weights)
@@ -193,6 +191,8 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
             pred = model.predict_proba(dataset.data)
             if task == 'binary':
                 pred = pred[:, 1]
+            elif task == 'multilabel':
+                pred = np.moveaxis(np.array(pred)[:, :, 1], 1, 0)
 
         return pred
 

@@ -147,6 +147,7 @@ class Loss:
             "reg",
             'multi:reg',
             "multiclass",
+            "multilabel"
         ], "Incorrect task name: {}".format(task_name)
         self.metric = metric
 

@@ -26,12 +26,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_valid_task_names = ["binary", "reg", "multiclass", "multi:reg"]
+_valid_task_names = ["binary", "reg", "multiclass", "multi:reg", "multilabel"]
 _one_dim_output_tasks = ["binary", "reg"]
 
-_default_losses = {"binary": "logloss", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae"}
+_default_losses = {"binary": "logloss", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae", "multilabel": "logloss"}
 
-_default_metrics = {"binary": "auc", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae"}
+_default_metrics = {"binary": "auc", "reg": "mse", "multiclass": "crossentropy", "multi:reg": "mae", "multilabel": "logloss"}
 
 _valid_loss_types = ["lgb", "sklearn", "torch", "cb"]
 
@@ -39,7 +39,8 @@ _valid_str_loss_names = {
     "binary": ["logloss"],
     "reg": ["mse", "mae", "mape", "rmsle", "quantile", "huber", "fair"],
     "multiclass": ["crossentropy", "f1"],
-    "multi:reg": ["mae", "mse"]
+    "multi:reg": ["mae", "mse"],
+    "multilabel": ["logloss"]
 }
 
 
@@ -391,7 +392,7 @@ class Task:
             self.metric_name = None
 
         if greater_is_better is None:
-            infer_gib_fn = infer_gib_multiclass if (name == 'multiclass' or name == 'multi:reg') else infer_gib
+            infer_gib_fn = infer_gib_multiclass if (name == 'multiclass' or name == 'multi:reg' or name == "multilabel") else infer_gib
             greater_is_better = infer_gib_fn(self.metric_func)
 
         self.greater_is_better = greater_is_better

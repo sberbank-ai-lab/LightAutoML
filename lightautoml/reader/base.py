@@ -300,7 +300,7 @@ class PandasToPandasReader(Reader):
                 # defined in kwargs is rewrited.. TODO: Maybe raise warning if rewrited?
                 # TODO: Think, what if multilabel or multitask? Multiple column target ..
                 # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
-                if (self.task.name == 'multi:reg') and (attrs_dict[r.name] == 'target'):
+                if ((self.task.name == 'multi:reg') or (self.task.name == 'multilabel')) and (attrs_dict[r.name] == 'target'):
                     if attrs_dict[r.name] in kwargs:
                         kwargs[attrs_dict[r.name]].append(feat)
                         self._used_array_attrs[attrs_dict[r.name]].append(feat)
@@ -415,7 +415,7 @@ class PandasToPandasReader(Reader):
 
         return dataset
 
-    def _create_target(self, target: Series):
+    def _create_target(self, target):
         """Validate target column and create class mapping is needed
 
         Args:
@@ -427,31 +427,37 @@ class PandasToPandasReader(Reader):
         """
         self.class_mapping = None
 
-        if (self.task.name != 'reg') and (self.task.name != 'multi:reg'):
-
-            # expect binary or multiclass here
-            cnts = target.value_counts(dropna=False)
-            assert np.nan not in cnts.index, "Nan in target detected"
-            unqiues = cnts.index.values
-            srtd = np.sort(unqiues)
-            self._n_classes = len(unqiues)
-
-            # case - target correctly defined and no mapping
-            if (np.arange(srtd.shape[0]) == srtd).all():
-
-                assert srtd.shape[0] > 1, "Less than 2 unique values in target"
-                if self.task.name == "binary":
-                    assert (
-                        srtd.shape[0] == 2
-                    ), "Binary task and more than 2 values in target"
-                return target
-
-            # case - create mapping
-            self.class_mapping = {n: x for (x, n) in enumerate(unqiues)}
-            return target.map(self.class_mapping).astype(np.int32)
-
-        assert not np.isnan(target.values).any(), "Nan in target detected"
+        if (self.task.name == 'binary') or (self.task.name == 'multiclass'):
+            target, self.class_mapping = self.check_class_target(target)
+        elif (self.task.name == 'multilabel'):
+            self.class_mapping = {}
+            for col in target.columns:
+                target_col, class_mapping = self.check_class_target(target[col])
+                self.class_mapping[col] = class_mapping
+                target[col] = target_col.values
+    
+        else:
+            assert not np.isnan(target.values).any(), 'Nan in target detected'
         return target
+        
+    def check_class_target(self, target):
+
+        target = pd.Series(target)
+        cnts = target.value_counts(dropna=False)
+        assert np.nan not in cnts.index, 'Nan in target detected'
+        unqiues = cnts.index.values
+        srtd = np.sort(unqiues)
+
+        # case - target correctly defined and no mapping
+        if (np.arange(srtd.shape[0]) == srtd).all():
+            assert srtd.shape[0] > 1, 'Less than 2 unique values in target'
+            if (self.task.name == 'binary') or (self.task.name == 'multilabel'):
+                assert srtd.shape[0] == 2, 'Binary task and more than 2 values in target'
+                return target, {}
+
+        # case - create mapping
+        class_mapping = {n: x for (x, n) in enumerate(unqiues)}
+        return target.map(class_mapping).astype(np.int32), class_mapping
 
     def _get_default_role_from_str(self, name) -> RoleType:
         """Get default role for string name according to automl's defaults and user settings.
@@ -871,7 +877,7 @@ class DictToNumpySeqReader(PandasToPandasReader):
                     # TODO: Think, what if multilabel or multitask? Multiple column target ..
                     # TODO: Maybe for multilabel/multitask make target only avaliable in kwargs??
                     
-                    if (self.task.name == 'multi:reg') and (attrs_dict[r.name] == 'target'):
+                    if ((self.task.name == 'multi:reg') or (self.task.name == 'multilabel')) and (attrs_dict[r.name] == 'target'):
                         if attrs_dict[r.name] in kwargs:
                             kwargs[attrs_dict[r.name]].append(feat)
                             self._used_array_attrs[attrs_dict[r.name]].append(feat)
@@ -1000,28 +1006,36 @@ class DictToNumpySeqReader(PandasToPandasReader):
         """
         self.class_mapping = None
 
-        if (self.task.name != 'reg') and (self.task.name != 'multi:reg'):
-            # expect binary or multiclass here
-            target = pd.Series(target)
-            cnts = target.value_counts(dropna=False)
-            assert np.nan not in cnts.index, 'Nan in target detected'
-            unqiues = cnts.index.values
-            srtd = np.sort(unqiues)
-
-            # case - target correctly defined and no mapping
-            if (np.arange(srtd.shape[0]) == srtd).all():
-
-                assert srtd.shape[0] > 1, 'Less than 2 unique values in target'
-                if self.task.name == 'binary':
-                    assert srtd.shape[0] == 2, 'Binary task and more than 2 values in target'
-                return target
-
-            # case - create mapping
-            self.class_mapping = {n: x for (x, n) in enumerate(unqiues)}
-            return target.map(self.class_mapping).astype(np.int32)
-
-        assert not np.isnan(target.values).any(), 'Nan in target detected'
+        if (self.task.name == 'binary') or (self.task.name == 'multiclass'):
+            target, self.class_mapping = self.check_class_target(target)
+        elif (self.task.name == 'multilabel'):
+            self.class_mapping = {}
+            for col in target.columns:
+                target_col, class_mapping = self.check_class_target(target[col])
+                self.class_mapping[col] = class_mapping
+                target[col] = target_col.values
+    
+        else:
+            assert not np.isnan(target.values).any(), 'Nan in target detected'
         return target
+        
+    def check_class_target(self, target):
+        target = pd.Series(target)
+        cnts = target.value_counts(dropna=False)
+        assert np.nan not in cnts.index, 'Nan in target detected'
+        unqiues = cnts.index.values
+        srtd = np.sort(unqiues)
+
+        # case - target correctly defined and no mapping
+        if (np.arange(srtd.shape[0]) == srtd).all():
+            assert srtd.shape[0] > 1, 'Less than 2 unique values in target'
+            if (self.task.name == 'binary') or (self.task.name == 'multilabel'):
+                assert srtd.shape[0] == 2, 'Binary task and more than 2 values in target'
+                return target, {}
+
+        # case - create mapping
+        class_mapping = {n: x for (x, n) in enumerate(unqiues)}
+        return target.map(class_mapping).astype(np.int32), class_mapping
 
     def read(self, data, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
         """Read dataset with fitted metadata.

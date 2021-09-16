@@ -168,7 +168,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
                 init_lr = 0.05
                 ntrees = 3000
 
-        elif (self.task.name == 'multiclass') or (self.task.name == 'multi:reg'):
+        elif ((self.task.name == 'multiclass') or (self.task.name == 'multi:reg') or (self.task.name == 'multilabel')):
             init_lr = 0.03
             ntrees = 4000
 
@@ -396,7 +396,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             pred = model.predict(
                 pool, prediction_type="Probability", thread_count=params["thread_count"]
             )[..., 1]
-        elif (self.task.name == 'reg') or (self.task.name == 'multi:reg'):
+        elif (self.task.name == 'reg') or (self.task.name == 'multi:reg') or (self.task.name == 'multilabel'):
             pred = model.predict(pool, thread_count=params["thread_count"])
 
         pred = self.task.losses["cb"].bw_func(pred)
