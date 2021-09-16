@@ -1,4 +1,5 @@
 # Standard python libraries
+from copy import deepcopy
 import logging
 
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.INFO)
@@ -22,148 +23,26 @@ from ...automl.blend import WeightedBlender
 from ...ml_algo.random_forest import RandomForestSklearn
 
 
-class AutoTS:
-    
-    @property
-    def n_target(self):
-        """Get length of future prediction.
-        
-        Returns:
-            length
-        """
-        return self.seq_params['seq0']['params']['n_target']
-    
-    @property
-    def n_history(self):
-        """Get length of history used for feature generation.
-        
-        Returns:
-            length
-        """
-        return self.seq_params['seq0']['params']['history']
-    
-    @property
-    def datetime_key(self):
-        """Get name of datetime index column 
-        
-        Returns:
-            column name
-        """
-        return self.automl_trend.levels[0][0].features_pipeline._pipeline.transformer_list[0].transformer_list[0].keys[0]
-    
-    def __init__(self, task, seq_params=None, params=None):
-        self.task = task
-        self.task_trend = Task('reg', greater_is_better=False, metric='mae', loss='mae')
-        if seq_params is None:
-            self.seq_params = {'seq0': {'case': 'next_values',
-                                        'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True}}, }
-        else:
-            self.seq_params = seq_params
-        if params is None:
-            self.params = {'trend': True, 'use_rolling': True, 'rolling_size': 7, 'trend_size': 7}
-        else:
-            self.params = params
-
-    def fit_predict(self, train_data, roles):
-        self.roles = roles
-
-        # fit trend
-        if self.params.get('trend', True):
-            reader_trend = DictToNumpySeqReader(task=self.task_trend, cv=None, seq_params={})
-
-            # feats_trend = LinearTrendFeatures()
-            feats_trend = LinearTrendFeatures()
-            model_trend = LinearLBFGS()
-            pipeline_trend = MLPipeline([model_trend],
-                                        pre_selection=None,
-                                        features_pipeline=feats_trend,
-                                        post_selection=None)
-
-            self.automl_trend = AutoML(reader_trend,
-                                       [[pipeline_trend]],
-                                       skip_conn=False)
-
-            if self.params.get('use_rolling', True):
-                median = train_data[roles['target']].rolling(self.params.get('rolling_size', 7)).apply(np.median)
-                median = median.fillna(median[~median.isna()].values[0]).values
-
-                oof_trend = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params.get('trend_size', 7):], 
-                                                           'seq': None},
-                                                          roles=roles, verbose=0)
-            else:
-                # oof_trend = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles, verbose=0)
-                median = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, 
-                                              roles=roles, verbose=0).data[:, 0]
-            self.datetime_step = pd.to_datetime(train_data[self.datetime_key])[1] - \
-                                 pd.to_datetime(train_data[self.datetime_key])[0]
-            
-        else:
-            median = np.zeros(len(train_data))
-
-        # fit main
-        train_detrend = train_data.copy()
-        train_detrend.loc[:, roles['target']] = train_detrend.loc[:, roles['target']] - median
-
-        reader_seq = DictToNumpySeqReader(task=self.task, cv=2, seq_params=self.seq_params)
-        feats_seq = LGBSeqSimpleFeatures()
-        model = RandomForestSklearn(default_params={'verbose': 0})
-        # model2 = LinearLBFGS(default_params={'cs': [1]})
-        model2 = LinearLBFGS()
-
-        model3 = BoostCB()
-        pipeline_lvl1 = MLPipeline([model], pre_selection=None, features_pipeline=feats_seq, post_selection=None)
-        pipeline2_lvl1 = MLPipeline([model2], pre_selection=None, features_pipeline=feats_seq, post_selection=None)
-        pipeline3_lvl1 = MLPipeline([model3], pre_selection=None, features_pipeline=feats_seq, post_selection=None)
-        self.automl_seq = AutoML(reader_seq,
-                                 [[pipeline_lvl1, pipeline2_lvl1, pipeline3_lvl1]],
-                                 skip_conn=False,
-                                 blender=WeightedBlender())
-
-        oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles, verbose=4)
-        return oof_pred_seq, median
-
-    def predict(self, train_data):
-        MIN_PREDICT_HISTORY = 5 * self.n_history
-        if self.params.get('trend', True):
-            last_datetime = pd.to_datetime(train_data[self.datetime_key]).values[-1]
-            test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
-                                     columns=[self.datetime_key])
-            test_pred_trend = self.automl_trend.predict({'plain': test_data, 'seq': None}).data[:, 0]
-            if self.params.get('use_rolling', True) and len(train_data) > MIN_PREDICT_HISTORY:
-                train_trend = train_data[self.roles['target']].rolling(self.params.get('rolling_size', 7)).apply(np.median)
-                train_trend = train_trend.fillna(train_trend[~train_trend.isna()].values[0]).values
-            else:
-                train_trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
-        else:
-            test_pred_trend = np.zeros(self.n_target)
-            train_trend = np.zeros(len(train_data))
-
-        train_detrend = train_data.copy()
-        train_detrend.loc[:, self.roles['target']] = train_detrend.loc[:, self.roles['target']] - train_trend
-        test_pred_detrend = self.automl_seq.predict({'seq': {'seq0': train_detrend}})
-
-        if test_pred_detrend.data.shape[0] == 1:
-            final_pred = test_pred_trend + test_pred_detrend.data.flatten()
-        else:
-            final_pred = test_pred_trend + test_pred_detrend.data
-        return final_pred, test_pred_trend
-
-    
 
 
 class TrendModel:
+    
+    default_params = {'trend': True,
+                      'train_on_trend': True,
+                      'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
+                      'trend_size': 7,
+                      'decompose_period': 30,
+                      'detect_step_quantile': 0.01,
+                      'detect_step_window': 7,
+                      'detect_step_threshold': 0.7,
+                      'rolling_size': 7,
+                      'verbose': 0}
+    
     def __init__(self, params=None):
-        DEFAULT_PARAMS = {'trend': True,
-                          'train_on_trend': True,
-                          'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
-                          'trend_size': 7,
-                          'decompose_period': 30,
-                          'detect_step_quantile': 0.01,
-                          'detect_step_window': 7,
-                          'detect_step_threshold': 0.7,
-                          'rolling_size': 7,
-                          'verbose': 0}
-        self.params = DEFAULT_PARAMS if params is None else dict(DEFAULT_PARAMS, **params)
+        self.params = deepcopy(self.default_params)
+        if params is not None:
+            self.params.update(params)
+            
     
     def _detect_step(self, x):
         x_min, x_max = tuple(np.quantile(x, [self.params['detect_step_quantile'], 
@@ -235,20 +114,31 @@ class TrendModel:
             trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
         return trend
     
-    def predict(self, train_data, test_data):
+    def predict(self, data, future_time):
         MIN_PREDICT_HISTORY = 5 * self.params['trend_size']
         if not self.params['trend']:
-            return np.zeros(len(train_data)), np.zeros(len(test_data))
-        if self.params['trend_type'] == 'linear' or len(train_data) < MIN_PREDICT_HISTORY:
-            train_trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
+            return np.zeros(len(data)), np.zeros(len(future_time))
+        if self.params['trend_type'] == 'linear' or len(data) < MIN_PREDICT_HISTORY:
+            trend = self.automl_trend.predict({'plain': data, 'seq': None}).data[:, 0]
         else:
-            train_trend = self._estimate_trend(train_data, self.roles)
-        test_pred_trend = self.automl_trend.predict({'plain': test_data, 'seq': None}).data[:, 0]
-        return train_trend, test_pred_trend
+            trend = self._estimate_trend(data, self.roles)
+        pred_trend = self.automl_trend.predict({'plain': future_time, 'seq': None}).data[:, 0]
+        return trend, pred_trend
     
 
 
-class AutoTSTrend:
+class AutoTS:
+    
+    default_trend_params = {'trend': True,
+                          'train_on_trend': True,
+                          'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
+                          'trend_size': 7,
+                          'decompose_period': 30,
+                          'detect_step_quantile': 0.01,
+                          'detect_step_window': 7,
+                          'detect_step_threshold': 0.7,
+                          'rolling_size': 7,
+                          'verbose': 0}
     
     @property
     def n_target(self):
@@ -285,18 +175,11 @@ class AutoTSTrend:
                                         'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True}}, }
         else:
             self.seq_params = seq_params
-        DEFAULT_TREND_PARAMS = {'trend': True, 
-                                'train_on_trend': True,
-                                  'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
-                                  'trend_size': 7, 
-                                  'decompose_period': 30, 
-                                  'detect_step_quantile': 0.01, 
-                                  'detect_step_window': 7, 
-                                  'detect_step_threshold': 0.7,
-                                  'rolling_size': 7, 
-                                  'verbose': 0}
-        self.trend_params = DEFAULT_TREND_PARAMS if trend_params is None else dict(DEFAULT_TREND_PARAMS, **trend_params)
-        self.TM = TrendModel(params=trend_params)
+        
+        self.trend_params = deepcopy(self.default_trend_params)
+        if trend_params is not None:
+            self.trend_params.update(trend_params)
+        self.TM = TrendModel(params=self.trend_params)
 
     def fit_predict(self, train_data, roles):
         self.roles = roles
@@ -326,19 +209,19 @@ class AutoTSTrend:
         oof_pred_seq = self.automl_seq.fit_predict({'seq': {'seq0': train_detrend}}, roles=roles)
         return oof_pred_seq, train_trend
 
-    def predict(self, train_data):
+    def predict(self, data):
         if self.trend_params['trend'] == True:
-            last_datetime = pd.to_datetime(train_data[self.datetime_key]).values[-1]
+            last_datetime = pd.to_datetime(data[self.datetime_key]).values[-1]
             test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
                                      columns=[self.datetime_key])
-            train_trend, test_pred_trend = self.TM.predict(train_data, test_data)
+            trend, test_pred_trend = self.TM.predict(data, test_data)
         else:
             test_pred_trend = np.zeros(self.n_target)
-            train_trend = np.zeros(len(train_data))
+            trend = np.zeros(len(data))
 
-        train_detrend = train_data.copy()
-        train_detrend.loc[:, self.roles['target']] = train_detrend.loc[:, self.roles['target']] - train_trend
-        test_pred_detrend = self.automl_seq.predict({'seq': {'seq0': train_detrend}})
+        detrend = data.copy()
+        detrend.loc[:, self.roles['target']] = detrend.loc[:, self.roles['target']] - trend
+        test_pred_detrend = self.automl_seq.predict({'seq': {'seq0': detrend}})
 
         if test_pred_detrend.data.shape[0] == 1:
             final_pred = test_pred_trend + test_pred_detrend.data.flatten()
