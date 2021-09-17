@@ -26,10 +26,11 @@ from ...ml_algo.random_forest import RandomForestSklearn
 
 
 class TrendModel:
-    
+
+    _available_trend_types = ['decompose', 'decompose_STL', 'linear', 'rolling']
     default_params = {'trend': True,
                       'train_on_trend': True,
-                      'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
+                      'trend_type': 'decompose',
                       'trend_size': 7,
                       'decompose_period': 30,
                       'detect_step_quantile': 0.01,
@@ -42,6 +43,7 @@ class TrendModel:
         self.params = deepcopy(self.default_params)
         if params is not None:
             self.params.update(params)
+        assert self.params['trend_type'] in self._available_trend_types
             
     
     def _detect_step(self, x):
@@ -103,11 +105,15 @@ class TrendModel:
         if self.params['trend_type'] in ['decompose', 'decompose_STL', 'rolling']:
             trend = self._estimate_trend(train_data, roles)
             if self.params['train_on_trend']:
-                train_data.drop(roles['target'], axis=1, inplace=True)
-                train_data['trend'] = trend
+                trend_data = train_data.copy()
+                trend_data.drop(roles['target'], axis=1, inplace=True)
+                trend_data['trend'] = trend
                 roles = {'target': 'trend'}
-            _ = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params['trend_size']:],
+                _ = self.automl_trend.fit_predict({'plain': trend_data.iloc[-self.params['trend_size']:],
                                                'seq': None}, roles=roles)
+            else:
+                _ = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params['trend_size']:],
+                                                   'seq': None}, roles=roles)
             
         elif self.params['trend_type'] == 'linear':
             _ = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles)
