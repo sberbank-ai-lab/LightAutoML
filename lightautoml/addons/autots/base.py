@@ -192,7 +192,7 @@ class AutoTS:
         train_detrend.loc[:, roles['target']] = train_detrend.loc[:, roles['target']] - train_trend
 
         reader_seq = DictToNumpySeqReader(task=self.task, cv=2, seq_params=self.seq_params)
-        feats_seq = LGBSeqSimpleFeatures()
+        feats_seq = LGBSeqSimpleFeatures(fill_na=True, scaler=True)
         model = RandomForestSklearn(default_params={'verbose': 0})
         # model2 = LinearLBFGS(default_params={'cs': [1]})
         model2 = LinearLBFGS()

@@ -303,7 +303,7 @@ class TorchBasedLinearEstimator:
             max_iter=self.max_iter,
             tolerance_change=self.tol,
             tolerance_grad=self.tol,
-            line_search_fn="strong_wolfe",
+            #line_search_fn="strong_wolfe",
         )
 
         # keep history
@@ -352,7 +352,6 @@ class TorchBasedLinearEstimator:
         )
 
         penalty = torch.norm(all_params, 2).pow(2) / 2 / n
-
         return loss + 0.5 * penalty / c
 
     def fit(

@@ -19,7 +19,7 @@ from ...transformers.categorical import OrdinalEncoder, LabelEncoder
 from ...transformers.datetime import TimeToNum
 from ...transformers.seq import GetSeqTransformer, SeqLagTransformer, SeqStatisticsTransformer, SeqNumCountsTransformer
 from ...transformers.numeric import FillInf
-from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import FillnaMedian, NaNFlags, StandardScaler
 
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
@@ -39,6 +39,7 @@ class LGBSimpleFeatures(FeaturesPipeline):
     Maps input to output features exactly one-to-one.
 
     """
+
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create tree pipeline.
@@ -91,7 +92,7 @@ class LGBSimpleFeatures(FeaturesPipeline):
 class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
     def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
                  max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None, multiclass_te_co: int = 3,
-                 auto_unique_co: int = 10, output_categories: bool = False, **kwargs):
+                 auto_unique_co: int = 10, output_categories: bool = False, fill_na=False, scaler=False, **kwargs):
         """
 
         Args:
@@ -114,6 +115,9 @@ class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
                          output_categories=output_categories,
                          ascending_by_cardinality=False
                          )
+
+        self.fill_na = fill_na
+        self.scaler = scaler
 
     def get_seq_pipeline(self, train):
         transformers_list = []
@@ -152,6 +156,15 @@ class LGBSeqSimpleFeatures(FeaturesPipeline, TabularDataFeatures):
             transformers_list.append(num_processing)
 
         simple_seq_transforms = UnionTransformer(transformers_list)
+
+        if self.fill_na:
+            filler = UnionTransformer([SequentialTransformer([FillInf(), FillnaMedian()]),
+                                       NaNFlags()])
+
+            if self.scaler:
+                filler = SequentialTransformer([filler, StandardScaler()])
+
+            simple_seq_transforms = SequentialTransformer([simple_seq_transforms, filler])
 
         # to seq dataset
         seq = ColumnsSelector(keys=[])#SequentialTransformer([EmptyTransformer(), ColumnsSelector(keys=[])])
