@@ -56,5 +56,3 @@ Functions
     roc_auc_ovr
     rmsle
     auc_mu
-
-

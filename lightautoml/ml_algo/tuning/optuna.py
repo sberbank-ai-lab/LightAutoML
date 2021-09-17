@@ -1,48 +1,106 @@
 """"Classes to implement hyperparameter tuning using Optuna."""
 
-from abc import ABC, abstractmethod
+import logging
+
+from abc import ABC
+from abc import abstractmethod
+from copy import copy
 from copy import deepcopy
-from typing import Optional, Tuple, Callable, Union, TypeVar
+from typing import Callable
+from typing import Optional
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 import optuna
-from log_calls import record_history
+
+from numpy.lib.twodim_base import tri
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
+from lightautoml.ml_algo.tuning.base import Distribution
 from lightautoml.ml_algo.tuning.base import ParamsTuner
-from lightautoml.utils.logging import get_logger
-from lightautoml.validation.base import TrainValidIterator, HoldoutIterator
+from lightautoml.ml_algo.tuning.base import SearchSpace
+from lightautoml.pipelines import ml
+from lightautoml.validation.base import HoldoutIterator
+from lightautoml.validation.base import TrainValidIterator
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 optuna.logging.enable_propagation()
 optuna.logging.disable_default_handler()
-optuna.logging.set_verbosity(optuna.logging.ERROR)
+optuna.logging.set_verbosity(optuna.logging.DEBUG)
 
 TunableAlgo = TypeVar("TunableAlgo", bound=MLAlgo)
 
+OPTUNA_DISTRIBUTIONS_MAP = {
+    Distribution.CHOICE: "suggest_categorical",
+    Distribution.UNIFORM: "suggest_uniform",
+    Distribution.LOGUNIFORM: "suggest_loguniform",
+    Distribution.INTUNIFORM: "suggest_int",
+    Distribution.DISCRETEUNIFORM: "suggest_discrete_uniform",
+}
 
-@record_history(enabled=False)
+
 class OptunaTunableMixin(ABC):
     """Optuna Sampler."""
+
     mean_trial_time: float = None
+    optimization_search_space: dict = None
+
+    def __init__(self, *args, **kwargs):
+        if "optimization_search_space" in kwargs:
+            self.optimization_search_space = kwargs["optimization_search_space"]
+            del kwargs["optimization_search_space"]
+        super().__init__(*args, **kwargs)
+
+    def _sample_parameters(
+        self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int
+    ) -> dict:
+        if self.optimization_search_space is None:
+            self.optimization_search_space = self._get_search_spaces(
+                suggested_params, estimated_n_trials
+            )
+
+        return self._sample(trial, suggested_params)
+
+    def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
+        # logger.info3(f'Suggested parameters: {suggested_params}')
+
+        trial_values = copy(suggested_params)
+
+        for parameter, SearchSpace in self.optimization_search_space.items():
+            if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                trial_values[parameter] = getattr(
+                    trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
+                )(name=parameter, **SearchSpace.params)
+            else:
+                raise ValueError(
+                    f"Optuna does not support distribution {SearchSpace.distribution_type}"
+                )
+
+        return trial_values
 
     @abstractmethod
-    def sample_params_values(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
-        """Sample hyperparameters from suggested.
+    def _get_search_spaces(
+        self, suggested_params: dict, estimated_n_trials: int
+    ) -> dict:
+        """Get search spaces for hyperparameters.
 
         Args:
-            trial: Optuna trial object.
             suggested_params: Dict with parameters.
             estimated_n_trials: Maximum number of hyperparameter estimations.
 
         Returns:
-            Dict with sampled hyperparameters.
+            Dict with search spaces for hyperparameters.
 
         """
 
     def trial_params_values(
-            self: TunableAlgo, estimated_n_trials: int, trial: optuna.trial.Trial,
-            train_valid_iterator: Optional[TrainValidIterator] = None
+        self: TunableAlgo,
+        estimated_n_trials: int,
+        trial: optuna.trial.Trial,
+        train_valid_iterator: Optional[TrainValidIterator] = None,
     ) -> dict:
         """
 
@@ -54,14 +112,17 @@ class OptunaTunableMixin(ABC):
 
         """
 
-        return self.sample_params_values(
+        return self._sample_parameters(
             estimated_n_trials=estimated_n_trials,
             trial=trial,
-            suggested_params=self.init_params_on_input(train_valid_iterator)
+            suggested_params=self.init_params_on_input(train_valid_iterator),
         )
 
-    def get_objective(self: TunableAlgo, estimated_n_trials: int, train_valid_iterator: TrainValidIterator) -> \
-            Callable[[optuna.trial.Trial], Union[float, int]]:
+    def get_objective(
+        self: TunableAlgo,
+        estimated_n_trials: int,
+        train_valid_iterator: TrainValidIterator,
+    ) -> Callable[[optuna.trial.Trial], Union[float, int]]:
         """Get objective.
 
         Args:
@@ -83,31 +144,36 @@ class OptunaTunableMixin(ABC):
                 trial=trial,
             )
 
-            output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
+            output_dataset = _ml_algo.fit_predict(
+                train_valid_iterator=train_valid_iterator
+            )
 
             return _ml_algo.score(output_dataset)
 
         return objective
 
 
-@record_history(enabled=False)
 class OptunaTuner(ParamsTuner):
     """Wrapper for optuna tuner."""
 
-    _name: str = 'OptunaTuner'
+    _name: str = "OptunaTuner"
 
     study: optuna.study.Study = None
     estimated_n_trials: int = None
 
     def __init__(
-            # TODO: For now, metric is designed to be greater is better. Change maximize param after metric refactor if needed
-            self, timeout: Optional[int] = 1000, n_trials: Optional[int] = 100, direction: Optional[str] = 'maximize',
-            fit_on_holdout: bool = True, random_state: int = 42
+        # TODO: For now, metric is designed to be greater is better. Change maximize param after metric refactor if needed
+        self,
+        timeout: Optional[int] = 1000,
+        n_trials: Optional[int] = 100,
+        direction: Optional[str] = "maximize",
+        fit_on_holdout: bool = True,
+        random_state: int = 42,
     ):
         """
 
         Args:
-            timeout: Mximum learning time.
+            timeout: Maximum learning time.
             n_trials: Maximum number of trials.
             direction: Direction of optimization.
               Set ``minimize`` for minimization
@@ -127,8 +193,11 @@ class OptunaTuner(ParamsTuner):
     def _upd_timeout(self, timeout):
         self.timeout = min(self.timeout, timeout)
 
-    def fit(self, ml_algo: TunableAlgo, train_valid_iterator: Optional[TrainValidIterator] = None) -> \
-            Tuple[Optional[TunableAlgo], Optional[LAMLDataset]]:
+    def fit(
+        self,
+        ml_algo: TunableAlgo,
+        train_valid_iterator: Optional[TrainValidIterator] = None,
+    ) -> Tuple[Optional[TunableAlgo], Optional[LAMLDataset]]:
         """Tune model.
 
         Args:
@@ -142,16 +211,21 @@ class OptunaTuner(ParamsTuner):
             Tuple (MlALgo, preds_ds) otherwise.
 
         """
-        assert not ml_algo.is_fitted, 'Fitted algo cannot be tuned.'
-        optuna.logging.set_verbosity(logger.getEffectiveLevel())
+        assert not ml_algo.is_fitted, "Fitted algo cannot be tuned."
+        # optuna.logging.set_verbosity(logger.getEffectiveLevel())
         # upd timeout according to ml_algo timer
-        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(len(train_valid_iterator))
+        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(
+            len(train_valid_iterator)
+        )
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
-        logger.info('Optuna may run {0} secs'.format(estimated_tuning_time))
+        logger.info(
+            f"Start hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m ... Time budget is {estimated_tuning_time:.2f} secs"
+        )
 
         self._upd_timeout(estimated_tuning_time)
+        metric_name = train_valid_iterator.train.task.get_dataset_metric().name
         ml_algo = deepcopy(ml_algo)
 
         flg_new_iterator = False
@@ -160,8 +234,9 @@ class OptunaTuner(ParamsTuner):
             flg_new_iterator = True
 
         # TODO: Check if time estimation will be ok with multiprocessing
-        @record_history(enabled=False)
-        def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
+        def update_trial_time(
+            study: optuna.study.Study, trial: optuna.trial.FrozenTrial
+        ):
             """Callback for number of iteration with time cut-off.
 
             Args:
@@ -169,30 +244,42 @@ class OptunaTuner(ParamsTuner):
                 trial: Optuna trial object.
 
             """
-            ml_algo.mean_trial_time = study.trials_dataframe()['duration'].mean().total_seconds()
-            self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
+            ml_algo.mean_trial_time = (
+                study.trials_dataframe()["duration"].mean().total_seconds()
+            )
+            self.estimated_n_trials = min(
+                self.n_trials, self.timeout // ml_algo.mean_trial_time
+            )
+            logger.info3(
+                f"Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
+            )
 
         try:
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
-            self.study = optuna.create_study(
-                direction=self.direction,
-                sampler=sampler
-            )
+            self.study = optuna.create_study(direction=self.direction, sampler=sampler)
 
             self.study.optimize(
                 func=ml_algo.get_objective(
                     estimated_n_trials=self.estimated_n_trials,
-                    train_valid_iterator=train_valid_iterator
+                    train_valid_iterator=train_valid_iterator,
                 ),
                 n_trials=self.n_trials,
                 timeout=self.timeout,
                 callbacks=[update_trial_time],
+                # show_progress_bar=True,
             )
 
             # need to update best params here
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
+
+            logger.info(
+                f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed"
+            )
+            logger.info2(
+                f"The set of hyperparameters \x1b[1m{self._best_params}\x1b[0m\n achieve {self.study.best_value:.4f} {metric_name}"
+            )
 
             if flg_new_iterator:
                 # if tuner was fitted on holdout set we dont need to save train results

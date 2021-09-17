@@ -3,17 +3,17 @@
 from typing import Callable
 
 import numpy as np
-from log_calls import record_history
 
 
 # TODO: Calc metrics on gpu slow down warning. Check it
 
-@record_history(enabled=False)
+
 class CBCustomMetric:
     """Metric wrapper class for CatBoost."""
 
-    def __init__(self, metric: Callable, greater_is_better: bool = True,
-                 bw_func: Callable = None):
+    def __init__(
+        self, metric: Callable, greater_is_better: bool = True, bw_func: Callable = None
+    ):
         """
 
         Args:
@@ -57,7 +57,6 @@ class CBCustomMetric:
             return score, weight
 
 
-@record_history(enabled=False)
 class CBRegressionMetric(CBCustomMetric):
     """Regression metric wrapper for CatBoost."""
 
@@ -69,11 +68,16 @@ class CBRegressionMetric(CBCustomMetric):
         return self._evaluate(approxes, target, weight)
 
 
-@record_history(enabled=False)
 class CBClassificationMetric(CBCustomMetric):
     """Classification metric wrapper for CatBoost."""
 
-    def __init__(self, metric: Callable, greater_is_better: bool, bw_func: Callable = None, use_proba: bool = True):
+    def __init__(
+        self,
+        metric: Callable,
+        greater_is_better: bool,
+        bw_func: Callable = None,
+        use_proba: bool = True,
+    ):
         super(CBClassificationMetric, self).__init__(metric, greater_is_better, bw_func)
         self.use_proba = use_proba
 
@@ -98,11 +102,16 @@ class CBClassificationMetric(CBCustomMetric):
         return self._evaluate(approxes, target, weight)
 
 
-@record_history(enabled=False)
 class CBMulticlassMetric(CBCustomMetric):
     """Multiclassification metric wrapper for CatBoost."""
 
-    def __init__(self, metric: Callable, greater_is_better: bool, bw_func: Callable = None, use_proba: bool = True):
+    def __init__(
+        self,
+        metric: Callable,
+        greater_is_better: bool,
+        bw_func: Callable = None,
+        use_proba: bool = True,
+    ):
         super().__init__(metric, greater_is_better, bw_func)
         self.use_proba = use_proba
 

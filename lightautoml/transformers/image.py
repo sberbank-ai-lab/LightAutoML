@@ -1,29 +1,35 @@
 """Image features transformers."""
 
+import logging
 import os
 import pickle
+
 from copy import deepcopy
-from typing import Optional, Union, List, Callable
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Union
 
 import numpy as np
 import torch
-from log_calls import record_history
 
-from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..dataset.roles import NumericRole
-from ..image.image import CreateImageFeatures, DeepImageEmbedder
+from ..image.image import CreateImageFeatures
+from ..image.image import DeepImageEmbedder
 from ..image.utils import pil_loader
-from ..text.utils import single_text_hash, get_textarr_hash
-from ..utils.logging import get_logger
+from ..text.utils import get_textarr_hash
+from ..text.utils import single_text_hash
+from .base import LAMLTransformer
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 NumpyOrPandas = Union[NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 def path_check(dataset: LAMLDataset):
     """Check if all passed vars are path.
 
@@ -37,18 +43,23 @@ def path_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == 'Path', 'Only path accepted in this transformer'
+        assert roles[f].name == "Path", "Only path accepted in this transformer"
 
 
-@record_history(enabled=False)
 class ImageFeaturesTransformer(LAMLTransformer):
     """Simple image histogram."""
 
     _fit_checks = (path_check,)
     _transform_checks = ()
-    _fname_prefix = 'img_hist'
+    _fname_prefix = "img_hist"
 
-    def __init__(self, hist_size: int = 30, is_hsv: bool = True, n_jobs: int = 4, loader: Callable = pil_loader):
+    def __init__(
+        self,
+        hist_size: int = 30,
+        is_hsv: bool = True,
+        n_jobs: int = 4,
+        loader: Callable = pil_loader,
+    ):
         """Create normalized color histogram for rgb or hsv image.
 
         Args:
@@ -94,11 +105,15 @@ class ImageFeaturesTransformer(LAMLTransformer):
         feats = []
         self.dicts = {}
         for n, i in enumerate(df.columns):
-            fg = CreateImageFeatures(self.hist_size, self.is_hsv, self.n_jobs, self.loader)
+            fg = CreateImageFeatures(
+                self.hist_size, self.is_hsv, self.n_jobs, self.loader
+            )
             features = list(
-                np.char.array([self._fname_prefix + '_']) + np.char.array(fg.fe.get_names()) + np.char.array(
-                    ['__' + i]))
-            self.dicts[i] = {'fg': fg, 'feats': features}
+                np.char.array([self._fname_prefix + "_"])
+                + np.char.array(fg.fe.get_names())
+                + np.char.array(["__" + i])
+            )
+            self.dicts[i] = {"fg": fg, "feats": features}
             feats.extend(features)
         self._features = feats
         return self
@@ -123,22 +138,21 @@ class ImageFeaturesTransformer(LAMLTransformer):
         roles = NumericRole()
         outputs = []
         for n, i in enumerate(df.columns):
-            new_arr = self.dicts[i]['fg'].transform(df[i].values)
+            new_arr = self.dicts[i]["fg"].transform(df[i].values)
             output = dataset.empty().to_numpy()
-            output.set_data(new_arr, self.dicts[i]['feats'], roles)
+            output.set_data(new_arr, self.dicts[i]["feats"], roles)
             outputs.append(output)
         # create resulted
         return dataset.empty().to_numpy().concat(outputs)
 
 
-@record_history(enabled=False)
 class AutoCVWrap(LAMLTransformer):
     """Calculate image embeddings."""
 
     _fit_checks = (path_check,)
     _transform_checks = ()
-    _fname_prefix = 'emb_cv'
-    _emb_name = ''
+    _fname_prefix = "emb_cv"
+    _emb_name = ""
 
     @property
     def features(self) -> List[str]:
@@ -150,10 +164,19 @@ class AutoCVWrap(LAMLTransformer):
         """
         return self._features
 
-    def __init__(self, model='efficientnet-b0', weights_path: Optional[str] = None, cache_dir: str = './cache_CV',
-                 subs: Optional = None,
-                 device: torch.device = torch.device('cuda:0'), n_jobs: int = 4, random_state: int = 42, is_advprop: bool = True,
-                 batch_size: int = 128, verbose: bool = True):
+    def __init__(
+        self,
+        model="efficientnet-b0",
+        weights_path: Optional[str] = None,
+        cache_dir: str = "./cache_CV",
+        subs: Optional = None,
+        device: torch.device = torch.device("cuda:0"),
+        n_jobs: int = 4,
+        random_state: int = 42,
+        is_advprop: bool = True,
+        batch_size: int = 128,
+        verbose: bool = True,
+    ):
         """
 
         Args:
@@ -175,8 +198,17 @@ class AutoCVWrap(LAMLTransformer):
         self.dicts = {}
         self.cache_dir = cache_dir
 
-        self.transformer = DeepImageEmbedder(device, n_jobs, random_state, is_advprop, model, weights_path, batch_size, verbose)
-        self._emb_name = 'DI_' + single_text_hash(self.embed_model)
+        self.transformer = DeepImageEmbedder(
+            device,
+            n_jobs,
+            random_state,
+            is_advprop,
+            model,
+            weights_path,
+            batch_size,
+            verbose,
+        )
+        self._emb_name = "DI_" + single_text_hash(self.embed_model)
         self.emb_size = self.transformer.model.feature_shape
 
     def fit(self, dataset: NumpyOrPandas):
@@ -206,8 +238,14 @@ class AutoCVWrap(LAMLTransformer):
 
         names = []
         for n, i in enumerate(subs.columns):
-            feats = [self._fname_prefix + '_' + self._emb_name + '_' + str(x) + '__' + i for x in range(self.emb_size)]
-            self.dicts[i] = {'transformer': deepcopy(self.transformer.fit(subs[i])), 'feats': feats}
+            feats = [
+                self._fname_prefix + "_" + self._emb_name + "_" + str(x) + "__" + i
+                for x in range(self.emb_size)
+            ]
+            self.dicts[i] = {
+                "transformer": deepcopy(self.transformer.fit(subs[i])),
+                "feats": feats,
+            }
             names.extend(feats)
 
         self._features = names
@@ -235,25 +273,31 @@ class AutoCVWrap(LAMLTransformer):
 
         for n, conlumn_name in enumerate(df.columns):
             if self.cache_dir is not None:
-                full_hash = get_textarr_hash(df[conlumn_name]) + get_textarr_hash(self.dicts[conlumn_name]['feats'])
-                fname = os.path.join(self.cache_dir, full_hash + '.pkl')
+                full_hash = get_textarr_hash(df[conlumn_name]) + get_textarr_hash(
+                    self.dicts[conlumn_name]["feats"]
+                )
+                fname = os.path.join(self.cache_dir, full_hash + ".pkl")
 
                 if os.path.exists(fname):
-                    logger.info(f'Load saved dataset for {conlumn_name}')
+                    logger.info3(f"Load saved dataset for {conlumn_name}")
 
-                    with open(fname, 'rb') as f:
+                    with open(fname, "rb") as f:
                         new_arr = pickle.load(f)
 
                 else:
-                    new_arr = self.dicts[conlumn_name]['transformer'].transform(df[conlumn_name])
-                    with open(fname, 'wb') as f:
+                    new_arr = self.dicts[conlumn_name]["transformer"].transform(
+                        df[conlumn_name]
+                    )
+                    with open(fname, "wb") as f:
                         pickle.dump(new_arr, f)
             else:
-                new_arr = self.dicts[conlumn_name]['transformer'].transform(df[conlumn_name])
+                new_arr = self.dicts[conlumn_name]["transformer"].transform(
+                    df[conlumn_name]
+                )
 
             output = dataset.empty().to_numpy()
-            output.set_data(new_arr, self.dicts[conlumn_name]['feats'], roles)
+            output.set_data(new_arr, self.dicts[conlumn_name]["feats"], roles)
             outputs.append(output)
-            logger.info(f'Feature {conlumn_name} transformed')
+            logger.info3(f"Feature {conlumn_name} transformed")
         # create resulted
         return dataset.empty().to_numpy().concat(outputs)

@@ -1,29 +1,39 @@
 """Weighted average transformer for sequence embeddings."""
 
+import logging
+
 from collections import Counter
 from itertools import repeat
-from typing import Any, Dict, Sequence
+from typing import Any
+from typing import Dict
+from typing import Sequence
 
 import numpy as np
-from log_calls import record_history
+
 from scipy.linalg import svd
 from sklearn.base import TransformerMixin
 from sklearn.feature_extraction import DictVectorizer
 from tqdm import tqdm
 
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-@record_history(enabled=False)
 class WeightedAverageTransformer(TransformerMixin):
     """Weighted average of word embeddings."""
-    name = 'WAT'
 
-    def __init__(self, embedding_model: Dict, embed_size: int,
-                 weight_type: str = 'idf', use_svd: bool = True,
-                 alpha: int = 0.001, verbose: bool = False, **kwargs: Any):
+    name = "WAT"
+
+    def __init__(
+        self,
+        embedding_model: Dict,
+        embed_size: int,
+        weight_type: str = "idf",
+        use_svd: bool = True,
+        alpha: int = 0.001,
+        verbose: bool = False,
+        **kwargs: Any,
+    ):
         """Calculate sentence embedding as weighted average of word embeddings.
 
         Args:
@@ -40,7 +50,7 @@ class WeightedAverageTransformer(TransformerMixin):
         """
         super(WeightedAverageTransformer, self).__init__()
 
-        if weight_type not in ['sif', 'idf', '1']:
+        if weight_type not in ["sif", "idf", "1"]:
             raise Exception("weights should be one of ['sif', 'idf', '1']")
 
         self.weight_type = weight_type
@@ -61,7 +71,7 @@ class WeightedAverageTransformer(TransformerMixin):
             string with module name.
 
         """
-        return self.name + '_' + self.weight_type
+        return self.name + "_" + self.weight_type
 
     def get_out_shape(self) -> int:
         """Output shape.
@@ -81,7 +91,9 @@ class WeightedAverageTransformer(TransformerMixin):
     def get_statistic(self):
         """Get module statistics."""
 
-        logger.info(f'N_words: {self.w_all}, N_emb: {self.w_emb}, coverage: {self.w_emb / self.w_all}.')
+        logger.info3(
+            f"N_words: {self.w_all}, N_emb: {self.w_emb}, coverage: {self.w_emb / self.w_all}."
+        )
 
     def get_embedding_(self, sentence: Sequence[str]) -> np.ndarray:
         result = np.zeros((self.embed_size,))
@@ -102,12 +114,12 @@ class WeightedAverageTransformer(TransformerMixin):
         dict_vec = DictVectorizer()
         occurances = dict_vec.fit_transform([dict(Counter(x)) for x in sentences])
 
-        if self.weight_type == 'idf':
+        if self.weight_type == "idf":
             nd = np.asarray((occurances > 0).sum(axis=0)).ravel()
             idf = np.log1p((occurances.shape[0] + 1) / (nd + 1))
             self.weights_ = dict(zip(dict_vec.feature_names_, idf))
 
-        elif self.weight_type == 'sif':
+        elif self.weight_type == "sif":
             nd = np.asarray((occurances > 0).sum(axis=0)).ravel()
             pw = (nd + 1) / (occurances.shape[0] + 1)
             pw = self.alpha / (self.alpha + pw)
@@ -130,7 +142,10 @@ class WeightedAverageTransformer(TransformerMixin):
         sentence_embeddings = np.vstack([self.get_embedding_(x) for x in sentences])
 
         if self.use_svd:
-            proj = (self.u_.reshape(-1, 1) * self.u_.dot(sentence_embeddings.T).reshape(1, -1)).T
+            proj = (
+                self.u_.reshape(-1, 1)
+                * self.u_.dot(sentence_embeddings.T).reshape(1, -1)
+            ).T
             sentence_embeddings = sentence_embeddings - proj
 
         return sentence_embeddings.astype(np.float32)

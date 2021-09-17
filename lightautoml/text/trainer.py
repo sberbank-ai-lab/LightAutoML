@@ -1,33 +1,40 @@
 """Main pytorch training and prediction class with Snapshots Ensemble."""
 
+import logging
+
 from copy import deepcopy
-from typing import Optional, Dict, List, Callable, Union, Tuple
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .dp_utils import CustomDataParallel
+
 
 try:
     from apex import amp
 except:
     amp = None
 
-from log_calls import record_history
 
 from .utils import _dtypes_mapping
 
-from ..utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-@record_history(enabled=False)
-def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch.optim.Optimizer:
+def optim_to_device(
+    optim: torch.optim.Optimizer, device: torch.device
+) -> torch.optim.Optimizer:
     """Change optimizer device.
 
     Args:
@@ -46,12 +53,17 @@ def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch
     return optim
 
 
-@record_history(enabled=False)
 class SnapshotEns:
     """In memory snapshots class."""
 
-    def __init__(self, device: torch.device, k: int = 1, early_stopping: bool = True,
-                 patience: int = 3, swa: bool = False):
+    def __init__(
+        self,
+        device: torch.device,
+        k: int = 1,
+        early_stopping: bool = True,
+        patience: int = 3,
+        swa: bool = False,
+    ):
         """Class for SE, SWA and early stopping.
 
         Args:
@@ -195,7 +207,7 @@ class SnapshotEns:
             Dict with SE state.
 
         """
-        models_dict = {'best_loss': self.best_loss}
+        models_dict = {"best_loss": self.best_loss}
 
         for n, model in enumerate(self.models):
             if isinstance(model, CustomDataParallel):
@@ -212,7 +224,7 @@ class SnapshotEns:
             weights: State dict with weights.
 
         """
-        self.best_loss = weights.pop('best_loss')
+        self.best_loss = weights.pop("best_loss")
         self.models = [nn.Module()] * len(self.best_loss)
         for key, model_weights in weights.items():
             if isinstance(model, CustomDataParallel):
@@ -224,16 +236,28 @@ class SnapshotEns:
         return self
 
 
-@record_history(enabled=False)
 class Trainer:
     """Torch main trainer class."""
 
-    def __init__(self, net, net_params: Dict, opt, opt_params: Dict, n_epochs: int,
-                 device: torch.device, device_ids: List[int], metric: Callable, snap_params: Dict,
-                 is_snap: bool = False,
-                 sch: Optional = None, scheduler_params: Optional[Dict] = None, verbose: int = 1,
-                 verbose_inside: Optional[int] = None,
-                 apex: bool = False, pretrained_path: Optional[str] = None):
+    def __init__(
+        self,
+        net,
+        net_params: Dict,
+        opt,
+        opt_params: Dict,
+        n_epochs: int,
+        device: torch.device,
+        device_ids: List[int],
+        metric: Callable,
+        snap_params: Dict,
+        is_snap: bool = False,
+        sch: Optional = None,
+        scheduler_params: Optional[Dict] = None,
+        verbose: int = 1,
+        verbose_inside: Optional[int] = None,
+        apex: bool = False,
+        pretrained_path: Optional[str] = None,
+    ):
         """Train, validation and test loops for NN models.
 
         Use DataParallel if device_ids is not None.
@@ -304,10 +328,16 @@ class Trainer:
         self.optimizer = self.opt(self.model.parameters(), **self.opt_params)
         self.amp = amp if self.apex else None
         if self.amp is not None:
-            opt_level = 'O1'
-            self.model, self.optimizer = self.amp.initialize(self.model, self.optimizer, opt_level=opt_level)
+            opt_level = "O1"
+            self.model, self.optimizer = self.amp.initialize(
+                self.model, self.optimizer, opt_level=opt_level
+            )
         self.model.to(self.device)
-        self.scheduler = self.sch(self.optimizer, **self.scheduler_params) if self.sch is not None else None
+        self.scheduler = (
+            self.sch(self.optimizer, **self.scheduler_params)
+            if self.sch is not None
+            else None
+        )
         return self
 
     def load_state(self, path: Union[str, Dict]):
@@ -319,25 +349,25 @@ class Trainer:
         """
 
         if isinstance(path, str):
-            checkpoint = torch.load(path, map_location=torch.device('cpu'))
+            checkpoint = torch.load(path, map_location=torch.device("cpu"))
             self.pretrained_path = path
         else:
             checkpoint = path
 
         self._init()
-        if checkpoint['se'] is not None:
-            self.se.load_state_dict(checkpoint['se'], self.model)
+        if checkpoint["se"] is not None:
+            self.se.load_state_dict(checkpoint["se"], self.model)
 
         if isinstance(self.model, CustomDataParallel):
-            self.model.module.load_state_dict(checkpoint['model'])
+            self.model.module.load_state_dict(checkpoint["model"])
         else:
-            self.model.load_state_dict(checkpoint['model'])
+            self.model.load_state_dict(checkpoint["model"])
 
-        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.optimizer = optim_to_device(self.optimizer, self.device)
 
-        if checkpoint['amp'] is not None:
-            self.amp.load_state_dict(checkpoint['amp'])
+        if checkpoint["amp"] is not None:
+            self.amp.load_state_dict(checkpoint["amp"])
 
         self.is_fitted = True
 
@@ -357,18 +387,18 @@ class Trainer:
 
         """
 
-        self.model.to(torch.device('cpu'))
-        self.optimizer = optim_to_device(self.optimizer, torch.device('cpu'))
+        self.model.to(torch.device("cpu"))
+        self.optimizer = optim_to_device(self.optimizer, torch.device("cpu"))
         if isinstance(self.model, CustomDataParallel):
             model_checkpoint = self.model.module.state_dict()
         else:
             model_checkpoint = self.model.state_dict()
 
         checkpoint = {
-            'model': model_checkpoint,
-            'optimizer': self.optimizer.state_dict(),
-            'amp': self.amp.state_dict() if self.apex else None,
-            'se': self.se.state_dict() if self.is_snap else None,
+            "model": model_checkpoint,
+            "optimizer": self.optimizer.state_dict(),
+            "amp": self.amp.state_dict() if self.apex else None,
+            "se": self.se.state_dict() if self.is_snap else None,
         }
         if path is not None:
             torch.save(checkpoint, path)
@@ -400,30 +430,42 @@ class Trainer:
             train_loss = self.train(dataloaders=dataloaders)
             train_log.extend(train_loss)
             # test
-            val_loss, val_data = self.test(dataloader=dataloaders['val'])
+            val_loss, val_data = self.test(dataloader=dataloaders["val"])
             self.se.update(self.model, np.mean(val_loss))
 
             if self.sch is not None:
                 self.scheduler.step(np.mean(val_loss))
 
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
-                logger.info('Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                                                    e=self.epoch,
-                                                                                                    tl=np.mean(train_loss),
-                                                                                                    vl=np.mean(val_loss)))
+                logger.info3(
+                    "Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}".format(
+                        me=self.metric(*val_data),
+                        e=self.epoch,
+                        tl=np.mean(train_loss),
+                        vl=np.mean(val_loss),
+                    )
+                )
             if self.se.early_stop:
                 break
 
         self.se.set_best_params(self.model)
 
         if self.is_snap:
-            val_loss, val_data = self.test(dataloader=dataloaders['val'], snap=True, stage='val')
-            logger.info('Result SE, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                             vl=np.mean(val_loss)))
+            val_loss, val_data = self.test(
+                dataloader=dataloaders["val"], snap=True, stage="val"
+            )
+            logger.info3(
+                "Result SE, val loss: {vl}, val metric: {me}".format(
+                    me=self.metric(*val_data), vl=np.mean(val_loss)
+                )
+            )
         elif self.se.early_stop:
-            val_loss, val_data = self.test(dataloader=dataloaders['val'])
-            logger.info(
-                'Early stopping: val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data), vl=np.mean(val_loss)))
+            val_loss, val_data = self.test(dataloader=dataloaders["val"])
+            logger.info3(
+                "Early stopping: val loss: {vl}, val metric: {me}".format(
+                    me=self.metric(*val_data), vl=np.mean(val_loss)
+                )
+            )
 
         self.is_fitted = True
 
@@ -444,14 +486,21 @@ class Trainer:
         self.model.train()
         running_loss = 0
         c = 0
-        if self.verbose:
-            loader = tqdm(dataloaders['train'], desc='train', disable=False)
+        logging_level = logger.getEffectiveLevel()
+        if logging_level <= logging.INFO and self.verbose:
+            loader = tqdm(dataloaders["train"], desc="train", disable=False)
         else:
-            loader = dataloaders['train']
+            loader = dataloaders["train"]
 
         for sample in loader:
-            data = {i: (Variable(sample[i].long()).to(self.device) if _dtypes_mapping[i] == 'long'
-                        else Variable(sample[i]).to(self.device)) for i in sample.keys()}
+            data = {
+                i: (
+                    sample[i].long().to(self.device)
+                    if _dtypes_mapping[i] == "long"
+                    else sample[i].to(self.device)
+                )
+                for i in sample.keys()
+            }
 
             loss = self.model(data).mean()
             if self.apex:
@@ -466,21 +515,27 @@ class Trainer:
             running_loss += loss
 
             c += 1
-            if self.verbose_inside:
+            if self.verbose_inside and logging_level <= logging.INFO:
                 if c % self.verbose_inside == 0:
-                    val_loss, val_data = self.test(dataloader=dataloaders['val'])
+                    val_loss, val_data = self.test(dataloader=dataloaders["val"])
                     self.se.update(self.model, np.mean(val_loss))
                     if self.verbose is not None:
-                        logger.info('Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}'.format(me=self.metric(*val_data),
-                                                                                                     e=self.epoch,
-                                                                                                     c=c,
-                                                                                                     vl=np.mean(val_loss)))
-            if self.verbose:
-                loader.set_description('train (loss=%g)' % (running_loss / c))
+                        logger.info3(
+                            "Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}".format(
+                                me=self.metric(*val_data),
+                                e=self.epoch,
+                                c=c,
+                                vl=np.mean(val_loss),
+                            )
+                        )
+            if logging_level <= logging.INFO and self.verbose:
+                loader.set_description("train (loss=%g)" % (running_loss / c))
 
         return loss_log
 
-    def test(self, dataloader: DataLoader, stage: str = 'val', snap: bool = False) -> Tuple:
+    def test(
+        self, dataloader: DataLoader, stage: str = "val", snap: bool = False
+    ) -> Tuple[List[float], Tuple[np.ndarray, np.ndarray]]:
         """Testing loop.
 
         Args:
@@ -496,17 +551,22 @@ class Trainer:
         self.model.eval()
         pred = []
         target = []
-
-        if self.verbose:
+        logging_level = logger.getEffectiveLevel()
+        if logging_level <= logging.INFO and self.verbose:
             loader = tqdm(dataloader, desc=stage, disable=False)
         else:
             loader = dataloader
 
         with torch.no_grad():
             for sample in loader:
-                data = {i: (
-                    Variable(sample[i].long()).to(self.device) if _dtypes_mapping[i] == 'long' else Variable(sample[i]).to(
-                        self.device)) for i in sample.keys()}
+                data = {
+                    i: (
+                        sample[i].long().to(self.device)
+                        if _dtypes_mapping[i] == "long"
+                        else sample[i].to(self.device)
+                    )
+                    for i in sample.keys()
+                }
 
                 if snap:
                     output = self.se.predict(data)
@@ -524,13 +584,14 @@ class Trainer:
                     output = output.view(-1, self.model.n_out).data.cpu().numpy()
 
                 pred.append(output)
-                target.append(data['label'].view(-1).data.cpu().numpy())
+                target.append(data["label"].view(-1).data.cpu().numpy())
 
         self.model.train()
 
-        return loss_log, (np.vstack(target) if len(target[0].shape) == 2 else np.hstack(target),
-                          np.vstack(pred) if len(pred[0].shape) == 2 else np.hstack(pred),
-                          )
+        return loss_log, (
+            np.vstack(target) if len(target[0].shape) == 2 else np.hstack(target),
+            np.vstack(pred) if len(pred[0].shape) == 2 else np.hstack(pred),
+        )
 
     def predict(self, dataloader: DataLoader, stage: str) -> np.ndarray:
         """Predict model.
@@ -544,5 +605,7 @@ class Trainer:
 
         """
 
-        loss, (target, pred) = self.test(stage=stage, snap=self.is_snap, dataloader=dataloader)
+        loss, (target, pred) = self.test(
+            stage=stage, snap=self.is_snap, dataloader=dataloader
+        )
         return pred

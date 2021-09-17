@@ -1,27 +1,39 @@
 """Datetime features transformers."""
 
 from collections import OrderedDict
-from typing import Union, Sequence, List, Optional
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Union
 
 import holidays
 import numpy as np
-from log_calls import record_history
 
-from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
-from ..dataset.roles import NumericRole, CategoryRole, ColumnRole
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.roles import CategoryRole
+from ..dataset.roles import ColumnRole
+from ..dataset.roles import NumericRole
+from .base import LAMLTransformer
+
 
 # type - dataset that is ok with datetime dtypes
 DatetimeCompatible = Union[PandasDataset]
 
-date_attrs = {'y': 'year', 'm': 'month',
-              'd': 'day', 'wd': 'weekday',
-              'hour': 'hour', 'min': 'minute',
-              'sec': 'second', 'ms': 'microsecond', 'ns': 'nanosecond'}
+date_attrs = {
+    "y": "year",
+    "m": "month",
+    "d": "day",
+    "wd": "weekday",
+    "hour": "hour",
+    "min": "minute",
+    "sec": "second",
+    "ms": "microsecond",
+    "ns": "nanosecond",
+}
 
 
-@record_history(enabled=False)
 def datetime_check(dataset: LAMLDataset):
     """Check if all passed vars are datetimes.
 
@@ -35,20 +47,22 @@ def datetime_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == 'Datetime', 'Only datetimes accepted in this transformer'
+        assert (
+            roles[f].name == "Datetime"
+        ), "Only datetimes accepted in this transformer"
 
 
-@record_history(enabled=False)
 class TimeToNum(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
     Datetime converted to difference
     with basic_date (``basic_date == '2020-01-01'``).
     """
-    basic_time = '2020-01-01'
-    basic_interval = 'D'
 
-    _fname_prefix = 'dtdiff'
+    basic_time = "2020-01-01"
+    basic_interval = "D"
+
+    _fname_prefix = "dtdiff"
     _fit_checks = (datetime_check,)
     _transform_checks = ()
 
@@ -71,7 +85,10 @@ class TimeToNum(LAMLTransformer):
         # transform
         roles = NumericRole(np.float32)
 
-        new_arr = ((data - np.datetime64(self.basic_time)) / np.timedelta64(1, self.basic_interval)).values.astype(np.float32)
+        new_arr = (
+            (data - np.datetime64(self.basic_time))
+            / np.timedelta64(1, self.basic_interval)
+        ).values.astype(np.float32)
 
         # create resulted
         output = dataset.empty().to_numpy()
@@ -80,16 +97,16 @@ class TimeToNum(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class BaseDiff(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
     Datetime converted to difference with basic_date.
 
     """
-    basic_interval = 'D'
 
-    _fname_prefix = 'basediff'
+    basic_interval = "D"
+
+    _fname_prefix = "basediff"
     _fit_checks = (datetime_check,)
     _transform_checks = ()
 
@@ -98,8 +115,12 @@ class BaseDiff(LAMLTransformer):
         """List of features."""
         return self._features
 
-    def __init__(self, base_names: Sequence[str], diff_names: Sequence[str],
-                 basic_interval: Optional[str] = 'D'):
+    def __init__(
+        self,
+        base_names: Sequence[str],
+        diff_names: Sequence[str],
+        basic_interval: Optional[str] = "D",
+    ):
         """
 
         Args:
@@ -112,7 +133,7 @@ class BaseDiff(LAMLTransformer):
         self.diff_names = diff_names
         self.basic_interval = basic_interval
 
-    def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
+    def fit(self, dataset: LAMLDataset) -> "LAMLTransformer":
         """Fit transformer and return it's instance.
 
         Args:
@@ -124,7 +145,9 @@ class BaseDiff(LAMLTransformer):
         """
         self._features = []
         for col in self.base_names:
-            self._features.extend(['basediff_{0}__{1}'.format(col, x) for x in self.diff_names])
+            self._features.extend(
+                ["basediff_{0}__{1}".format(col, x) for x in self.diff_names]
+            )
 
         for check_func in self._fit_checks:
             check_func(dataset)
@@ -151,7 +174,10 @@ class BaseDiff(LAMLTransformer):
 
         # transform
         for col in base_cols.columns:
-            new_arr = ((data - base_cols[[col]].values) / np.timedelta64(1, self.basic_interval)).astype(np.float32)
+            new_arr = (
+                (data - base_cols[[col]].values)
+                / np.timedelta64(1, self.basic_interval)
+            ).astype(np.float32)
             feats_block.append(new_arr)
 
         feats_block = np.concatenate(feats_block, axis=1)
@@ -163,14 +189,13 @@ class BaseDiff(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class DateSeasons(LAMLTransformer):
     """
     Basic conversion strategy, used in selection one-to-one transformers.
     Datetime converted to difference with basic_date.
     """
 
-    _fname_prefix = 'season'
+    _fname_prefix = "season"
     _fit_checks = (datetime_check,)
     _transform_checks = ()
 
@@ -190,7 +215,7 @@ class DateSeasons(LAMLTransformer):
         if output_role is None:
             self.output_role = CategoryRole(np.int32)
 
-    def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
+    def fit(self, dataset: LAMLDataset) -> "LAMLTransformer":
         """Fit transformer and return it's instance.
 
         Args:
@@ -212,9 +237,9 @@ class DateSeasons(LAMLTransformer):
             seas = roles[col].seasonality
             self.transformations[col] = seas
             for s in seas:
-                self._features.append('season_{0}__{1}'.format(s, col))
+                self._features.append("season_{0}__{1}".format(s, col))
             if roles[col].country is not None:
-                self._features.append('season_hol__{0}'.format(col))
+                self._features.append("season_hol__{0}".format(col))
 
         return self
 
@@ -246,7 +271,12 @@ class DateSeasons(LAMLTransformer):
             if roles[col].country is not None:
                 # get years
                 years = np.unique(df[col].dt.year)
-                hol = holidays.CountryHoliday(roles[col].country, years=years, prov=roles[col].prov, state=roles[col].state)
+                hol = holidays.CountryHoliday(
+                    roles[col].country,
+                    years=years,
+                    prov=roles[col].prov,
+                    state=roles[col].state,
+                )
                 new_arr[:, n] = df[col].isin(hol)
                 n += 1
 

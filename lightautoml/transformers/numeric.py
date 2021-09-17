@@ -3,18 +3,19 @@
 from typing import Union
 
 import numpy as np
-from log_calls import record_history
 
-from .base import LAMLTransformer
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
-from ..dataset.roles import NumericRole, CategoryRole
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.roles import CategoryRole
+from ..dataset.roles import NumericRole
+from .base import LAMLTransformer
+
 
 # type - something that can be converted to pandas dataset
 NumpyTransformable = Union[NumpyDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 def numeric_check(dataset: LAMLDataset):
     """Check if all passed vars are categories.
 
@@ -28,22 +29,22 @@ def numeric_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == 'Numeric', 'Only numbers accepted in this transformer'
+        assert roles[f].name == "Numeric", "Only numbers accepted in this transformer"
 
 
-@record_history(enabled=False)
 class NaNFlags(LAMLTransformer):
     """Create NaN flags."""
+
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'nanflg'
+    _fname_prefix = "nanflg"
 
-    def __init__(self, nan_rate: float = .005):
+    def __init__(self, nan_rate: float = 0.005):
         """
 
         Args:
             nan_rate: Nan rate cutoff.
-            
+
         """
         self.nan_rate = nan_rate
 
@@ -67,7 +68,11 @@ class NaNFlags(LAMLTransformer):
         data = dataset.data
         # fit ...
         ds_nan_rate = np.isnan(data).mean(axis=0)
-        self.nan_cols = [name for (name, nan_rate) in zip(dataset.features, ds_nan_rate) if nan_rate > self.nan_rate]
+        self.nan_cols = [
+            name
+            for (name, nan_rate) in zip(dataset.features, ds_nan_rate)
+            if nan_rate > self.nan_rate
+        ]
         self._features = list(self.nan_cols)
 
         return self
@@ -98,12 +103,12 @@ class NaNFlags(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class FillnaMedian(LAMLTransformer):
     """Fillna with median."""
+
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'fillnamed'
+    _fname_prefix = "fillnamed"
 
     def fit(self, dataset: NumpyTransformable):
         """Estimate medians.
@@ -153,12 +158,12 @@ class FillnaMedian(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class FillInf(LAMLTransformer):
     """Fill inf with nan to handle as nan value."""
+
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'fillinf'
+    _fname_prefix = "fillinf"
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
         """Replace inf to nan.
@@ -186,12 +191,12 @@ class FillInf(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class LogOdds(LAMLTransformer):
     """Convert probs to logodds."""
+
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'logodds'
+    _fname_prefix = "logodds"
 
     def transform(self, dataset: NumpyTransformable) -> NumpyDataset:
         """Transform - convert num values to logodds.
@@ -220,13 +225,12 @@ class LogOdds(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class StandardScaler(LAMLTransformer):
     """Classic StandardScaler."""
 
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'scaler'
+    _fname_prefix = "scaler"
 
     def fit(self, dataset: NumpyTransformable):
         """Estimate means and stds.
@@ -279,12 +283,12 @@ class StandardScaler(LAMLTransformer):
         return output
 
 
-@record_history(enabled=False)
 class QuantileBinning(LAMLTransformer):
     """Discretization of numeric features by quantiles."""
+
     _fit_checks = (numeric_check,)
     _transform_checks = ()
-    _fname_prefix = 'qntl'
+    _fname_prefix = "qntl"
 
     def __init__(self, nbins: int = 10):
         """
@@ -347,12 +351,16 @@ class QuantileBinning(LAMLTransformer):
         new_data = np.zeros(data.shape, dtype=np.int32)
 
         for n, b in enumerate(self.bins):
-            new_data[:, n] = np.searchsorted(b, np.where(sl[:, n], np.inf, data[:, n])) + 1
+            new_data[:, n] = (
+                np.searchsorted(b, np.where(sl[:, n], np.inf, data[:, n])) + 1
+            )
 
         new_data = np.where(sl, 0, new_data)
 
         # create resulted
         output = dataset.empty().to_numpy()
-        output.set_data(new_data, self.features, CategoryRole(np.int32, label_encoded=True))
+        output.set_data(
+            new_data, self.features, CategoryRole(np.int32, label_encoded=True)
+        )
 
         return output

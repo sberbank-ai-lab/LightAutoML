@@ -16,4 +16,3 @@ cd ..
 
 echo "===== Start check_docs.py ====="
 python check_docs.py
-

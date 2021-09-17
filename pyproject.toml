@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.14"
+version = "0.2.16"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -27,13 +27,17 @@ classifiers = [
 python = "^3.6.1"
 
 poetry-core = "^1.0.0"
-numpy = "*"
+numpy = [
+  {version = ">=1.20.0", python = ">=3.7"},
+  {version = "*", python = "<3.7"}
+]
 scipy = "*"
 pandas = ">=1"
 scikit-learn = ">=0.22"
 lightgbm = "^2.3"
 optuna = "*"
-torch = ">=1.6"
+torch = "<1.9"
+dataclasses = "0.6"
 holidays = "*"
 networkx = "*"
 cmaes = "*"
@@ -49,7 +53,7 @@ seaborn = "*"
 
 transformers = ">=4"
 nltk = "*"
-gensim = "*"
+gensim = ">=4"
 tqdm = "*"
 efficientnet-pytorch = "*"
 albumentations = ">=0.4.6"
@@ -62,6 +66,8 @@ torchvision = "*"
 webencodings = "*"
 
 importlib-metadata = {version = "^1.0", python = "<3.8"}
+weasyprint = {version = "^52.5", optional = true}
+cffi = {version = "^1.14.5", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -74,8 +80,43 @@ nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
+pre-commit = "*"
 
+
+[tool.poetry.extras]
+pdf = ["weasyprint", "cffi"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.isort]
+profile = "black"
+force_single_line = true
+atomic = true
+include_trailing_comma = true
+lines_after_imports = 2
+lines_between_types = 1
+use_parentheses = true
+filter_files = true
+
+
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | tests/.*/setup.py
+)/
+'''

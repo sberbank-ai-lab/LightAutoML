@@ -1,23 +1,33 @@
 """Linear models features."""
 
-from typing import Union, Optional
+from typing import Optional
+from typing import Union
 
 import numpy as np
-from log_calls import record_history
 
-from .base import TabularDataFeatures, FeaturesPipeline
+from ...dataset.np_pd_dataset import NumpyDataset
+from ...dataset.np_pd_dataset import PandasDataset
+from ...dataset.roles import CategoryRole
+from ...transformers.base import ChangeRoles
+from ...transformers.base import LAMLTransformer
+from ...transformers.base import SequentialTransformer
+from ...transformers.base import UnionTransformer
+from ...transformers.categorical import LabelEncoder
+from ...transformers.categorical import OHEEncoder
+from ...transformers.numeric import FillInf
+from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import LogOdds
+from ...transformers.numeric import NaNFlags
+from ...transformers.numeric import StandardScaler
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
-from ...dataset.np_pd_dataset import NumpyDataset, PandasDataset
-from ...dataset.roles import CategoryRole
-from ...transformers.base import LAMLTransformer, SequentialTransformer, UnionTransformer, ChangeRoles
-from ...transformers.categorical import OHEEncoder, LabelEncoder
-from ...transformers.numeric import StandardScaler, NaNFlags, FillnaMedian, LogOdds, FillInf
+from .base import FeaturesPipeline
+from .base import TabularDataFeatures
+
 
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
-@record_history(enabled=False)
 class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
     """
     Creates pipeline for linear models and nnets.
@@ -34,11 +44,19 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
 
     """
 
-    def __init__(self, feats_imp: Optional[ImportanceEstimator] = None, top_intersections: int = 5,
-                 max_bin_count: int = 10,
-                 max_intersection_depth: int = 3, subsample: Optional[Union[int, float]] = None,
-                 sparse_ohe: Union[str, bool] = 'auto', auto_unique_co: int = 50, output_categories: bool = True,
-                 multiclass_te_co: int = 3, **kwargs):
+    def __init__(
+        self,
+        feats_imp: Optional[ImportanceEstimator] = None,
+        top_intersections: int = 5,
+        max_bin_count: int = 10,
+        max_intersection_depth: int = 3,
+        subsample: Optional[Union[int, float]] = None,
+        sparse_ohe: Union[str, bool] = "auto",
+        auto_unique_co: int = 50,
+        output_categories: bool = True,
+        multiclass_te_co: int = 3,
+        **kwargs
+    ):
         """
 
         Args:
@@ -56,20 +74,23 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
               on multiclass task if number of classes is high.
 
         """
-        assert max_bin_count is None or max_bin_count > 1, 'Max bin count should be >= 2 or None'
+        assert (
+            max_bin_count is None or max_bin_count > 1
+        ), "Max bin count should be >= 2 or None"
 
-        super().__init__(multiclass_te=False,
-                         top_intersections=top_intersections,
-                         max_intersection_depth=max_intersection_depth,
-                         subsample=subsample,
-                         feats_imp=feats_imp,
-                         auto_unique_co=auto_unique_co,
-                         output_categories=output_categories,
-                         ascending_by_cardinality=True,
-                         max_bin_count=max_bin_count,
-                         sparse_ohe=sparse_ohe,
-                         multiclass_te_co=multiclass_te_co
-                         )
+        super().__init__(
+            multiclass_te=False,
+            top_intersections=top_intersections,
+            max_intersection_depth=max_intersection_depth,
+            subsample=subsample,
+            feats_imp=feats_imp,
+            auto_unique_co=auto_unique_co,
+            output_categories=output_categories,
+            ascending_by_cardinality=True,
+            max_bin_count=max_bin_count,
+            sparse_ohe=sparse_ohe,
+            multiclass_te_co=multiclass_te_co,
+        )
 
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create linear pipeline.
@@ -86,7 +107,7 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         sparse_list = []
         probs_list = []
         target_encoder = self.get_target_encoder(train)
-        te_list = dense_list if train.task.name == 'reg' else probs_list
+        te_list = dense_list if train.task.name == "reg" else probs_list
 
         # handle categorical feats
         # split categories by handling type. This pipe use 4 encodings - freq/label/target/ohe/ordinal
@@ -94,18 +115,22 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         dense_list.append(self.get_freq_encoding(train))
 
         # 2 - check 'auto' type (int is the same - no label encoded numbers in linear models)
-        auto = (get_columns_by_role(train, 'Category', encoding_type='auto') +
-                get_columns_by_role(train, 'Category', encoding_type='int'))
+        auto = get_columns_by_role(
+            train, "Category", encoding_type="auto"
+        ) + get_columns_by_role(train, "Category", encoding_type="int")
 
         # if self.output_categories or target_encoder is None:
         if target_encoder is None:
-            le = (auto + get_columns_by_role(train, 'Category', encoding_type='oof')
-                  + get_columns_by_role(train, 'Category', encoding_type='ohe'))
+            le = (
+                auto
+                + get_columns_by_role(train, "Category", encoding_type="oof")
+                + get_columns_by_role(train, "Category", encoding_type="ohe")
+            )
             te = []
 
         else:
-            te = get_columns_by_role(train, 'Category', encoding_type='oof')
-            le = get_columns_by_role(train, 'Category', encoding_type='ohe')
+            te = get_columns_by_role(train, "Category", encoding_type="oof")
+            le = get_columns_by_role(train, "Category", encoding_type="ohe")
             # split auto categories by unique values cnt
             un_values = self.get_uniques_cnt(train, auto)
             te = te + [x for x in un_values.index if un_values[x] > self.auto_unique_co]
@@ -157,16 +182,19 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         dense_list = [x for x in dense_list if x is not None]
         if len(dense_list) > 0:
             # standartize, fillna, add null flags
-            dense_pipe = SequentialTransformer([
-
-                UnionTransformer(dense_list),
-                UnionTransformer([
-
-                    SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
-                    NaNFlags()
-
-                ])
-            ])
+            dense_pipe = SequentialTransformer(
+                [
+                    UnionTransformer(dense_list),
+                    UnionTransformer(
+                        [
+                            SequentialTransformer(
+                                [FillInf(), FillnaMedian(), StandardScaler()]
+                            ),
+                            NaNFlags(),
+                        ]
+                    ),
+                ]
+            )
             transformers_list.append(dense_pipe)
 
         # handle categories - cast to float32 if categories are inputs or make ohe
@@ -176,7 +204,7 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
             if self.output_categories:
                 final = ChangeRoles(CategoryRole(np.float32))
             else:
-                if self.sparse_ohe == 'auto':
+                if self.sparse_ohe == "auto":
                     final = OHEEncoder(total_feats_cnt=train.shape[1])
                 else:
                     final = OHEEncoder(make_sparse=self.sparse_ohe)

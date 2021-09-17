@@ -1,16 +1,17 @@
 """Whitebox features."""
 
 import numpy as np
-from log_calls import record_history
 
-from .base import FeaturesPipeline, TabularDataFeatures
-from ..utils import get_columns_by_role
 from ...dataset.np_pd_dataset import PandasDataset
 from ...dataset.roles import NumericRole
-from ...transformers.base import LAMLTransformer, UnionTransformer, ColumnsSelector
+from ...transformers.base import ColumnsSelector
+from ...transformers.base import LAMLTransformer
+from ...transformers.base import UnionTransformer
+from ..utils import get_columns_by_role
+from .base import FeaturesPipeline
+from .base import TabularDataFeatures
 
 
-@record_history(enabled=False)
 class WBFeatures(FeaturesPipeline, TabularDataFeatures):
     """Simple WhiteBox pipeline.
 
@@ -28,12 +29,14 @@ class WBFeatures(FeaturesPipeline, TabularDataFeatures):
             Transformer.
 
         """
-        others = get_columns_by_role(train, 'Category') + get_columns_by_role(train, 'Numeric')
+        others = get_columns_by_role(train, "Category") + get_columns_by_role(
+            train, "Numeric"
+        )
 
         transformer_list = [
             self.get_datetime_diffs(train),
             self.get_datetime_seasons(train, NumericRole(np.float32)),
-            ColumnsSelector(others)
+            ColumnsSelector(others),
         ]
 
         # final pipeline

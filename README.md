@@ -47,6 +47,22 @@ To check this variant of installation and run all the demo scripts, use the comm
 ```bash
 bash test_package.sh
 ```
+To install optional support for generating reports in pdf format run following commands:
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+
+poetry install -E pdf
+```
 *******
 # Docs generation
 To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
@@ -58,7 +74,7 @@ Builded official documentation for LightAutoML is available [`here`](https://lig
 *******
 # Usage examples
 
-To find out how to work with LightAutoML, we have several tutorials:
+To find out how to work with LightAutoML, we have several [`tutorials`](examples/). You can run them in Google Colab:
 1. `Tutorial_1. Create your own pipeline.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_1.%20Create%20your%20own%20pipeline.ipynb) - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
 2. `Tutorial_2. AutoML pipeline preset.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_2.%20AutoML%20pipeline%20preset.ipynb) - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data. Using presets you can solve binary classification, multiclass classification and regression tasks, changing the first argument in Task.
 3. `Tutorial_3. Multiclass task.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/Tutorial_3.%20Multiclass%20task.ipynb) - shows how to build ML pipeline for multiclass ML task by hand
@@ -102,7 +118,7 @@ For more examples, in `tests` folder you can find different scenarios of LightAu
 ******
 # Contributing to LightAutoML
 
-If you are interested in contributing to LightAutoML, please read the [Contributing Guide](CONTRIBUTING.md) to get started.
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
 
 *******

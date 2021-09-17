@@ -3,18 +3,22 @@
 from typing import Any
 
 import torch
-from log_calls import record_history
 
-from .base import FeaturesPipeline
-from ..utils import get_columns_by_role
 from ...dataset.base import LAMLDataset
 from ...image.utils import pil_loader
-from ...transformers.base import LAMLTransformer, SequentialTransformer, UnionTransformer, ColumnsSelector
-from ...transformers.image import ImageFeaturesTransformer, AutoCVWrap
-from ...transformers.numeric import StandardScaler, FillnaMedian, FillInf
+from ...transformers.base import ColumnsSelector
+from ...transformers.base import LAMLTransformer
+from ...transformers.base import SequentialTransformer
+from ...transformers.base import UnionTransformer
+from ...transformers.image import AutoCVWrap
+from ...transformers.image import ImageFeaturesTransformer
+from ...transformers.numeric import FillInf
+from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import StandardScaler
+from ..utils import get_columns_by_role
+from .base import FeaturesPipeline
 
 
-@record_history(enabled=False)
 class ImageDataFeatures:
     """Class contains basic features transformations for image data."""
 
@@ -30,11 +34,13 @@ class ImageDataFeatures:
         self.n_jobs = 4
         self.loader = pil_loader
 
-        self.embed_model = 'efficientnet-b0'
+        self.embed_model = "efficientnet-b0"
         self.weights_path = None
         self.subs = 10000
-        self.cache_dir = '../cache_CV'
-        self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+        self.cache_dir = "../cache_CV"
+        self.device = (
+            torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        )
         self.is_advprop = True
         self.batch_size = 128
         self.verbose = True
@@ -45,7 +51,6 @@ class ImageDataFeatures:
             self.__dict__[k] = kwargs[k]
 
 
-@record_history(enabled=False)
 class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
     """Class contains simple color histogram features for image data."""
 
@@ -53,14 +58,19 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
         transformers_list = []
 
         # process texts
-        imgs = get_columns_by_role(train, 'Path')
+        imgs = get_columns_by_role(train, "Path")
         if len(imgs) > 0:
-            imgs_processing = SequentialTransformer([
-
-                ColumnsSelector(keys=imgs),
-                ImageFeaturesTransformer(self.hist_size, self.is_hsv, self.n_jobs, self.loader),
-                SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()])
-            ])
+            imgs_processing = SequentialTransformer(
+                [
+                    ColumnsSelector(keys=imgs),
+                    ImageFeaturesTransformer(
+                        self.hist_size, self.is_hsv, self.n_jobs, self.loader
+                    ),
+                    SequentialTransformer(
+                        [FillInf(), FillnaMedian(), StandardScaler()]
+                    ),
+                ]
+            )
             transformers_list.append(imgs_processing)
 
         union_all = UnionTransformer(transformers_list)
@@ -68,23 +78,34 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
         return union_all
 
 
-@record_history(enabled=False)
 class ImageAutoFeatures(FeaturesPipeline, ImageDataFeatures):
     """Class contains efficient-net embeddings features for image data."""
 
     def create_pipeline(self, train: LAMLDataset) -> LAMLTransformer:
         transformers_list = []
         # process texts
-        imgs = get_columns_by_role(train, 'Path')
+        imgs = get_columns_by_role(train, "Path")
         if len(imgs) > 0:
-            imgs_processing = SequentialTransformer([
-
-                ColumnsSelector(keys=imgs),
-                AutoCVWrap(self.embed_model, self.weights_path, self.cache_dir, self.subs,
-                           self.device, self.n_jobs, self.random_state, self.is_advprop,
-                           self.batch_size, self.verbose),
-                SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()])
-            ])
+            imgs_processing = SequentialTransformer(
+                [
+                    ColumnsSelector(keys=imgs),
+                    AutoCVWrap(
+                        self.embed_model,
+                        self.weights_path,
+                        self.cache_dir,
+                        self.subs,
+                        self.device,
+                        self.n_jobs,
+                        self.random_state,
+                        self.is_advprop,
+                        self.batch_size,
+                        self.verbose,
+                    ),
+                    SequentialTransformer(
+                        [FillInf(), FillnaMedian(), StandardScaler()]
+                    ),
+                ]
+            )
             transformers_list.append(imgs_processing)
 
         union_all = UnionTransformer(transformers_list)

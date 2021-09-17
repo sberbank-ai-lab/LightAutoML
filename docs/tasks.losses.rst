@@ -134,4 +134,3 @@ Functions
     ~torch.torch_huber
     ~torch.torch_f1
     ~torch.torch_mape
-

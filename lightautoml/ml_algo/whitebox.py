@@ -1,22 +1,27 @@
 """AutoMLWhitebox for tabular datasets."""
 
 import warnings
-from copy import copy, deepcopy
-from typing import Union, Tuple, Optional
+
+from copy import copy
+from copy import deepcopy
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import autowoe
 import numpy as np
-from log_calls import record_history
+
 from pandas import DataFrame
 
-from .base import TabularMLAlgo
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..validation.base import TrainValidIterator
+from .base import TabularMLAlgo
+
 
 WbModel = Union[autowoe.AutoWoE, autowoe.ReportDeco]
 
 
-@record_history(enabled=False)
 class WbMLAlgo(TabularMLAlgo):
     """WhiteBox - scorecard model.
 
@@ -132,36 +137,35 @@ class WbMLAlgo(TabularMLAlgo):
     timer: :class:`~lightautoml.utils.timer.Timer` instance or ``None``.
 
     """
-    _name: str = 'WhiteBox'
+
+    _name: str = "WhiteBox"
 
     _default_params = {
-        'monotonic': False,
-        'max_bin_count': 5,
-        'select_type': None,
-        'pearson_th': 0.9,
-        'auc_th': .505,
-        'vif_th': 10.,
-        'imp_th': 0,
-        'th_const': 32,
-        'force_single_split': True,
-        'th_nan': 0.01,
-        'th_cat': 0.005,
-        'woe_diff_th': 0.01,
-        'min_bin_size': 0.01,
-        'cat_alpha': 100,
-        'cat_merge_to': "to_woe_0",
-        'nan_merge_to': "to_woe_0",
-        'oof_woe': True,
-        'n_folds': 6,
-        'n_jobs': 4,
-        'l1_grid_size': 20,
-        'l1_exp_scale': 6,
-        'imp_type': "feature_imp",
-        'regularized_refit': False,
-        'p_val': 0.05,
-
-        'report': False,
-
+        "monotonic": False,
+        "max_bin_count": 5,
+        "select_type": None,
+        "pearson_th": 0.9,
+        "auc_th": 0.505,
+        "vif_th": 10.0,
+        "imp_th": 0,
+        "th_const": 32,
+        "force_single_split": True,
+        "th_nan": 0.01,
+        "th_cat": 0.005,
+        "woe_diff_th": 0.01,
+        "min_bin_size": 0.01,
+        "cat_alpha": 100,
+        "cat_merge_to": "to_woe_0",
+        "nan_merge_to": "to_woe_0",
+        "oof_woe": True,
+        "n_folds": 6,
+        "n_jobs": 4,
+        "l1_grid_size": 20,
+        "l1_exp_scale": 6,
+        "imp_type": "feature_imp",
+        "regularized_refit": False,
+        "p_val": 0.05,
+        "report": False,
     }
 
     _report_on_inference = False
@@ -169,32 +173,42 @@ class WbMLAlgo(TabularMLAlgo):
     def _infer_params(self) -> Tuple[dict, bool, dict]:
 
         params = deepcopy(self.params)
-        report = params.pop('report')
-        fit_params = params.pop('fit_params')
+        report = params.pop("report")
+        fit_params = params.pop("fit_params")
         self._report_on_inference = report
         return params, report, fit_params
 
-    def fit_predict(self, train_valid_iterator: TrainValidIterator, **kwargs) -> NumpyDataset:
+    def fit_predict(
+        self, train_valid_iterator: TrainValidIterator, **kwargs
+    ) -> NumpyDataset:
 
         self._dataset_fit_params = kwargs
 
         return super().fit_predict(train_valid_iterator)
 
-    def _include_target(self, dataset: PandasDataset, include_group: bool = False) -> Tuple[DataFrame, Optional[str]]:
+    def _include_target(
+        self, dataset: PandasDataset, include_group: bool = False
+    ) -> Tuple[DataFrame, Optional[str]]:
 
         df = dataset.data.copy()
         if dataset.target is not None:
-            df['__TARGET__'], _ = self.task.losses['lgb'].fw_func(dataset.target.values, None)
+            df["__TARGET__"], _ = self.task.losses["lgb"].fw_func(
+                dataset.target.values, None
+            )
         group_kf = None
 
         if include_group and dataset.group is not None:
-            assert '__GROUP__' not in dataset.features, '__GROUP__ is not valid column name for WhiteBox'
-            df['__GROUP__'] = dataset.group.values
-            group_kf = '__GROUP__'
+            assert (
+                "__GROUP__" not in dataset.features
+            ), "__GROUP__ is not valid column name for WhiteBox"
+            df["__GROUP__"] = dataset.group.values
+            group_kf = "__GROUP__"
 
         return df, group_kf
 
-    def fit_predict_single_fold(self, train: PandasDataset, valid: PandasDataset) -> Tuple[WbModel, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: PandasDataset, valid: PandasDataset
+    ) -> Tuple[WbModel, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -207,15 +221,19 @@ class WbMLAlgo(TabularMLAlgo):
         """
         params, report, fit_params = self._infer_params()
 
-        assert train.task.name == 'binary', 'Only binary task is supported'
-        assert '__TARGET__' not in train.features, '__TARGET__ is not valid column name for WhiteBox'
+        assert train.task.name == "binary", "Only binary task is supported"
+        assert (
+            "__TARGET__" not in train.features
+        ), "__TARGET__ is not valid column name for WhiteBox"
         if train.weights is not None:
-            warnings.warn('Weights are ignored at the moment', UserWarning, stacklevel=2)
+            warnings.warn(
+                "Weights are ignored at the moment", UserWarning, stacklevel=2
+            )
 
         train_df, group_kf = self._include_target(train, True)
 
         roles = train.roles
-        mapping = {'Category': 'real', 'Numeric': 'real'}
+        mapping = {"Category": "cat", "Numeric": "real"}
         features_type = {x: mapping[roles[x].name] for x in roles}
 
         valid_df = None
@@ -228,17 +246,22 @@ class WbMLAlgo(TabularMLAlgo):
             model = autowoe.ReportDeco(model)
 
         kwargs = copy(self._dataset_fit_params)
-        kwargs['validation'] = valid_df
+        kwargs["validation"] = valid_df
         kwargs = {**kwargs, **fit_params}
 
-        model.fit(train_df, target_name='__TARGET__', group_kf=group_kf,
-                  features_type=features_type, **kwargs)
+        model.fit(
+            train_df,
+            target_name="__TARGET__",
+            group_kf=group_kf,
+            features_type=features_type,
+            **kwargs
+        )
 
         if train is valid:
             valid_df = train_df
 
         val_pred = model.predict_proba(valid_df)
-        val_pred = self.task.losses['lgb'].bw_func(val_pred)
+        val_pred = self.task.losses["lgb"].bw_func(val_pred)
 
         return model, val_pred
 
@@ -254,11 +277,11 @@ class WbMLAlgo(TabularMLAlgo):
 
         """
         args = []
-        if self.params['report']:
+        if self.params["report"]:
             args = [self._report_on_inference]
 
         df, _ = self._include_target(dataset, False)
-        pred = self.task.losses['lgb'].bw_func(model.predict_proba(df, *args))
+        pred = self.task.losses["lgb"].bw_func(model.predict_proba(df, *args))
 
         return pred
 

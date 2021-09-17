@@ -1,23 +1,27 @@
 """Linear models based on Torch library."""
 
+import logging
+
 from copy import deepcopy
-from typing import Sequence, Callable, Optional, Union
+from typing import Callable
+from typing import Optional
+from typing import Sequence
+from typing import Union
 
 import numpy as np
 import torch
-from log_calls import record_history
+
 from scipy import sparse
 from torch import nn
 from torch import optim
 
 from ...tasks.losses import TorchLossWrapper
-from ...utils.logging import get_logger
 
-logger = get_logger(__name__)
+
+logger = logging.getLogger(__name__)
 ArrayOrSparseMatrix = Union[np.ndarray, sparse.spmatrix]
 
 
-@record_history(enabled=False)
 def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor:
     """Convert scipy sparse matrix to torch sparse tensor.
 
@@ -37,11 +41,15 @@ def convert_scipy_sparse_to_torch_float(matrix: sparse.spmatrix) -> torch.Tensor
     return sparse_tensor
 
 
-@record_history(enabled=False)
 class CatLinear(nn.Module):
     """Simple linear model to handle numeric and categorical features."""
 
-    def __init__(self, numeric_size: int = 0, embed_sizes: Sequence[int] = (), output_size: int = 1):
+    def __init__(
+        self,
+        numeric_size: int = 0,
+        embed_sizes: Sequence[int] = (),
+        output_size: int = 1,
+    ):
         """
         Args:
             numeric_size: Number of numeric features.
@@ -54,16 +62,24 @@ class CatLinear(nn.Module):
         # add numeric if it is defined
         self.linear = None
         if numeric_size > 0:
-            self.linear = nn.Linear(in_features=numeric_size, out_features=output_size, bias=False)
+            self.linear = nn.Linear(
+                in_features=numeric_size, out_features=output_size, bias=False
+            )
             nn.init.zeros_(self.linear.weight)
 
         # add categories if it is defined
         self.cat_params = None
         if len(embed_sizes) > 0:
             self.cat_params = nn.Parameter(torch.zeros(sum(embed_sizes), output_size))
-            self.embed_idx = torch.LongTensor(embed_sizes).cumsum(dim=0) - torch.LongTensor(embed_sizes)
+            self.embed_idx = torch.LongTensor(embed_sizes).cumsum(
+                dim=0
+            ) - torch.LongTensor(embed_sizes)
 
-    def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        numbers: Optional[torch.Tensor] = None,
+        categories: Optional[torch.Tensor] = None,
+    ):
         """Forward-pass.
 
         Args:
@@ -82,15 +98,20 @@ class CatLinear(nn.Module):
         return x
 
 
-@record_history(enabled=False)
 class CatLogisticRegression(CatLinear):
     """Realisation of torch-based logistic regression."""
 
-    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
+    def __init__(
+        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
+    ):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        numbers: Optional[torch.Tensor] = None,
+        categories: Optional[torch.Tensor] = None,
+    ):
         """Forward-pass. Sigmoid func at the end of linear layer.
 
         Args:
@@ -105,23 +126,29 @@ class CatLogisticRegression(CatLinear):
         return x
 
 
-@record_history(enabled=False)
 class CatRegression(CatLinear):
     """Realisation of torch-based linear regreession."""
 
-    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
+    def __init__(
+        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
+    ):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
 
 
-@record_history(enabled=False)
 class CatMulticlass(CatLinear):
     """Realisation of multi-class linear classifier."""
 
-    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
+    def __init__(
+        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
+    ):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, numbers: Optional[torch.Tensor] = None, categories: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        numbers: Optional[torch.Tensor] = None,
+        categories: Optional[torch.Tensor] = None,
+    ):
         x = super().forward(numbers, categories)
         x = torch.clamp(x, -50, 50)
         x = self.softmax(x)
@@ -129,17 +156,42 @@ class CatMulticlass(CatLinear):
         return x
 
 
-@record_history(enabled=False)
 class TorchBasedLinearEstimator:
     """Linear model based on torch L-BFGS solver.
 
     Accepts Numeric + Label Encoded categories or Numeric sparse input.
     """
 
-    def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
-                 cs: Sequence[float] = (.00001, .00005, .0001, .0005, .001, .005, .01, .05, .1, .5, 1., 2., 5., 7., 10., 20.),
-                 max_iter: int = 1000, tol: float = 1e-5, early_stopping: int = 2,
-                 loss=Optional[Callable], metric=Optional[Callable]):
+    def __init__(
+        self,
+        data_size: int,
+        categorical_idx: Sequence[int] = (),
+        embed_sizes: Sequence[int] = (),
+        output_size: int = 1,
+        cs: Sequence[float] = (
+            0.00001,
+            0.00005,
+            0.0001,
+            0.0005,
+            0.001,
+            0.005,
+            0.01,
+            0.05,
+            0.1,
+            0.5,
+            1.0,
+            2.0,
+            5.0,
+            7.0,
+            10.0,
+            20.0,
+        ),
+        max_iter: int = 1000,
+        tol: float = 1e-5,
+        early_stopping: int = 2,
+        loss=Optional[Callable],
+        metric=Optional[Callable],
+    ):
         """
         Args:
             data_size: Not used.
@@ -159,7 +211,7 @@ class TorchBasedLinearEstimator:
         self.embed_sizes = embed_sizes
         self.output_size = output_size
 
-        assert all([x > 0 for x in cs]), 'All Cs should be greater than 0'
+        assert all([x > 0 for x in cs]), "All Cs should be greater than 0"
 
         self.cs = cs
         self.max_iter = max_iter
@@ -195,7 +247,7 @@ class TorchBasedLinearEstimator:
             Tuple (numeric_features, `None`).
 
         """
-        assert len(self.categorical_idx) == 0, 'Support only numeric with sparse matrix'
+        assert len(self.categorical_idx) == 0, "Support only numeric with sparse matrix"
         data = convert_scipy_sparse_to_torch_float(data)
         return data, None
 
@@ -213,7 +265,9 @@ class TorchBasedLinearEstimator:
         """
         if 0 < len(self.categorical_idx) < data.shape[1]:
             data_cat = torch.from_numpy(data[:, self.categorical_idx].astype(np.int64))
-            data = torch.from_numpy(data[:, np.setdiff1d(np.arange(data.shape[1]), self.categorical_idx)])
+            data = torch.from_numpy(
+                data[:, np.setdiff1d(np.arange(data.shape[1]), self.categorical_idx)]
+            )
             return data, data_cat
 
         elif len(self.categorical_idx) == 0:
@@ -224,8 +278,14 @@ class TorchBasedLinearEstimator:
             data_cat = torch.from_numpy(data.astype(np.int64))
             return None, data_cat
 
-    def _optimize(self, data: torch.Tensor, data_cat: Optional[torch.Tensor], y: torch.Tensor = None,
-                  weights: Optional[torch.Tensor] = None, c: float = 1):
+    def _optimize(
+        self,
+        data: torch.Tensor,
+        data_cat: Optional[torch.Tensor],
+        y: torch.Tensor = None,
+        weights: Optional[torch.Tensor] = None,
+        c: float = 1,
+    ):
         """Optimize single model.
 
         Args:
@@ -243,7 +303,7 @@ class TorchBasedLinearEstimator:
             max_iter=self.max_iter,
             tolerance_change=self.tol,
             tolerance_grad=self.tol,
-            line_search_fn='strong_wolfe'
+            line_search_fn="strong_wolfe",
         )
 
         # keep history
@@ -261,7 +321,13 @@ class TorchBasedLinearEstimator:
 
         opt.step(closure)
 
-    def _loss_fn(self, y_true: torch.Tensor, y_pred: torch.Tensor, weights: Optional[torch.Tensor], c: float) -> torch.Tensor:
+    def _loss_fn(
+        self,
+        y_true: torch.Tensor,
+        y_pred: torch.Tensor,
+        weights: Optional[torch.Tensor],
+        c: float,
+    ) -> torch.Tensor:
         """Weighted loss_fn wrapper.
 
         Args:
@@ -281,14 +347,23 @@ class TorchBasedLinearEstimator:
         if weights is not None:
             n = weights.sum()
 
-        all_params = torch.cat([y.view(-1) for (x, y) in self.model.named_parameters() if x != 'bias'])
+        all_params = torch.cat(
+            [y.view(-1) for (x, y) in self.model.named_parameters() if x != "bias"]
+        )
 
         penalty = torch.norm(all_params, 2).pow(2) / 2 / n
 
-        return loss + .5 * penalty / c
+        return loss + 0.5 * penalty / c
 
-    def fit(self, data: np.ndarray, y: np.ndarray, weights: Optional[np.ndarray] = None,
-            data_val: Optional[np.ndarray] = None, y_val: Optional[np.ndarray] = None, weights_val: Optional[np.ndarray] = None):
+    def fit(
+        self,
+        data: np.ndarray,
+        y: np.ndarray,
+        weights: Optional[np.ndarray] = None,
+        data_val: Optional[np.ndarray] = None,
+        y_val: Optional[np.ndarray] = None,
+        weights_val: Optional[np.ndarray] = None,
+    ):
         """Fit method.
 
         Args:
@@ -303,7 +378,7 @@ class TorchBasedLinearEstimator:
             self.
 
         """
-        assert self.model is not None, 'Model should be defined'
+        assert self.model is not None, "Model should be defined"
         data, data_cat = self._prepare_data(data)
         if len(y.shape) == 1:
             y = y[:, np.newaxis]
@@ -312,8 +387,10 @@ class TorchBasedLinearEstimator:
             weights = torch.from_numpy(weights.astype(np.float32))
 
         if data_val is None and y_val is None:
-            logger.warning('Validation data should be defined. No validation will be performed and C = 1 will be used')
-            self._optimize(data, data_cat, y, weights, 1.)
+            logger.info2(
+                "Validation data should be defined. No validation will be performed and C = 1 will be used"
+            )
+            self._optimize(data, data_cat, y, weights, 1.0)
 
             return self
 
@@ -328,7 +405,7 @@ class TorchBasedLinearEstimator:
 
             val_pred = self._score(data_val, data_val_cat)
             score = self.metric(y_val, val_pred, weights_val)
-            logger.info('Linear model: C = {0} score = {1}'.format(c, score))
+            logger.debug("Linear model: C = {0} score = {1}".format(c, score))
             if score > best_score:
                 best_score = score
                 best_model = deepcopy(self.model)
@@ -375,14 +452,39 @@ class TorchBasedLinearEstimator:
         return self._score(data, data_cat)
 
 
-@record_history(enabled=False)
 class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
     """Linear binary classifier."""
 
-    def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
-                 cs: Sequence[float] = (.00001, .00005, .0001, .0005, .001, .005, .01, .05, .1, .5, 1., 2., 5., 7., 10., 20.),
-                 max_iter: int = 1000, tol: float = 1e-4, early_stopping: int = 2,
-                 loss=Optional[Callable], metric=Optional[Callable]):
+    def __init__(
+        self,
+        data_size: int,
+        categorical_idx: Sequence[int] = (),
+        embed_sizes: Sequence[int] = (),
+        output_size: int = 1,
+        cs: Sequence[float] = (
+            0.00001,
+            0.00005,
+            0.0001,
+            0.0005,
+            0.001,
+            0.005,
+            0.01,
+            0.05,
+            0.1,
+            0.5,
+            1.0,
+            2.0,
+            5.0,
+            7.0,
+            10.0,
+            20.0,
+        ),
+        max_iter: int = 1000,
+        tol: float = 1e-4,
+        early_stopping: int = 2,
+        loss=Optional[Callable],
+        metric=Optional[Callable],
+    ):
         """
         Args:
             data_size: not used.
@@ -409,8 +511,23 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         if loss is None:
             loss = TorchLossWrapper(_loss)
 
-        super().__init__(data_size, categorical_idx, embed_sizes, output_size, cs, max_iter, tol, early_stopping, loss, metric)
-        self.model = _model(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
+        super().__init__(
+            data_size,
+            categorical_idx,
+            embed_sizes,
+            output_size,
+            cs,
+            max_iter,
+            tol,
+            early_stopping,
+            loss,
+            metric,
+        )
+        self.model = _model(
+            self.data_size - len(self.categorical_idx),
+            self.embed_sizes,
+            self.output_size,
+        )
 
     def predict(self, data: np.ndarray) -> np.ndarray:
         """Inference phase.
@@ -428,14 +545,39 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         return pred
 
 
-@record_history(enabled=False)
 class TorchBasedLinearRegression(TorchBasedLinearEstimator):
     """Torch-based linear regressor optimized by L-BFGS."""
 
-    def __init__(self, data_size: int, categorical_idx: Sequence[int] = (), embed_sizes: Sequence[int] = (), output_size: int = 1,
-                 cs: Sequence[float] = (.00001, .00005, .0001, .0005, .001, .005, .01, .05, .1, .5, 1., 2., 5., 7., 10., 20.),
-                 max_iter: int = 1000, tol: float = 1e-4, early_stopping: int = 2,
-                 loss=Optional[Callable], metric=Optional[Callable]):
+    def __init__(
+        self,
+        data_size: int,
+        categorical_idx: Sequence[int] = (),
+        embed_sizes: Sequence[int] = (),
+        output_size: int = 1,
+        cs: Sequence[float] = (
+            0.00001,
+            0.00005,
+            0.0001,
+            0.0005,
+            0.001,
+            0.005,
+            0.01,
+            0.05,
+            0.1,
+            0.5,
+            1.0,
+            2.0,
+            5.0,
+            7.0,
+            10.0,
+            20.0,
+        ),
+        max_iter: int = 1000,
+        tol: float = 1e-4,
+        early_stopping: int = 2,
+        loss=Optional[Callable],
+        metric=Optional[Callable],
+    ):
         """
         Args:
             data_size: used only for super function.
@@ -452,8 +594,23 @@ class TorchBasedLinearRegression(TorchBasedLinearEstimator):
         """
         if loss is None:
             loss = TorchLossWrapper(nn.MSELoss)
-        super().__init__(data_size, categorical_idx, embed_sizes, output_size, cs, max_iter, tol, early_stopping, loss, metric)
-        self.model = CatRegression(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
+        super().__init__(
+            data_size,
+            categorical_idx,
+            embed_sizes,
+            output_size,
+            cs,
+            max_iter,
+            tol,
+            early_stopping,
+            loss,
+            metric,
+        )
+        self.model = CatRegression(
+            self.data_size - len(self.categorical_idx),
+            self.embed_sizes,
+            self.output_size,
+        )
 
     def predict(self, data: np.ndarray) -> np.ndarray:
         """Inference phase.

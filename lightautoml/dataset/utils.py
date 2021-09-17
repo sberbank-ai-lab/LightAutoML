@@ -1,21 +1,27 @@
 """Utilities for working with the structure of a dataset."""
 
-from typing import Dict, Union, Sequence, Callable, Optional, Tuple
-
-from log_calls import record_history
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 from lightautoml.dataset.base import LAMLDataset
-from lightautoml.dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
+from lightautoml.dataset.np_pd_dataset import CSRSparseDataset
+from lightautoml.dataset.np_pd_dataset import NumpyDataset
+from lightautoml.dataset.np_pd_dataset import PandasDataset
 from lightautoml.dataset.roles import ColumnRole
 
 
 # RoleType = TypeVar("RoleType", bound=ColumnRole)
 
 
-@record_history(enabled=False)
-def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, ColumnRole]:
+def roles_parser(
+    init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]
+) -> Dict[str, ColumnRole]:
     """Parser of roles.
-    
+
     Parse roles from old format numeric:
     ``[var1, var2, ...]`` to ``{var1:numeric, var2:numeric, ...}``.
 
@@ -31,7 +37,7 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
 
         feat = init_roles[r]
 
-        if type(feat) is str:
+        if isinstance(feat, str):
             roles[feat] = r
 
         else:
@@ -41,10 +47,11 @@ def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[st
     return roles
 
 
-@record_history(enabled=False)
-def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Optional[type]]:
+def get_common_concat(
+    datasets: Sequence[LAMLDataset],
+) -> Tuple[Callable, Optional[type]]:
     """Get concatenation function for datasets of different types.
-    
+
     Takes multiple datasets as input and check,
     if is's ok to concatenate it and return function.
 
@@ -70,11 +77,14 @@ def get_common_concat(datasets: Sequence[LAMLDataset]) -> Tuple[Callable, Option
     elif dataset_types == {NumpyDataset, PandasDataset}:
         return numpy_and_pandas_concat, None
 
-    raise TypeError('Unable to concatenate dataset types {0}'.format(list(dataset_types)))
+    raise TypeError(
+        "Unable to concatenate dataset types {0}".format(list(dataset_types))
+    )
 
 
-@record_history(enabled=False)
-def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset]]) -> PandasDataset:
+def numpy_and_pandas_concat(
+    datasets: Sequence[Union[NumpyDataset, PandasDataset]]
+) -> PandasDataset:
     """Concat of numpy and pandas dataset.
 
     Args:
@@ -89,13 +99,12 @@ def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset
     return PandasDataset.concat(datasets)
 
 
-@record_history(enabled=False)
 def concatenate(datasets: Sequence[LAMLDataset]) -> LAMLDataset:
     """Dataset concatenation function.
-    
+
     Check if datasets have common concat function and then apply.
     Assume to take target/folds/weights etc from first one.
-    
+
     Args:
         datasets: Sequence of datasets.
 

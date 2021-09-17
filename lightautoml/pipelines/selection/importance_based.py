@@ -1,25 +1,29 @@
 """Importance based selectors."""
 
-from typing import Optional, TypeVar
-
-from log_calls import record_history
+from typing import Optional
+from typing import TypeVar
 
 from lightautoml.validation.base import TrainValidIterator
-from .base import SelectionPipeline, ImportanceEstimator
-from ..features.base import FeaturesPipeline
+
 from ...dataset.base import LAMLDataset
 from ...ml_algo.base import MLAlgo
+from ..features.base import FeaturesPipeline
+from .base import ImportanceEstimator
+from .base import SelectionPipeline
 
-ImportanceEstimatedAlgo = TypeVar('ImportanceEstimatedAlgo', bound=ImportanceEstimator)
+
+ImportanceEstimatedAlgo = TypeVar("ImportanceEstimatedAlgo", bound=ImportanceEstimator)
 
 
-@record_history(enabled=False)
 class ModelBasedImportanceEstimator(ImportanceEstimator):
     """Base class for performing feature selection using model feature importances."""
 
-    def fit(self, train_valid: Optional[TrainValidIterator] = None,
-            ml_algo: Optional[ImportanceEstimatedAlgo] = None,
-            preds: Optional[LAMLDataset] = None):
+    def fit(
+        self,
+        train_valid: Optional[TrainValidIterator] = None,
+        ml_algo: Optional[ImportanceEstimatedAlgo] = None,
+        preds: Optional[LAMLDataset] = None,
+    ):
         """Find the importances of features.
 
         Args:
@@ -28,24 +32,28 @@ class ModelBasedImportanceEstimator(ImportanceEstimator):
             preds: predicted target values.
 
         """
-        assert ml_algo is not None, 'ModelBasedImportanceEstimator: raw importances are None and no MLAlgo to calculate them.'
+        assert (
+            ml_algo is not None
+        ), "ModelBasedImportanceEstimator: raw importances are None and no MLAlgo to calculate them."
         self.raw_importances = ml_algo.get_features_score()
 
 
-@record_history(enabled=False)
 class ImportanceCutoffSelector(SelectionPipeline):
-    """ Selector based on importance threshold.
+    """Selector based on importance threshold.
 
     It is important that data which passed to ``.fit``
     should be ok to fit `ml_algo` or preprocessing pipeline should be defined.
 
     """
 
-    def __init__(self, feature_pipeline: Optional[FeaturesPipeline],
-                 ml_algo: MLAlgo,
-                 imp_estimator: ImportanceEstimator,
-                 fit_on_holdout: bool = True,
-                 cutoff: float = 0.0):
+    def __init__(
+        self,
+        feature_pipeline: Optional[FeaturesPipeline],
+        ml_algo: MLAlgo,
+        imp_estimator: ImportanceEstimator,
+        fit_on_holdout: bool = True,
+        cutoff: float = 0.0,
+    ):
         """
 
         Args:
@@ -68,7 +76,9 @@ class ImportanceCutoffSelector(SelectionPipeline):
         """
         imp = self.imp_estimator.get_features_score()
         self.map_raw_feature_importances(imp)
-        selected = self.mapped_importances.index.values[self.mapped_importances.values > self.cutoff]
+        selected = self.mapped_importances.index.values[
+            self.mapped_importances.values > self.cutoff
+        ]
         if len(selected) == 0:
             selected = self.mapped_importances.index.values[:1]
         self._selected_features = list(selected)

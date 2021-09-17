@@ -46,5 +46,3 @@ Other Selectors
     :template: classtemplate.rst
 
     ~linear_selector.HighCorrRemoval
-
-

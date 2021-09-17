@@ -1,39 +1,41 @@
 """Metrics and loss functions for scikit-learn models."""
 
-from typing import Callable, Optional, Dict, Union
+import logging
+
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Union
 
 import numpy as np
-from log_calls import record_history
 
 from .base import Loss
-from ...utils.logging import get_logger
-
-logger = get_logger(__name__)
 
 
-@record_history(enabled=False)
-def fw_rmsle(x, y): return np.log1p(x), y
+logger = logging.getLogger(__name__)
 
 
-_sk_loss_mapping = {
+def fw_rmsle(x, y):
+    return np.log1p(x), y
 
-    'rmsle': ('mse', fw_rmsle, np.expm1)
 
-}
+_sk_loss_mapping = {"rmsle": ("mse", fw_rmsle, np.expm1)}
 
 _sk_force_metric = {
-
-    'rmsle': ('mse', None, None),
-
+    "rmsle": ("mse", None, None),
 }
 
 
-@record_history(enabled=False)
 class SKLoss(Loss):
     """Loss used for scikit-learn."""
 
-    def __init__(self, loss: str, loss_params: Optional[Dict] = None, fw_func: Optional[Callable] = None,
-                 bw_func: Optional[Callable] = None):
+    def __init__(
+        self,
+        loss: str,
+        loss_params: Optional[Dict] = None,
+        fw_func: Optional[Callable] = None,
+        bw_func: Optional[Callable] = None,
+    ):
         """
 
         Args:
@@ -46,8 +48,13 @@ class SKLoss(Loss):
               Used for predict values transformation.
 
         """
-        assert loss in ['logloss', 'mse', 'crossentropy', 'rmsle'], 'Not supported in sklearn in general case.'
-        self.flg_regressor = loss in ['mse', 'rmsle']
+        assert loss in [
+            "logloss",
+            "mse",
+            "crossentropy",
+            "rmsle",
+        ], "Not supported in sklearn in general case."
+        self.flg_regressor = loss in ["mse", "rmsle"]
 
         if loss in _sk_loss_mapping:
             self.loss, fw_func, bw_func = _sk_loss_mapping[loss]
@@ -61,8 +68,13 @@ class SKLoss(Loss):
 
         self.loss_params = loss_params
 
-    def set_callback_metric(self, metric: Union[str, Callable], greater_is_better: Optional[bool] = None,
-                            metric_params: Optional[Dict] = None, task_name: Optional[str] = None):
+    def set_callback_metric(
+        self,
+        metric: Union[str, Callable],
+        greater_is_better: Optional[bool] = None,
+        metric_params: Optional[Dict] = None,
+        task_name: Optional[str] = None,
+    ):
         """
         Callback metric setter.
 
@@ -77,6 +89,10 @@ class SKLoss(Loss):
         """
         if self.loss in _sk_force_metric:
             metric, greater_is_better, metric_params = _sk_force_metric[self.loss]
-            logger.warning('For sklearn {0} callback metric switched to {1}'.format(self.loss, metric))
+            logger.info2(
+                "For sklearn {0} callback metric switched to {1}".format(
+                    self.loss, metric
+                )
+            )
 
         super().set_callback_metric(metric, greater_is_better, metric_params, task_name)

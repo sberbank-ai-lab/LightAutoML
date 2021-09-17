@@ -1,36 +1,50 @@
 """Base classes for machine learning algorithms."""
 
-from abc import ABC, abstractmethod
+import logging
+
+from abc import ABC
+from abc import abstractmethod
 from copy import copy
-from typing import Optional, Tuple, Any, List, cast, Dict, Sequence, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
+from typing import cast
 
 import numpy as np
-from log_calls import record_history
 
 from lightautoml.validation.base import TrainValidIterator
-from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import NumpyDataset, CSRSparseDataset, PandasDataset
-from ..dataset.roles import NumericRole
-from ..utils.logging import get_logger
-from ..utils.timer import TaskTimer, PipelineTimer
 
-logger = get_logger(__name__)
+from ..dataset.base import LAMLDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
+from ..dataset.roles import NumericRole
+from ..utils.timer import PipelineTimer
+from ..utils.timer import TaskTimer
+
+
+logger = logging.getLogger(__name__)
 TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 
 
-@record_history(enabled=False)
 class MLAlgo(ABC):
     """
     Abstract class for machine learning algorithm.
     Assume that features are already selected,
     but parameters my be tuned and set before training.
     """
+
     _default_params: Dict = {}
+    optimization_search_space: Dict = {}
     # TODO: add checks here
     _fit_checks: Tuple = ()
     _transform_checks: Tuple = ()
     _params: Dict = None
-    _name = 'AbstractAlgo'
+    _name = "AbstractAlgo"
 
     @property
     def name(self) -> str:
@@ -77,7 +91,12 @@ class MLAlgo(ABC):
         return self.params
 
     # TODO: Think about typing
-    def __init__(self, default_params: Optional[dict] = None, freeze_defaults: bool = True, timer: Optional[TaskTimer] = None):
+    def __init__(
+        self,
+        default_params: Optional[dict] = None,
+        freeze_defaults: bool = True,
+        timer: Optional[TaskTimer] = None,
+    ):
         """
 
         Args:
@@ -140,7 +159,9 @@ class MLAlgo(ABC):
             Metric value.
 
         """
-        assert self.task is not None, 'No metric defined. Should be fitted on dataset first.'
+        assert (
+            self.task is not None
+        ), "No metric defined. Should be fitted on dataset first."
         metric = self.task.get_dataset_metric()
 
         return metric(dataset, dropna=True)
@@ -150,23 +171,25 @@ class MLAlgo(ABC):
 
         Args:
             prefix: String with prefix.
-            
-        """
-        self._name = '_'.join([prefix, self._name])
 
-    def set_timer(self, timer: TaskTimer) -> 'MLAlgo':
+        """
+        self._name = "_".join([prefix, self._name])
+
+    def set_timer(self, timer: TaskTimer) -> "MLAlgo":
         """Set timer."""
         self.timer = timer
 
         return self
 
 
-@record_history(enabled=False)
 class TabularMLAlgo(MLAlgo):
     """Machine learning algorithms that accepts numpy arrays as input."""
-    _name: str = 'TabularAlgo'
 
-    def _set_prediction(self, dataset: NumpyDataset, preds_arr: np.ndarray) -> NumpyDataset:
+    _name: str = "TabularAlgo"
+
+    def _set_prediction(
+        self, dataset: NumpyDataset, preds_arr: np.ndarray
+    ) -> NumpyDataset:
         """Insert predictions to dataset with. Inplace transformation.
 
         Args:
@@ -178,13 +201,17 @@ class TabularMLAlgo(MLAlgo):
 
         """
 
-        prefix = '{0}_prediction'.format(self._name)
-        prob = self.task.name in ['binary', 'multiclass']
-        dataset.set_data(preds_arr, prefix, NumericRole(np.float32, force_input=True, prob=prob))
+        prefix = "{0}_prediction".format(self._name)
+        prob = self.task.name in ["binary", "multiclass"]
+        dataset.set_data(
+            preds_arr, prefix, NumericRole(np.float32, force_input=True, prob=prob)
+        )
 
         return dataset
 
-    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
+    def fit_predict_single_fold(
+        self, train: TabularDataset, valid: TabularDataset
+    ) -> Tuple[Any, np.ndarray]:
         """Train on train dataset and predict on holdout dataset.
 
         Args:
@@ -212,13 +239,17 @@ class TabularMLAlgo(MLAlgo):
             Dataset with predicted values.
 
         """
-        logger.info('Start fitting {} ...'.format(self._name))
         self.timer.start()
 
-        assert self.is_fitted is False, 'Algo is already fitted'
+        assert self.is_fitted is False, "Algo is already fitted"
         # init params on input if no params was set before
         if self._params is None:
             self.params = self.init_params_on_input(train_valid_iterator)
+
+        iterator_len = len(train_valid_iterator)
+        if iterator_len > 1:
+            logger.info("Start fitting \x1b[1m{}\x1b[0m ...".format(self._name))
+            logger.debug(f"Training params: {self.params}")
 
         # save features names
         self._features = train_valid_iterator.features
@@ -227,10 +258,12 @@ class TabularMLAlgo(MLAlgo):
 
         # get empty validation data to write prediction
         # TODO: Think about this cast
-        preds_ds = cast(NumpyDataset, train_valid_iterator.get_validation_data().empty().to_numpy())
+        preds_ds = cast(
+            NumpyDataset, train_valid_iterator.get_validation_data().empty().to_numpy()
+        )
 
         outp_dim = 1
-        if self.task.name == 'multiclass':
+        if self.task.name == "multiclass":
             outp_dim = int(np.max(preds_ds.target) + 1)
         # save n_classes to infer params
         self.n_classes = outp_dim
@@ -240,7 +273,12 @@ class TabularMLAlgo(MLAlgo):
 
         # TODO: Make parallel version later
         for n, (idx, train, valid) in enumerate(train_valid_iterator):
-            logger.info('\n===== Start working with fold {} for {} =====\n'.format(n, self._name))
+            if iterator_len > 1:
+                logger.info2(
+                    "===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m =====".format(
+                        n, self._name
+                    )
+                )
             self.timer.set_control_point()
 
             model, pred = self.fit_predict_single_fold(train, valid)
@@ -253,16 +291,25 @@ class TabularMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    logger.warning('Time limit exceeded after calculating fold {0}'.format(n))
+                    logger.info(
+                        "Time limit exceeded after calculating fold {0}\n".format(n)
+                    )
                     break
-
-        logger.debug('Time history {0}. Time left {1}'.format(self.timer.get_run_results(), self.timer.time_left))
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
         preds_arr = np.where(counter_arr == 0, np.nan, preds_arr)
 
         preds_ds = self._set_prediction(preds_ds, preds_arr)
-        logger.info('{} fitting and predicting completed'.format(self._name))
+
+        if iterator_len > 1:
+            logger.info(
+                f"Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m"
+            )
+
+        if iterator_len > 1 or "Tuned" not in self._name:
+            logger.info(
+                "\x1b[1m{}\x1b[0m fitting and predicting completed".format(self._name)
+            )
         return preds_ds
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:
@@ -288,7 +335,7 @@ class TabularMLAlgo(MLAlgo):
             Dataset with predicted values.
 
         """
-        assert self.models != [], 'Should be fitted first.'
+        assert self.models != [], "Should be fitted first."
         preds_ds = dataset.empty().to_numpy()
         preds_arr = None
 

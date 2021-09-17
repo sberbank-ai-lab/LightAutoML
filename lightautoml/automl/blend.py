@@ -1,23 +1,29 @@
 """Blenders."""
 
-from typing import Tuple, Sequence, List, cast, Optional, Callable
+import logging
+
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import cast
 
 import numpy as np
-from log_calls import record_history
+
 from scipy.optimize import minimize_scalar
 
 from ..dataset.base import LAMLDataset
 from ..dataset.np_pd_dataset import NumpyDataset
 from ..dataset.roles import NumericRole
 from ..pipelines.ml.base import MLPipeline
-from ..utils.logging import get_logger
-
-logger = get_logger(__name__)
-
-np.seterr(divide='ignore', invalid='ignore')
 
 
-@record_history(enabled=False)
+logger = logging.getLogger(__name__)
+
+np.seterr(divide="ignore", invalid="ignore")
+
+
 class Blender:
     """Basic class for blending.
 
@@ -35,8 +41,9 @@ class Blender:
     def outp_dim(self) -> int:
         return self._outp_dim
 
-    def fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
-                    ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
+    def fit_predict(
+        self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
+    ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
         """Wraps custom ``._fit_predict`` methods of blenders.
 
         Method wraps individual ``._fit_predict`` method of blenders.
@@ -58,8 +65,9 @@ class Blender:
 
         return self._fit_predict(predictions, pipes)
 
-    def _fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
-                     ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
+    def _fit_predict(
+        self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
+    ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
         """Defines how to fit, predict and prune - Abstract.
 
         Args:
@@ -99,7 +107,9 @@ class Blender:
         """
         raise NotImplementedError
 
-    def split_models(self, predictions: Sequence[LAMLDataset]) -> Tuple[Sequence[LAMLDataset], List[int], List[int]]:
+    def split_models(
+        self, predictions: Sequence[LAMLDataset]
+    ) -> Tuple[Sequence[LAMLDataset], List[int], List[int]]:
         """Split predictions by single model prediction datasets.
 
         Args:
@@ -119,20 +129,24 @@ class Blender:
             n_models = len(features) // self.outp_dim
 
             for k in range(n_models):
-                curr_pred = preds[:, features[k * self.outp_dim: (k + 1) * self.outp_dim]]
+                curr_pred = preds[
+                    :, features[k * self.outp_dim : (k + 1) * self.outp_dim]
+                ]
                 splitted_preds.append(curr_pred)
                 model_idx.append(k)
                 pipe_idx.append(n)
 
         return splitted_preds, model_idx, pipe_idx
 
-    def _set_metadata(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]):
+    def _set_metadata(
+        self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
+    ):
 
         pred0 = predictions[0]
         pipe0 = pipes[0]
 
         self._outp_dim = pred0.shape[1] // len(pipe0.ml_algos)
-        self._outp_prob = pred0.task.name in ['binary', 'multiclass']
+        self._outp_prob = pred0.task.name in ["binary", "multiclass"]
         self._score = predictions[0].task.get_dataset_metric()
 
     def score(self, dataset: LAMLDataset) -> float:
@@ -148,7 +162,6 @@ class Blender:
         return self._score(dataset, True)
 
 
-@record_history(enabled=False)
 class BestModelSelector(Blender):
     """Select best single model from level.
 
@@ -160,8 +173,9 @@ class BestModelSelector(Blender):
 
     """
 
-    def _fit_predict(self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
-                     ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
+    def _fit_predict(
+        self, predictions: Sequence[LAMLDataset], pipes: Sequence[MLPipeline]
+    ) -> Tuple[LAMLDataset, Sequence[MLPipeline]]:
         """Simple fit - just take one best.
 
         Args:
@@ -208,7 +222,6 @@ class BestModelSelector(Blender):
         return predictions[0]
 
 
-@record_history(enabled=False)
 class MeanBlender(Blender):
     """Simple average level predictions.
 
@@ -223,13 +236,17 @@ class MeanBlender(Blender):
 
         pred = np.nanmean([x.data for x in splitted_preds], axis=0)
 
-        outp.set_data(pred, ['MeanBlend_{0}'.format(x) for x in range(pred.shape[1])],
-                      NumericRole(np.float32, prob=self._outp_prob))
+        outp.set_data(
+            pred,
+            ["MeanBlend_{0}".format(x) for x in range(pred.shape[1])],
+            NumericRole(np.float32, prob=self._outp_prob),
+        )
 
         return outp
 
-    def _fit_predict(self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
-                     ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
+    def _fit_predict(
+        self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
+    ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
         """Simple fit_predict - just average and no prune.
 
         Args:
@@ -263,7 +280,6 @@ class MeanBlender(Blender):
         return outp
 
 
-@record_history(enabled=False)
 class WeightedBlender(Blender):
     """Weighted Blender based on coord descent, optimize task metric directly.
 
@@ -274,7 +290,12 @@ class WeightedBlender(Blender):
 
     """
 
-    def __init__(self, max_iters: int = 5, max_inner_iters: int = 7, max_nonzero_coef: float = 0.05):
+    def __init__(
+        self,
+        max_iters: int = 5,
+        max_inner_iters: int = 7,
+        max_nonzero_coef: float = 0.05,
+    ):
         """
 
         Args:
@@ -287,17 +308,26 @@ class WeightedBlender(Blender):
         self.max_iters = max_iters
         self.max_inner_iters = max_inner_iters
         self.max_nonzero_coef = max_nonzero_coef
-        self.wts = None
+        self.wts = [1]
 
-    def _get_weighted_pred(self, splitted_preds: Sequence[NumpyDataset], wts: Optional[np.ndarray]) -> NumpyDataset:
+    def _get_weighted_pred(
+        self, splitted_preds: Sequence[NumpyDataset], wts: Optional[np.ndarray]
+    ) -> NumpyDataset:
         length = len(splitted_preds)
         if wts is None:
             wts = np.ones(length, dtype=np.float32) / length
 
-        weighted_pred = np.nansum([x.data * w for (x, w) in zip(splitted_preds, wts)], axis=0).astype(np.float32)
+        weighted_pred = np.nansum(
+            [x.data * w for (x, w) in zip(splitted_preds, wts)], axis=0
+        ).astype(np.float32)
 
-        not_nulls = np.sum([np.logical_not(np.isnan(x.data).any(axis=1)) * w for (x, w) in zip(splitted_preds, wts)],
-                           axis=0).astype(np.float32)
+        not_nulls = np.sum(
+            [
+                np.logical_not(np.isnan(x.data).any(axis=1)) * w
+                for (x, w) in zip(splitted_preds, wts)
+            ],
+            axis=0,
+        ).astype(np.float32)
 
         not_nulls = not_nulls[:, np.newaxis]
 
@@ -305,8 +335,11 @@ class WeightedBlender(Blender):
         weighted_pred = np.where(not_nulls == 0, np.nan, weighted_pred)
 
         outp = splitted_preds[0].empty()
-        outp.set_data(weighted_pred, ['WeightedBlend_{0}'.format(x) for x in range(weighted_pred.shape[1])],
-                      NumericRole(np.float32, prob=self._outp_prob))
+        outp.set_data(
+            weighted_pred,
+            ["WeightedBlend_{0}".format(x) for x in range(weighted_pred.shape[1])],
+            NumericRole(np.float32, prob=self._outp_prob),
+        )
 
         return outp
 
@@ -329,8 +362,9 @@ class WeightedBlender(Blender):
 
         return candidate
 
-    def _get_scorer(self, splitted_preds: Sequence[NumpyDataset], idx: int, wts: np.ndarray) -> Callable:
-
+    def _get_scorer(
+        self, splitted_preds: Sequence[NumpyDataset], idx: int, wts: np.ndarray
+    ) -> Callable:
         def scorer(x):
             candidate = self._get_candidate(wts, idx, x)
 
@@ -348,7 +382,11 @@ class WeightedBlender(Blender):
         best_pred = self._get_weighted_pred(splitted_preds, candidate)
 
         best_score = self.score(best_pred)
-        logger.info('Blending: Optimization starts with equal weights and score {0}'.format(best_score))
+        logger.info(
+            "Blending: optimization starts with equal weights and score \x1b[1m{0}\x1b[0m".format(
+                best_score
+            )
+        )
         score = best_score
         for _ in range(self.max_iters):
             flg_no_upd = True
@@ -357,8 +395,12 @@ class WeightedBlender(Blender):
                     continue
 
                 obj = self._get_scorer(splitted_preds, i, candidate)
-                opt_res = minimize_scalar(obj, method='Bounded', bounds=(0, 1),
-                                          options={'disp': False, 'maxiter': self.max_inner_iters})
+                opt_res = minimize_scalar(
+                    obj,
+                    method="Bounded",
+                    bounds=(0, 1),
+                    options={"disp": False, "maxiter": self.max_inner_iters},
+                )
                 w = opt_res.x
                 score = -opt_res.fun
                 if score > best_score:
@@ -369,17 +411,22 @@ class WeightedBlender(Blender):
 
                     candidate = self._get_candidate(candidate, i, w)
 
-            logger.info('Blending, iter {0}: score = {1}, weights = {2}'.format(_, score, candidate))
+            logger.info(
+                "Blending: iteration \x1b[1m{0}\x1b[0m: score = \x1b[1m{1}\x1b[0m, weights = \x1b[1m{2}\x1b[0m".format(
+                    _, score, candidate
+                )
+            )
 
             if flg_no_upd:
-                logger.info('No score update. Terminated')
+                logger.info("Blending: no score update. Terminated\n")
                 break
 
         return candidate
 
     @staticmethod
-    def _prune_pipe(pipes: Sequence[MLPipeline], wts: np.ndarray,
-                    pipe_idx: np.ndarray) -> Tuple[Sequence[MLPipeline], np.ndarray]:
+    def _prune_pipe(
+        pipes: Sequence[MLPipeline], wts: np.ndarray, pipe_idx: np.ndarray
+    ) -> Tuple[Sequence[MLPipeline], np.ndarray]:
         new_pipes = []
 
         for i in range(max(pipe_idx) + 1):
@@ -394,8 +441,9 @@ class WeightedBlender(Blender):
         wts = wts[wts > 0]
         return new_pipes, wts
 
-    def _fit_predict(self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
-                     ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
+    def _fit_predict(
+        self, predictions: Sequence[NumpyDataset], pipes: Sequence[MLPipeline]
+    ) -> Tuple[NumpyDataset, Sequence[MLPipeline]]:
         """Perform coordinate descent.
 
         Args:
@@ -410,7 +458,9 @@ class WeightedBlender(Blender):
 
         """
         self._set_metadata(predictions, pipes)
-        splitted_preds, _, pipe_idx = cast(List[NumpyDataset], self.split_models(predictions))
+        splitted_preds, _, pipe_idx = cast(
+            List[NumpyDataset], self.split_models(predictions)
+        )
 
         wts = self._optimize(splitted_preds)
         splitted_preds = [x for (x, w) in zip(splitted_preds, wts) if w > 0]

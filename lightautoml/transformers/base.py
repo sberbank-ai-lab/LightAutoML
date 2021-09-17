@@ -1,23 +1,28 @@
 """Basic classes for transformers."""
 
 from copy import deepcopy
-from typing import Sequence, Callable, List, ClassVar, Union
+from typing import Callable
+from typing import ClassVar
+from typing import List
+from typing import Sequence
+from typing import Union
 
 import numpy as np
-from log_calls import record_history
 
-from ..dataset.base import LAMLDataset, RolesDict
+from ..dataset.base import LAMLDataset
+from ..dataset.base import RolesDict
 from ..dataset.roles import ColumnRole
 from ..dataset.utils import concatenate
+
 
 # TODO: From func transformer
 
 Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
 
 
-@record_history(enabled=False)
 class LAMLTransformer:
     """Base class for transformer method (like sklearn, but works with datasets)."""
+
     _fname_prefix = None
     _fit_checks = ()
     _transform_checks = ()
@@ -30,11 +35,15 @@ class LAMLTransformer:
             List of new names.
 
         """
-        if '_features' not in self.__dict__:
-            raise AttributeError('Should be fitted at first.')
+        if "_features" not in self.__dict__:
+            raise AttributeError("Should be fitted at first.")
 
-        feats = ['{0}__{1}'.format(self._fname_prefix, x) if self._fname_prefix is not None else x
-                 for x in self._features]
+        feats = [
+            "{0}__{1}".format(self._fname_prefix, x)
+            if self._fname_prefix is not None
+            else x
+            for x in self._features
+        ]
 
         return feats
 
@@ -48,7 +57,7 @@ class LAMLTransformer:
         """
         self._features = deepcopy(val)
 
-    def fit(self, dataset: LAMLDataset) -> 'LAMLTransformer':
+    def fit(self, dataset: LAMLDataset) -> "LAMLTransformer":
         """Fit transformer and return it's instance.
 
         Args:
@@ -97,7 +106,6 @@ class LAMLTransformer:
         return self.transform(dataset)
 
 
-@record_history(enabled=False)
 class SequentialTransformer(LAMLTransformer):
     """
     Transformer that contains the list of transformers and apply one by one sequentially.
@@ -119,7 +127,7 @@ class SequentialTransformer(LAMLTransformer):
             dataset: Dataset to fit.
 
         """
-        raise NotImplementedError('Sequential supports only fit_transform.')
+        raise NotImplementedError("Sequential supports only fit_transform.")
 
     def transform(self, dataset: LAMLDataset) -> LAMLDataset:
         """Apply the sequence of transformers to dataset one over output of previous.
@@ -156,7 +164,6 @@ class SequentialTransformer(LAMLTransformer):
         return dataset
 
 
-@record_history(enabled=False)
 class UnionTransformer(LAMLTransformer):
     """Transformer that apply the sequence on transformers in parallel on dataset and concatenate the result."""
 
@@ -172,7 +179,7 @@ class UnionTransformer(LAMLTransformer):
         self.transformer_list = [x for x in transformer_list if x is not None]
         self.n_jobs = n_jobs
 
-    def _fit_singleproc(self, dataset: LAMLDataset) -> 'UnionTransformer':
+    def _fit_singleproc(self, dataset: LAMLDataset) -> "UnionTransformer":
         """Single process version of fit.
 
         Args:
@@ -192,7 +199,7 @@ class UnionTransformer(LAMLTransformer):
 
         return self
 
-    def _fit_multiproc(self, dataset: LAMLDataset) -> 'UnionTransformer':
+    def _fit_multiproc(self, dataset: LAMLDataset) -> "UnionTransformer":
         """Multi-process version of fit.
 
         Args:
@@ -204,7 +211,7 @@ class UnionTransformer(LAMLTransformer):
         """
         raise NotImplementedError
 
-    def fit(self, dataset: LAMLDataset) -> 'UnionTransformer':
+    def fit(self, dataset: LAMLDataset) -> "UnionTransformer":
         """Fit transformers in parallel.
 
          Output names - concatenation of features names with no prefix.
@@ -333,7 +340,6 @@ class UnionTransformer(LAMLTransformer):
         return res
 
 
-@record_history(enabled=False)
 class ColumnsSelector(LAMLTransformer):
     """
     Select columns to pass to another transformers (or feature selection).
@@ -348,7 +354,7 @@ class ColumnsSelector(LAMLTransformer):
         """
         self.keys = keys
 
-    def fit(self, dataset: LAMLDataset) -> 'ColumnsSelector':
+    def fit(self, dataset: LAMLDataset) -> "ColumnsSelector":
         """Empty fit method - just set features.
 
         Args:
@@ -373,13 +379,13 @@ class ColumnsSelector(LAMLTransformer):
 
         """
         # to avoid coping if not needed
-        if len(self.keys) == len(dataset.features) and \
-                all((x == y for (x, y) in zip(self.keys, dataset.features))):
+        if len(self.keys) == len(dataset.features) and all(
+            (x == y for (x, y) in zip(self.keys, dataset.features))
+        ):
             return dataset
         return dataset[:, self.keys]
 
 
-@record_history(enabled=False)
 class ColumnwiseUnion(UnionTransformer):
     # TODO: Union is not ABC !! NotImplemented - means not done right now
     """
@@ -443,11 +449,12 @@ class ColumnwiseUnion(UnionTransformer):
         return super().fit_transform(dataset)
 
 
-@record_history(enabled=False)
 class BestOfTransformers(LAMLTransformer):
     """Apply multiple transformers and select best."""
 
-    def __init__(self, transformer_list: Sequence[LAMLTransformer], criterion: Callable):
+    def __init__(
+        self, transformer_list: Sequence[LAMLTransformer], criterion: Callable
+    ):
         """Create selector from candidate list and selection criterion.
 
         Args:
@@ -469,7 +476,7 @@ class BestOfTransformers(LAMLTransformer):
             NotImplementedError: Always.
 
         """
-        raise NotImplementedError('Support only fit_transform in BestOfTransformers')
+        raise NotImplementedError("Support only fit_transform in BestOfTransformers")
 
     def fit_transform(self, dataset: LAMLDataset) -> LAMLDataset:
         """Fit transform all transformers and then select best.
@@ -507,7 +514,6 @@ class BestOfTransformers(LAMLTransformer):
         return self.best_transformer.transform(dataset)
 
 
-@record_history(enabled=False)
 class ConvertDataset(LAMLTransformer):
     """Convert dataset to given type."""
 
@@ -533,7 +539,6 @@ class ConvertDataset(LAMLTransformer):
         return self.dataset_type.from_dataset(dataset)
 
 
-@record_history(enabled=False)
 class ChangeRoles(LAMLTransformer):
     """Change data roles (include dtypes etc)."""
 
