@@ -41,7 +41,6 @@ dataclasses = "0.6"
 holidays = "*"
 networkx = "*"
 cmaes = "*"
-log-calls = "*"
 pyyaml = "*"
 catboost = "*"
 

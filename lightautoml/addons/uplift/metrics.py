@@ -1,30 +1,32 @@
 import abc
-from typing import Callable, Tuple, Type
+
+from typing import Callable
+from typing import Tuple
+from typing import Type
 
 import numpy as np
-from log_calls import record_history
+
 from sklearn.metrics import auc
 from sklearn.utils.multiclass import type_of_target
 
 from lightautoml.utils.logging import get_logger
 
 
-_available_uplift_modes = ('qini', 'cum_gain', 'adj_qini')
+_available_uplift_modes = ("qini", "cum_gain", "adj_qini")
 
 
-@record_history(enabled=False)
 class ConstPredictError(Exception):
     pass
 
 
-@record_history(enabled=False)
 class TUpliftMetric(metaclass=abc.ABCMeta):
     @abc.abstractclassmethod
-    def __call__(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
+    def __call__(
+        self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray
+    ) -> float:
         pass
 
 
-@record_history(enabled=False)
 def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
     """Calculate perfect curve
 
@@ -47,14 +49,20 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
         perfect curve
 
     """
-    if type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0):
-        raise Exception('For a continuous target, the perfect curve is only available for non-negative values')
+    if type_of_target(y_true) == "continuous" and np.any(y_true < 0.0):
+        raise Exception(
+            "For a continuous target, the perfect curve is only available for non-negative values"
+        )
 
-    if type_of_target(y_true) == 'binary':
-        perfect_control_score = (treatment == 0).astype(int) * ( 2 * (y_true != 1).astype(int) - 1)
-        perfect_treatment_score = ((treatment == 1).astype(int) * 2 * (y_true == 1).astype(int))
+    if type_of_target(y_true) == "binary":
+        perfect_control_score = (treatment == 0).astype(int) * (
+            2 * (y_true != 1).astype(int) - 1
+        )
+        perfect_treatment_score = (
+            (treatment == 1).astype(int) * 2 * (y_true == 1).astype(int)
+        )
         perfect_uplift = perfect_treatment_score + perfect_control_score
-    elif type_of_target(y_true) == 'continuous':
+    elif type_of_target(y_true) == "continuous":
         raise NotImplementedError("Can't calculate perfect curve for continuous target")
     else:
         raise RuntimeError("Only 'binary' and 'continuous' targets are available")
@@ -62,8 +70,13 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
     return perfect_uplift
 
 
-@record_history(enabled=False)
-def _get_uplift_curve(y_treatment: np.ndarray, y_control: np.ndarray, n_treatment: np.ndarray, n_control: np.ndarray, mode: str):
+def _get_uplift_curve(
+    y_treatment: np.ndarray,
+    y_control: np.ndarray,
+    n_treatment: np.ndarray,
+    n_control: np.ndarray,
+    mode: str,
+):
     """Calculate uplift curve
 
     Args:
@@ -95,9 +108,12 @@ def _get_uplift_curve(y_treatment: np.ndarray, y_control: np.ndarray, n_treatmen
     return curve_values
 
 
-@record_history(enabled=False)
-def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray,
-                                   mode: str = 'adj_qini') -> Tuple[np.ndarray, np.ndarray]:
+def calculate_graphic_uplift_curve(
+    y_true: np.ndarray,
+    uplift_pred: np.ndarray,
+    treatment: np.ndarray,
+    mode: str = "adj_qini",
+) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate uplift curve
 
     Args:
@@ -114,11 +130,17 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
     if np.all(uplift_pred == uplift_pred[0]):
         raise ConstPredictError("Can't calculate uplift curve for constant predicts")
 
-    if type_of_target(y_true) == 'continuous' and np.any(y_true < 0.0):
-        raise Exception('For a continuous target, the perfect curve is only available for non-negative values')
+    if type_of_target(y_true) == "continuous" and np.any(y_true < 0.0):
+        raise Exception(
+            "For a continuous target, the perfect curve is only available for non-negative values"
+        )
 
     sorted_indexes = np.argsort(uplift_pred)[::-1]
-    y_true, uplift_pred, treatment = y_true[sorted_indexes], uplift_pred[sorted_indexes], treatment[sorted_indexes]
+    y_true, uplift_pred, treatment = (
+        y_true[sorted_indexes],
+        uplift_pred[sorted_indexes],
+        treatment[sorted_indexes],
+    )
 
     indexes = np.where(np.diff(uplift_pred))[0]
     indexes = np.insert(indexes, indexes.size, uplift_pred.shape[0] - 1)
@@ -134,7 +156,13 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
     y_true_control_cs = np.cumsum(y_true_control)[indexes]
     y_true_treatment_cs = np.cumsum(y_true_treatment)[indexes]
 
-    curve_values = _get_uplift_curve(y_true_treatment_cs, y_true_control_cs, n_treatment_samples_cs, n_control_samples_cs, mode)
+    curve_values = _get_uplift_curve(
+        y_true_treatment_cs,
+        y_true_control_cs,
+        n_treatment_samples_cs,
+        n_control_samples_cs,
+        mode,
+    )
 
     n_join_samples = np.insert(n_join_samples_cs, 0, 0)
     curve_values = np.insert(curve_values, 0, 0)
@@ -143,8 +171,13 @@ def calculate_graphic_uplift_curve(y_true: np.ndarray, uplift_pred: np.ndarray, 
     return rate_join_samples, curve_values
 
 
-@record_history(enabled=False)
-def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, mode: str = 'adj_qini', normed: bool = True):
+def calculate_uplift_auc(
+    y_true: np.ndarray,
+    uplift_pred: np.ndarray,
+    treatment: np.ndarray,
+    mode: str = "adj_qini",
+    normed: bool = True,
+):
     """Calculate area under uplift curve
 
     Args:
@@ -170,8 +203,9 @@ def calculate_uplift_auc(y_true: np.ndarray, uplift_pred: np.ndarray, treatment:
     return uplift_auc
 
 
-@record_history(enabled=False)
-def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode: str = 'adj_qini'):
+def calculate_min_max_uplift_auc(
+    y_true: np.ndarray, treatment: np.ndarray, mode: str = "adj_qini"
+):
     """Calculate AUC uplift curve for `base` and `perfect` models
 
     Args:
@@ -188,7 +222,9 @@ def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode
     xs_base, ys_base = np.array([0, 1]), np.array([0, diff_target_rate])
 
     perfect_uplift = perfect_uplift_curve(y_true, treatment)
-    xs_perfect, ys_perfect = calculate_graphic_uplift_curve(y_true, perfect_uplift, treatment, mode)
+    xs_perfect, ys_perfect = calculate_graphic_uplift_curve(
+        y_true, perfect_uplift, treatment, mode
+    )
 
     auc_base = auc(xs_base, ys_base)
     auc_perfect = auc(xs_perfect, ys_perfect)
@@ -196,8 +232,9 @@ def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode
     return auc_base, auc_perfect
 
 
-@record_history(enabled=False)
-def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray,  top: float = 30):
+def calculate_uplift_at_top(
+    y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30
+):
     """Calculate Uplift metric at TOP
 
     Calculate uplift metric at top
@@ -223,16 +260,21 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
     n_control_samples = (treatment[mask_top] == 0).sum()
     n_treatment_samples = (treatment[mask_top] == 1).sum()
 
-    mean_control_value = control_true_top / n_control_samples if n_control_samples > 0 else 0.0
-    mean_treatment_value = treatment_true_top / n_treatment_samples if n_treatment_samples > 0 else 0.0
+    mean_control_value = (
+        control_true_top / n_control_samples if n_control_samples > 0 else 0.0
+    )
+    mean_treatment_value = (
+        treatment_true_top / n_treatment_samples if n_treatment_samples > 0 else 0.0
+    )
 
     score = mean_treatment_value - mean_control_value
 
     return score
 
 
-@record_history(enabled=False)
-def calculate_total_score(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
+def calculate_total_score(
+    y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30
+):
     """Calculate total target
 
     Args:
@@ -253,6 +295,8 @@ def calculate_total_score(y_true: np.ndarray, uplift_pred: np.ndarray, treatment
     control_true_top = y_true[(~mask_treatment) & (~mask_top)].mean()
     treatment_true_top = y_true[mask_treatment & mask_top].mean()
 
-    score = control_true_top * (1 - treatment_rate) + treatment_true_top * treatment_rate
+    score = (
+        control_true_top * (1 - treatment_rate) + treatment_true_top * treatment_rate
+    )
 
     return score
