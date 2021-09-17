@@ -722,11 +722,6 @@ class RLearner(MetaLearner):
             gpu_ids: GPU IDs that are passed to each automl.
 
         """
-        # assert propensity_learner is not None and self._get_task(propensity_learner).name == 'binary',\
-        #     "Task of 'propensity_learner' must be 'binary'"
-        # assert not (mean_outcome_learner is None and base_task is None), "Must specify 'mean_outcome_learner' or base_task"
-        # assert effect_learner is not None and self._get_task(effect_learner).name == 'reg', "Task of effect_learner must be 'reg'"
-
         if (
             propensity_learner is not None
             and self._get_task(propensity_learner).name != "binary"
