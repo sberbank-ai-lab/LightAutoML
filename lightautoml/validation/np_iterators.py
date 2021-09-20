@@ -264,7 +264,6 @@ class TimeSeriesIterator:
         return idx[self.folds < (item + 1)], idx[self.folds == (item + 1)]
 
 
-@record_history(enabled=False)
 class UpliftIterator:
     """Iterator for uplift modeling task"""
 
