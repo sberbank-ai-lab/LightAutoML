@@ -1,15 +1,11 @@
 import abc
 
-from typing import Callable
 from typing import Tuple
-from typing import Type
 
 import numpy as np
 
 from sklearn.metrics import auc
 from sklearn.utils.multiclass import type_of_target
-
-from lightautoml.utils.logging import get_logger
 
 
 _available_uplift_modes = ("qini", "cum_gain", "adj_qini")

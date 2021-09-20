@@ -1,4 +1,5 @@
 import abc
+import logging
 
 from collections import defaultdict
 from copy import deepcopy
@@ -20,12 +21,13 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
 from lightautoml.addons.uplift import utils as uplift_utils
-from lightautoml.addons.uplift.meta_learners import MetaLearner
-from lightautoml.addons.uplift.meta_learners import RLearner
-from lightautoml.addons.uplift.meta_learners import SLearner
-from lightautoml.addons.uplift.meta_learners import TDLearner
-from lightautoml.addons.uplift.meta_learners import TLearner
-from lightautoml.addons.uplift.meta_learners import XLearner
+from lightautoml.addons.uplift.metalearners import MetaLearner
+from lightautoml.addons.uplift.metalearners import NotTrainedError
+from lightautoml.addons.uplift.metalearners import RLearner
+from lightautoml.addons.uplift.metalearners import SLearner
+from lightautoml.addons.uplift.metalearners import TDLearner
+from lightautoml.addons.uplift.metalearners import TLearner
+from lightautoml.addons.uplift.metalearners import XLearner
 from lightautoml.addons.uplift.metrics import ConstPredictError
 from lightautoml.addons.uplift.metrics import TUpliftMetric
 from lightautoml.addons.uplift.metrics import calculate_uplift_auc
@@ -33,11 +35,10 @@ from lightautoml.automl.base import AutoML
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.report.report_deco import ReportDecoUplift
 from lightautoml.tasks import Task
-from lightautoml.utils.logging import get_logger
 from lightautoml.utils.timer import Timer
 
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -106,6 +107,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
+        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -119,6 +121,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
+            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
@@ -136,6 +139,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         self.increasing_metric = increasing_metric
         self.test_size = test_size
         self.timeout = timeout
+        self.timeout_metalearner = timeout_metalearner
         self.timeout_single_learner = timeout_single_learner
         self.cpu_limit = cpu_limit
         self.gpu_ids = gpu_ids
@@ -146,7 +150,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
             self._timer._timeout = timeout
 
     @abc.abstractmethod
-    def fit(self, train_data: DataFrame, roles: Dict):
+    def fit(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         pass
 
     @abc.abstractmethod
@@ -187,16 +191,17 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
             test_target: Target values of test data
 
         """
-        target_role, target_col = uplift_utils._get_target_role(roles)
-        treatment_role, treatment_col = uplift_utils._get_treatment_role(roles)
+        _, target_col = uplift_utils._get_target_role(roles)
+        _, treatment_col = uplift_utils._get_treatment_role(roles)
 
-        stratify_value = data[target_col] + 10 * data[treatment_col]
+        stratify_value = data[[target_col, treatment_col]]
 
         train_data, test_data = train_test_split(
             data,
             test_size=self.test_size,
             stratify=stratify_value,
             random_state=self.random_state,
+            shuffle=True,
         )
         test_treatment = test_data[treatment_col].ravel()
         test_target = test_data[target_col].ravel()
@@ -227,6 +232,7 @@ class AutoUplift(BaseAutoUplift):
         test_size: float = 0.2,
         threshold_imbalance_treatment: float = 0.2,
         timeout: Optional[int] = None,
+        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -244,6 +250,7 @@ class AutoUplift(BaseAutoUplift):
             threshold_imbalance_treatment: Threshold for imbalance treatment.
                 Condition: | MEAN(treatment) - 0.5| > threshold_imbalance_treatment
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
+            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
@@ -257,6 +264,7 @@ class AutoUplift(BaseAutoUplift):
             increasing_metric,
             test_size,
             timeout,
+            timeout_metalearner,
             timeout_single_learner,
             cpu_limit,
             gpu_ids,
@@ -265,18 +273,16 @@ class AutoUplift(BaseAutoUplift):
 
         if len(uplift_candidates) > 0:
             if timeout is not None:
-                logger.warning(
-                    "'timeout' isn't used when 'uplift_candidates' is specified."
-                )
+                logger.warning("'timeout' is used only for a global time.")
             if add_dd_candidates:
                 logger.warning(
                     "'add_dd_candidates' isn't used when 'uplift_candidates' is specified."
                 )
 
-        self.checkout_timeout = True
+        # self.checkout_timeout = True
         if len(uplift_candidates) > 0:
             self.uplift_candidates = uplift_candidates
-            self.checkout_timeout = False
+            # self.checkout_timeout = False
         else:
             self.uplift_candidates = []
 
@@ -286,7 +292,7 @@ class AutoUplift(BaseAutoUplift):
         self.candidate_holdout_metrics: List[Union[float, None]] = []
         self._threshold_imbalance_treatment = threshold_imbalance_treatment
 
-    def fit(self, data: DataFrame, roles: Dict):
+    def fit(self, data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit AutoUplift.
 
         Choose best metalearner and fit it.
@@ -294,6 +300,7 @@ class AutoUplift(BaseAutoUplift):
         Args:
             train_data: Dataset to train.
             roles: Roles dict with 'treatment' roles.
+            verbose: Verbose.
 
         """
         train_data, test_data, test_treatment, test_target = self._prepare_data(
@@ -308,36 +315,47 @@ class AutoUplift(BaseAutoUplift):
             self._generate_uplift_candidates(data, roles)
 
         self.candidate_holdout_metrics = [None] * len(self.uplift_candidates)
+        self.candidate_worktime = [None] * len(self.uplift_candidates)
 
         self._timer.start()
+        prev_time_spent = self._timer.time_spent
 
         for idx_candidate, candidate_info in enumerate(self.uplift_candidates):
             metalearner = candidate_info()
-            metalearner.fit(train_data, roles)
-            logger.info(
-                "Uplift candidate #{} [{}] is fitted".format(
-                    idx_candidate, candidate_info.name
+
+            try:
+                metalearner.fit(train_data, roles, verbose)
+                logger.info(
+                    "Uplift candidate #{} [{}] is fitted".format(
+                        idx_candidate, candidate_info.name
+                    )
                 )
+
+                uplift_pred, _, _ = metalearner.predict(test_data)
+                uplift_pred = uplift_pred.ravel()
+
+                metric_value = self.calculate_metric(
+                    test_target, uplift_pred, test_treatment
+                )
+                self.candidate_holdout_metrics[idx_candidate] = metric_value
+
+                if best_metalearner_candidate_info is None:
+                    best_metalearner = metalearner
+                    best_metalearner_candidate_info = candidate_info
+                    best_metric_value = metric_value
+                elif (best_metric_value < metric_value and self.increasing_metric) or (
+                    best_metric_value > metric_value and not self.increasing_metric
+                ):
+                    best_metalearner = metalearner
+                    best_metalearner_candidate_info = candidate_info
+                    best_metric_value = metric_value
+            except NotTrainedError:
+                pass
+
+            self.candidate_worktime[idx_candidate] = (
+                self._timer.time_spent - prev_time_spent
             )
-
-            uplift_pred, _, _ = metalearner.predict(test_data)
-            uplift_pred = uplift_pred.ravel()
-
-            metric_value = self.calculate_metric(
-                test_target, uplift_pred, test_treatment
-            )
-            self.candidate_holdout_metrics[idx_candidate] = metric_value
-
-            if best_metalearner_candidate_info is None:
-                best_metalearner = metalearner
-                best_metalearner_candidate_info = candidate_info
-                best_metric_value = metric_value
-            elif (best_metric_value < metric_value and self.increasing_metric) or (
-                best_metric_value > metric_value and not self.increasing_metric
-            ):
-                best_metalearner = metalearner
-                best_metalearner_candidate_info = candidate_info
-                best_metric_value = metric_value
+            prev_time_spent = self.candidate_worktime[idx_candidate]
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
@@ -428,6 +446,7 @@ class AutoUplift(BaseAutoUplift):
                 "MetaLearner": [info.name for info in self.uplift_candidates],
                 "Parameters": [info.params for info in self.uplift_candidates],
                 "Metrics": self.candidate_holdout_metrics,
+                "WorkTime": self.candidate_worktime,
             }
         )
 
@@ -452,17 +471,7 @@ class AutoUplift(BaseAutoUplift):
             candidates: List of uplift candidates.
 
         """
-        # Number TabularAutoML in all posible uplift candidates
-        num_tabular_automls = 16 if self.add_dd_candidates else 11
-
-        if self.timeout_single_learner is not None:
-            self._tabular_timeout = self.timeout_single_learner
-        else:
-            self._tabular_timeout = (
-                self.timeout
-                if self.timeout is None
-                else int(self.timeout / num_tabular_automls)
-            )
+        self._calculate_tabular_time()
 
         self.uplift_candidates = self._default_uplift_candidates
 
@@ -471,6 +480,20 @@ class AutoUplift(BaseAutoUplift):
                 self._generate_data_depend_uplift_candidates(data, roles)
             )
 
+    def _calculate_tabular_time(self):
+        # Number TabularAutoML in all posible uplift candidates
+        # TODO: rewrite this
+        num_tabular_automls = 16 if self.add_dd_candidates else 11
+
+        if self.timeout_single_learner is not None:
+            self._tabular_timeout = self.timeout_single_learner
+        elif self.timeout_metalearner is not None:
+            self._tabular_timeout = None
+        elif self.timeout is not None:
+            self._tabular_timeout = self.timeout / num_tabular_automls
+        else:
+            self._tabular_timeout = None
+
     @property
     def _default_uplift_candidates(self) -> List[MetaLearnerWrapper]:
         """Default uplift candidates"""
@@ -478,27 +501,40 @@ class AutoUplift(BaseAutoUplift):
             MetaLearnerWrapper(
                 name="__SLearner__Default__",
                 klass=SLearner,
-                params={"base_task": self.base_task},
+                params={
+                    "base_task": self.base_task,
+                    "timeout": self.timeout_metalearner,
+                },
             ),
             MetaLearnerWrapper(
                 name="__TLearner__Default__",
                 klass=TLearner,
-                params={"base_task": self.base_task},
+                params={
+                    "base_task": self.base_task,
+                    "timeout": self.timeout_metalearner,
+                },
             ),
             MetaLearnerWrapper(
                 name="__TDLearner__Default__",
                 klass=TDLearner,
-                params={"base_task": self.base_task},
+                params={
+                    "base_task": self.base_task,
+                    "timeout": self.timeout_metalearner,
+                },
             ),
             MetaLearnerWrapper(
                 name="__XLearner__Default__",
                 klass=XLearner,
-                params={"base_task": self.base_task},
+                params={
+                    "base_task": self.base_task,
+                    "timeout": self.timeout_metalearner,
+                },
             ),
             MetaLearnerWrapper(
                 name="__RLearner__Linear__",
                 klass=RLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "propensity_learner": BaseLearnerWrapper(
                         name="__Linear__",
                         klass=uplift_utils.create_linear_automl,
@@ -519,32 +555,41 @@ class AutoUplift(BaseAutoUplift):
             MetaLearnerWrapper(
                 name="__RLearner__Default__",
                 klass=RLearner,
-                params={"base_task": self.base_task},
+                params={
+                    "base_task": self.base_task,
+                    "timeout": self.timeout_metalearner,
+                },
             ),
             MetaLearnerWrapper(
                 name="__SLearner__TabularAutoML__",
                 klass=SLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "learner": BaseLearnerWrapper(
                         name="__TabularAutoML__",
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self._tabular_timeout,
+                            "timeout": self.timeout_metalearner
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
-                    )
+                    ),
                 },
             ),
             MetaLearnerWrapper(
                 name="__TLearner__TabularAutoML__",
                 klass=TLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "treatment_learner": BaseLearnerWrapper(
                         name="__TabularAutoML__",
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self._tabular_timeout,
+                            "timeout": int(self.timeout_metalearner / 2)
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
                     ),
                     "control_learner": BaseLearnerWrapper(
@@ -552,7 +597,9 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self._tabular_timeout,
+                            "timeout": int(self.timeout_metalearner / 2)
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
                     ),
                 },
@@ -561,12 +608,15 @@ class AutoUplift(BaseAutoUplift):
                 name="__TDLearner__TabularAutoML__",
                 klass=TDLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "treatment_learner": BaseLearnerWrapper(
                         name="__TabularAutoML__",
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self._tabular_timeout,
+                            "timeout": int(self.timeout_metalearner / 2)
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
                     ),
                     "control_learner": BaseLearnerWrapper(
@@ -574,7 +624,9 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self._tabular_timeout,
+                            "timeout": int(self.timeout_metalearner / 2)
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
                     ),
                 },
@@ -583,13 +635,16 @@ class AutoUplift(BaseAutoUplift):
                 name="__XLearner__Propensity_Linear__Other_TabularAutoML__",
                 klass=XLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "outcome_learners": [
                         BaseLearnerWrapper(
                             name="__TabularAutoML__",
                             klass=TabularAutoML,
                             params={
                                 "task": self.base_task,
-                                "timeout": self._tabular_timeout,
+                                "timeout": int(self.timeout_metalearner / 4)
+                                if self._tabular_timeout is None
+                                else self._tabular_timeout,
                             },
                         )
                     ],
@@ -599,7 +654,9 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": Task("reg"),
-                                "timeout": self._tabular_timeout,
+                                "timeout": int(self.timeout_metalearner / 4)
+                                if self._tabular_timeout is None
+                                else self._tabular_timeout,
                             },
                         )
                     ],
@@ -614,13 +671,16 @@ class AutoUplift(BaseAutoUplift):
                 name="__XLearner__TabularAutoML__",
                 klass=XLearner,
                 params={
+                    "timeout": self.timeout_metalearner,
                     "outcome_learners": [
                         BaseLearnerWrapper(
                             name="__TabularAutoML__",
                             klass=TabularAutoML,
                             params={
                                 "task": self.base_task,
-                                "timeout": self._tabular_timeout,
+                                "timeout": int(self.timeout_metalearner / 5)
+                                if self._tabular_timeout is None
+                                else self._tabular_timeout,
                             },
                         )
                     ],
@@ -630,7 +690,9 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": Task("reg"),
-                                "timeout": self._tabular_timeout,
+                                "timeout": int(self.timeout_metalearner / 5)
+                                if self._tabular_timeout is None
+                                else self._tabular_timeout,
                             },
                         )
                     ],
@@ -639,7 +701,9 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": Task("binary"),
-                            "timeout": self._tabular_timeout,
+                            "timeout": int(self.timeout_metalearner / 5)
+                            if self._tabular_timeout is None
+                            else self._tabular_timeout,
                         },
                     ),
                 },
@@ -670,51 +734,39 @@ class AutoUplift(BaseAutoUplift):
         treatment_rate = data[treatment_col].mean()
 
         is_imbalance_treatment = False
+
+        ordered_outcome_learners = [
+            BaseLearnerWrapper(
+                name="__Linear__",
+                klass=uplift_utils.create_linear_automl,
+                params={"task": Task("binary")},
+            ),
+            BaseLearnerWrapper(
+                name="__TabularAutoML__",
+                klass=TabularAutoML,
+                params={"task": self.base_task, "timeout": self._tabular_timeout},
+            ),
+        ]
+        ordered_effect_learners = [
+            BaseLearnerWrapper(
+                name="__Linear__",
+                klass=uplift_utils.create_linear_automl,
+                params={"task": Task("reg")},
+            ),
+            BaseLearnerWrapper(
+                name="__TabularAutoML__",
+                klass=TabularAutoML,
+                params={"task": Task("reg"), "timeout": self._tabular_timeout},
+            ),
+        ]
+        control_model, treatment_model = "Linear", "Preset"
+
         if treatment_rate > 0.5 + self._threshold_imbalance_treatment:
             is_imbalance_treatment = True
-            ordered_outcome_learners = [
-                BaseLearnerWrapper(
-                    name="__Linear__",
-                    klass=uplift_utils.create_linear_automl,
-                    params={"task": Task("binary")},
-                ),
-                BaseLearnerWrapper(
-                    name="__TabularAutoML__",
-                    klass=TabularAutoML,
-                    params={"task": self.base_task, "timeout": self._tabular_timeout},
-                ),
-            ]
-            ordered_effect_learners = [
-                BaseLearnerWrapper(
-                    name="__Linear__",
-                    klass=uplift_utils.create_linear_automl,
-                    params={"task": Task("reg")},
-                ),
-                BaseLearnerWrapper(
-                    name="__TabularAutoML__",
-                    klass=TabularAutoML,
-                    params={"task": Task("reg"), "timeout": self._tabular_timeout},
-                ),
-            ]
-            control_model, treatment_model = "Linear", "Preset"
         elif treatment_rate < 0.5 - self._threshold_imbalance_treatment:
             is_imbalance_treatment = True
-            ordered_outcome_learners = [
-                BaseLearnerWrapper(
-                    name="__TabularAutoML__",
-                    klass=TabularAutoML,
-                    params={"task": self.base_task, "timeout": self._tabular_timeout},
-                ),
-                uplift_utils.create_linear_automl(task=Task("binary")),
-            ]
-            ordered_effect_learners = [
-                uplift_utils.create_linear_automl(task=Task("reg")),
-                BaseLearnerWrapper(
-                    name="__TabularAutoML__",
-                    klass=TabularAutoML,
-                    params={"task": Task("reg"), "timeout": self._tabular_timeout},
-                ),
-            ]
+            ordered_outcome_learners = ordered_outcome_learners[::-1]
+            ordered_effect_learners = ordered_effect_learners[::-1]
             control_model, treatment_model = "Preset", "Linear"
 
         if is_imbalance_treatment:
@@ -726,6 +778,7 @@ class AutoUplift(BaseAutoUplift):
                         ),
                         klass=XLearner,
                         params={
+                            "timeout": self.timeout_metalearner,
                             "outcome_learners": ordered_outcome_learners,
                             "effect_learners": ordered_effect_learners,
                             "propensity_learner": BaseLearnerWrapper(
@@ -741,6 +794,7 @@ class AutoUplift(BaseAutoUplift):
                         ),
                         klass=XLearner,
                         params={
+                            "timeout": self.timeout_metalearner,
                             "outcome_learners": ordered_outcome_learners,
                             "effect_learners": ordered_effect_learners,
                             "propensity_learner": BaseLearnerWrapper(
@@ -832,6 +886,7 @@ class AutoUpliftTX(BaseAutoUplift):
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
+        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -847,6 +902,7 @@ class AutoUpliftTX(BaseAutoUplift):
             increasing_metric: Increasing metric.
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
+            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
@@ -864,6 +920,7 @@ class AutoUpliftTX(BaseAutoUplift):
             increasing_metric,
             test_size,
             timeout,
+            timeout_metalearner,
             timeout_single_learner,
             cpu_limit,
             gpu_ids,

@@ -29,11 +29,9 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 
 from lightautoml.addons.uplift import metrics as uplift_metrics
-from lightautoml.addons.uplift.meta_learners import TLearner
-from lightautoml.addons.uplift.meta_learners import XLearner
+from lightautoml.addons.uplift.metalearners import TLearner
+from lightautoml.addons.uplift.metalearners import XLearner
 from lightautoml.addons.uplift.utils import _get_treatment_role
-
-from ..utils.logging import get_logger
 
 
 logger = logging.getLogger(__name__)
