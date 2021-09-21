@@ -84,7 +84,7 @@ class MetaLearnerWrapper(Wrapper):
         for k, v in self.params.items():
             if isinstance(v, BaseLearnerWrapper):
                 v_t = deepcopy(v)
-                v.update_params(d)
+                v_t.update_params(d)
                 new_params[k] = v_t
             elif isinstance(v, List):
                 vs_t = []
@@ -396,7 +396,10 @@ class AutoUplift(BaseAutoUplift):
         return self.best_metalearner.predict(data)
 
     def create_best_metalearner(
-        self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {}
+        self,
+        need_report: bool = False,
+        update_metalearner_params: Dict[str, Any] = {},
+        update_baselearner_params: Dict[str, Any] = {},
     ) -> Union[MetaLearner, ReportDecoUplift]:
         """Create 'raw' best metalearner with(without) report functionality.
 
@@ -404,7 +407,8 @@ class AutoUplift(BaseAutoUplift):
 
         Args:
             need_report: Wrap best metalearner into Report
-            update_metalearner_params: Parameters inner learner.
+            update_metalearner_params: MetaLearner parameters.
+            update_baselearner_params: Parameters inner learner.
                 Recommended using - increasing timeout of 'TabularAutoML' learner for better scores.
                 Example: {'timeout': None}.
 
@@ -418,7 +422,8 @@ class AutoUplift(BaseAutoUplift):
 
         candidate_info = deepcopy(self.best_metalearner_candidate_info)
         if update_metalearner_params:
-            candidate_info.update_baselearner_params(update_metalearner_params)
+            candidate_info.update_params(update_metalearner_params)
+            candidate_info.update_baselearner_params(update_baselearner_params)
 
         best_metalearner = candidate_info()
 
@@ -556,7 +561,13 @@ class AutoUplift(BaseAutoUplift):
                 klass=RLearner,
                 params={
                     "base_task": self.base_task,
-                    "timeout": self.timeout_metalearner,
+                    "timeout": self.timeout_metalearner
+                    if self.timeout_metalearner is not None
+                    else (
+                        self._tabular_timeout * 3
+                        if self._tabular_timeout is not None
+                        else None
+                    ),
                 },
             ),
             MetaLearnerWrapper(

@@ -4,6 +4,7 @@ import logging
 import os
 
 from copy import copy
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1412,6 +1413,7 @@ class ReportDecoUplift(ReportDeco):
             self._fit_xlearner(train_data, input_roles)
         else:
             self._fit_tlearner(train_data, input_roles)
+        self._model._is_fitted = True
         self._generate_model_section()
         self._train_data_overview = self._data_general_info(train_data, "train")
         self._describe_roles(train_data)
