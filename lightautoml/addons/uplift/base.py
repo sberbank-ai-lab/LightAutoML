@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 
 from collections import defaultdict
 from copy import deepcopy
@@ -318,18 +319,20 @@ class AutoUplift(BaseAutoUplift):
         self.candidate_worktime = [None] * len(self.uplift_candidates)
 
         self._timer.start()
-        prev_time_spent = self._timer.time_spent
 
         for idx_candidate, candidate_info in enumerate(self.uplift_candidates):
             metalearner = candidate_info()
 
             try:
+                start_fit = time.time()
                 metalearner.fit(train_data, roles, verbose)
                 logger.info(
                     "Uplift candidate #{} [{}] is fitted".format(
                         idx_candidate, candidate_info.name
                     )
                 )
+                end_fit = time.time()
+                self.candidate_worktime[idx_candidate] = end_fit - start_fit
 
                 uplift_pred, _, _ = metalearner.predict(test_data)
                 uplift_pred = uplift_pred.ravel()
@@ -350,12 +353,8 @@ class AutoUplift(BaseAutoUplift):
                     best_metalearner_candidate_info = candidate_info
                     best_metric_value = metric_value
             except NotTrainedError:
-                pass
-
-            self.candidate_worktime[idx_candidate] = (
-                self._timer.time_spent - prev_time_spent
-            )
-            prev_time_spent = self.candidate_worktime[idx_candidate]
+                end_fit = time.time()
+                self.candidate_worktime[idx_candidate] = end_fit - start_fit
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
