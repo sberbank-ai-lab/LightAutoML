@@ -1348,12 +1348,8 @@ def plot_uplift_curve(test_target, uplift_pred, test_treatment, path):
     axs[2].set_title("Uplift adj_qini, AUC={:.3f}".format(uplift_auc))
     axs[2].legend(loc="lower right")
 
-    # plt.xlabel('Rate join samples');
-    # plt.ylabel('Curve values');
-    # lgd = plt.legend(bbox_to_anchor=(0.5, -0.15), loc='upper center', ncol=2);
-    # plt.grid(color='gray', linestyle='-', linewidth=1);
-    # plt.title('Uplift curve');
     plt.savefig(path, bbox_inches="tight")
+    plt.close()
 
 
 class ReportDecoUplift(ReportDeco):
