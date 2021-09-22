@@ -100,7 +100,7 @@ nlp = [
     "nltk",
     "transformers"
 ]
-pdf = [
+report = [
     "cffi",
     "weasyprint"
 ]

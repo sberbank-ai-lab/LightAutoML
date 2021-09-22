@@ -160,7 +160,7 @@ To install LAMA framework on your machine:
 pip install -U lightautoml
 
 # Available partial installation
-# Use extra dependecies = ['nlp', 'cv', 'pdf']
+# Use extra dependecies = ['nlp', 'cv', 'report']
 # Or may use 'all' for installation full functionality, example:
 
 pip install -U lightautoml[nlp]
@@ -189,7 +189,14 @@ sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
 # Windows
 # follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
 
-poetry install -E pdf
+poetry install -E report
+```
+
+*******
+# Docs generation
+To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
+```bash
+bash build_docs.sh
 ```
 
 # Contributing to LightAutoML
