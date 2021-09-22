@@ -9,6 +9,7 @@ from dataclasses import field
 from itertools import product
 from itertools import zip_longest
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -103,8 +104,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def __init__(
         self,
         base_task: Task,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
@@ -118,7 +119,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         Args:
             base_task: Task ('binary'/'reg') if there aren't candidates.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
@@ -130,13 +131,15 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
 
         """
         assert 0.0 < test_size < 1.0, "'test_size' must be between (0.0, 1.0)"
-        assert isinstance(metric, str) or isinstance(
-            metric, TUpliftMetric
-        ), "Invalid metric type: available = {'str', 'TUpliftMetric'}"
+        assert (
+            isinstance(metric, str)
+            or isinstance(metric, TUpliftMetric)
+            or callable(metric)
+        ), "Invalid metric type: available = {'str', 'TUpliftMetric', 'function'}"
 
         self.base_task = base_task
         self.metric = metric
-        self.normed_metric = normed_metric
+        self.has_report = has_report
         self.increasing_metric = increasing_metric
         self.test_size = test_size
         self.timeout = timeout
@@ -164,14 +167,14 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         if isinstance(self.metric, str):
             try:
                 auc = calculate_uplift_auc(
-                    y_true, uplift_pred, treatment, self.metric, self.normed_metric
+                    y_true, uplift_pred, treatment, self.metric, False
                 )
             except ConstPredictError as e:
                 logger.error(str(e) + "\nMetric set to zero.")
                 auc = 0.0
 
             return auc
-        elif isinstance(self.metric, TUpliftMetric):
+        elif isinstance(self.metric, TUpliftMetric) or callable(self.metric):
             return self.metric(y_true, uplift_pred, treatment)
         else:
             raise Exception("Invalid metric type: available = {'str', 'TUpliftMetric'}")
@@ -227,8 +230,8 @@ class AutoUplift(BaseAutoUplift):
         base_task: Task,
         uplift_candidates: List[MetaLearnerWrapper] = [],
         add_dd_candidates: bool = False,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = True,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         threshold_imbalance_treatment: float = 0.2,
@@ -245,7 +248,7 @@ class AutoUplift(BaseAutoUplift):
             uplift_candidates: List of metalearners with params and custom name.
             add_dd_candidates: Add data depend candidates. Doesn't work when uplift_candidates is not default.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             threshold_imbalance_treatment: Threshold for imbalance treatment.
@@ -261,7 +264,7 @@ class AutoUplift(BaseAutoUplift):
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            has_report,
             increasing_metric,
             test_size,
             timeout,
@@ -478,16 +481,30 @@ class AutoUplift(BaseAutoUplift):
         self._calculate_tabular_time()
 
         self.uplift_candidates = self._default_uplift_candidates
+        if self.has_report:
+            self.uplift_candidates = [
+                c
+                for c in self.uplift_candidates
+                if c.klass in ReportDecoUplift._available_metalearners
+            ]
 
         if self.add_dd_candidates:
-            self.uplift_candidates.extend(
-                self._generate_data_depend_uplift_candidates(data, roles)
-            )
+            dd_candidates = self._generate_data_depend_uplift_candidates(data, roles)
+            if self.has_report:
+                dd_candidates = [
+                    c
+                    for c in dd_candidates
+                    if c.klass in ReportDecoUplift._available_metalearners
+                ]
+            self.uplift_candidates.extend(dd_candidates)
 
     def _calculate_tabular_time(self):
         # Number TabularAutoML in all posible uplift candidates
         # TODO: rewrite this
-        num_tabular_automls = 16 if self.add_dd_candidates else 11
+        if self.has_report:
+            num_tabular_automls = 16 if self.add_dd_candidates else 11
+        else:
+            num_tabular_automls = 22 if self.add_dd_candidates else 17
 
         if self.timeout_single_learner is not None:
             self._tabular_timeout = self.timeout_single_learner
@@ -892,7 +909,6 @@ class AutoUpliftTX(BaseAutoUplift):
         ] = None,
         metalearners: List[str] = [],
         metric: str = "adj_qini",
-        normed_metric: bool = True,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
@@ -908,7 +924,6 @@ class AutoUpliftTX(BaseAutoUplift):
             baselearners: List of baselearners or baselearner divided into the groups (Dict).
             metalearners: List of metalearners.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
             increasing_metric: Increasing metric.
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
@@ -926,7 +941,7 @@ class AutoUpliftTX(BaseAutoUplift):
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            True,
             increasing_metric,
             test_size,
             timeout,

@@ -1353,6 +1353,8 @@ def plot_uplift_curve(test_target, uplift_pred, test_treatment, path):
 
 
 class ReportDecoUplift(ReportDeco):
+    _available_metalearners = (TLearner, XLearner)
+
     @property
     def reader(self):
         if self._is_xlearner:

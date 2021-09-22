@@ -172,7 +172,7 @@ def calculate_uplift_auc(
     uplift_pred: np.ndarray,
     treatment: np.ndarray,
     mode: str = "adj_qini",
-    normed: bool = True,
+    normed: bool = False,
 ):
     """Calculate area under uplift curve
 
