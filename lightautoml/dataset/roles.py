@@ -127,6 +127,9 @@ class ColumnRole:
         if name in ["path"]:
             return PathRole()
 
+        if name in ["treatment"]:
+            return TreatmentRole()
+
         raise ValueError("Unknown string role: {}".format(name))
 
 
@@ -328,3 +331,9 @@ class PathRole(ColumnRole):
     """Path role."""
 
     _name = "Path"
+
+
+class TreatmentRole(ColumnRole):
+    """Uplift Treatment Role."""
+
+    _name = "Treatment"

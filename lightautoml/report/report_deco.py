@@ -4,6 +4,7 @@ import logging
 import os
 
 from copy import copy
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +28,11 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+
+from lightautoml.addons.uplift import metrics as uplift_metrics
+from lightautoml.addons.uplift.metalearners import TLearner
+from lightautoml.addons.uplift.metalearners import XLearner
+from lightautoml.addons.uplift.utils import _get_treatment_role
 
 
 logger = logging.getLogger(__name__)
@@ -367,25 +373,17 @@ def plot_confusion_matrix(data, path):
 
 class ReportDeco:
     """
-    Decorator to wrap :class:`~lightautoml.automl.base.AutoML` class to generate html report on ``fit_predict`` and ``predict``.
-
-    Example:
-
-        >>> report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
-        >>> report_automl.fit_predict(train_data)
-        >>> report_automl.predict(test_data)
-
+    Decorator to wrap automl class to generate html report on fit_predict and predict.
+    Usage: report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
+    then call report_automl.fit_predict... and report_automl.predict...
     Report will be generated at output_path/report_file_name automatically.
+    Attention: do not use it just to inference (if you don't need report), because:
 
-    Warning:
-         Do not use it just to inference (if you don't need report), because:
+        - it needs target variable to calc performance metrics
+        - it takes additional time to generate report
+        - dump of decorated automl takes more memory to store
 
-            - It needs target variable to calc performance metrics.
-            - It takes additional time to generate report.
-            - Dump of decorated automl takes more memory to store.
-
-    To get unwrapped fitted instance to pickle
-    and inferecne access ``report_automl.model`` attribute.
+    To get unwrapped fitted instance to pickle and inferecne access report_automl.model attribute.
 
     """
 
@@ -410,15 +408,14 @@ class ReportDeco:
     def __init__(self, *args, **kwargs):
         """
 
-        Note:
-            Valid kwargs are:
+        Valid kwargs are
 
-                - output_path: Folder with report files.
-                - report_file_name: Name of main report file.
+            - output_path: folder with report files.
+            - report_file_name: name of main report file.
 
         Args:
-            *args: Arguments.
-            **kwargs: Additional parameters.
+            *args: arguments.
+            **kwargs: additional parameters.
 
         """
         if not kwargs:
@@ -604,16 +601,16 @@ class ReportDeco:
         return data
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped ``automl.fit_predict`` method.
+        """Wrapped automl.fit_predict method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: Arguments.
-            **kwargs: Additional parameters.
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
-            OOF predictions.
+            oof predictions.
 
         """
         # TODO: parameters parsing in general case
@@ -661,8 +658,9 @@ class ReportDeco:
             self._inference_content["error_hist"] = "valid_error_hist.png"
             self._inference_content["scatter_plot"] = "valid_scatter_plot.png"
             # graphics and metrics
-            mean_ae, median_ae, mse, r2, evs = self._regression_details(data)
+            mean_ae, median_ae, mse, r2 = self._regression_details(data)
             # model section
+
             evaluation_parameters = [
                 "Mean absolute error",
                 "Median absolute error",
@@ -774,7 +772,7 @@ class ReportDeco:
                 self._n_test_sample
             )
             # graphics
-            mean_ae, median_ae, mse, r2, evs = self._regression_details(data)
+            mean_ae, median_ae, mse, r2 = self._regression_details(data)
             # update model section
             if self._n_test_sample >= 2:
                 self._model_summary["Test sample {}".format(self._n_test_sample)] = [
@@ -991,6 +989,7 @@ class ReportDeco:
         report = env.get_template(self._base_template_path).render(
             title=self.title, sections=sections_list, pdf=self.pdf_file_name
         )
+
         with open(
             os.path.join(self.output_path, self.report_file_name), "w", encoding="utf-8"
         ) as f:
@@ -1026,32 +1025,23 @@ _default_wb_report_params = {
 
 class ReportDecoWhitebox(ReportDeco):
     """
-    Special report wrapper for :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`.
-    Usage case is the same as main
-    :class:`~lightautoml.report.report_deco.ReportDeco` class.
-    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
-    but with additional whitebox report part.
+    Special report wrapper for WhiteBoxPreset. Usage case is the same as main ReportDeco class.
+    It generates same report as ReportDeco, but with additional whitebox report part.
 
     Difference:
 
-        - report_automl.predict gets additional report argument.
-          It stands for updating whitebox report part.
-          Calling ``report_automl.predict(test_data, report=True)``
-          will update test part of whitebox report.
-          Calling ``report_automl.predict(test_data, report=False)``
-          will extend general report with.
-          New data and keeps whitebox part as is (much more faster).
-        - :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`
-          should be created with parameter ``general_params={'report': True}``
-          to get white box report part.
-          If ``general_params`` set to ``{'report': False}``,
-          only standard ReportDeco part will be created (much faster).
+        - report_automl.predict gets additional report argument. It stands for updating whitebox report part.
+          Calling report_automl.predict(test_data, report=True) will update test part of whitebox report.
+          Calling report_automl.predict(test_data, report=False) will extend general report with.
+          new data and keeps whitebox part as is (much more faster).
+        - WhiteboxPreset should be created with parameter general_params={'report': True} to get white box report part.
+          if general_params set to {'report': False}, only standard ReportDeco part will be created (much fasted).
 
     """
 
     @property
     def model(self):
-        """Get unwrapped WhiteBox.
+        """Get unwrapped whitebox.
 
         Returns:
             model.
@@ -1089,16 +1079,16 @@ class ReportDecoWhitebox(ReportDeco):
         self.sections_order.append("whitebox")
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped :meth:`AutoML.fit_predict` method.
+        """Wrapped automl.fit_predict method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: Arguments.
-            **kwargs: Additional parameters.
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
-            OOF predictions.
+            oof predictions.
 
         """
         predict_proba = super().fit_predict(*args, **kwargs)
@@ -1114,16 +1104,16 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
-        """Wrapped :meth:`AutoML.predict` method.
+        """Wrapped automl.predict method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: Arguments.
-            **kwargs: Additional parameters.
+            *args: arguments.
+            **kwargs: additional parameters.
 
         Returns:
-            Predictions.
+            predictions.
 
         """
         if len(args) >= 2:
@@ -1193,7 +1183,6 @@ class ReportDecoNLP(ReportDeco):
     :class:`~lightautoml.report.report_deco.ReportDeco` class.
     It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
     but with additional NLP report part.
-
     """
 
     def __init__(self, **kwargs):
@@ -1222,16 +1211,12 @@ class ReportDecoNLP(ReportDeco):
 
     def fit_predict(self, *args, **kwargs):
         """Wrapped :meth:`TabularNLPAutoML.fit_predict` method.
-
         Valid args, kwargs are the same as wrapped automl.
-
         Args:
             *args: Arguments.
             **kwargs: Additional parameters.
-
         Returns:
             OOF predictions.
-
         """
         preds = super().fit_predict(*args, **kwargs)
 
@@ -1294,3 +1279,606 @@ class ReportDecoNLP(ReportDeco):
                 nlp_subsections=self._nlp_subsections
             )
             self._sections["nlp"] = nlp_section
+
+
+def get_uplift_data(test_target, uplift_pred, test_treatment, mode):
+    perfect = uplift_metrics.perfect_uplift_curve(test_target, test_treatment)
+    xs, ys = uplift_metrics.calculate_graphic_uplift_curve(
+        test_target, uplift_pred, test_treatment, mode
+    )
+    xs_perfect, ys_perfect = uplift_metrics.calculate_graphic_uplift_curve(
+        test_target, perfect, test_treatment, mode
+    )
+    uplift_auc = uplift_metrics.calculate_uplift_auc(
+        test_target, uplift_pred, test_treatment, mode, normed=True
+    )
+    return xs, ys, xs_perfect, ys_perfect, uplift_auc
+
+
+def plot_uplift_curve(test_target, uplift_pred, test_treatment, path):
+    sns.set(style="whitegrid", font_scale=1.5)
+    # plt.figure(figsize=(10, 10));
+    fig, axs = plt.subplots(3, 1, figsize=(10, 30))
+    # qini
+    xs, ys, xs_perfect, ys_perfect, uplift_auc = get_uplift_data(
+        test_target, uplift_pred, test_treatment, mode="qini"
+    )
+    axs[0].plot(xs, ys, color="blue", lw=2, label="qini mode")
+    axs[0].plot(xs_perfect, ys_perfect, color="black", lw=1, label="perfect uplift")
+    axs[0].plot(
+        (0, xs[-1]),
+        (0, ys[-1]),
+        color="black",
+        lw=1,
+        linestyle="--",
+        label="random model",
+    )
+    axs[0].set_title("Uplift qini, AUC={:.3f}".format(uplift_auc))
+    axs[0].legend(loc="lower right")
+    # cum_gain
+    xs, ys, xs_perfect, ys_perfect, uplift_auc = get_uplift_data(
+        test_target, uplift_pred, test_treatment, mode="cum_gain"
+    )
+    axs[1].plot(xs, ys, color="red", lw=2, label="cum_gain model")
+    axs[1].plot(xs_perfect, ys_perfect, color="black", lw=1, label="perfect uplift")
+    axs[1].plot(
+        (0, xs[-1]),
+        (0, ys[-1]),
+        color="black",
+        lw=1,
+        linestyle="--",
+        label="random model",
+    )
+    axs[1].set_title("Uplift cum_gain, AUC={:.3f}".format(uplift_auc))
+    axs[1].legend(loc="lower right")
+    # adj_qini
+    xs, ys, xs_perfect, ys_perfect, uplift_auc = get_uplift_data(
+        test_target, uplift_pred, test_treatment, mode="adj_qini"
+    )
+    axs[2].plot(xs, ys, color="green", lw=2, label="adj_qini mode")
+    axs[2].plot(xs_perfect, ys_perfect, color="black", lw=1, label="perfect uplift")
+    axs[2].plot(
+        (0, xs[-1]),
+        (0, ys[-1]),
+        color="black",
+        lw=1,
+        linestyle="--",
+        label="random model",
+    )
+    axs[2].set_title("Uplift adj_qini, AUC={:.3f}".format(uplift_auc))
+    axs[2].legend(loc="lower right")
+
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+
+
+class ReportDecoUplift(ReportDeco):
+    @property
+    def reader(self):
+        if self._is_xlearner:
+            return self._model.learners["outcome"]["treatment"].reader  # effect
+        else:
+            return self._model.treatment_learner.reader
+
+    @property
+    def task(self):
+        if self._is_xlearner:
+            return "reg"
+        else:
+            return self.reader.task._name
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._uplift_section_path = "uplift_section.html"
+        self._uplift_subsection_path = "uplift_subsection.html"
+        self.sections_order.append("uplift")
+        self._uplift_results = []
+
+    def __call__(self, model):
+        self._model = model
+        self._is_xlearner = isinstance(model, XLearner)
+
+        # add informataion to report
+        self._model_name = model.__class__.__name__
+        self._model_parameters = json2html.convert(extract_params(model))
+        self._model_summary = None
+
+        self._sections = {}
+        self._sections["intro"] = "<p>This report was generated automatically.</p>"
+        self._model_results = []
+        self._n_test_sample = 0
+
+        self._generate_model_section()
+        self.generate_report()
+        return self
+
+    def fit(self, *args, **kwargs):
+        """Wrapped automl.fit_predict method.
+        Valid args, kwargs are the same as wrapped automl.
+        Args:
+            *args: arguments.
+            **kwargs: additional parameters.
+        Returns:
+            oof predictions.
+        """
+        train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
+        input_roles = kwargs["roles"] if "roles" in kwargs else args[1]
+        self._target = input_roles["target"]
+        self._treatment_col = input_roles["treatment"]
+        if self._is_xlearner:
+            self._fit_xlearner(train_data, input_roles)
+        else:
+            self._fit_tlearner(train_data, input_roles)
+        self._model._is_fitted = True
+        self._generate_model_section()
+        self._train_data_overview = self._data_general_info(train_data, "train")
+        self._describe_roles(train_data)
+        self._describe_dropped_features(train_data)
+        self._generate_train_set_section()
+        self.generate_report()
+
+    def predict(self, test_data):
+
+        """Wrapped tlearner.predict method.
+        Valid args, kwargs are the same as wrapped automl.
+        Args:
+            test_data: Dataset to perform inference.
+        Returns:
+            predictions.
+        """
+        self._n_test_sample += 1
+
+        # get predictions
+        test_target = test_data[self._target].values
+        test_treatment = test_data[self._treatment_col].values
+        # test_data = test_data.drop([self._target, self._treatment_col], axis=1)
+
+        uplift, treatment_preds, control_preds = self._model.predict(test_data)
+
+        if self._n_test_sample >= 2:
+            treatment_title = "Treatment test {}".format(self._n_test_sample)
+            control_title = "Control test {}".format(self._n_test_sample)
+        else:
+            treatment_title = "Treatment test"
+            control_title = "Control test"
+
+        # treatment data
+        data = pd.DataFrame({"y_true": test_target[test_treatment == 1]})
+        data["y_pred"] = treatment_preds[test_treatment == 1]
+        data.sort_values("y_pred", ascending=False, inplace=True)
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
+            int
+        )
+        data = data[~data["y_pred"].isnull()]
+        self._generate_test_subsection(data, "treatment", treatment_title)
+        self._generate_inference_section(data)
+
+        # control data
+        data = pd.DataFrame({"y_true": test_target[test_treatment == 0]})
+        data["y_pred"] = control_preds[test_treatment == 0]
+        data.sort_values("y_pred", ascending=False, inplace=True)
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
+            int
+        )
+        data = data[~data["y_pred"].isnull()]
+        self._generate_test_subsection(data, "control", control_title)
+        self._generate_inference_section(data)
+
+        # update model section
+        self._generate_model_section()
+
+        # uplift section
+        self._uplift_content = {}
+        if self._n_test_sample >= 2:
+            self._uplift_content["title"] = "Test sample {}".format(self._n_test_sample)
+            self._uplift_content["uplift_curve"] = "uplift_curve_{}.png".format(
+                self._n_test_sample
+            )
+            self._uplift_content[
+                "uplift_distribution"
+            ] = "uplift_distribution_{}.png".format(self._n_test_sample)
+        else:
+            self._uplift_content["title"] = "Test sample"
+            self._uplift_content["uplift_curve"] = "uplift_curve.png"
+            self._uplift_content["uplift_distribution"] = "uplift_distribution.png"
+        plot_uplift_curve(
+            test_target,
+            uplift,
+            test_treatment,
+            path=os.path.join(self.output_path, self._uplift_content["uplift_curve"]),
+        )
+        self._uplift_distribution(
+            test_target,
+            uplift,
+            test_treatment,
+            path=os.path.join(
+                self.output_path, self._uplift_content["uplift_distribution"]
+            ),
+        )
+
+        self._uplift_content["test_data_overview"] = self._data_general_info(
+            test_data, "test"
+        )
+
+        self._generate_uplift_subsection()
+        self._generate_uplift_section()
+
+        self.generate_report()
+        return uplift, treatment_preds, control_preds
+
+    def _uplift_distribution(self, test_target, uplift, test_treatment, path):
+        data = pd.DataFrame(
+            {"y_true": test_target, "y_pred": uplift, "treatment": test_treatment}
+        )
+        data.sort_values("y_pred", ascending=True, inplace=True)
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
+            int
+        )
+        # 'Uplift fact'
+        mean_target_treatment = (
+            data[data["treatment"].values == 1]
+            .groupby("bin")
+            .agg({"y_true": [np.mean]})
+            .values[:, 0]
+        )
+        mean_target_control = (
+            data[data["treatment"].values == 0]
+            .groupby("bin")
+            .agg({"y_true": [np.mean]})
+            .values[:, 0]
+        )
+        uplift_fact = mean_target_treatment - mean_target_control
+        bins_table = (
+            data.groupby("bin")
+            .agg({"y_true": [len], "y_pred": [np.min, np.mean, np.max]})
+            .reset_index()
+        )
+        bins_table.columns = [
+            "Bin number",
+            "Amount of objects",
+            "Min uplift",
+            "Mean uplift",
+            "Max uplift",
+        ]
+        bins_table["Uplift fact"] = uplift_fact
+        self._uplift_content["uplift_bins_table"] = bins_table.to_html(index=False)
+
+        # uplift kde distribution
+        sns.set(style="whitegrid", font_scale=1.5)
+        fig, axs = plt.subplots(figsize=(16, 10))
+
+        sns.kdeplot(data["y_pred"], shade=True, color="g", label="y_pred", ax=axs)
+        axs.set_xlabel("Uplift value")
+        axs.set_ylabel("Density")
+        axs.set_title("Uplift distribution")
+
+        fig.savefig(path, bbox_inches="tight")
+        plt.close()
+
+    def _fit_tlearner(self, train_data, roles):
+        treatment_role, _ = _get_treatment_role(roles)
+        new_roles = deepcopy(roles)
+        new_roles.pop(treatment_role)
+        # treatment
+        treatment_train_data = train_data[train_data[self._treatment_col] == 1]
+        treatment_target = treatment_train_data[self._target].values
+        treatment_train_data.drop(self._treatment_col, axis=1, inplace=True)
+        treatment_preds = self._model.treatment_learner.fit_predict(
+            treatment_train_data, new_roles
+        )
+        # control
+        control_train_data = train_data[train_data[self._treatment_col] == 0]
+        control_target = control_train_data[self._target].values
+        control_train_data.drop(self._treatment_col, axis=1, inplace=True)
+        control_preds = self._model.control_learner.fit_predict(
+            control_train_data, new_roles
+        )
+
+        self._generate_fit_section(
+            treatment_preds, control_preds, treatment_target, control_target
+        )
+
+    def _fit_xlearner(self, train_data, roles):
+        treatment_role, _ = _get_treatment_role(roles)
+        new_roles = deepcopy(roles)
+        new_roles.pop(treatment_role)
+
+        self._model._fit_propensity_learner(train_data, roles)
+        self._model._fit_outcome_learners(train_data, roles)
+
+        # treatment
+        treatment_train_data = train_data[train_data[self._treatment_col] == 1]
+        treatment_train_data.drop(self._treatment_col, axis=1, inplace=True)
+        outcome_pred = (
+            self._model.learners["outcome"]["control"]
+            .predict(treatment_train_data)
+            .data.ravel()
+        )
+        treatment_train_data[self._target] = (
+            treatment_train_data[self._target] - outcome_pred
+        )
+        treatment_target = treatment_train_data[self._target].values
+        treatment_preds = self._model.learners["effect"]["treatment"].fit_predict(
+            treatment_train_data, new_roles
+        )
+
+        # control
+        control_train_data = train_data[train_data[self._treatment_col] == 0]
+        control_train_data.drop(self._treatment_col, axis=1, inplace=True)
+        outcome_pred = (
+            self._model.learners["outcome"]["treatment"]
+            .predict(control_train_data)
+            .data.ravel()
+        )
+        control_train_data[self._target] = (
+            control_train_data[self._target] - outcome_pred
+        )
+        control_train_data[self._target] *= -1
+        control_target = control_train_data[self._target].values
+        control_preds = self._model.learners["effect"]["control"].fit_predict(
+            control_train_data, new_roles
+        )
+
+        self._generate_fit_section(
+            treatment_preds, control_preds, treatment_target, control_target
+        )
+
+    def _generate_fit_section(
+        self, treatment_preds, control_preds, treatment_target, control_target
+    ):
+        self._generate_model_summary_table()
+        # treatment model
+        treatment_data = self._collect_data(treatment_preds, treatment_target)
+        self._generate_training_subsection(
+            treatment_data, "treatment", "Treatment train"
+        )
+        self._generate_inference_section(treatment_data)
+
+        control_data = self._collect_data(control_preds, control_target)
+        self._generate_training_subsection(control_data, "control", "Control train")
+        self._generate_inference_section(control_data)
+
+    def _collect_data(self, preds, target):
+        data = pd.DataFrame({"y_true": target})
+        if self.task in "multiclass":
+            if self.mapping is not None:
+                data["y_true"] = np.array(
+                    [self.mapping[y] for y in data["y_true"].values]
+                )
+            data["y_pred"] = preds._data.argmax(axis=1)
+        else:
+            data["y_pred"] = preds._data[:, 0]
+            data.sort_values("y_pred", ascending=False, inplace=True)
+            data["bin"] = (
+                np.arange(data.shape[0]) / data.shape[0] * self.n_bins
+            ).astype(int)
+        # remove NaN in predictions:
+        data = data[~data["y_pred"].isnull()]
+        return data
+
+    def _generate_model_summary_table(self):
+        if self.task == "binary":
+            evaluation_parameters = ["AUC-score", "Precision", "Recall", "F1-score"]
+            self._model_summary = pd.DataFrame(
+                {"Evaluation parameter": evaluation_parameters}
+            )
+        elif self.task == "reg":
+            evaluation_parameters = [
+                "Mean absolute error",
+                "Median absolute error",
+                "Mean squared error",
+                "R^2 (coefficient of determination)",
+            ]
+            self._model_summary = pd.DataFrame(
+                {"Evaluation parameter": evaluation_parameters}
+            )
+
+    def _generate_training_subsection(self, data, prefix, title):
+        self._inference_content = {}
+        self._inference_content["title"] = title
+        if self.task == "binary":
+            # filling for html
+            self._inference_content["roc_curve"] = prefix + "_roc_curve.png"
+            self._inference_content["pr_curve"] = prefix + "_pr_curve.png"
+            self._inference_content["pie_f1_metric"] = prefix + "_pie_f1_metric.png"
+            self._inference_content["preds_distribution_by_bins"] = (
+                prefix + "_preds_distribution_by_bins.png"
+            )
+            self._inference_content["distribution_of_logits"] = (
+                prefix + "_distribution_of_logits.png"
+            )
+            # graphics and metrics
+            _, self._F1_thresh = f1_score_w_co(data)
+            self._model_summary[title] = self._binary_classification_details(data)
+        elif self.task == "reg":
+            # filling for html
+            self._inference_content["target_distribution"] = (
+                prefix + "_target_distribution.png"
+            )
+            self._inference_content["error_hist"] = prefix + "_error_hist.png"
+            self._inference_content["scatter_plot"] = prefix + "_scatter_plot.png"
+            # graphics and metrics
+            self._model_summary[title] = self._regression_details(data)
+
+    def _generate_test_subsection(self, data, prefix, title):
+        self._inference_content = {}
+        self._inference_content["title"] = title
+        if self.task == "binary":
+            # filling for html
+            self._inference_content["roc_curve"] = prefix + "_roc_curve_{}.png".format(
+                self._n_test_sample
+            )
+            self._inference_content["pr_curve"] = prefix + "_pr_curve_{}.png".format(
+                self._n_test_sample
+            )
+            self._inference_content[
+                "pie_f1_metric"
+            ] = prefix + "_pie_f1_metric_{}.png".format(self._n_test_sample)
+            self._inference_content[
+                "bins_preds"
+            ] = prefix + "_bins_preds_{}.png".format(self._n_test_sample)
+            self._inference_content[
+                "preds_distribution_by_bins"
+            ] = prefix + "_preds_distribution_by_bins_{}.png".format(
+                self._n_test_sample
+            )
+            self._inference_content[
+                "distribution_of_logits"
+            ] = prefix + "_distribution_of_logits_{}.png".format(self._n_test_sample)
+            # graphics and metrics
+            self._model_summary[title] = self._binary_classification_details(data)
+        elif self.task == "reg":
+            # filling for html
+            self._inference_content[
+                "target_distribution"
+            ] = prefix + "_target_distribution_{}.png".format(self._n_test_sample)
+            self._inference_content[
+                "error_hist"
+            ] = prefix + "_error_hist_{}.png".format(self._n_test_sample)
+            self._inference_content[
+                "scatter_plot"
+            ] = prefix + "_scatter_plot_{}.png".format(self._n_test_sample)
+            # graphics
+            self._model_summary[title] = self._regression_details(data)
+
+    def _data_general_info(self, data, stage="train"):
+        general_info = pd.DataFrame(columns=["Parameter", "Value"])
+        general_info.loc[0] = ("Number of records", data.shape[0])
+        general_info.loc[1] = ("Share of treatment", np.mean(data[self._treatment_col]))
+        general_info.loc[2] = ("Mean target", np.mean(data[self._target]))
+        general_info.loc[3] = (
+            "Mean target on treatment",
+            np.mean(data[self._target][data[self._treatment_col] == 1]),
+        )
+        general_info.loc[4] = (
+            "Mean target on control",
+            np.mean(data[self._target][data[self._treatment_col] == 0]),
+        )
+        if stage == "train":
+            general_info.loc[5] = ("Total number of features", data.shape[1])
+            general_info.loc[6] = ("Used features", len(self.reader._used_features))
+            dropped_list = [
+                col for col in self.reader._dropped_features if col != self._target
+            ]
+            general_info.loc[7] = ("Dropped features", len(dropped_list))
+        return general_info.to_html(index=False, justify="left")
+
+    def _describe_roles(self, train_data):
+
+        # detect feature roles
+        # roles = self._model.reader._roles
+        roles = self.reader._roles
+        numerical_features = [
+            feat_name for feat_name in roles if roles[feat_name].name == "Numeric"
+        ]
+        categorical_features = [
+            feat_name for feat_name in roles if roles[feat_name].name == "Category"
+        ]
+        datetime_features = [
+            feat_name for feat_name in roles if roles[feat_name].name == "Datetime"
+        ]
+
+        # numerical roles
+        numerical_features_df = []
+        for feature_name in numerical_features:
+            item = {"Feature name": feature_name}
+            item["NaN ratio"] = "{:.4f}".format(
+                train_data[feature_name].isna().sum() / train_data.shape[0]
+            )
+            values = train_data[feature_name].dropna().values
+            item["min"] = np.min(values)
+            item["quantile_25"] = np.quantile(values, 0.25)
+            item["average"] = np.mean(values)
+            item["median"] = np.median(values)
+            item["quantile_75"] = np.quantile(values, 0.75)
+            item["max"] = np.max(values)
+            numerical_features_df.append(item)
+        if numerical_features_df == []:
+            self._numerical_features_table = None
+        else:
+            self._numerical_features_table = pd.DataFrame(
+                numerical_features_df
+            ).to_html(index=False, float_format="{:.2f}".format, justify="left")
+        # categorical roles
+        categorical_features_df = []
+        for feature_name in categorical_features:
+            item = {"Feature name": feature_name}
+            item["NaN ratio"] = "{:.4f}".format(
+                train_data[feature_name].isna().sum() / train_data.shape[0]
+            )
+            value_counts = train_data[feature_name].value_counts(normalize=True)
+            values = value_counts.index.values
+            counts = value_counts.values
+            item["Number of unique values"] = len(counts)
+            item["Most frequent value"] = values[0]
+            item["Occurance of most frequent"] = "{:.1f}%".format(100 * counts[0])
+            item["Least frequent value"] = values[-1]
+            item["Occurance of least frequent"] = "{:.1f}%".format(100 * counts[-1])
+            categorical_features_df.append(item)
+        if categorical_features_df == []:
+            self._categorical_features_table = None
+        else:
+            self._categorical_features_table = pd.DataFrame(
+                categorical_features_df
+            ).to_html(index=False, justify="left")
+        # datetime roles
+        datetime_features_df = []
+        for feature_name in datetime_features:
+            item = {"Feature name": feature_name}
+            item["NaN ratio"] = "{:.4f}".format(
+                train_data[feature_name].isna().sum() / train_data.shape[0]
+            )
+            values = train_data[feature_name].dropna().values
+            item["min"] = np.min(values)
+            item["max"] = np.max(values)
+            item["base_date"] = self.reader._roles[feature_name].base_date
+            datetime_features_df.append(item)
+        if datetime_features_df == []:
+            self._datetime_features_table = None
+        else:
+            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(
+                index=False, justify="left"
+            )
+
+    def _describe_dropped_features(self, train_data):
+        self._max_nan_rate = self.reader.max_nan_rate
+        self._max_constant_rate = self.reader.max_constant_rate
+        self._features_dropped_list = self.reader._dropped_features
+        # dropped features table
+        dropped_list = [
+            col for col in self._features_dropped_list if col != self._target
+        ]
+        if dropped_list == []:
+            self._dropped_features_table = None
+        else:
+            dropped_nan_ratio = (
+                train_data[dropped_list].isna().sum() / train_data.shape[0]
+            )
+            dropped_most_occured = pd.Series(np.nan, index=dropped_list)
+            for col in dropped_list:
+                col_most_occured = train_data[col].value_counts(normalize=True).values
+                if len(col_most_occured) > 0:
+                    dropped_most_occured[col] = col_most_occured[0]
+            dropped_features_table = pd.DataFrame(
+                {"nan_rate": dropped_nan_ratio, "constant_rate": dropped_most_occured}
+            )
+            self._dropped_features_table = (
+                dropped_features_table.reset_index()
+                .rename(columns={"index": "Название переменной"})
+                .to_html(index=False, justify="left")
+            )
+
+    def _generate_uplift_subsection(self):
+        env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+        uplift_subsection = env.get_template(self._uplift_subsection_path).render(
+            self._uplift_content
+        )
+        self._uplift_results.append(uplift_subsection)
+
+    def _generate_uplift_section(self):
+        if self._model_results:
+            env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+            results_section = env.get_template(self._uplift_section_path).render(
+                uplift_results=self._uplift_results
+            )
+            self._sections["uplift"] = results_section

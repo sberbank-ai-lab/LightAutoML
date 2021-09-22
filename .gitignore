@@ -141,6 +141,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# VSCode
+.vscode/
+
 .idea/
 lama_venv/
 poetry.lock
