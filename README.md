@@ -166,6 +166,35 @@ pip install -U lightautoml
 pip install -U lightautoml[nlp]
 
 ```
+
+### Installation by poetry
+
+First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation)
+
+```bash
+
+# Load LAMA source code
+git clone https://github.com/sberbank-ai-lab/LightAutoML.git
+
+cd LightAutoML/
+
+# !!!Choose only one item!!!
+
+# 1. Global installation: Don't create virtual environment
+poetry config virtualenvs.create false --local
+
+# 2. Recommended: Create virtual environment inside your project directory
+poetry config virtualenvs.in-project true
+
+# For more information read poetry docs
+
+# Install LAMA
+poetry lock
+poetry install
+
+```
+
+
 ### Installation from sources with virtual environment creation
 If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
 ```bash
