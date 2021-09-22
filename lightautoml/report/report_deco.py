@@ -162,9 +162,7 @@ def plot_distribution_of_logits(data, path):
 
 
 def plot_pie_f1_metric(data, F1_thresh, path):
-    tn, fp, fn, tp = confusion_matrix(
-        data["y_true"], (data["y_pred"] > F1_thresh).astype(int)
-    ).ravel()
+    tn, fp, fn, tp = confusion_matrix(data["y_true"], (data["y_pred"] > F1_thresh).astype(int)).ravel()
     (_, prec), (_, rec), (_, F1), (_, _) = precision_recall_fscore_support(
         data["y_true"], (data["y_pred"] > F1_thresh).astype(int)
     )
@@ -197,11 +195,7 @@ def plot_pie_f1_metric(data, F1_thresh, path):
         connectionstyle = "angle,angleA=0,angleB={}".format(ang)
         kw["arrowprops"].update({"connectionstyle": connectionstyle})
         ax.annotate(
-            recipe[i],
-            xy=(x, y),
-            xytext=(1.35 * np.sign(x), 1.4 * y),
-            horizontalalignment=horizontalalignment,
-            **kw
+            recipe[i], xy=(x, y), xytext=(1.35 * np.sign(x), 1.4 * y), horizontalalignment=horizontalalignment, **kw
         )
 
     ax.set_title(
@@ -216,9 +210,7 @@ def plot_pie_f1_metric(data, F1_thresh, path):
 
 def f1_score_w_co(input_data, min_co=0.01, max_co=0.99, step=0.01):
     data = input_data.copy()
-    data["y_pred"] = np.clip(
-        np.ceil(data["y_pred"].values / step) * step, min_co, max_co
-    )
+    data["y_pred"] = np.clip(np.ceil(data["y_pred"].values / step) * step, min_co, max_co)
 
     pos = data["y_true"].sum()
     neg = data["y_true"].shape[0] - pos
@@ -245,11 +237,7 @@ def f1_score_w_co(input_data, min_co=0.01, max_co=0.99, step=0.01):
 
 
 def get_bins_table(data):
-    bins_table = (
-        data.groupby("bin")
-        .agg({"y_true": [len, np.mean], "y_pred": [np.min, np.mean, np.max]})
-        .reset_index()
-    )
+    bins_table = data.groupby("bin").agg({"y_true": [len, np.mean], "y_pred": [np.min, np.mean, np.max]}).reset_index()
     bins_table.columns = [
         "Bin number",
         "Amount of objects",
@@ -423,13 +411,9 @@ class ReportDeco:
 
         # self.task = kwargs.get('task', 'binary')
         self.n_bins = kwargs.get("n_bins", 20)
-        self.template_path = kwargs.get(
-            "template_path", os.path.join(base_dir, "lama_report_templates/")
-        )
+        self.template_path = kwargs.get("template_path", os.path.join(base_dir, "lama_report_templates/"))
         self.output_path = kwargs.get("output_path", "lama_report/")
-        self.report_file_name = kwargs.get(
-            "report_file_name", "lama_interactive_report.html"
-        )
+        self.report_file_name = kwargs.get("report_file_name", "lama_interactive_report.html")
         self.pdf_file_name = kwargs.get("pdf_file_name", None)
 
         if not os.path.exists(self.output_path):
@@ -476,9 +460,7 @@ class ReportDeco:
         prec, rec, F1 = plot_pie_f1_metric(
             data,
             self._F1_thresh,
-            path=os.path.join(
-                self.output_path, self._inference_content["pie_f1_metric"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["pie_f1_metric"]),
         )
         auc_score = plot_roc_curve_image(
             data,
@@ -490,15 +472,11 @@ class ReportDeco:
         )
         plot_preds_distribution_by_bins(
             data,
-            path=os.path.join(
-                self.output_path, self._inference_content["preds_distribution_by_bins"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["preds_distribution_by_bins"]),
         )
         plot_distribution_of_logits(
             data,
-            path=os.path.join(
-                self.output_path, self._inference_content["distribution_of_logits"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["distribution_of_logits"]),
         )
         return auc_score, prec, rec, F1
 
@@ -506,9 +484,7 @@ class ReportDeco:
         # graphics
         plot_target_distribution(
             data,
-            path=os.path.join(
-                self.output_path, self._inference_content["target_distribution"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["target_distribution"]),
         )
         plot_error_hist(
             data,
@@ -516,9 +492,7 @@ class ReportDeco:
         )
         plot_reg_scatter(
             data,
-            path=os.path.join(
-                self.output_path, self._inference_content["scatter_plot"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["scatter_plot"]),
         )
         # metrics
         mean_ae = mean_absolute_error(data["y_true"], data["y_pred"])
@@ -565,9 +539,7 @@ class ReportDeco:
 
         plot_confusion_matrix(
             data,
-            path=os.path.join(
-                self.output_path, self._inference_content["confusion_matrix"]
-            ),
+            path=os.path.join(self.output_path, self._inference_content["confusion_matrix"]),
         )
 
         return [
@@ -586,17 +558,13 @@ class ReportDeco:
         data = pd.DataFrame({"y_true": sample[self._target].values})
         if self.task in "multiclass":
             if self.mapping is not None:
-                data["y_true"] = np.array(
-                    [self.mapping[y] for y in data["y_true"].values]
-                )
+                data["y_true"] = np.array([self.mapping[y] for y in data["y_true"].values])
             data["y_pred"] = preds._data.argmax(axis=1)
             data = data[~np.isnan(preds._data).any(axis=1)]
         else:
             data["y_pred"] = preds._data[:, 0]
             data.sort_values("y_pred", ascending=False, inplace=True)
-            data["bin"] = (
-                np.arange(data.shape[0]) / data.shape[0] * self.n_bins
-            ).astype(int)
+            data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
             data = data[~data["y_pred"].isnull()]
         return data
 
@@ -633,12 +601,8 @@ class ReportDeco:
             self._inference_content["roc_curve"] = "valid_roc_curve.png"
             self._inference_content["pr_curve"] = "valid_pr_curve.png"
             self._inference_content["pie_f1_metric"] = "valid_pie_f1_metric.png"
-            self._inference_content[
-                "preds_distribution_by_bins"
-            ] = "valid_preds_distribution_by_bins.png"
-            self._inference_content[
-                "distribution_of_logits"
-            ] = "valid_distribution_of_logits.png"
+            self._inference_content["preds_distribution_by_bins"] = "valid_preds_distribution_by_bins.png"
+            self._inference_content["distribution_of_logits"] = "valid_distribution_of_logits.png"
             # graphics and metrics
             _, self._F1_thresh = f1_score_w_co(data)
             auc_score, prec, rec, F1 = self._binary_classification_details(data)
@@ -652,9 +616,7 @@ class ReportDeco:
             )
         elif self.task == "reg":
             # filling for html
-            self._inference_content[
-                "target_distribution"
-            ] = "valid_target_distribution.png"
+            self._inference_content["target_distribution"] = "valid_target_distribution.png"
             self._inference_content["error_hist"] = "valid_error_hist.png"
             self._inference_content["scatter_plot"] = "valid_scatter_plot.png"
             # graphics and metrics
@@ -678,17 +640,11 @@ class ReportDeco:
             self._N_classes = len(train_data[self._target].drop_duplicates())
             self._inference_content["confusion_matrix"] = "valid_confusion_matrix.png"
 
-            index_names = np.array(
-                [["Precision", "Recall", "F1-score"], ["micro", "macro", "weighted"]]
-            )
-            index = pd.MultiIndex.from_product(
-                index_names, names=["Evaluation metric", "Average"]
-            )
+            index_names = np.array([["Precision", "Recall", "F1-score"], ["micro", "macro", "weighted"]])
+            index = pd.MultiIndex.from_product(index_names, names=["Evaluation metric", "Average"])
 
             summary = self._multiclass_details(data)
-            self._model_summary = pd.DataFrame(
-                {"Validation sample": summary}, index=index
-            )
+            self._model_summary = pd.DataFrame({"Validation sample": summary}, index=index)
 
         self._inference_content["title"] = "Results on validation sample"
 
@@ -728,24 +684,16 @@ class ReportDeco:
         if self.task == "binary":
             # filling for html
             self._inference_content = {}
-            self._inference_content["roc_curve"] = "test_roc_curve_{}.png".format(
+            self._inference_content["roc_curve"] = "test_roc_curve_{}.png".format(self._n_test_sample)
+            self._inference_content["pr_curve"] = "test_pr_curve_{}.png".format(self._n_test_sample)
+            self._inference_content["pie_f1_metric"] = "test_pie_f1_metric_{}.png".format(self._n_test_sample)
+            self._inference_content["bins_preds"] = "test_bins_preds_{}.png".format(self._n_test_sample)
+            self._inference_content["preds_distribution_by_bins"] = "test_preds_distribution_by_bins_{}.png".format(
                 self._n_test_sample
             )
-            self._inference_content["pr_curve"] = "test_pr_curve_{}.png".format(
+            self._inference_content["distribution_of_logits"] = "test_distribution_of_logits_{}.png".format(
                 self._n_test_sample
             )
-            self._inference_content[
-                "pie_f1_metric"
-            ] = "test_pie_f1_metric_{}.png".format(self._n_test_sample)
-            self._inference_content["bins_preds"] = "test_bins_preds_{}.png".format(
-                self._n_test_sample
-            )
-            self._inference_content[
-                "preds_distribution_by_bins"
-            ] = "test_preds_distribution_by_bins_{}.png".format(self._n_test_sample)
-            self._inference_content[
-                "distribution_of_logits"
-            ] = "test_distribution_of_logits_{}.png".format(self._n_test_sample)
             # graphics and metrics
             auc_score, prec, rec, F1 = self._binary_classification_details(data)
 
@@ -762,15 +710,11 @@ class ReportDeco:
         elif self.task == "reg":
             # filling for html
             self._inference_content = {}
-            self._inference_content[
-                "target_distribution"
-            ] = "test_target_distribution_{}.png".format(self._n_test_sample)
-            self._inference_content["error_hist"] = "test_error_hist_{}.png".format(
+            self._inference_content["target_distribution"] = "test_target_distribution_{}.png".format(
                 self._n_test_sample
             )
-            self._inference_content["scatter_plot"] = "test_scatter_plot_{}.png".format(
-                self._n_test_sample
-            )
+            self._inference_content["error_hist"] = "test_error_hist_{}.png".format(self._n_test_sample)
+            self._inference_content["scatter_plot"] = "test_scatter_plot_{}.png".format(self._n_test_sample)
             # graphics
             mean_ae, median_ae, mse, r2 = self._regression_details(data)
             # update model section
@@ -786,22 +730,16 @@ class ReportDeco:
                 self._model_summary["Test sample"] = [mean_ae, median_ae, mse, r2, evs]
 
         elif self.task == "multiclass":
-            self._inference_content[
-                "confusion_matrix"
-            ] = "test_confusion_matrix_{}.png".format(self._n_test_sample)
+            self._inference_content["confusion_matrix"] = "test_confusion_matrix_{}.png".format(self._n_test_sample)
             test_summary = self._multiclass_details(data)
             if self._n_test_sample >= 2:
-                self._model_summary[
-                    "Test sample {}".format(self._n_test_sample)
-                ] = test_summary
+                self._model_summary["Test sample {}".format(self._n_test_sample)] = test_summary
             else:
                 self._model_summary["Test sample"] = test_summary
 
         # layout depends on number of test samples
         if self._n_test_sample >= 2:
-            self._inference_content["title"] = "Results on test sample {}".format(
-                self._n_test_sample
-            )
+            self._inference_content["title"] = "Results on test sample {}".format(self._n_test_sample)
 
         else:
             self._inference_content["title"] = "Results on test sample"
@@ -831,23 +769,15 @@ class ReportDeco:
 
         # detect feature roles
         roles = self._model.reader._roles
-        numerical_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Numeric"
-        ]
-        categorical_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Category"
-        ]
-        datetime_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Datetime"
-        ]
+        numerical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Numeric"]
+        categorical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Category"]
+        datetime_features = [feat_name for feat_name in roles if roles[feat_name].name == "Datetime"]
 
         # numerical roles
         numerical_features_df = []
         for feature_name in numerical_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             values = train_data[feature_name].dropna().values
             item["min"] = np.min(values)
             item["quantile_25"] = np.quantile(values, 0.25)
@@ -859,16 +789,14 @@ class ReportDeco:
         if numerical_features_df == []:
             self._numerical_features_table = None
         else:
-            self._numerical_features_table = pd.DataFrame(
-                numerical_features_df
-            ).to_html(index=False, float_format="{:.2f}".format, justify="left")
+            self._numerical_features_table = pd.DataFrame(numerical_features_df).to_html(
+                index=False, float_format="{:.2f}".format, justify="left"
+            )
         # categorical roles
         categorical_features_df = []
         for feature_name in categorical_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             value_counts = train_data[feature_name].value_counts(normalize=True)
             values = value_counts.index.values
             counts = value_counts.values
@@ -881,16 +809,14 @@ class ReportDeco:
         if categorical_features_df == []:
             self._categorical_features_table = None
         else:
-            self._categorical_features_table = pd.DataFrame(
-                categorical_features_df
-            ).to_html(index=False, justify="left")
+            self._categorical_features_table = pd.DataFrame(categorical_features_df).to_html(
+                index=False, justify="left"
+            )
         # datetime roles
         datetime_features_df = []
         for feature_name in datetime_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             values = train_data[feature_name].dropna().values
             item["min"] = np.min(values)
             item["max"] = np.max(values)
@@ -899,24 +825,18 @@ class ReportDeco:
         if datetime_features_df == []:
             self._datetime_features_table = None
         else:
-            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(
-                index=False, justify="left"
-            )
+            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify="left")
 
     def _describe_dropped_features(self, train_data):
         self._max_nan_rate = self._model.reader.max_nan_rate
         self._max_constant_rate = self._model.reader.max_constant_rate
         self._features_dropped_list = self._model.reader._dropped_features
         # dropped features table
-        dropped_list = [
-            col for col in self._features_dropped_list if col != self._target
-        ]
+        dropped_list = [col for col in self._features_dropped_list if col != self._target]
         if dropped_list == []:
             self._dropped_features_table = None
         else:
-            dropped_nan_ratio = (
-                train_data[dropped_list].isna().sum() / train_data.shape[0]
-            )
+            dropped_nan_ratio = train_data[dropped_list].isna().sum() / train_data.shape[0]
             dropped_most_occured = pd.Series(np.nan, index=dropped_list)
             for col in dropped_list:
                 col_most_occured = train_data[col].value_counts(normalize=True).values
@@ -964,17 +884,13 @@ class ReportDeco:
 
     def _generate_inference_section(self, data):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-        inference_section = env.get_template(
-            self._inference_section_path[self.task]
-        ).render(self._inference_content)
+        inference_section = env.get_template(self._inference_section_path[self.task]).render(self._inference_content)
         self._model_results.append(inference_section)
 
     def _generate_results_section(self):
         if self._model_results:
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-            results_section = env.get_template(self._results_section_path).render(
-                model_results=self._model_results
-            )
+            results_section = env.get_template(self._results_section_path).render(model_results=self._model_results)
             self._sections["results"] = results_section
 
     def generate_report(self):
@@ -990,9 +906,7 @@ class ReportDeco:
             title=self.title, sections=sections_list, pdf=self.pdf_file_name
         )
 
-        with open(
-            os.path.join(self.output_path, self.report_file_name), "w", encoding="utf-8"
-        ) as f:
+        with open(os.path.join(self.output_path, self.report_file_name), "w", encoding="utf-8") as f:
             f.write(report)
 
         if self.pdf_file_name:
@@ -1003,9 +917,7 @@ class ReportDeco:
                     os.path.join(self.output_path, self.pdf_file_name)
                 )
             except ModuleNotFoundError:
-                print(
-                    "Can't generate PDF report: check manual for installing pdf extras."
-                )
+                print("Can't generate PDF report: check manual for installing pdf extras.")
 
 
 _default_wb_report_params = {
@@ -1096,9 +1008,7 @@ class ReportDecoWhitebox(ReportDeco):
         if self._model.general_params["report"]:
             self._generate_whitebox_section()
         else:
-            logger.info2(
-                "Whitebox part is not created. Fit WhiteBox with general_params['report'] = True"
-            )
+            logger.info2("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
 
         self.generate_report()
         return predict_proba
@@ -1126,9 +1036,7 @@ class ReportDecoWhitebox(ReportDeco):
         if self._model.general_params["report"]:
             self._generate_whitebox_section()
         else:
-            logger.info2(
-                "Whitebox part is not created. Fit WhiteBox with general_params['report'] = True"
-            )
+            logger.info2("Whitebox part is not created. Fit WhiteBox with general_params['report'] = True")
 
         self.generate_report()
         return predict_proba
@@ -1139,32 +1047,28 @@ class ReportDecoWhitebox(ReportDeco):
 
         if self._n_test_sample >= 2:
             content["n_test_sample"] = self._n_test_sample
-        content["model_coef"] = pd.DataFrame(
-            content["model_coef"], columns=["Feature name", "Coefficient"]
-        ).to_html(index=False)
-        content["p_vals"] = pd.DataFrame(
-            content["p_vals"], columns=["Feature name", "P-value"]
-        ).to_html(index=False)
-        content["p_vals_test"] = pd.DataFrame(
-            content["p_vals_test"], columns=["Feature name", "P-value"]
-        ).to_html(index=False)
-        content["train_vif"] = pd.DataFrame(
-            content["train_vif"], columns=["Feature name", "VIF value"]
-        ).to_html(index=False)
-        content["psi_total"] = pd.DataFrame(
-            content["psi_total"], columns=["Feature name", "PSI value"]
-        ).to_html(index=False)
-        content["psi_zeros"] = pd.DataFrame(
-            content["psi_zeros"], columns=["Feature name", "PSI value"]
-        ).to_html(index=False)
-        content["psi_ones"] = pd.DataFrame(
-            content["psi_ones"], columns=["Feature name", "PSI value"]
-        ).to_html(index=False)
+        content["model_coef"] = pd.DataFrame(content["model_coef"], columns=["Feature name", "Coefficient"]).to_html(
+            index=False
+        )
+        content["p_vals"] = pd.DataFrame(content["p_vals"], columns=["Feature name", "P-value"]).to_html(index=False)
+        content["p_vals_test"] = pd.DataFrame(content["p_vals_test"], columns=["Feature name", "P-value"]).to_html(
+            index=False
+        )
+        content["train_vif"] = pd.DataFrame(content["train_vif"], columns=["Feature name", "VIF value"]).to_html(
+            index=False
+        )
+        content["psi_total"] = pd.DataFrame(content["psi_total"], columns=["Feature name", "PSI value"]).to_html(
+            index=False
+        )
+        content["psi_zeros"] = pd.DataFrame(content["psi_zeros"], columns=["Feature name", "PSI value"]).to_html(
+            index=False
+        )
+        content["psi_ones"] = pd.DataFrame(content["psi_ones"], columns=["Feature name", "PSI value"]).to_html(
+            index=False
+        )
 
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-        self._sections["whitebox"] = env.get_template(
-            self._whitebox_section_path
-        ).render(content)
+        self._sections["whitebox"] = env.get_template(self._whitebox_section_path).render(content)
 
 
 def plot_data_hist(data, title="title", bins=100, path=None):
@@ -1275,23 +1179,15 @@ class ReportDecoNLP(ReportDeco):
     def _generate_nlp_section(self):
         if self._model_results:
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-            nlp_section = env.get_template(self._nlp_section_path).render(
-                nlp_subsections=self._nlp_subsections
-            )
+            nlp_section = env.get_template(self._nlp_section_path).render(nlp_subsections=self._nlp_subsections)
             self._sections["nlp"] = nlp_section
 
 
 def get_uplift_data(test_target, uplift_pred, test_treatment, mode):
     perfect = uplift_metrics.perfect_uplift_curve(test_target, test_treatment)
-    xs, ys = uplift_metrics.calculate_graphic_uplift_curve(
-        test_target, uplift_pred, test_treatment, mode
-    )
-    xs_perfect, ys_perfect = uplift_metrics.calculate_graphic_uplift_curve(
-        test_target, perfect, test_treatment, mode
-    )
-    uplift_auc = uplift_metrics.calculate_uplift_auc(
-        test_target, uplift_pred, test_treatment, mode, normed=True
-    )
+    xs, ys = uplift_metrics.calculate_graphic_uplift_curve(test_target, uplift_pred, test_treatment, mode)
+    xs_perfect, ys_perfect = uplift_metrics.calculate_graphic_uplift_curve(test_target, perfect, test_treatment, mode)
+    uplift_auc = uplift_metrics.calculate_uplift_auc(test_target, uplift_pred, test_treatment, mode, normed=True)
     return xs, ys, xs_perfect, ys_perfect, uplift_auc
 
 
@@ -1300,9 +1196,7 @@ def plot_uplift_curve(test_target, uplift_pred, test_treatment, path):
     # plt.figure(figsize=(10, 10));
     fig, axs = plt.subplots(3, 1, figsize=(10, 30))
     # qini
-    xs, ys, xs_perfect, ys_perfect, uplift_auc = get_uplift_data(
-        test_target, uplift_pred, test_treatment, mode="qini"
-    )
+    xs, ys, xs_perfect, ys_perfect, uplift_auc = get_uplift_data(test_target, uplift_pred, test_treatment, mode="qini")
     axs[0].plot(xs, ys, color="blue", lw=2, label="qini mode")
     axs[0].plot(xs_perfect, ys_perfect, color="black", lw=1, label="perfect uplift")
     axs[0].plot(
@@ -1446,9 +1340,7 @@ class ReportDecoUplift(ReportDeco):
         data = pd.DataFrame({"y_true": test_target[test_treatment == 1]})
         data["y_pred"] = treatment_preds[test_treatment == 1]
         data.sort_values("y_pred", ascending=False, inplace=True)
-        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
-            int
-        )
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         data = data[~data["y_pred"].isnull()]
         self._generate_test_subsection(data, "treatment", treatment_title)
         self._generate_inference_section(data)
@@ -1457,9 +1349,7 @@ class ReportDecoUplift(ReportDeco):
         data = pd.DataFrame({"y_true": test_target[test_treatment == 0]})
         data["y_pred"] = control_preds[test_treatment == 0]
         data.sort_values("y_pred", ascending=False, inplace=True)
-        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
-            int
-        )
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         data = data[~data["y_pred"].isnull()]
         self._generate_test_subsection(data, "control", control_title)
         self._generate_inference_section(data)
@@ -1471,12 +1361,8 @@ class ReportDecoUplift(ReportDeco):
         self._uplift_content = {}
         if self._n_test_sample >= 2:
             self._uplift_content["title"] = "Test sample {}".format(self._n_test_sample)
-            self._uplift_content["uplift_curve"] = "uplift_curve_{}.png".format(
-                self._n_test_sample
-            )
-            self._uplift_content[
-                "uplift_distribution"
-            ] = "uplift_distribution_{}.png".format(self._n_test_sample)
+            self._uplift_content["uplift_curve"] = "uplift_curve_{}.png".format(self._n_test_sample)
+            self._uplift_content["uplift_distribution"] = "uplift_distribution_{}.png".format(self._n_test_sample)
         else:
             self._uplift_content["title"] = "Test sample"
             self._uplift_content["uplift_curve"] = "uplift_curve.png"
@@ -1491,14 +1377,10 @@ class ReportDecoUplift(ReportDeco):
             test_target,
             uplift,
             test_treatment,
-            path=os.path.join(
-                self.output_path, self._uplift_content["uplift_distribution"]
-            ),
+            path=os.path.join(self.output_path, self._uplift_content["uplift_distribution"]),
         )
 
-        self._uplift_content["test_data_overview"] = self._data_general_info(
-            test_data, "test"
-        )
+        self._uplift_content["test_data_overview"] = self._data_general_info(test_data, "test")
 
         self._generate_uplift_subsection()
         self._generate_uplift_section()
@@ -1507,32 +1389,16 @@ class ReportDecoUplift(ReportDeco):
         return uplift, treatment_preds, control_preds
 
     def _uplift_distribution(self, test_target, uplift, test_treatment, path):
-        data = pd.DataFrame(
-            {"y_true": test_target, "y_pred": uplift, "treatment": test_treatment}
-        )
+        data = pd.DataFrame({"y_true": test_target, "y_pred": uplift, "treatment": test_treatment})
         data.sort_values("y_pred", ascending=True, inplace=True)
-        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(
-            int
-        )
+        data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         # 'Uplift fact'
         mean_target_treatment = (
-            data[data["treatment"].values == 1]
-            .groupby("bin")
-            .agg({"y_true": [np.mean]})
-            .values[:, 0]
+            data[data["treatment"].values == 1].groupby("bin").agg({"y_true": [np.mean]}).values[:, 0]
         )
-        mean_target_control = (
-            data[data["treatment"].values == 0]
-            .groupby("bin")
-            .agg({"y_true": [np.mean]})
-            .values[:, 0]
-        )
+        mean_target_control = data[data["treatment"].values == 0].groupby("bin").agg({"y_true": [np.mean]}).values[:, 0]
         uplift_fact = mean_target_treatment - mean_target_control
-        bins_table = (
-            data.groupby("bin")
-            .agg({"y_true": [len], "y_pred": [np.min, np.mean, np.max]})
-            .reset_index()
-        )
+        bins_table = data.groupby("bin").agg({"y_true": [len], "y_pred": [np.min, np.mean, np.max]}).reset_index()
         bins_table.columns = [
             "Bin number",
             "Amount of objects",
@@ -1563,20 +1429,14 @@ class ReportDecoUplift(ReportDeco):
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
         treatment_target = treatment_train_data[self._target].values
         treatment_train_data.drop(self._treatment_col, axis=1, inplace=True)
-        treatment_preds = self._model.treatment_learner.fit_predict(
-            treatment_train_data, new_roles
-        )
+        treatment_preds = self._model.treatment_learner.fit_predict(treatment_train_data, new_roles)
         # control
         control_train_data = train_data[train_data[self._treatment_col] == 0]
         control_target = control_train_data[self._target].values
         control_train_data.drop(self._treatment_col, axis=1, inplace=True)
-        control_preds = self._model.control_learner.fit_predict(
-            control_train_data, new_roles
-        )
+        control_preds = self._model.control_learner.fit_predict(control_train_data, new_roles)
 
-        self._generate_fit_section(
-            treatment_preds, control_preds, treatment_target, control_target
-        )
+        self._generate_fit_section(treatment_preds, control_preds, treatment_target, control_target)
 
     def _fit_xlearner(self, train_data, roles):
         treatment_role, _ = _get_treatment_role(roles)
@@ -1589,49 +1449,27 @@ class ReportDecoUplift(ReportDeco):
         # treatment
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
         treatment_train_data.drop(self._treatment_col, axis=1, inplace=True)
-        outcome_pred = (
-            self._model.learners["outcome"]["control"]
-            .predict(treatment_train_data)
-            .data.ravel()
-        )
-        treatment_train_data[self._target] = (
-            treatment_train_data[self._target] - outcome_pred
-        )
+        outcome_pred = self._model.learners["outcome"]["control"].predict(treatment_train_data).data.ravel()
+        treatment_train_data[self._target] = treatment_train_data[self._target] - outcome_pred
         treatment_target = treatment_train_data[self._target].values
-        treatment_preds = self._model.learners["effect"]["treatment"].fit_predict(
-            treatment_train_data, new_roles
-        )
+        treatment_preds = self._model.learners["effect"]["treatment"].fit_predict(treatment_train_data, new_roles)
 
         # control
         control_train_data = train_data[train_data[self._treatment_col] == 0]
         control_train_data.drop(self._treatment_col, axis=1, inplace=True)
-        outcome_pred = (
-            self._model.learners["outcome"]["treatment"]
-            .predict(control_train_data)
-            .data.ravel()
-        )
-        control_train_data[self._target] = (
-            control_train_data[self._target] - outcome_pred
-        )
+        outcome_pred = self._model.learners["outcome"]["treatment"].predict(control_train_data).data.ravel()
+        control_train_data[self._target] = control_train_data[self._target] - outcome_pred
         control_train_data[self._target] *= -1
         control_target = control_train_data[self._target].values
-        control_preds = self._model.learners["effect"]["control"].fit_predict(
-            control_train_data, new_roles
-        )
+        control_preds = self._model.learners["effect"]["control"].fit_predict(control_train_data, new_roles)
 
-        self._generate_fit_section(
-            treatment_preds, control_preds, treatment_target, control_target
-        )
+        self._generate_fit_section(treatment_preds, control_preds, treatment_target, control_target)
 
-    def _generate_fit_section(
-        self, treatment_preds, control_preds, treatment_target, control_target
-    ):
+    def _generate_fit_section(self, treatment_preds, control_preds, treatment_target, control_target):
         self._generate_model_summary_table()
         # treatment model
         treatment_data = self._collect_data(treatment_preds, treatment_target)
-        self._generate_training_subsection(
-            treatment_data, "treatment", "Treatment train"
-        )
+        self._generate_training_subsection(treatment_data, "treatment", "Treatment train")
         self._generate_inference_section(treatment_data)
 
         control_data = self._collect_data(control_preds, control_target)
@@ -1642,16 +1480,12 @@ class ReportDecoUplift(ReportDeco):
         data = pd.DataFrame({"y_true": target})
         if self.task in "multiclass":
             if self.mapping is not None:
-                data["y_true"] = np.array(
-                    [self.mapping[y] for y in data["y_true"].values]
-                )
+                data["y_true"] = np.array([self.mapping[y] for y in data["y_true"].values])
             data["y_pred"] = preds._data.argmax(axis=1)
         else:
             data["y_pred"] = preds._data[:, 0]
             data.sort_values("y_pred", ascending=False, inplace=True)
-            data["bin"] = (
-                np.arange(data.shape[0]) / data.shape[0] * self.n_bins
-            ).astype(int)
+            data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         # remove NaN in predictions:
         data = data[~data["y_pred"].isnull()]
         return data
@@ -1659,9 +1493,7 @@ class ReportDecoUplift(ReportDeco):
     def _generate_model_summary_table(self):
         if self.task == "binary":
             evaluation_parameters = ["AUC-score", "Precision", "Recall", "F1-score"]
-            self._model_summary = pd.DataFrame(
-                {"Evaluation parameter": evaluation_parameters}
-            )
+            self._model_summary = pd.DataFrame({"Evaluation parameter": evaluation_parameters})
         elif self.task == "reg":
             evaluation_parameters = [
                 "Mean absolute error",
@@ -1669,9 +1501,7 @@ class ReportDecoUplift(ReportDeco):
                 "Mean squared error",
                 "R^2 (coefficient of determination)",
             ]
-            self._model_summary = pd.DataFrame(
-                {"Evaluation parameter": evaluation_parameters}
-            )
+            self._model_summary = pd.DataFrame({"Evaluation parameter": evaluation_parameters})
 
     def _generate_training_subsection(self, data, prefix, title):
         self._inference_content = {}
@@ -1681,20 +1511,14 @@ class ReportDecoUplift(ReportDeco):
             self._inference_content["roc_curve"] = prefix + "_roc_curve.png"
             self._inference_content["pr_curve"] = prefix + "_pr_curve.png"
             self._inference_content["pie_f1_metric"] = prefix + "_pie_f1_metric.png"
-            self._inference_content["preds_distribution_by_bins"] = (
-                prefix + "_preds_distribution_by_bins.png"
-            )
-            self._inference_content["distribution_of_logits"] = (
-                prefix + "_distribution_of_logits.png"
-            )
+            self._inference_content["preds_distribution_by_bins"] = prefix + "_preds_distribution_by_bins.png"
+            self._inference_content["distribution_of_logits"] = prefix + "_distribution_of_logits.png"
             # graphics and metrics
             _, self._F1_thresh = f1_score_w_co(data)
             self._model_summary[title] = self._binary_classification_details(data)
         elif self.task == "reg":
             # filling for html
-            self._inference_content["target_distribution"] = (
-                prefix + "_target_distribution.png"
-            )
+            self._inference_content["target_distribution"] = prefix + "_target_distribution.png"
             self._inference_content["error_hist"] = prefix + "_error_hist.png"
             self._inference_content["scatter_plot"] = prefix + "_scatter_plot.png"
             # graphics and metrics
@@ -1705,39 +1529,25 @@ class ReportDecoUplift(ReportDeco):
         self._inference_content["title"] = title
         if self.task == "binary":
             # filling for html
-            self._inference_content["roc_curve"] = prefix + "_roc_curve_{}.png".format(
-                self._n_test_sample
-            )
-            self._inference_content["pr_curve"] = prefix + "_pr_curve_{}.png".format(
-                self._n_test_sample
-            )
-            self._inference_content[
-                "pie_f1_metric"
-            ] = prefix + "_pie_f1_metric_{}.png".format(self._n_test_sample)
-            self._inference_content[
-                "bins_preds"
-            ] = prefix + "_bins_preds_{}.png".format(self._n_test_sample)
+            self._inference_content["roc_curve"] = prefix + "_roc_curve_{}.png".format(self._n_test_sample)
+            self._inference_content["pr_curve"] = prefix + "_pr_curve_{}.png".format(self._n_test_sample)
+            self._inference_content["pie_f1_metric"] = prefix + "_pie_f1_metric_{}.png".format(self._n_test_sample)
+            self._inference_content["bins_preds"] = prefix + "_bins_preds_{}.png".format(self._n_test_sample)
             self._inference_content[
                 "preds_distribution_by_bins"
-            ] = prefix + "_preds_distribution_by_bins_{}.png".format(
+            ] = prefix + "_preds_distribution_by_bins_{}.png".format(self._n_test_sample)
+            self._inference_content["distribution_of_logits"] = prefix + "_distribution_of_logits_{}.png".format(
                 self._n_test_sample
             )
-            self._inference_content[
-                "distribution_of_logits"
-            ] = prefix + "_distribution_of_logits_{}.png".format(self._n_test_sample)
             # graphics and metrics
             self._model_summary[title] = self._binary_classification_details(data)
         elif self.task == "reg":
             # filling for html
-            self._inference_content[
-                "target_distribution"
-            ] = prefix + "_target_distribution_{}.png".format(self._n_test_sample)
-            self._inference_content[
-                "error_hist"
-            ] = prefix + "_error_hist_{}.png".format(self._n_test_sample)
-            self._inference_content[
-                "scatter_plot"
-            ] = prefix + "_scatter_plot_{}.png".format(self._n_test_sample)
+            self._inference_content["target_distribution"] = prefix + "_target_distribution_{}.png".format(
+                self._n_test_sample
+            )
+            self._inference_content["error_hist"] = prefix + "_error_hist_{}.png".format(self._n_test_sample)
+            self._inference_content["scatter_plot"] = prefix + "_scatter_plot_{}.png".format(self._n_test_sample)
             # graphics
             self._model_summary[title] = self._regression_details(data)
 
@@ -1757,9 +1567,7 @@ class ReportDecoUplift(ReportDeco):
         if stage == "train":
             general_info.loc[5] = ("Total number of features", data.shape[1])
             general_info.loc[6] = ("Used features", len(self.reader._used_features))
-            dropped_list = [
-                col for col in self.reader._dropped_features if col != self._target
-            ]
+            dropped_list = [col for col in self.reader._dropped_features if col != self._target]
             general_info.loc[7] = ("Dropped features", len(dropped_list))
         return general_info.to_html(index=False, justify="left")
 
@@ -1768,23 +1576,15 @@ class ReportDecoUplift(ReportDeco):
         # detect feature roles
         # roles = self._model.reader._roles
         roles = self.reader._roles
-        numerical_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Numeric"
-        ]
-        categorical_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Category"
-        ]
-        datetime_features = [
-            feat_name for feat_name in roles if roles[feat_name].name == "Datetime"
-        ]
+        numerical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Numeric"]
+        categorical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Category"]
+        datetime_features = [feat_name for feat_name in roles if roles[feat_name].name == "Datetime"]
 
         # numerical roles
         numerical_features_df = []
         for feature_name in numerical_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             values = train_data[feature_name].dropna().values
             item["min"] = np.min(values)
             item["quantile_25"] = np.quantile(values, 0.25)
@@ -1796,16 +1596,14 @@ class ReportDecoUplift(ReportDeco):
         if numerical_features_df == []:
             self._numerical_features_table = None
         else:
-            self._numerical_features_table = pd.DataFrame(
-                numerical_features_df
-            ).to_html(index=False, float_format="{:.2f}".format, justify="left")
+            self._numerical_features_table = pd.DataFrame(numerical_features_df).to_html(
+                index=False, float_format="{:.2f}".format, justify="left"
+            )
         # categorical roles
         categorical_features_df = []
         for feature_name in categorical_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             value_counts = train_data[feature_name].value_counts(normalize=True)
             values = value_counts.index.values
             counts = value_counts.values
@@ -1818,16 +1616,14 @@ class ReportDecoUplift(ReportDeco):
         if categorical_features_df == []:
             self._categorical_features_table = None
         else:
-            self._categorical_features_table = pd.DataFrame(
-                categorical_features_df
-            ).to_html(index=False, justify="left")
+            self._categorical_features_table = pd.DataFrame(categorical_features_df).to_html(
+                index=False, justify="left"
+            )
         # datetime roles
         datetime_features_df = []
         for feature_name in datetime_features:
             item = {"Feature name": feature_name}
-            item["NaN ratio"] = "{:.4f}".format(
-                train_data[feature_name].isna().sum() / train_data.shape[0]
-            )
+            item["NaN ratio"] = "{:.4f}".format(train_data[feature_name].isna().sum() / train_data.shape[0])
             values = train_data[feature_name].dropna().values
             item["min"] = np.min(values)
             item["max"] = np.max(values)
@@ -1836,24 +1632,18 @@ class ReportDecoUplift(ReportDeco):
         if datetime_features_df == []:
             self._datetime_features_table = None
         else:
-            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(
-                index=False, justify="left"
-            )
+            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify="left")
 
     def _describe_dropped_features(self, train_data):
         self._max_nan_rate = self.reader.max_nan_rate
         self._max_constant_rate = self.reader.max_constant_rate
         self._features_dropped_list = self.reader._dropped_features
         # dropped features table
-        dropped_list = [
-            col for col in self._features_dropped_list if col != self._target
-        ]
+        dropped_list = [col for col in self._features_dropped_list if col != self._target]
         if dropped_list == []:
             self._dropped_features_table = None
         else:
-            dropped_nan_ratio = (
-                train_data[dropped_list].isna().sum() / train_data.shape[0]
-            )
+            dropped_nan_ratio = train_data[dropped_list].isna().sum() / train_data.shape[0]
             dropped_most_occured = pd.Series(np.nan, index=dropped_list)
             for col in dropped_list:
                 col_most_occured = train_data[col].value_counts(normalize=True).values
@@ -1870,15 +1660,11 @@ class ReportDecoUplift(ReportDeco):
 
     def _generate_uplift_subsection(self):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-        uplift_subsection = env.get_template(self._uplift_subsection_path).render(
-            self._uplift_content
-        )
+        uplift_subsection = env.get_template(self._uplift_subsection_path).render(self._uplift_content)
         self._uplift_results.append(uplift_subsection)
 
     def _generate_uplift_section(self):
         if self._model_results:
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-            results_section = env.get_template(self._uplift_section_path).render(
-                uplift_results=self._uplift_results
-            )
+            results_section = env.get_template(self._uplift_section_path).render(uplift_results=self._uplift_results)
             self._sections["uplift"] = results_section

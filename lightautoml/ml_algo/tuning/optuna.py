@@ -54,13 +54,9 @@ class OptunaTunableMixin(ABC):
             del kwargs["optimization_search_space"]
         super().__init__(*args, **kwargs)
 
-    def _sample_parameters(
-        self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int
-    ) -> dict:
+    def _sample_parameters(self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int) -> dict:
         if self.optimization_search_space is None:
-            self.optimization_search_space = self._get_search_spaces(
-                suggested_params, estimated_n_trials
-            )
+            self.optimization_search_space = self._get_search_spaces(suggested_params, estimated_n_trials)
 
         return self._sample(trial, suggested_params)
 
@@ -71,20 +67,16 @@ class OptunaTunableMixin(ABC):
 
         for parameter, SearchSpace in self.optimization_search_space.items():
             if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                trial_values[parameter] = getattr(
-                    trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
-                )(name=parameter, **SearchSpace.params)
-            else:
-                raise ValueError(
-                    f"Optuna does not support distribution {SearchSpace.distribution_type}"
+                trial_values[parameter] = getattr(trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type])(
+                    name=parameter, **SearchSpace.params
                 )
+            else:
+                raise ValueError(f"Optuna does not support distribution {SearchSpace.distribution_type}")
 
         return trial_values
 
     @abstractmethod
-    def _get_search_spaces(
-        self, suggested_params: dict, estimated_n_trials: int
-    ) -> dict:
+    def _get_search_spaces(self, suggested_params: dict, estimated_n_trials: int) -> dict:
         """Get search spaces for hyperparameters.
 
         Args:
@@ -144,9 +136,7 @@ class OptunaTunableMixin(ABC):
                 trial=trial,
             )
 
-            output_dataset = _ml_algo.fit_predict(
-                train_valid_iterator=train_valid_iterator
-            )
+            output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
 
             return _ml_algo.score(output_dataset)
 
@@ -214,9 +204,7 @@ class OptunaTuner(ParamsTuner):
         assert not ml_algo.is_fitted, "Fitted algo cannot be tuned."
         # optuna.logging.set_verbosity(logger.getEffectiveLevel())
         # upd timeout according to ml_algo timer
-        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(
-            len(train_valid_iterator)
-        )
+        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(len(train_valid_iterator))
         # TODO: Check for minimal runtime!
         estimated_tuning_time = max(estimated_tuning_time, 1)
 
@@ -234,9 +222,7 @@ class OptunaTuner(ParamsTuner):
             flg_new_iterator = True
 
         # TODO: Check if time estimation will be ok with multiprocessing
-        def update_trial_time(
-            study: optuna.study.Study, trial: optuna.trial.FrozenTrial
-        ):
+        def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
             """Callback for number of iteration with time cut-off.
 
             Args:
@@ -244,12 +230,8 @@ class OptunaTuner(ParamsTuner):
                 trial: Optuna trial object.
 
             """
-            ml_algo.mean_trial_time = (
-                study.trials_dataframe()["duration"].mean().total_seconds()
-            )
-            self.estimated_n_trials = min(
-                self.n_trials, self.timeout // ml_algo.mean_trial_time
-            )
+            ml_algo.mean_trial_time = study.trials_dataframe()["duration"].mean().total_seconds()
+            self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
             logger.info3(
                 f"Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
             )
@@ -274,9 +256,7 @@ class OptunaTuner(ParamsTuner):
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
 
-            logger.info(
-                f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed"
-            )
+            logger.info(f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed")
             logger.info2(
                 f"The set of hyperparameters \x1b[1m{self._best_params}\x1b[0m\n achieve {self.study.best_value:.4f} {metric_name}"
             )

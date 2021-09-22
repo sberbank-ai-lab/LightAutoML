@@ -67,9 +67,7 @@ class TrainValidIterator:
         """Abstract method. Get validation sample."""
         raise NotImplementedError
 
-    def apply_feature_pipeline(
-        self, features_pipeline: FeaturesPipeline
-    ) -> "TrainValidIterator":
+    def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> "TrainValidIterator":
         """Apply features pipeline on train data.
 
         Args:
@@ -199,9 +197,7 @@ class HoldoutIterator(TrainValidIterator):
         """
         return self.valid
 
-    def apply_feature_pipeline(
-        self, features_pipeline: FeaturesPipeline
-    ) -> "HoldoutIterator":
+    def apply_feature_pipeline(self, features_pipeline: FeaturesPipeline) -> "HoldoutIterator":
         """Inplace apply features pipeline to iterator components.
 
         Args:
@@ -211,9 +207,7 @@ class HoldoutIterator(TrainValidIterator):
             New iterator.
 
         """
-        train_valid = cast(
-            "HoldoutIterator", super().apply_feature_pipeline(features_pipeline)
-        )
+        train_valid = cast("HoldoutIterator", super().apply_feature_pipeline(features_pipeline))
         train_valid.valid = features_pipeline.transform(train_valid.valid)
 
         return train_valid
@@ -278,10 +272,7 @@ class CustomIterator(TrainValidIterator):
             Data generator.
 
         """
-        generator = (
-            (val_idx, self.train[tr_idx], self.train[val_idx])
-            for (tr_idx, val_idx) in self.iterator
-        )
+        generator = ((val_idx, self.train[tr_idx], self.train[val_idx]) for (tr_idx, val_idx) in self.iterator)
 
         return generator
 

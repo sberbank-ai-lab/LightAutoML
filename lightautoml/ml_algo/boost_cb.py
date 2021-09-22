@@ -119,9 +119,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         try:
             self._le_cat_features = getattr(self, "_le_cat_features")
         except AttributeError:
-            self._le_cat_features = get_columns_by_role(
-                dataset, "Category", label_encoded=True
-            )
+            self._le_cat_features = get_columns_by_role(dataset, "Category", label_encoded=True)
 
         try:
             self._text_features = getattr(self, "_text_features")
@@ -192,9 +190,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def _get_search_spaces(
-        self, suggested_params: Dict, estimated_n_trials: int
-    ) -> Dict:
+    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -214,14 +210,10 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         except AttributeError:
             nan_rate = 0
 
-        optimization_search_space["max_depth"] = SearchSpace(
-            Distribution.INTUNIFORM, low=3, high=7
-        )
+        optimization_search_space["max_depth"] = SearchSpace(Distribution.INTUNIFORM, low=3, high=7)
 
         if nan_rate > 0:
-            optimization_search_space["nan_mode"] = SearchSpace(
-                Distribution.CHOICE, choices=["Max", "Min"]
-            )
+            optimization_search_space["nan_mode"] = SearchSpace(Distribution.CHOICE, choices=["Max", "Min"])
 
         if estimated_n_trials > 20:
             optimization_search_space["l2_leaf_reg"] = SearchSpace(
@@ -237,15 +229,11 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             # )
 
         if estimated_n_trials > 50:
-            optimization_search_space["min_data_in_leaf"] = SearchSpace(
-                Distribution.INTUNIFORM, low=1, high=20
-            )
+            optimization_search_space["min_data_in_leaf"] = SearchSpace(Distribution.INTUNIFORM, low=1, high=20)
 
             # the only case when used this parameter is when categorical columns more than 0
             if len(self._le_cat_features) > 0:
-                optimization_search_space["one_hot_max_size"] = SearchSpace(
-                    Distribution.INTUNIFORM, low=3, high=10
-                )
+                optimization_search_space["one_hot_max_size"] = SearchSpace(Distribution.INTUNIFORM, low=3, high=10)
 
         return optimization_search_space
 
@@ -254,9 +242,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         try:
             self._le_cat_features = getattr(self, "_le_cat_features")
         except AttributeError:
-            self._le_cat_features = get_columns_by_role(
-                dataset, "Category", label_encoded=True
-            )
+            self._le_cat_features = get_columns_by_role(dataset, "Category", label_encoded=True)
         self._le_cat_features = self._le_cat_features if self._le_cat_features else None
 
         try:
@@ -280,9 +266,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             data.astype({x: "category" for x in self._le_cat_features}, copy=False)
 
         if dataset.target is not None:
-            target, weights = self.task.losses["cb"].fw_func(
-                dataset.target, dataset.weights
-            )
+            target, weights = self.task.losses["cb"].fw_func(dataset.target, dataset.weights)
         else:
             target, weights = dataset.target, dataset.weights
 
@@ -297,9 +281,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return pool
 
-    def fit_predict_single_fold(
-        self, train: TabularDataset, valid: TabularDataset
-    ) -> Tuple[cb.CatBoost, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[cb.CatBoost, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -333,9 +315,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return model, val_pred
 
-    def predict_single_fold(
-        self, model: cb.CatBoost, dataset: TabularDataset
-    ) -> np.ndarray:
+    def predict_single_fold(self, model: cb.CatBoost, dataset: TabularDataset) -> np.ndarray:
         """Predict of target values for dataset.
 
         Args:
@@ -389,13 +369,9 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     def _predict(self, model: cb.CatBoost, pool: cb.Pool, params):
         pred = None
         if self.task.name == "multiclass":
-            pred = model.predict(
-                pool, prediction_type="Probability", thread_count=params["thread_count"]
-            )
+            pred = model.predict(pool, prediction_type="Probability", thread_count=params["thread_count"])
         elif self.task.name == "binary":
-            pred = model.predict(
-                pool, prediction_type="Probability", thread_count=params["thread_count"]
-            )[..., 1]
+            pred = model.predict(pool, prediction_type="Probability", thread_count=params["thread_count"])[..., 1]
         elif self.task.name == "reg":
             pred = model.predict(pool, thread_count=params["thread_count"])
 

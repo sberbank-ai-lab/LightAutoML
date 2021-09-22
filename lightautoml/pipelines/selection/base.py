@@ -182,9 +182,7 @@ class SelectionPipeline:
                         train_valid.features
                     ), "Features in feated MLAlgo should match exactly"
                 else:
-                    self.ml_algo, preds = tune_and_fit_predict(
-                        self.ml_algo, self.tuner, train_valid
-                    )
+                    self.ml_algo, preds = tune_and_fit_predict(self.ml_algo, self.tuner, train_valid)
 
             if self.imp_estimator is not None:
                 self.imp_estimator.fit(train_valid, self.ml_algo, preds)
@@ -225,9 +223,7 @@ class SelectionPipeline:
         mapped = map_pipeline_names(self.in_features, raw_importances.index)
         mapped_importance = Series(raw_importances.values, index=mapped)
 
-        self.mapped_importances = (
-            mapped_importance.groupby(level=0).sum().sort_values(ascending=False)
-        )
+        self.mapped_importances = mapped_importance.groupby(level=0).sum().sort_values(ascending=False)
 
     def get_features_score(self):
         """Get input feature importances.

@@ -21,9 +21,7 @@ from lightautoml.tasks import Task
 from lightautoml.validation.np_iterators import FoldsIterator
 
 
-logging.basicConfig(
-    format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
-)
+logging.basicConfig(format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG)
 
 
 def test_manual_pipeline():
@@ -44,12 +42,10 @@ def test_manual_pipeline():
 
     # Fix dates and convert to date type
     logging.debug("Fix dates and convert to date type")
-    data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(
+    data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
+    data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(
         np.dtype("timedelta64[D]")
     )
-    data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(
-        data["DAYS_EMPLOYED"], None, 0
-    ).astype(np.dtype("timedelta64[D]"))
     data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 
     # Create folds
@@ -76,9 +72,7 @@ def test_manual_pipeline():
     logging.debug("Creating PandasDataset")
     start_time = time.time()
     pd_dataset = PandasDataset(data, roles_parser(check_roles), task=task)
-    logging.debug(
-        "PandasDataset created. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+    logging.debug("PandasDataset created. Time = {:.3f} sec".format(time.time() - start_time))
 
     # # Print pandas dataset feature roles
     logging.debug("Print pandas dataset feature roles")
@@ -108,9 +102,7 @@ def test_manual_pipeline():
     selector = ImportanceCutoffSelector(pipe, model0, mbie, cutoff=10)
     start_time = time.time()
     selector.fit(selector_iterator)
-    logging.debug(
-        "Feature selector fitted. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+    logging.debug("Feature selector fitted. Time = {:.3f} sec".format(time.time() - start_time))
 
     logging.debug("Feature selector scores:")
     logging.debug("\n{}".format(selector.get_features_score()))
@@ -146,9 +138,7 @@ def test_manual_pipeline():
     logging.debug("Start AutoML pipeline fit_predict")
     start_time = time.time()
     pred = total.fit_predict(train_valid)
-    logging.debug(
-        "Fit_predict finished. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+    logging.debug("Fit_predict finished. Time = {:.3f} sec".format(time.time() - start_time))
 
     # # Check preds
     logging.debug("Preds:")
@@ -159,9 +149,7 @@ def test_manual_pipeline():
     logging.debug("Predict full train dataset")
     start_time = time.time()
     train_pred = total.predict(pd_dataset)
-    logging.debug(
-        "Predict finished. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+    logging.debug("Predict finished. Time = {:.3f} sec".format(time.time() - start_time))
     logging.debug("Preds:")
     logging.debug("\n{}".format(train_pred))
     logging.debug("Preds.shape = {}".format(train_pred.shape))

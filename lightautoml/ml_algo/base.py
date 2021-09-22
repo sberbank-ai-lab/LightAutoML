@@ -159,9 +159,7 @@ class MLAlgo(ABC):
             Metric value.
 
         """
-        assert (
-            self.task is not None
-        ), "No metric defined. Should be fitted on dataset first."
+        assert self.task is not None, "No metric defined. Should be fitted on dataset first."
         metric = self.task.get_dataset_metric()
 
         return metric(dataset, dropna=True)
@@ -187,9 +185,7 @@ class TabularMLAlgo(MLAlgo):
 
     _name: str = "TabularAlgo"
 
-    def _set_prediction(
-        self, dataset: NumpyDataset, preds_arr: np.ndarray
-    ) -> NumpyDataset:
+    def _set_prediction(self, dataset: NumpyDataset, preds_arr: np.ndarray) -> NumpyDataset:
         """Insert predictions to dataset with. Inplace transformation.
 
         Args:
@@ -203,15 +199,11 @@ class TabularMLAlgo(MLAlgo):
 
         prefix = "{0}_prediction".format(self._name)
         prob = self.task.name in ["binary", "multiclass"]
-        dataset.set_data(
-            preds_arr, prefix, NumericRole(np.float32, force_input=True, prob=prob)
-        )
+        dataset.set_data(preds_arr, prefix, NumericRole(np.float32, force_input=True, prob=prob))
 
         return dataset
 
-    def fit_predict_single_fold(
-        self, train: TabularDataset, valid: TabularDataset
-    ) -> Tuple[Any, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
         """Train on train dataset and predict on holdout dataset.
 
         Args:
@@ -258,9 +250,7 @@ class TabularMLAlgo(MLAlgo):
 
         # get empty validation data to write prediction
         # TODO: Think about this cast
-        preds_ds = cast(
-            NumpyDataset, train_valid_iterator.get_validation_data().empty().to_numpy()
-        )
+        preds_ds = cast(NumpyDataset, train_valid_iterator.get_validation_data().empty().to_numpy())
 
         outp_dim = 1
         if self.task.name == "multiclass":
@@ -275,9 +265,7 @@ class TabularMLAlgo(MLAlgo):
         for n, (idx, train, valid) in enumerate(train_valid_iterator):
             if iterator_len > 1:
                 logger.info2(
-                    "===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m =====".format(
-                        n, self._name
-                    )
+                    "===== Start working with \x1b[1mfold {}\x1b[0m for \x1b[1m{}\x1b[0m =====".format(n, self._name)
                 )
             self.timer.set_control_point()
 
@@ -291,9 +279,7 @@ class TabularMLAlgo(MLAlgo):
             if (n + 1) != len(train_valid_iterator):
                 # split into separate cases because timeout checking affects parent pipeline timer
                 if self.timer.time_limit_exceeded():
-                    logger.info(
-                        "Time limit exceeded after calculating fold {0}\n".format(n)
-                    )
+                    logger.info("Time limit exceeded after calculating fold {0}\n".format(n))
                     break
 
         preds_arr /= np.where(counter_arr == 0, 1, counter_arr)
@@ -302,14 +288,10 @@ class TabularMLAlgo(MLAlgo):
         preds_ds = self._set_prediction(preds_ds, preds_arr)
 
         if iterator_len > 1:
-            logger.info(
-                f"Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m"
-            )
+            logger.info(f"Fitting \x1b[1m{self._name}\x1b[0m finished. score = \x1b[1m{self.score(preds_ds)}\x1b[0m")
 
         if iterator_len > 1 or "Tuned" not in self._name:
-            logger.info(
-                "\x1b[1m{}\x1b[0m fitting and predicting completed".format(self._name)
-            )
+            logger.info("\x1b[1m{}\x1b[0m fitting and predicting completed".format(self._name))
         return preds_ds
 
     def predict_single_fold(self, model: Any, dataset: TabularDataset) -> np.ndarray:

@@ -105,13 +105,9 @@ class ImageFeaturesTransformer(LAMLTransformer):
         feats = []
         self.dicts = {}
         for n, i in enumerate(df.columns):
-            fg = CreateImageFeatures(
-                self.hist_size, self.is_hsv, self.n_jobs, self.loader
-            )
+            fg = CreateImageFeatures(self.hist_size, self.is_hsv, self.n_jobs, self.loader)
             features = list(
-                np.char.array([self._fname_prefix + "_"])
-                + np.char.array(fg.fe.get_names())
-                + np.char.array(["__" + i])
+                np.char.array([self._fname_prefix + "_"]) + np.char.array(fg.fe.get_names()) + np.char.array(["__" + i])
             )
             self.dicts[i] = {"fg": fg, "feats": features}
             feats.extend(features)
@@ -238,10 +234,7 @@ class AutoCVWrap(LAMLTransformer):
 
         names = []
         for n, i in enumerate(subs.columns):
-            feats = [
-                self._fname_prefix + "_" + self._emb_name + "_" + str(x) + "__" + i
-                for x in range(self.emb_size)
-            ]
+            feats = [self._fname_prefix + "_" + self._emb_name + "_" + str(x) + "__" + i for x in range(self.emb_size)]
             self.dicts[i] = {
                 "transformer": deepcopy(self.transformer.fit(subs[i])),
                 "feats": feats,
@@ -273,9 +266,7 @@ class AutoCVWrap(LAMLTransformer):
 
         for n, conlumn_name in enumerate(df.columns):
             if self.cache_dir is not None:
-                full_hash = get_textarr_hash(df[conlumn_name]) + get_textarr_hash(
-                    self.dicts[conlumn_name]["feats"]
-                )
+                full_hash = get_textarr_hash(df[conlumn_name]) + get_textarr_hash(self.dicts[conlumn_name]["feats"])
                 fname = os.path.join(self.cache_dir, full_hash + ".pkl")
 
                 if os.path.exists(fname):
@@ -285,15 +276,11 @@ class AutoCVWrap(LAMLTransformer):
                         new_arr = pickle.load(f)
 
                 else:
-                    new_arr = self.dicts[conlumn_name]["transformer"].transform(
-                        df[conlumn_name]
-                    )
+                    new_arr = self.dicts[conlumn_name]["transformer"].transform(df[conlumn_name])
                     with open(fname, "wb") as f:
                         pickle.dump(new_arr, f)
             else:
-                new_arr = self.dicts[conlumn_name]["transformer"].transform(
-                    df[conlumn_name]
-                )
+                new_arr = self.dicts[conlumn_name]["transformer"].transform(df[conlumn_name])
 
             output = dataset.empty().to_numpy()
             output.set_data(new_arr, self.dicts[conlumn_name]["feats"], roles)

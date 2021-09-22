@@ -123,12 +123,8 @@ class PipelineTimer(Timer):
 
         return (self.time_left - self._overhead) * (score / self._task_scores)
 
-    def get_task_timer(
-        self, key: Optional[str] = None, score: float = 1.0
-    ) -> "TaskTimer":
-        return TaskTimer(
-            self, key, score, self._rate_overhead, self._mode, self.tuning_rate
-        )
+    def get_task_timer(self, key: Optional[str] = None, score: float = 1.0) -> "TaskTimer":
+        return TaskTimer(self, key, score, self._rate_overhead, self._mode, self.tuning_rate)
 
 
 class TaskTimer(Timer):
@@ -256,11 +252,7 @@ class TaskTimer(Timer):
             if len(total_run_info) == 0:
                 return None
 
-            single_run_est = (
-                np.array(total_run_info).sum()
-                / np.array(total_run_scores).sum()
-                * self.score
-            )
+            single_run_est = np.array(total_run_info).sum() / np.array(total_run_scores).sum() * self.score
             return single_run_est * n_folds
 
         # case - algo runs at least ones
@@ -317,10 +309,7 @@ class TaskTimer(Timer):
 
         """
         new_tasks_score = self.score / n_parts
-        timers = [
-            self.pipe_timer.get_task_timer(self.key, new_tasks_score)
-            for _ in range(n_parts)
-        ]
+        timers = [self.pipe_timer.get_task_timer(self.key, new_tasks_score) for _ in range(n_parts)]
         self.pipe_timer.close_task(self.score)
 
         return timers

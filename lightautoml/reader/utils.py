@@ -38,13 +38,9 @@ def set_sklearn_folds(
             split = GroupKFold(cv).split(group, group, group)
         elif task.name in ["binary", "multiclass"]:
 
-            split = StratifiedKFold(cv, random_state=random_state, shuffle=True).split(
-                target, target
-            )
+            split = StratifiedKFold(cv, random_state=random_state, shuffle=True).split(target, target)
         else:
-            split = KFold(cv, random_state=random_state, shuffle=True).split(
-                target, target
-            )
+            split = KFold(cv, random_state=random_state, shuffle=True).split(target, target)
 
         folds = np.zeros(target.shape[0], dtype=np.int32)
         for n, (f0, f1) in enumerate(split):
