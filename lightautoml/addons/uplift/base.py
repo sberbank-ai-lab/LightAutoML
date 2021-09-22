@@ -425,8 +425,10 @@ class AutoUplift(BaseAutoUplift):
 
         candidate_info = deepcopy(self.best_metalearner_candidate_info)
         if update_metalearner_params:
-            candidate_info.update_params(update_metalearner_params)
-            candidate_info.update_baselearner_params(update_baselearner_params)
+            if len(update_metalearner_params) > 0:
+                candidate_info.update_params(update_metalearner_params)
+            if len(update_baselearner_params) > 0:
+                candidate_info.update_baselearner_params(update_baselearner_params)
 
         best_metalearner = candidate_info()
 

@@ -1561,6 +1561,8 @@ class ReportDecoUplift(ReportDeco):
         treatment_role, _ = _get_treatment_role(roles)
         new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
+        self._model._timer._timeout = 1e10
+        self._model._timer.start()
         # treatment
         treatment_train_data = train_data[train_data[self._treatment_col] == 1]
         treatment_target = treatment_train_data[self._target].values
@@ -1585,6 +1587,8 @@ class ReportDecoUplift(ReportDeco):
         new_roles = deepcopy(roles)
         new_roles.pop(treatment_role)
 
+        self._model._timer._timeout = 1e10
+        self._model._timer.start()
         self._model._fit_propensity_learner(train_data, roles)
         self._model._fit_outcome_learners(train_data, roles)
 
