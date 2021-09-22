@@ -40,11 +40,7 @@ class MyClass:
         self.attr1 = attr1
         self.attr2 = attr2
         date = datetime.datetime.now()
-        print(
-            "{}.{}.{} {}:{}:{}".format(
-                date.day, date.month, date.year, date.hour, date.minute, date.second
-            )
-        )
+        print("{}.{}.{} {}:{}:{}".format(date.day, date.month, date.year, date.hour, date.minute, date.second))
 
 
 # .. toctree::
