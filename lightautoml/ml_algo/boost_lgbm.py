@@ -179,9 +179,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def _get_search_spaces(
-        self, suggested_params: Dict, estimated_n_trials: int
-    ) -> Dict:
+    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
@@ -234,9 +232,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return optimization_search_space
 
-    def fit_predict_single_fold(
-        self, train: TabularDataset, valid: TabularDataset
-    ) -> Tuple[lgb.Booster, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[lgb.Booster, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -257,12 +253,8 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             feval,
         ) = self._infer_params()
 
-        train_target, train_weight = self.task.losses["lgb"].fw_func(
-            train.target, train.weights
-        )
-        valid_target, valid_weight = self.task.losses["lgb"].fw_func(
-            valid.target, valid.weights
-        )
+        train_target, train_weight = self.task.losses["lgb"].fw_func(train.target, train.weights)
+        valid_target, valid_weight = self.task.losses["lgb"].fw_func(valid.target, valid.weights)
 
         lgb_train = lgb.Dataset(train.data, label=train_target, weight=train_weight)
         lgb_valid = lgb.Dataset(valid.data, label=valid_target, weight=valid_weight)
@@ -285,9 +277,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return model, val_pred
 
-    def predict_single_fold(
-        self, model: lgb.Booster, dataset: TabularDataset
-    ) -> np.ndarray:
+    def predict_single_fold(self, model: lgb.Booster, dataset: TabularDataset) -> np.ndarray:
         """Predict target values for dataset.
 
         Args:

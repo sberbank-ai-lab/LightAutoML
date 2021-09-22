@@ -17,9 +17,7 @@ from lightautoml.tasks import Task
 
 def test_nlp_preset():
     np.random.seed(42)
-    logging.basicConfig(
-        format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
-    )
+    logging.basicConfig(format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG)
 
     data = pd.read_csv("../examples/data/avito1k_train.csv")
 
@@ -42,17 +40,9 @@ def test_nlp_preset():
 
     logging.debug("Check scores...")
     print(
-        "OOF score: {}".format(
-            mean_squared_error(
-                train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0]
-            )
-        )
+        "OOF score: {}".format(mean_squared_error(train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0]))
     )
-    print(
-        "TEST score: {}".format(
-            mean_squared_error(test[roles["target"]].values, test_pred.data[:, 0])
-        )
-    )
+    print("TEST score: {}".format(mean_squared_error(test[roles["target"]].values, test_pred.data[:, 0])))
     print("Pickle automl")
 
     with open("automl.pickle", "wb") as f:
@@ -64,11 +54,7 @@ def test_nlp_preset():
 
     logging.debug("Predict loaded automl")
     test_pred = automl.predict(test)
-    print(
-        "TEST score, loaded: {}".format(
-            mean_squared_error(test["deal_probability"].values, test_pred.data[:, 0])
-        )
-    )
+    print("TEST score, loaded: {}".format(mean_squared_error(test["deal_probability"].values, test_pred.data[:, 0])))
 
     os.remove("automl.pickle")
     shutil.rmtree("./models", ignore_errors=True)

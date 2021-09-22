@@ -161,16 +161,12 @@ class DLTransformer(TransformerMixin):
         if self.embedding_model is not None:
             self.embedding_model.to(self.device)
             if self.device_ids is not None:
-                self.embedding_model = CustomDataParallel(
-                    self.embedding_model, device_ids=self.device_ids
-                )
+                self.embedding_model = CustomDataParallel(self.embedding_model, device_ids=self.device_ids)
             self.embedding_model.eval()
 
         for sample in loader:
             data = {
-                i: sample[i].long().to(self.device)
-                if _dtypes_mapping[i] == "long"
-                else sample[i].to(self.device)
+                i: sample[i].long().to(self.device) if _dtypes_mapping[i] == "long" else sample[i].to(self.device)
                 for i in sample.keys()
             }
             if self.embedding_model is not None:
@@ -178,11 +174,7 @@ class DLTransformer(TransformerMixin):
                 if "attention_mask" in data:
                     length = torch.sum(data["attention_mask"], dim=1)
                 else:
-                    length = (
-                        (torch.ones(len(embed)) * self.dataset_params["max_length"])
-                        .to(self.device)
-                        .long()
-                    )
+                    length = (torch.ones(len(embed)) * self.dataset_params["max_length"]).to(self.device).long()
                 data = {"text": embed, "length": length}
             embed = self.model(data).detach().cpu().numpy()
             result.append(embed.astype(np.float32))
@@ -218,10 +210,7 @@ def position_encoding_init(n_pos: int, embed_size: int) -> torch.Tensor:
     """
     position_enc = np.array(
         [
-            [
-                pos / np.power(10000, 2 * (j // 2) / embed_size)
-                for j in range(embed_size)
-            ]
+            [pos / np.power(10000, 2 * (j // 2) / embed_size) for j in range(embed_size)]
             if pos != 0
             else np.zeros(embed_size)
             for pos in range(n_pos)
@@ -281,9 +270,7 @@ class BOREP(nn.Module):
         self.pos_encoding = pos_encoding
         seed_everything(42)
         if self.pos_encoding:
-            self.pos_code = position_encoding_init(max_length, self.embed_size).view(
-                1, max_length, self.embed_size
-            )
+            self.pos_code = position_encoding_init(max_length, self.embed_size).view(1, max_length, self.embed_size)
 
         self.pooling = pooling_by_name[pooling]()
 
@@ -327,9 +314,7 @@ class BOREP(nn.Module):
         x = x.contiguous().view(batch_size * batch_max_length, -1)
         x = self.proj(x)
         out = x.contiguous().view(batch_size, batch_max_length, -1)
-        x_length = (
-            torch.arange(out.shape[1])[None, :].to(out.device) < inp["length"][:, None]
-        )[:, :, None]
+        x_length = (torch.arange(out.shape[1])[None, :].to(out.device) < inp["length"][:, None])[:, :, None]
         out = self.pooling(out, x_length)
 
         return out
@@ -342,12 +327,7 @@ class RandomLSTM(nn.Module):
     _poolers = ("max", "mean", "sum")
 
     def __init__(
-        self,
-        embed_size: int = 300,
-        hidden_size: int = 256,
-        pooling: str = "mean",
-        num_layers: int = 1,
-        **kwargs: Any
+        self, embed_size: int = 300, hidden_size: int = 256, pooling: str = "mean", num_layers: int = 1, **kwargs: Any
     ):
         """Random LSTM sentence embeddings.
 
@@ -368,11 +348,7 @@ class RandomLSTM(nn.Module):
         """
         super(RandomLSTM, self).__init__()
         if pooling not in self._poolers:
-            raise ValueError(
-                "pooling - {} - not in the list of available types {}".format(
-                    pooling, self._poolers
-                )
-            )
+            raise ValueError("pooling - {} - not in the list of available types {}".format(pooling, self._poolers))
         seed_everything(42)
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(
@@ -406,9 +382,7 @@ class RandomLSTM(nn.Module):
     @torch.no_grad()
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         out, _ = self.lstm(inp["text"])
-        x_length = (
-            torch.arange(out.shape[1])[None, :].to(out.device) < inp["length"][:, None]
-        )[:, :, None]
+        x_length = (torch.arange(out.shape[1])[None, :].to(out.device) < inp["length"][:, None])[:, :, None]
         out = self.pooling(out, x_length)
         return out
 
@@ -443,11 +417,7 @@ class BertEmbedder(nn.Module):
         """
         super(BertEmbedder, self).__init__()
         if pooling not in self._poolers:
-            raise ValueError(
-                "pooling - {} - not in the list of available types {}".format(
-                    pooling, self._poolers
-                )
-            )
+            raise ValueError("pooling - {} - not in the list of available types {}".format(pooling, self._poolers))
 
         self.pooling = pooling_by_name[pooling]()
 
@@ -462,9 +432,7 @@ class BertEmbedder(nn.Module):
             return_dict=False,
         )
 
-        encoded_layers = self.pooling(
-            encoded_layers, inp["attention_mask"].unsqueeze(-1).bool()
-        )
+        encoded_layers = self.pooling(encoded_layers, inp["attention_mask"].unsqueeze(-1).bool())
 
         return encoded_layers
 

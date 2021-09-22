@@ -187,9 +187,7 @@ class IndexedString:
         """
         return self.inv[idx]
 
-    def inverse_removing(
-        self, to_del: Union[List[str], List[int]], by_tokens: bool = False
-    ) -> str:
+    def inverse_removing(self, to_del: Union[List[str], List[int]], by_tokens: bool = False) -> str:
         """Remove tokens.
 
         Args:
@@ -323,21 +321,14 @@ def draw_html(
         grad_negative_label = ""
 
     tokens_html = [
-        token_template.format(token=token, color_hex=get_color_hex(weight))
-        for token, weight in tokens_and_weights
+        token_template.format(token=token, color_hex=get_color_hex(weight)) for token, weight in tokens_and_weights
     ]
 
     if grad_line:
-        between_ticks = [
-            (100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0
-            for i in range(n_ticks + 1)
-        ]
+        between_ticks = [(100 / (n_ticks)) - 5e-2 * 6 / n_ticks if i <= n_ticks - 1 else 0 for i in range(n_ticks + 1)]
         ticks = np.linspace(-norm_const, norm_const, n_ticks + 1) / (10 ** (order))
         ticks_chart = " ".join(
-            [
-                ticks_template.format(t, 0.7 + 0.385 * (k < 0), k)
-                for t, k in zip(between_ticks, ticks)
-            ]
+            [ticks_template.format(t, 0.7 + 0.385 * (k < 0), k) for t, k in zip(between_ticks, ticks)]
         )
         grad_statement = """
         <p style="text-align: center">
@@ -401,7 +392,5 @@ def draw_html(
     return raw_html
 
 
-def cross_entropy_multiple_class(
-    input: torch.FloatTensor, target: torch.FloatTensor
-) -> torch.Tensor:
+def cross_entropy_multiple_class(input: torch.FloatTensor, target: torch.FloatTensor) -> torch.Tensor:
     return torch.mean(torch.sum(target * -torch.log(clamp_probs(input)), dim=1))

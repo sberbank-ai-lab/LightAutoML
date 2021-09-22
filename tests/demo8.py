@@ -32,19 +32,15 @@ from lightautoml.utils.timer import PipelineTimer
 # demo of timer, blender and multiclass
 def test_timer_blender_multiclass():
     np.random.seed(42)
-    logging.basicConfig(
-        format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
-    )
+    logging.basicConfig(format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG)
 
     data = pd.read_csv("../examples/data/sampled_app_train.csv")
 
-    data["BIRTH_DATE"] = (
-        np.datetime64("2018-01-01")
-        + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-    ).astype(str)
+    data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(
+        str
+    )
     data["EMP_DATE"] = (
-        np.datetime64("2018-01-01")
-        + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+        np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
     ).astype(str)
 
     data["report_dt"] = np.datetime64("2018-01-01")
@@ -53,9 +49,7 @@ def test_timer_blender_multiclass():
     data["allnan"] = np.nan
 
     data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
-    data["TARGET"] = np.where(
-        np.random.rand(data.shape[0]) > 0.5, 2, data["TARGET"].values
-    )
+    data["TARGET"] = np.where(np.random.rand(data.shape[0]) > 0.5, 2, data["TARGET"].values)
 
     train, test = train_test_split(data, test_size=2000, random_state=42)
     # ======================================================================================
@@ -77,9 +71,7 @@ def test_timer_blender_multiclass():
     logging.debug("Selector created...")
     # ======================================================================================
     logging.debug("Create gbms...")
-    feats_gbm_0 = LGBAdvancedPipeline(
-        top_intersections=4, output_categories=True, feats_imp=imp_sel_0
-    )
+    feats_gbm_0 = LGBAdvancedPipeline(top_intersections=4, output_categories=True, feats_imp=imp_sel_0)
     timer_gbm_0 = timer.get_task_timer("gbm")
     timer_gbm_1 = timer.get_task_timer("gbm")
 
@@ -101,9 +93,7 @@ def test_timer_blender_multiclass():
     timer_reg = timer.get_task_timer("reg")
     reg_0 = LinearLBFGS(timer=timer_reg)
 
-    reg_lvl0 = MLPipeline(
-        [reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None
-    )
+    reg_lvl0 = MLPipeline([reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None)
     logging.debug("Linear created...")
     # ======================================================================================
     logging.debug("Create reader...")
@@ -140,21 +130,13 @@ def test_timer_blender_multiclass():
     logging.debug("Finnished fitting...")
 
     test_pred = automl.predict(test)
-    logging.debug(
-        "Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape)
-    )
+    logging.debug("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape))
     # ======================================================================================
     not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
     logging.debug("Check scores...")
-    logging.debug(
-        "OOF score: {}".format(
-            log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan, :])
-        )
-    )
-    logging.debug(
-        "TEST score: {}".format(log_loss(test["TARGET"].values, test_pred.data))
-    )
+    logging.debug("OOF score: {}".format(log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan, :])))
+    logging.debug("TEST score: {}".format(log_loss(test["TARGET"].values, test_pred.data)))
     # ======================================================================================
     logging.debug("Pickle automl")
     with open("automl.pickle", "wb") as f:
@@ -166,17 +148,13 @@ def test_timer_blender_multiclass():
 
     logging.debug("Predict loaded automl")
     test_pred = automl.predict(test)
-    logging.debug(
-        "TEST score, loaded: {}".format(log_loss(test["TARGET"].values, test_pred.data))
-    )
+    logging.debug("TEST score, loaded: {}".format(log_loss(test["TARGET"].values, test_pred.data)))
 
     # ======================================================================================
     for dat, df, name in zip([oof_pred, test_pred], [train, test], ["train", "test"]):
         logging.debug("Check aucs {0}...".format(name))
         for c in range(3):
-            _sc = roc_auc_score(
-                (df["TARGET"].values == c).astype(np.float32), dat.data[:, c]
-            )
+            _sc = roc_auc_score((df["TARGET"].values == c).astype(np.float32), dat.data[:, c])
             logging.debug("Cl {0} auc score: {1}".format(c, _sc))
     # ======================================================================================
 

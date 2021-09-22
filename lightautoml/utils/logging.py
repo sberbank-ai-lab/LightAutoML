@@ -9,9 +9,7 @@ import warnings
 from .. import _logger
 
 
-formatter_debug = logging.Formatter(
-    f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s"
-)
+formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
 formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
 
 INFO2 = 17
@@ -129,10 +127,7 @@ def add_filehandler(filename: str, level=logging.DEBUG):
 
         for handler in _logger.handlers:
             if type(handler) == logging.FileHandler:
-                if (
-                    handler.baseFilename == filename
-                    or handler.baseFilename == os.path.join(os.getcwd(), filename)
-                ):
+                if handler.baseFilename == filename or handler.baseFilename == os.path.join(os.getcwd(), filename):
                     has_file_handler = True
                 else:
                     _logger.handlers.remove(handler)

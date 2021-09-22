@@ -79,9 +79,7 @@ class ColorFeatures:
 
         """
         # TODO: add value range check
-        hist = cv2.calcHist(
-            [img], [0], mask=None, histSize=[self.hist_size], ranges=(0, 255)
-        )[:, 0]
+        hist = cv2.calcHist([img], [0], mask=None, histSize=[self.hist_size], ranges=(0, 255))[:, 0]
 
         return list(hist / hist.sum())
 
@@ -94,10 +92,7 @@ class ColorFeatures:
         """
         return [
             j
-            for i in [
-                ["color_" + j + "_" + str(i) for i in np.arange(self.hist_size)]
-                for j in self._f_names
-            ]
+            for i in [["color_" + j + "_" + str(i) for i in np.arange(self.hist_size)] for j in self._f_names]
             for j in i
         ]
 
@@ -172,9 +167,7 @@ class CreateImageFeatures:
             Array of histograms.
 
         """
-        res = Parallel(self.n_jobs)(
-            delayed(self.process)(im_path_i) for im_path_i in samples
-        )
+        res = Parallel(self.n_jobs)(delayed(self.process)(im_path_i) for im_path_i in samples)
         return np.vstack(res)
 
 
@@ -221,9 +214,7 @@ class EffNetImageEmbedder(nn.Module):
             Shape of embedding.
 
         """
-        return (
-            self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
-        )
+        return self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
 
     def forward(self, x) -> torch.Tensor:
         out = self.model(x)
@@ -305,9 +296,7 @@ class DeepImageEmbedder(TransformerMixin):
         self.verbose = verbose
         seed_everything(random_state)
 
-        self.model = EffNetImageEmbedder(
-            model_name, weights_path, self.is_advprop, self.device
-        )
+        self.model = EffNetImageEmbedder(model_name, weights_path, self.is_advprop, self.device)
 
     def fit(self, data: Any = None):
         return self
@@ -325,9 +314,7 @@ class DeepImageEmbedder(TransformerMixin):
         """
 
         data = ImageDataset(data, self.is_advprop)
-        loader = DataLoader(
-            data, batch_size=self.batch_size, shuffle=False, num_workers=self.n_jobs
-        )
+        loader = DataLoader(data, batch_size=self.batch_size, shuffle=False, num_workers=self.n_jobs)
 
         result = []
         if self.verbose:

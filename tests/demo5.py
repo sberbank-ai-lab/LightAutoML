@@ -36,22 +36,18 @@ from lightautoml.tasks import Task
 
 def test_boostlgbm_and_linearlbfgs_in_one_automl_pipeline():
     np.random.seed(42)
-    logging.basicConfig(
-        format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
-    )
+    logging.basicConfig(format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG)
 
     logging.debug("Load data...")
     data = pd.read_csv("../examples/data/sampled_app_train.csv")
     logging.debug("Data loaded")
 
     logging.debug("Features modification from user side...")
-    data["BIRTH_DATE"] = (
-        np.datetime64("2018-01-01")
-        + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-    ).astype(str)
+    data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(
+        str
+    )
     data["EMP_DATE"] = (
-        np.datetime64("2018-01-01")
-        + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+        np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
     ).astype(str)
 
     data["report_dt"] = np.datetime64("2018-01-01")
@@ -68,11 +64,7 @@ def test_boostlgbm_and_linearlbfgs_in_one_automl_pipeline():
     train, test = train_test_split(data, test_size=0.2, random_state=42)
     train.reset_index(drop=True, inplace=True)
     test.reset_index(drop=True, inplace=True)
-    logging.debug(
-        "Data splitted. Parts sizes: train_data = {}, test_data = {}".format(
-            train.shape, test.shape
-        )
-    )
+    logging.debug("Data splitted. Parts sizes: train_data = {}, test_data = {}".format(train.shape, test.shape))
 
     logging.debug("Start creation selector_0...")
     feat_sel_0 = LGBSimpleFeatures()
@@ -109,9 +101,7 @@ def test_boostlgbm_and_linearlbfgs_in_one_automl_pipeline():
     feat_sel_1 = LGBSimpleFeatures()
     mod_sel_1 = BoostLGBM()
     imp_sel_1 = NpPermutationImportanceEstimator()
-    selector_1 = NpIterativeFeatureSelector(
-        feat_sel_1, mod_sel_1, imp_sel_1, feature_group_size=1
-    )
+    selector_1 = NpIterativeFeatureSelector(feat_sel_1, mod_sel_1, imp_sel_1, feature_group_size=1)
     logging.debug("End creation composed selector...")
 
     logging.debug("Start creation reg_l1_0...")
@@ -167,25 +157,13 @@ def test_boostlgbm_and_linearlbfgs_in_one_automl_pipeline():
     logging.debug("End fit automl...")
 
     test_pred = automl.predict(test)
-    logging.debug(
-        "Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape)
-    )
+    logging.debug("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape))
 
     not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
     logging.debug("Check scores...")
-    print(
-        "OOF score: {}".format(
-            roc_auc_score(
-                train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0]
-            )
-        )
-    )
-    print(
-        "TEST score: {}".format(
-            roc_auc_score(test[roles["target"]].values, test_pred.data[:, 0])
-        )
-    )
+    print("OOF score: {}".format(roc_auc_score(train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0])))
+    print("TEST score: {}".format(roc_auc_score(test[roles["target"]].values, test_pred.data[:, 0])))
     logging.debug("Pickle automl")
     with open("automl.pickle", "wb") as f:
         pickle.dump(automl, f)
@@ -196,10 +174,6 @@ def test_boostlgbm_and_linearlbfgs_in_one_automl_pipeline():
 
     logging.debug("Predict loaded automl")
     test_pred = automl.predict(test)
-    logging.debug(
-        "TEST score, loaded: {}".format(
-            roc_auc_score(test["TARGET"].values, test_pred.data[:, 0])
-        )
-    )
+    logging.debug("TEST score, loaded: {}".format(roc_auc_score(test["TARGET"].values, test_pred.data[:, 0])))
 
     os.remove("automl.pickle")
