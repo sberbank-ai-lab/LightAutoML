@@ -317,7 +317,8 @@ class PandasToPandasReader(Reader):
             parsed_roles[feat] = r
 
         assert "target" in kwargs, "Target should be defined"
-        kwargs["target"] = train_data[kwargs["target"]]
+        if self.task.name in ['multi:reg', 'multilabel']:
+            kwargs["target"] = train_data[kwargs["target"]]
         self.target = kwargs["target"].name if type(kwargs["target"]) == pd.Series else kwargs["target"].columns
         kwargs["target"] = self._create_target(kwargs["target"])
 
