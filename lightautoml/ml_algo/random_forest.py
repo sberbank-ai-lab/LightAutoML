@@ -6,7 +6,6 @@ from typing import Optional, Callable, Tuple, Dict, Union
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 import numpy as np
-from log_calls import record_history
 from optuna.trial import Trial
 from pandas import Series
 
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 RFModel = Union[RandomForestClassifier, RandomForestRegressor]
 
 
-@record_history(enabled=False)
 class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
     """Random forest algorigthm from Sklearn.
     default_params: All available parameters listed in lightgbm documentation:

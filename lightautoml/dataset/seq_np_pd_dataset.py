@@ -5,7 +5,6 @@ from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar, Callabl
 
 import numpy as np
 import pandas as pd
-from log_calls import record_history
 from pandas import Series, DataFrame
 from scipy import sparse
 import warnings
@@ -24,7 +23,6 @@ RowSlice = Optional[Union[Sequence[int], Sequence[bool]]]
 ColSlice = Optional[Union[Sequence[str], str]]
 
 
-@record_history(enabled=False)
 class SeqNumpyPandasDataset(PandasDataset):
     """Sequential Dataset, that contains info in pd.DataFrame format."""
     _dataset_type = 'SeqNumpyPandasDataset'
