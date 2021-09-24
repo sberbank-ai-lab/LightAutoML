@@ -424,11 +424,10 @@ class AutoUplift(BaseAutoUplift):
         ), "First call 'self.fit(...), to choose best metalearner"
 
         candidate_info = deepcopy(self.best_metalearner_candidate_info)
-        if update_metalearner_params:
-            if len(update_metalearner_params) > 0:
-                candidate_info.update_params(update_metalearner_params)
-            if len(update_baselearner_params) > 0:
-                candidate_info.update_baselearner_params(update_baselearner_params)
+        if len(update_metalearner_params) > 0:
+            candidate_info.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
+            candidate_info.update_baselearner_params(update_baselearner_params)
 
         best_metalearner = candidate_info()
 
@@ -1020,7 +1019,10 @@ class AutoUpliftTX(BaseAutoUplift):
         return self._best_metalearner.predict(data)
 
     def create_best_metalearner(
-        self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {}
+        self,
+        need_report: bool = True,
+        update_metalearner_params: Dict[str, Any] = {},
+        update_baselearner_params: Dict[str, Any] = {},
     ) -> Union[MetaLearner, ReportDecoUplift]:
         """Create 'raw' best metalearner with(without) report functionality.
 
@@ -1028,7 +1030,8 @@ class AutoUpliftTX(BaseAutoUplift):
 
         Args:
             need_report: Wrap best metalearner into Report
-            update_metalearner_params: Parameters inner learner.
+            update_metalearner_params: MetaLearner parameters.
+            update_baselearner_params: Parameters inner learner.
                 Recommended using - increasing timeout of 'TabularAutoML' learner for better scores.
                 Example: {'timeout': None}.
 
@@ -1041,8 +1044,11 @@ class AutoUpliftTX(BaseAutoUplift):
         ), "First call 'self.fit(...), to choose best metalearner."
 
         ml_wrap = deepcopy(self._best_metalearner_wrap)
-        if update_metalearner_params:
-            ml_wrap.update_baselearner_params(update_metalearner_params)
+
+        if len(update_metalearner_params) > 0:
+            ml_wrap.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
+            ml_wrap.update_baselearner_params(update_baselearner_params)
 
         best_metalearner_raw = ml_wrap()
 
@@ -1088,9 +1094,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
     def _generate_stage_baselearner_candidates(
         self,
-    ) -> Generator[
-        Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None
-    ]:  # -> Generator[Tuple[str, BaseLearnerWrapper], None, None]:
+    ) -> Generator[Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None]:
         """Iterate through a stage of baselearners one at a time."""
         stage_baselearners = self._set_stage_baselearners()
 

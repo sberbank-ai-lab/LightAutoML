@@ -794,7 +794,7 @@ class RLearner(MetaLearner):
     tau(x) - the treatment effect
 
     .. math::
-        \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) + (W_i - e(X_i))\tau(X_i) \Big]^2
+        \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) - (W_i - e(X_i))\tau(X_i) \Big]^2
 
     """
 

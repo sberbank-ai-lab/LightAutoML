@@ -1674,6 +1674,7 @@ class ReportDecoUplift(ReportDeco):
                 "Median absolute error",
                 "Mean squared error",
                 "R^2 (coefficient of determination)",
+                "Explained variance",
             ]
             self._model_summary = pd.DataFrame(
                 {"Evaluation parameter": evaluation_parameters}
@@ -1888,30 +1889,3 @@ class ReportDecoUplift(ReportDeco):
                 uplift_results=self._uplift_results
             )
             self._sections["uplift"] = results_section
-            
-
-    def _regression_details(self, data):
-        # graphics
-        plot_target_distribution(
-            data,
-            path=os.path.join(
-                self.output_path, self._inference_content["target_distribution"]
-            ),
-        )
-        plot_error_hist(
-            data,
-            path=os.path.join(self.output_path, self._inference_content["error_hist"]),
-        )
-        plot_reg_scatter(
-            data,
-            path=os.path.join(
-                self.output_path, self._inference_content["scatter_plot"]
-            ),
-        )
-        # metrics
-        mean_ae = mean_absolute_error(data["y_true"], data["y_pred"])
-        median_ae = median_absolute_error(data["y_true"], data["y_pred"])
-        mse = mean_squared_error(data["y_true"], data["y_pred"])
-        r2 = r2_score(data["y_true"], data["y_pred"])
-        evs = explained_variance_score(data["y_true"], data["y_pred"])
-        return mean_ae, median_ae, mse, r2
