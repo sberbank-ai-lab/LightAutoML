@@ -125,10 +125,7 @@ class TorchModel(TabularMLAlgo):
         params["loss"] = self.task.losses["torch"].loss
         params["metric"] = self.task.losses["torch"].metric_func
 
-        is_text = (
-            (len(params["text_features"]) > 0)
-            and (params["use_text"])
-        )
+        is_text = (len(params["text_features"]) > 0) and (params["use_text"])
         is_cat = (len(params["cat_features"]) > 0) and (params["use_cat"])
         is_cont = (len(params["cont_features"]) > 0) and (params["use_cont"])
 
