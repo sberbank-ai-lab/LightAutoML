@@ -129,6 +129,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
             self._text_features = get_columns_by_role(dataset, "Text")
 
         suggested_params = copy(self.default_params)
+    
 
         if self.freeze_defaults:
             return suggested_params
@@ -323,6 +324,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
                     "objective": fobj,
                     "eval_metric": feval,
                     "od_wait": early_stopping_rounds,
+                    "task_type": "CPU" if self.task.name in ['multilabel', 'multi:reg'] else params['task_type'] # warning in TabularAutoML?
                 },
             }
         )
