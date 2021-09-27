@@ -128,7 +128,6 @@ class TorchModel(TabularMLAlgo):
         is_text = (
             (len(params["text_features"]) > 0)
             and (params["use_text"])
-            and (params["device"].type == "cuda")
         )
         is_cat = (len(params["cat_features"]) > 0) and (params["use_cat"])
         is_cont = (len(params["cont_features"]) > 0) and (params["use_cont"])
