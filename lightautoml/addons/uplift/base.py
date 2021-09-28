@@ -231,7 +231,7 @@ class AutoUplift(BaseAutoUplift):
         uplift_candidates: List[MetaLearnerWrapper] = [],
         add_dd_candidates: bool = False,
         metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
-        has_report: bool = True,
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         threshold_imbalance_treatment: float = 0.2,
@@ -909,11 +909,10 @@ class AutoUpliftTX(BaseAutoUplift):
             ]
         ] = None,
         metalearners: List[str] = [],
-        metric: str = "adj_qini",
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
-        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -928,7 +927,6 @@ class AutoUpliftTX(BaseAutoUplift):
             increasing_metric: Increasing metric.
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
-            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
@@ -946,7 +944,7 @@ class AutoUpliftTX(BaseAutoUplift):
             increasing_metric,
             test_size,
             timeout,
-            timeout_metalearner,
+            None,
             timeout_single_learner,
             cpu_limit,
             gpu_ids,
@@ -968,7 +966,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         self._n_run_l2 = 3
 
-    def fit(self, data: DataFrame, roles: dict):
+    def fit(self, data: DataFrame, roles: dict, verbose: int = 0):
         """Fit AutoUplift.
 
         Choose best metalearner and fit it.
@@ -976,6 +974,7 @@ class AutoUpliftTX(BaseAutoUplift):
         Args:
             train_data: Dataset to train.
             roles: Roles dict with 'treatment' roles.
+            verbosee: Verbose.
 
         """
         train_data, test_data, test_treatment, test_target = self._prepare_data(
@@ -985,7 +984,7 @@ class AutoUpliftTX(BaseAutoUplift):
         self._timer.start()
 
         for stage_info in self._generate_stage_baselearner_candidates():
-            self._evaluate(stage_info, train_data, test_data, roles)
+            self._evaluate(stage_info, train_data, test_data, roles, verbose)
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
@@ -1332,6 +1331,7 @@ class AutoUpliftTX(BaseAutoUplift):
         train: DataFrame,
         test: DataFrame,
         roles: dict,
+        verbose: int = 0,
     ):
         """Evaluate baselearner: fit-train/predict-test.
 
@@ -1349,7 +1349,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         bl = bl_wrap()
 
-        bl.fit_predict(train_data, train_roles)
+        bl.fit_predict(train_data, train_roles, verbose)
         test_pred = bl.predict(test).data.ravel()
 
         tsbl = TrainedStageBaseLearner(
