@@ -391,6 +391,7 @@ class PandasToPandasReader(Reader):
         )
         if self.advanced_roles:
             new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
+
             droplist = [
                 x
                 for x in new_roles

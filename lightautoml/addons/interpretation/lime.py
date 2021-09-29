@@ -308,7 +308,7 @@ class LimeTextExplainer:
             else:
                 class_names = np.arange(automl.reader._n_classes)
         else:
-            class_names = list(class_mapping.values())
+            class_names = list(class_names.values())
 
         self.class_names = class_names
 

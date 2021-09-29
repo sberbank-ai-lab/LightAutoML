@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.2.16"
+version = "0.2.17"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = ["Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
            "Vakhrushev Anton <AGVakhrushev@sberbank.ru>",
@@ -74,6 +74,7 @@ pytest = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
 IPython = "*"
+mypy = "*"
 nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
@@ -83,7 +84,6 @@ pre-commit = "*"
 
 [tool.poetry.extras]
 pdf = ["weasyprint", "cffi"]
-
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
