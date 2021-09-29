@@ -151,7 +151,7 @@ LighAutoML framework has a lot of ready-to-use parts and extensive customization
     - (English) [Hands-On Python Guide to LightAutoML - An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
 
 # Installation
-### Installation via pip from PyPI
+## Installation via pip from PyPI
 To install LAMA framework on your machine:
 ```bash
 
@@ -167,9 +167,26 @@ pip install -U lightautoml[nlp]
 
 ```
 
-### Installation by poetry
+Additionaly, run following commands for generating report in pdf format:
 
-First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation)
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+```
+
+
+## Installation from source code
+
+First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation).
 
 ```bash
 
@@ -195,38 +212,30 @@ poetry install
 ```
 
 
-### Installation from sources with virtual environment creation
-If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
-```bash
-bash build_package.sh
-```
-To check this variant of installation and run all the demo scripts, use the command below:
-```bash
-bash test_package.sh
-```
-To install optional support for generating reports in pdf format run following commands:
-```bash
-# MacOS
-brew install cairo pango gdk-pixbuf libffi
-
-# Debian / Ubuntu
-sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
-# Fedora
-sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
-
-# Windows
-# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
-
-poetry install -E report
-```
-
 *******
 # Docs generation
 To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
+
 ```bash
-bash build_docs.sh
+cd docs
+mkdir docs/_static
+make clean html
+cd ..
+
+# Check docs construction
+python check_docs.py
+
 ```
+
+*******
+# Testing
+
+When installing from source code, to check the success of the installation and run all the demo scripts, use the command below:
+
+```
+poetry run pytest tests
+```
+
 
 # Contributing to LightAutoML
 If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
