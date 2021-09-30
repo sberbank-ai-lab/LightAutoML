@@ -384,7 +384,12 @@ class LimeTextExplainer:
         ).ravel()
 
         expl = TextExplanation(
-            idx_str, self.task_name, pred[0], self.class_names, self.random_state, self.draw_prediction
+            idx_str,
+            self.task_name,
+            pred[0],
+            self.class_names,
+            self.random_state,
+            self.draw_prediction,
         )
 
         return dataset, pred, distance * 100, expl
