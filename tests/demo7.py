@@ -19,7 +19,7 @@ def test_tabular_automl_preset_without_params():
     np.random.seed(42)
     logging.basicConfig(format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG)
 
-    data = pd.read_csv("../examples/data/sampled_app_train.csv")
+    data = pd.read_csv("./examples/data/sampled_app_train.csv")
 
     data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(
         str
