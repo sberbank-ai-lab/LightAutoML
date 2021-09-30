@@ -31,7 +31,7 @@ class TextExplanation:
         prediction: np.ndarray,
         class_names: Optional[List[Any]] = None,
         random_state=None,
-        draw_prediction: bool = False
+        draw_prediction: bool = False,
     ):
         """
 
@@ -251,7 +251,7 @@ class LimeTextExplainer:
         model_regressor: Any = None,
         distance_metric: str = "cosine",
         random_state: Union[int, np.random.RandomState] = 0,
-        draw_prediction: bool = False
+        draw_prediction: bool = False,
     ):
         """
 
