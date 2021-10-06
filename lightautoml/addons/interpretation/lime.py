@@ -31,6 +31,7 @@ class TextExplanation:
         prediction: np.ndarray,
         class_names: Optional[List[Any]] = None,
         random_state=None,
+        draw_prediction: bool = False,
     ):
         """
 
@@ -47,6 +48,7 @@ class TextExplanation:
         self.task_name = task_name
         self.prediction = prediction
         self.class_names = class_names
+        self.draw_prediction = draw_prediction
 
         if task_name == "reg":
             self.default_label = 0
@@ -158,6 +160,9 @@ class TextExplanation:
         label = self._label(label)
         weight_string = self.as_features(label, add_not_rel=True, normalize=False)
         prediction = self.prediction[label]
+        if not self.draw_prediction:
+            prediction = None
+
         if self.task_name == "reg":
             return draw_html(weight_string, self.task_name, prediction=prediction)
         elif self.task_name == "binary":
@@ -246,6 +251,7 @@ class LimeTextExplainer:
         model_regressor: Any = None,
         distance_metric: str = "cosine",
         random_state: Union[int, np.random.RandomState] = 0,
+        draw_prediction: bool = False,
     ):
         """
 
@@ -311,6 +317,7 @@ class LimeTextExplainer:
             class_names = list(class_names.values())
 
         self.class_names = class_names
+        self.draw_prediction = draw_prediction
 
     def explain_instance(
         self,
@@ -377,7 +384,12 @@ class LimeTextExplainer:
         ).ravel()
 
         expl = TextExplanation(
-            idx_str, self.task_name, pred[0], self.class_names, self.random_state
+            idx_str,
+            self.task_name,
+            pred[0],
+            self.class_names,
+            self.random_state,
+            self.draw_prediction,
         )
 
         return dataset, pred, distance * 100, expl

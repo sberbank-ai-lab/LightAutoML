@@ -233,6 +233,7 @@ def draw_html(
     grad_negative_label: Optional[str] = None,
     prediction: Optional[float] = None,
     n_ticks: int = 10,
+    draw_order: bool = False,
 ) -> str:
     """Get colored text in html format.
 
@@ -274,6 +275,10 @@ def draw_html(
     norm_const = max(map(lambda x: abs(x[1]), tokens_and_weights))
     order = int("{:.2e}".format(norm_const).split("e")[1])
     order_s = "✕ {:.0e}".format(10 ** order)
+    scale_word = "Scale"
+    if not draw_order:
+        order_s = ""
+        scale_word = ""
     lord = 0.5 * len(order_s) + 1.5  # lenght order
     inorm_const = 1 / norm_const
     if cmap is None:
@@ -352,7 +357,7 @@ def draw_html(
                 {}
             </div>
 
-            <div style="float: right; right: 0.75em; top: -3em; position: relative; font-weight: bold;">Scale</div>
+            <div style="float: right; right: 0.75em; top: -3em; position: relative; font-weight: bold;">{}</div>
             <div style="float: right; right: -2em; top: -2.9em; position: relative; font-weight: bold;">{}</div>
 
             <div style="float: left; left: -5.5em; top: -4.42em; position: relative;  font-weight: bold;">{}</div>
@@ -365,6 +370,7 @@ def draw_html(
             grad_positive_label,
             ticks_styling.format(lord, lord),
             ticks_chart,
+            scale_word,
             order_s,
             pred_field,
             prediction,

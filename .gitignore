@@ -148,3 +148,5 @@ cython_debug/
 lama_venv/
 poetry.lock
 *.db
+
+temp/

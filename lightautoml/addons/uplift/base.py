@@ -9,6 +9,7 @@ from dataclasses import field
 from itertools import product
 from itertools import zip_longest
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -103,8 +104,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def __init__(
         self,
         base_task: Task,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
@@ -118,7 +119,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         Args:
             base_task: Task ('binary'/'reg') if there aren't candidates.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
@@ -130,13 +131,15 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
 
         """
         assert 0.0 < test_size < 1.0, "'test_size' must be between (0.0, 1.0)"
-        assert isinstance(metric, str) or isinstance(
-            metric, TUpliftMetric
-        ), "Invalid metric type: available = {'str', 'TUpliftMetric'}"
+        assert (
+            isinstance(metric, str)
+            or isinstance(metric, TUpliftMetric)
+            or callable(metric)
+        ), "Invalid metric type: available = {'str', 'TUpliftMetric', 'function'}"
 
         self.base_task = base_task
         self.metric = metric
-        self.normed_metric = normed_metric
+        self.has_report = has_report
         self.increasing_metric = increasing_metric
         self.test_size = test_size
         self.timeout = timeout
@@ -164,14 +167,14 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         if isinstance(self.metric, str):
             try:
                 auc = calculate_uplift_auc(
-                    y_true, uplift_pred, treatment, self.metric, self.normed_metric
+                    y_true, uplift_pred, treatment, self.metric, False
                 )
             except ConstPredictError as e:
                 logger.error(str(e) + "\nMetric set to zero.")
                 auc = 0.0
 
             return auc
-        elif isinstance(self.metric, TUpliftMetric):
+        elif isinstance(self.metric, TUpliftMetric) or callable(self.metric):
             return self.metric(y_true, uplift_pred, treatment)
         else:
             raise Exception("Invalid metric type: available = {'str', 'TUpliftMetric'}")
@@ -227,8 +230,8 @@ class AutoUplift(BaseAutoUplift):
         base_task: Task,
         uplift_candidates: List[MetaLearnerWrapper] = [],
         add_dd_candidates: bool = False,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         threshold_imbalance_treatment: float = 0.2,
@@ -245,7 +248,7 @@ class AutoUplift(BaseAutoUplift):
             uplift_candidates: List of metalearners with params and custom name.
             add_dd_candidates: Add data depend candidates. Doesn't work when uplift_candidates is not default.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             threshold_imbalance_treatment: Threshold for imbalance treatment.
@@ -261,7 +264,7 @@ class AutoUplift(BaseAutoUplift):
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            has_report,
             increasing_metric,
             test_size,
             timeout,
@@ -421,8 +424,9 @@ class AutoUplift(BaseAutoUplift):
         ), "First call 'self.fit(...), to choose best metalearner"
 
         candidate_info = deepcopy(self.best_metalearner_candidate_info)
-        if update_metalearner_params:
+        if len(update_metalearner_params) > 0:
             candidate_info.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
             candidate_info.update_baselearner_params(update_baselearner_params)
 
         best_metalearner = candidate_info()
@@ -478,16 +482,30 @@ class AutoUplift(BaseAutoUplift):
         self._calculate_tabular_time()
 
         self.uplift_candidates = self._default_uplift_candidates
+        if self.has_report:
+            self.uplift_candidates = [
+                c
+                for c in self.uplift_candidates
+                if c.klass in ReportDecoUplift._available_metalearners
+            ]
 
         if self.add_dd_candidates:
-            self.uplift_candidates.extend(
-                self._generate_data_depend_uplift_candidates(data, roles)
-            )
+            dd_candidates = self._generate_data_depend_uplift_candidates(data, roles)
+            if self.has_report:
+                dd_candidates = [
+                    c
+                    for c in dd_candidates
+                    if c.klass in ReportDecoUplift._available_metalearners
+                ]
+            self.uplift_candidates.extend(dd_candidates)
 
     def _calculate_tabular_time(self):
         # Number TabularAutoML in all posible uplift candidates
         # TODO: rewrite this
-        num_tabular_automls = 16 if self.add_dd_candidates else 11
+        if self.has_report:
+            num_tabular_automls = 16 if self.add_dd_candidates else 11
+        else:
+            num_tabular_automls = 22 if self.add_dd_candidates else 17
 
         if self.timeout_single_learner is not None:
             self._tabular_timeout = self.timeout_single_learner
@@ -891,12 +909,10 @@ class AutoUpliftTX(BaseAutoUplift):
             ]
         ] = None,
         metalearners: List[str] = [],
-        metric: str = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
-        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -908,11 +924,9 @@ class AutoUpliftTX(BaseAutoUplift):
             baselearners: List of baselearners or baselearner divided into the groups (Dict).
             metalearners: List of metalearners.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
             increasing_metric: Increasing metric.
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
-            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
@@ -926,11 +940,11 @@ class AutoUpliftTX(BaseAutoUplift):
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            True,
             increasing_metric,
             test_size,
             timeout,
-            timeout_metalearner,
+            None,
             timeout_single_learner,
             cpu_limit,
             gpu_ids,
@@ -952,7 +966,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         self._n_run_l2 = 3
 
-    def fit(self, data: DataFrame, roles: dict):
+    def fit(self, data: DataFrame, roles: dict, verbose: int = 0):
         """Fit AutoUplift.
 
         Choose best metalearner and fit it.
@@ -960,6 +974,7 @@ class AutoUpliftTX(BaseAutoUplift):
         Args:
             train_data: Dataset to train.
             roles: Roles dict with 'treatment' roles.
+            verbosee: Verbose.
 
         """
         train_data, test_data, test_treatment, test_target = self._prepare_data(
@@ -969,7 +984,7 @@ class AutoUpliftTX(BaseAutoUplift):
         self._timer.start()
 
         for stage_info in self._generate_stage_baselearner_candidates():
-            self._evaluate(stage_info, train_data, test_data, roles)
+            self._evaluate(stage_info, train_data, test_data, roles, verbose)
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
@@ -1003,7 +1018,10 @@ class AutoUpliftTX(BaseAutoUplift):
         return self._best_metalearner.predict(data)
 
     def create_best_metalearner(
-        self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {}
+        self,
+        need_report: bool = True,
+        update_metalearner_params: Dict[str, Any] = {},
+        update_baselearner_params: Dict[str, Any] = {},
     ) -> Union[MetaLearner, ReportDecoUplift]:
         """Create 'raw' best metalearner with(without) report functionality.
 
@@ -1011,7 +1029,8 @@ class AutoUpliftTX(BaseAutoUplift):
 
         Args:
             need_report: Wrap best metalearner into Report
-            update_metalearner_params: Parameters inner learner.
+            update_metalearner_params: MetaLearner parameters.
+            update_baselearner_params: Parameters inner learner.
                 Recommended using - increasing timeout of 'TabularAutoML' learner for better scores.
                 Example: {'timeout': None}.
 
@@ -1024,8 +1043,11 @@ class AutoUpliftTX(BaseAutoUplift):
         ), "First call 'self.fit(...), to choose best metalearner."
 
         ml_wrap = deepcopy(self._best_metalearner_wrap)
-        if update_metalearner_params:
-            ml_wrap.update_baselearner_params(update_metalearner_params)
+
+        if len(update_metalearner_params) > 0:
+            ml_wrap.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
+            ml_wrap.update_baselearner_params(update_baselearner_params)
 
         best_metalearner_raw = ml_wrap()
 
@@ -1071,9 +1093,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
     def _generate_stage_baselearner_candidates(
         self,
-    ) -> Generator[
-        Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None
-    ]:  # -> Generator[Tuple[str, BaseLearnerWrapper], None, None]:
+    ) -> Generator[Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None]:
         """Iterate through a stage of baselearners one at a time."""
         stage_baselearners = self._set_stage_baselearners()
 
@@ -1311,6 +1331,7 @@ class AutoUpliftTX(BaseAutoUplift):
         train: DataFrame,
         test: DataFrame,
         roles: dict,
+        verbose: int = 0,
     ):
         """Evaluate baselearner: fit-train/predict-test.
 
@@ -1328,7 +1349,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         bl = bl_wrap()
 
-        bl.fit_predict(train_data, train_roles)
+        bl.fit_predict(train_data, train_roles, verbose)
         test_pred = bl.predict(test).data.ravel()
 
         tsbl = TrainedStageBaseLearner(
