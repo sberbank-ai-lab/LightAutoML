@@ -132,9 +132,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         """
         assert 0.0 < test_size < 1.0, "'test_size' must be between (0.0, 1.0)"
         assert (
-            isinstance(metric, str)
-            or isinstance(metric, TUpliftMetric)
-            or callable(metric)
+            isinstance(metric, str) or isinstance(metric, TUpliftMetric) or callable(metric)
         ), "Invalid metric type: available = {'str', 'TUpliftMetric', 'function'}"
 
         self.base_task = base_task
@@ -454,19 +452,13 @@ class AutoUplift(BaseAutoUplift):
         self.uplift_candidates = self._default_uplift_candidates
         if self.has_report:
             self.uplift_candidates = [
-                c
-                for c in self.uplift_candidates
-                if c.klass in ReportDecoUplift._available_metalearners
+                c for c in self.uplift_candidates if c.klass in ReportDecoUplift._available_metalearners
             ]
 
         if self.add_dd_candidates:
             dd_candidates = self._generate_data_depend_uplift_candidates(data, roles)
             if self.has_report:
-                dd_candidates = [
-                    c
-                    for c in dd_candidates
-                    if c.klass in ReportDecoUplift._available_metalearners
-                ]
+                dd_candidates = [c for c in dd_candidates if c.klass in ReportDecoUplift._available_metalearners]
             self.uplift_candidates.extend(dd_candidates)
 
     def _calculate_tabular_time(self):
