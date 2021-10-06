@@ -10,8 +10,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
-from lightautoml.ml_algo.tuning.optuna import Distribution
-from lightautoml.ml_algo.tuning.optuna import SearchSpace
+from lightautoml.ml_algo.tuning.base import Distribution
+from lightautoml.ml_algo.tuning.base import SearchSpace
 from lightautoml.tasks import Task
 
 

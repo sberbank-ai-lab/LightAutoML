@@ -21,14 +21,12 @@ from .base import TabularDataset
 from .base import TabularMLAlgo
 from .tuning.base import Distribution
 from .tuning.base import SearchSpace
-from .tuning.optuna import OptunaTunableMixin
 
 
 logger = logging.getLogger(__name__)
-logger_stream = LoggerStream(logger.debug)
 
 
-class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
+class BoostLGBM(TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
     default_params: All available parameters listed in lightgbm documentation:
@@ -259,7 +257,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
         lgb_train = lgb.Dataset(train.data, label=train_target, weight=train_weight)
         lgb_valid = lgb.Dataset(valid.data, label=valid_target, weight=valid_weight)
 
-        with redirect_stdout(logger_stream):
+        with redirect_stdout(LoggerStream(logger, verbose_eval=100)):
             model = lgb.train(
                 params,
                 lgb_train,

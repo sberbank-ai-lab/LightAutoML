@@ -29,19 +29,27 @@ class Timer:
 
     @property
     def time_left(self) -> float:
-        return self.timeout - self.time_spent
+        if self.time_spent:
+            return self.timeout - self.time_spent
+        return None
 
     @property
     def time_spent(self) -> float:
-        return time() - self.start_time
+        if self.start_time:
+            return time() - self.start_time
+        return None
 
     @property
     def perc_left(self) -> float:
-        return self.time_left / self.timeout
+        if self.time_left:
+            return self.time_left / self.timeout
+        return None
 
     @property
     def perc_spent(self) -> float:
-        return self.time_spent / self.timeout
+        if self.time_spent:
+            return self.time_spent / self.timeout
+        return None
 
     @property
     def timeout(self) -> float:
@@ -55,7 +63,9 @@ class Timer:
             return self.time_left < 0
 
         if self._mode == 2:
-            return (self.time_left - self._overhead) < 0
+            if self.time_left:
+                return (self.time_left - self._overhead) < 0
+            return None
 
     def start(self):
         self.start_time = time()
@@ -273,7 +283,10 @@ class TaskTimer(Timer):
         """
         folds_est = self.estimate_folds_time(n_folds)
         if folds_est is None:
-            return self.default_tuner_rate * self.time_left
+            if self.time_left:
+                return self.default_tuner_rate * self.time_left
+            else:
+                return None
         return self.time_left - folds_est
 
     def time_limit_exceeded(self) -> bool:

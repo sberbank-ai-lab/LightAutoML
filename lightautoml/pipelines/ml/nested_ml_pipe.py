@@ -22,7 +22,6 @@ from ...ml_algo.base import TabularDataset
 from ...ml_algo.base import TabularMLAlgo
 from ...ml_algo.tuning.base import DefaultTuner
 from ...ml_algo.tuning.base import ParamsTuner
-from ...ml_algo.tuning.optuna import OptunaTunableMixin
 from ...ml_algo.utils import tune_and_fit_predict
 from ...reader.utils import set_sklearn_folds
 from ...utils.timer import PipelineTimer
@@ -37,7 +36,7 @@ from .base import MLPipeline
 logger = logging.getLogger(__name__)
 
 
-class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
+class NestedTabularMLAlgo(TabularMLAlgo, ImportanceEstimator):
     """
     Wrapper for MLAlgo to make it trainable over nested folds.
     Limitations - only for ``TabularMLAlgo``.
