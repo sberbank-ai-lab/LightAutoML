@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import logging
+"""
+building ML pipeline from blocks and fit + predict the pipeline itself
+"""
+
 import os
 import pickle
 import time
@@ -21,166 +24,152 @@ from lightautoml.tasks import Task
 from lightautoml.validation.np_iterators import FoldsIterator
 
 
-logging.basicConfig(
-    format="[%(asctime)s] (%(levelname)s): %(message)s", level=logging.DEBUG
+# Read data from file
+print("Read data from file")
+data = pd.read_csv(
+    "./data/sampled_app_train.csv",
+    usecols=[
+        "TARGET",
+        "NAME_CONTRACT_TYPE",
+        "AMT_CREDIT",
+        "NAME_TYPE_SUITE",
+        "AMT_GOODS_PRICE",
+        "DAYS_BIRTH",
+        "DAYS_EMPLOYED",
+    ],
 )
 
+# Fix dates and convert to date type
+print("Fix dates and convert to date type")
+data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(
+    np.dtype("timedelta64[D]")
+)
+data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(
+    data["DAYS_EMPLOYED"], None, 0
+).astype(np.dtype("timedelta64[D]"))
+data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 
-def test_manual_pipeline():
-    # Read data from file
-    logging.debug("Read data from file")
-    data = pd.read_csv(
-        "../examples/data/sampled_app_train.csv",
-        usecols=[
-            "TARGET",
-            "NAME_CONTRACT_TYPE",
-            "AMT_CREDIT",
-            "NAME_TYPE_SUITE",
-            "AMT_GOODS_PRICE",
-            "DAYS_BIRTH",
-            "DAYS_EMPLOYED",
-        ],
-    )
+# Create folds
+print("Create folds")
+data["__fold__"] = np.random.randint(0, 5, len(data))
 
-    # Fix dates and convert to date type
-    logging.debug("Fix dates and convert to date type")
-    data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(
-        np.dtype("timedelta64[D]")
-    )
-    data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(
-        data["DAYS_EMPLOYED"], None, 0
-    ).astype(np.dtype("timedelta64[D]"))
-    data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
+# Print data head
+print("Print data head")
+print(data.head())
 
-    # Create folds
-    logging.debug("Create folds")
-    data["__fold__"] = np.random.randint(0, 5, len(data))
+# # Set roles for columns
+print("Set roles for columns")
+check_roles = {
+    TargetRole(): "TARGET",
+    CategoryRole(dtype=str): ["NAME_CONTRACT_TYPE", "NAME_TYPE_SUITE"],
+    NumericRole(np.float32): ["AMT_CREDIT", "AMT_GOODS_PRICE"],
+    DatetimeRole(seasonality=["y", "m", "wd"]): ["BIRTH_DATE", "EMP_DATE"],
+    FoldsRole(): "__fold__",
+}
 
-    # Print data head
-    logging.debug("Print data head")
-    print(data.head())
+# create Task
+task = Task("binary")
+# # Creating PandasDataSet
+print("Creating PandasDataset")
+start_time = time.time()
+pd_dataset = PandasDataset(data, roles_parser(check_roles), task=task)
+print("PandasDataset created. Time = {:.3f} sec".format(time.time() - start_time))
 
-    # # Set roles for columns
-    logging.debug("Set roles for columns")
-    check_roles = {
-        TargetRole(): "TARGET",
-        CategoryRole(dtype=str): ["NAME_CONTRACT_TYPE", "NAME_TYPE_SUITE"],
-        NumericRole(np.float32): ["AMT_CREDIT", "AMT_GOODS_PRICE"],
-        DatetimeRole(seasonality=["y", "m", "wd"]): ["BIRTH_DATE", "EMP_DATE"],
-        FoldsRole(): "__fold__",
+# # Print pandas dataset feature roles
+print("Print pandas dataset feature roles")
+roles = pd_dataset.roles
+for role in roles:
+    print("{}: {}".format(role, roles[role]))
+
+# # Feature selection part
+print("Feature selection part")
+selector_iterator = FoldsIterator(pd_dataset, 1)
+print("Selection iterator created")
+
+model = BoostLGBM()
+pipe = LGBSimpleFeatures()
+print("Pipe and model created")
+
+model0 = BoostLGBM(
+    default_params={
+        "learning_rate": 0.05,
+        "num_leaves": 64,
+        "seed": 0,
+        "num_threads": 5,
     }
+)
 
-    # create Task
-    task = Task("binary")
-    # # Creating PandasDataSet
-    logging.debug("Creating PandasDataset")
-    start_time = time.time()
-    pd_dataset = PandasDataset(data, roles_parser(check_roles), task=task)
-    logging.debug(
-        "PandasDataset created. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+mbie = ModelBasedImportanceEstimator()
+selector = ImportanceCutoffSelector(pipe, model0, mbie, cutoff=10)
+start_time = time.time()
+selector.fit(selector_iterator)
+print("Feature selector fitted. Time = {:.3f} sec".format(time.time() - start_time))
 
-    # # Print pandas dataset feature roles
-    logging.debug("Print pandas dataset feature roles")
-    roles = pd_dataset.roles
-    for role in roles:
-        logging.debug("{}: {}".format(role, roles[role]))
+print("Feature selector scores:")
+print("\n{}".format(selector.get_features_score()))
 
-    # # Feature selection part
-    logging.debug("Feature selection part")
-    selector_iterator = FoldsIterator(pd_dataset, 1)
-    logging.debug("Selection iterator created")
+# # Build AutoML pipeline
+print("Start building AutoML pipeline")
+pipe = LGBSimpleFeatures()
+print("Pipe created")
 
-    model = BoostLGBM()
-    pipe = LGBSimpleFeatures()
-    logging.debug("Pipe and model created")
+params_tuner1 = OptunaTuner(n_trials=10, timeout=300)
+model1 = BoostLGBM(default_params={"learning_rate": 0.05, "num_leaves": 128})
+print("Tuner1 and model1 created")
 
-    model0 = BoostLGBM(
-        default_params={
-            "learning_rate": 0.05,
-            "num_leaves": 64,
-            "seed": 0,
-            "num_threads": 5,
-        }
-    )
+params_tuner2 = OptunaTuner(n_trials=100, timeout=300)
+model2 = BoostLGBM(default_params={"learning_rate": 0.025, "num_leaves": 64})
+print("Tuner2 and model2 created")
 
-    mbie = ModelBasedImportanceEstimator()
-    selector = ImportanceCutoffSelector(pipe, model0, mbie, cutoff=10)
-    start_time = time.time()
-    selector.fit(selector_iterator)
-    logging.debug(
-        "Feature selector fitted. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+total = MLPipeline(
+    [(model1, params_tuner1), (model2, params_tuner2)],
+    pre_selection=selector,
+    features_pipeline=pipe,
+    post_selection=None,
+)
 
-    logging.debug("Feature selector scores:")
-    logging.debug("\n{}".format(selector.get_features_score()))
+print("Finished building AutoML pipeline")
 
-    # # Build AutoML pipeline
-    logging.debug("Start building AutoML pipeline")
-    pipe = LGBSimpleFeatures()
-    logging.debug("Pipe created")
+# # Create full train iterator
+print("Full train valid iterator creation")
+train_valid = FoldsIterator(pd_dataset)
+print("Full train valid iterator created")
 
-    params_tuner1 = OptunaTuner(n_trials=10, timeout=300)
-    model1 = BoostLGBM(default_params={"learning_rate": 0.05, "num_leaves": 128})
-    logging.debug("Tuner1 and model1 created")
+# # Fit predict using pipeline
+print("Start AutoML pipeline fit_predict")
+start_time = time.time()
+pred = total.fit_predict(train_valid)
+print("Fit_predict finished. Time = {:.3f} sec".format(time.time() - start_time))
 
-    params_tuner2 = OptunaTuner(n_trials=100, timeout=300)
-    model2 = BoostLGBM(default_params={"learning_rate": 0.025, "num_leaves": 64})
-    logging.debug("Tuner2 and model2 created")
+# # Check preds
+print("Preds:")
+print("\n{}".format(pred))
+print("Preds.shape = {}".format(pred.shape))
 
-    total = MLPipeline(
-        [(model1, params_tuner1), (model2, params_tuner2)],
-        pre_selection=selector,
-        features_pipeline=pipe,
-        post_selection=None,
-    )
+# # Predict full train dataset
+print("Predict full train dataset")
+start_time = time.time()
+train_pred = total.predict(pd_dataset)
+print("Predict finished. Time = {:.3f} sec".format(time.time() - start_time))
+print("Preds:")
+print("\n{}".format(train_pred))
+print("Preds.shape = {}".format(train_pred.shape))
 
-    logging.debug("Finished building AutoML pipeline")
+print("Pickle automl")
+with open("automl.pickle", "wb") as f:
+    pickle.dump(total, f)
 
-    # # Create full train iterator
-    logging.debug("Full train valid iterator creation")
-    train_valid = FoldsIterator(pd_dataset)
-    logging.debug("Full train valid iterator created")
+print("Load pickled automl")
+with open("automl.pickle", "rb") as f:
+    total = pickle.load(f)
 
-    # # Fit predict using pipeline
-    logging.debug("Start AutoML pipeline fit_predict")
-    start_time = time.time()
-    pred = total.fit_predict(train_valid)
-    logging.debug(
-        "Fit_predict finished. Time = {:.3f} sec".format(time.time() - start_time)
-    )
+print("Predict loaded automl")
+train_pred = total.predict(pd_dataset)
+os.remove("automl.pickle")
 
-    # # Check preds
-    logging.debug("Preds:")
-    logging.debug("\n{}".format(pred))
-    logging.debug("Preds.shape = {}".format(pred.shape))
+# # Check preds feature names
+print("Preds features: {}".format(train_pred.features))
 
-    # # Predict full train dataset
-    logging.debug("Predict full train dataset")
-    start_time = time.time()
-    train_pred = total.predict(pd_dataset)
-    logging.debug(
-        "Predict finished. Time = {:.3f} sec".format(time.time() - start_time)
-    )
-    logging.debug("Preds:")
-    logging.debug("\n{}".format(train_pred))
-    logging.debug("Preds.shape = {}".format(train_pred.shape))
-
-    logging.debug("Pickle automl")
-    with open("automl.pickle", "wb") as f:
-        pickle.dump(total, f)
-
-    logging.debug("Load pickled automl")
-    with open("automl.pickle", "rb") as f:
-        total = pickle.load(f)
-
-    logging.debug("Predict loaded automl")
-    train_pred = total.predict(pd_dataset)
-    os.remove("automl.pickle")
-
-    # # Check preds feature names
-    logging.debug("Preds features: {}".format(train_pred.features))
-
-    # # Check model feature scores
-    logging.debug("Feature scores for model_1:\n{}".format(model1.get_features_score()))
-    logging.debug("Feature scores for model_2:\n{}".format(model2.get_features_score()))
+# # Check model feature scores
+print("Feature scores for model_1:\n{}".format(model1.get_features_score()))
+print("Feature scores for model_2:\n{}".format(model2.get_features_score()))
