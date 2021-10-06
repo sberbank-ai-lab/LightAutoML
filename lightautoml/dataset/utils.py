@@ -17,9 +17,7 @@ from lightautoml.dataset.roles import ColumnRole
 # RoleType = TypeVar("RoleType", bound=ColumnRole)
 
 
-def roles_parser(
-    init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]
-) -> Dict[str, ColumnRole]:
+def roles_parser(init_roles: Dict[Union[ColumnRole, str], Union[str, Sequence[str]]]) -> Dict[str, ColumnRole]:
     """Parser of roles.
 
     Parse roles from old format numeric:
@@ -77,14 +75,10 @@ def get_common_concat(
     elif dataset_types == {NumpyDataset, PandasDataset}:
         return numpy_and_pandas_concat, None
 
-    raise TypeError(
-        "Unable to concatenate dataset types {0}".format(list(dataset_types))
-    )
+    raise TypeError("Unable to concatenate dataset types {0}".format(list(dataset_types)))
 
 
-def numpy_and_pandas_concat(
-    datasets: Sequence[Union[NumpyDataset, PandasDataset]]
-) -> PandasDataset:
+def numpy_and_pandas_concat(datasets: Sequence[Union[NumpyDataset, PandasDataset]]) -> PandasDataset:
     """Concat of numpy and pandas dataset.
 
     Args:

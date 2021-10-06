@@ -76,9 +76,7 @@ class ImportanceCutoffSelector(SelectionPipeline):
         """
         imp = self.imp_estimator.get_features_score()
         self.map_raw_feature_importances(imp)
-        selected = self.mapped_importances.index.values[
-            self.mapped_importances.values > self.cutoff
-        ]
+        selected = self.mapped_importances.index.values[self.mapped_importances.values > self.cutoff]
         if len(selected) == 0:
             selected = self.mapped_importances.index.values[:1]
         self._selected_features = list(selected)

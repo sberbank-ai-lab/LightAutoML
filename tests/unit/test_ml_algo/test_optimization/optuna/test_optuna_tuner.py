@@ -43,9 +43,7 @@ def test_params_values_ranges(
         freeze_defaults=True,
         optimization_search_space={
             "feature_fraction": SearchSpace(Distribution.UNIFORM, low=0.5, high=1.0),
-            "min_sum_hessian_in_leaf": SearchSpace(
-                Distribution.CHOICE, choices=[0.5, 0.8]
-            ),
+            "min_sum_hessian_in_leaf": SearchSpace(Distribution.CHOICE, choices=[0.5, 0.8]),
         },
     )
 
@@ -57,9 +55,7 @@ def test_params_values_ranges(
 
     # check that the hyperparameters values are in the difined search space
     for trial in params_tuner.study.get_trials():
-        assert (trial.params["feature_fraction"] >= 0) and (
-            trial.params["feature_fraction"] <= 1
-        )
+        assert (trial.params["feature_fraction"] >= 0) and (trial.params["feature_fraction"] <= 1)
         assert trial.params["min_sum_hessian_in_leaf"] in [0.5, 0.8]
 
     # check time, n_trials

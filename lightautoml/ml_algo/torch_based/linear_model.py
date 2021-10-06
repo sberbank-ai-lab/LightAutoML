@@ -62,18 +62,14 @@ class CatLinear(nn.Module):
         # add numeric if it is defined
         self.linear = None
         if numeric_size > 0:
-            self.linear = nn.Linear(
-                in_features=numeric_size, out_features=output_size, bias=False
-            )
+            self.linear = nn.Linear(in_features=numeric_size, out_features=output_size, bias=False)
             nn.init.zeros_(self.linear.weight)
 
         # add categories if it is defined
         self.cat_params = None
         if len(embed_sizes) > 0:
             self.cat_params = nn.Parameter(torch.zeros(sum(embed_sizes), output_size))
-            self.embed_idx = torch.LongTensor(embed_sizes).cumsum(
-                dim=0
-            ) - torch.LongTensor(embed_sizes)
+            self.embed_idx = torch.LongTensor(embed_sizes).cumsum(dim=0) - torch.LongTensor(embed_sizes)
 
     def forward(
         self,
@@ -101,9 +97,7 @@ class CatLinear(nn.Module):
 class CatLogisticRegression(CatLinear):
     """Realisation of torch-based logistic regression."""
 
-    def __init__(
-        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
-    ):
+    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
         self.sigmoid = nn.Sigmoid()
 
@@ -129,18 +123,14 @@ class CatLogisticRegression(CatLinear):
 class CatRegression(CatLinear):
     """Realisation of torch-based linear regreession."""
 
-    def __init__(
-        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
-    ):
+    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
 
 
 class CatMulticlass(CatLinear):
     """Realisation of multi-class linear classifier."""
 
-    def __init__(
-        self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1
-    ):
+    def __init__(self, numeric_size: int, embed_sizes: Sequence[int] = (), output_size: int = 1):
         super().__init__(numeric_size, embed_sizes=embed_sizes, output_size=output_size)
         self.softmax = nn.Softmax(dim=1)
 
@@ -265,9 +255,7 @@ class TorchBasedLinearEstimator:
         """
         if 0 < len(self.categorical_idx) < data.shape[1]:
             data_cat = torch.from_numpy(data[:, self.categorical_idx].astype(np.int64))
-            data = torch.from_numpy(
-                data[:, np.setdiff1d(np.arange(data.shape[1]), self.categorical_idx)]
-            )
+            data = torch.from_numpy(data[:, np.setdiff1d(np.arange(data.shape[1]), self.categorical_idx)])
             return data, data_cat
 
         elif len(self.categorical_idx) == 0:
@@ -347,9 +335,7 @@ class TorchBasedLinearEstimator:
         if weights is not None:
             n = weights.sum()
 
-        all_params = torch.cat(
-            [y.view(-1) for (x, y) in self.model.named_parameters() if x != "bias"]
-        )
+        all_params = torch.cat([y.view(-1) for (x, y) in self.model.named_parameters() if x != "bias"])
 
         penalty = torch.norm(all_params, 2).pow(2) / 2 / n
 
@@ -387,9 +373,7 @@ class TorchBasedLinearEstimator:
             weights = torch.from_numpy(weights.astype(np.float32))
 
         if data_val is None and y_val is None:
-            logger.info2(
-                "Validation data should be defined. No validation will be performed and C = 1 will be used"
-            )
+            logger.info2("Validation data should be defined. No validation will be performed and C = 1 will be used")
             self._optimize(data, data_cat, y, weights, 1.0)
 
             return self

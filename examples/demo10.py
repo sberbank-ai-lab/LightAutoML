@@ -32,12 +32,9 @@ from lightautoml.utils.timer import PipelineTimer
 np.random.seed(42)
 data = pd.read_csv("./data/sampled_app_train.csv")
 
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["report_dt"] = np.datetime64("2018-01-01")
@@ -90,9 +87,7 @@ feats_reg_0 = LinearFeatures(output_categories=True, sparse_ohe="auto")
 timer_reg = timer.get_task_timer("reg")
 reg_0 = LinearLBFGS(timer=timer_reg)
 
-reg_lvl0 = MLPipeline(
-    [reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None
-)
+reg_lvl0 = MLPipeline([reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None)
 print("Linear created...")
 # ======================================================================================
 print("Create reader...")
@@ -135,18 +130,12 @@ print("Check scores...")
 # use only not nan
 not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
-print(
-    "OOF score: {}".format(
-        log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan])
-    )
-)
+print("OOF score: {}".format(log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan])))
 print("TEST score: {}".format(log_loss(test["TARGET"].values, test_pred.data)))
 # ======================================================================================
 for dat, df, name in zip([oof_pred, test_pred], [train, test], ["train", "test"]):
     print("Check aucs {0}...".format(name))
     for c in range(3):
-        _sc = roc_auc_score(
-            (df["TARGET"].values == c).astype(np.float32), dat.data[:, c]
-        )
+        _sc = roc_auc_score((df["TARGET"].values == c).astype(np.float32), dat.data[:, c])
         print("Cl {0} auc score: {1}".format(c, _sc))
 # ======================================================================================

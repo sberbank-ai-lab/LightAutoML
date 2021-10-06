@@ -31,12 +31,9 @@ np.random.seed(42)
 
 data = pd.read_csv("../examples/data/sampled_app_train.csv")
 
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["report_dt"] = np.datetime64("2018-01-01")
@@ -67,9 +64,7 @@ selector_0 = ImportanceCutoffSelector(
 print("Selector created...")
 # ======================================================================================
 print("Create gbms...")
-feats_gbm_0 = LGBAdvancedPipeline(
-    top_intersections=4, output_categories=True, feats_imp=imp_sel_0
-)
+feats_gbm_0 = LGBAdvancedPipeline(top_intersections=4, output_categories=True, feats_imp=imp_sel_0)
 timer_gbm_0 = timer.get_task_timer("gbm")
 timer_gbm_1 = timer.get_task_timer("gbm")
 
@@ -91,9 +86,7 @@ feats_reg_0 = LinearFeatures(output_categories=True, sparse_ohe="auto")
 timer_reg = timer.get_task_timer("reg")
 reg_0 = LinearLBFGS(timer=timer_reg)
 
-reg_lvl0 = MLPipeline(
-    [reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None
-)
+reg_lvl0 = MLPipeline([reg_0], pre_selection=None, features_pipeline=feats_reg_0, post_selection=None)
 print("Linear created...")
 # ======================================================================================
 print("Create reader...")
@@ -135,9 +128,5 @@ print("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.sh
 not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
 print("Check scores...")
-print(
-    "OOF score: {}".format(
-        log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan, :])
-    )
-)
+print("OOF score: {}".format(log_loss(train["TARGET"].values[not_nan], oof_pred.data[not_nan, :])))
 print("TEST score: {}".format(log_loss(test["TARGET"].values, test_pred.data)))

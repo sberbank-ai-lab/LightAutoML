@@ -36,19 +36,15 @@ def sampled_app_train_test(nrows=None):
         nrows=nrows,
     )
 
-    data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(
+    data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
+    data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(
         np.dtype("timedelta64[D]")
     )
-    data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(
-        data["DAYS_EMPLOYED"], None, 0
-    ).astype(np.dtype("timedelta64[D]"))
     data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 
     data["__fold__"] = np.random.randint(0, 5, len(data))
 
-    train_data, test_data = train_test_split(
-        data, test_size=0.2, stratify=data["TARGET"], random_state=RANDOM_STATE
-    )
+    train_data, test_data = train_test_split(data, test_size=0.2, stratify=data["TARGET"], random_state=RANDOM_STATE)
 
     return train_data, test_data
 

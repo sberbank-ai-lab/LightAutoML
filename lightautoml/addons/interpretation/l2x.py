@@ -11,9 +11,17 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-import gensim
 import numpy as np
 import pandas as pd
+
+
+try:
+    import gensim
+except:
+    import warnings
+
+    warnings.warn("'gensim' - package isn't installed")
+
 import torch
 import torch.nn as nn
 
@@ -193,9 +201,7 @@ class L2XTextExplainer:
 
         if isinstance(tokenizer, str):
             if tokenizer not in ["ru", "en"]:
-                raise ValueError(
-                    "Tokenizer must be one 'ru' or 'en', but {} given".format(tokenizer)
-                )
+                raise ValueError("Tokenizer must be one 'ru' or 'en', but {} given".format(tokenizer))
             self._tokenizer = _tokenizer_by_lang[tokenizer](is_stemmer=False)
             self.tokenizer = WrappedTokenizer(self._tokenizer)
         elif tokenizer is None:
@@ -214,27 +220,17 @@ class L2XTextExplainer:
         self.verbose = verbose
 
         if binning_mode not in ["linear", "hist"]:
-            raise ValueError(
-                "Only avaliable 'linear', 'hist' binning mods, but {} given".format(
-                    binning_mode
-                )
-            )
+            raise ValueError("Only avaliable 'linear', 'hist' binning mods, but {} given".format(binning_mode))
         self.binning_mode = binning_mode
         self.bins_number = bins_number
         self.k = n_important
         self.learning_rate = learning_rate
         if n_epochs <= 0:
-            raise ValueError(
-                "Epochs number should be positive, but {} given".format(n_epochs)
-            )
+            raise ValueError("Epochs number should be positive, but {} given".format(n_epochs))
         self.n_epochs = n_epochs
 
         if not issubclass(optimizer, torch.optim.Optimizer):
-            raise TypeError(
-                "Not torch.optim.Optimizer like optimizer format, {} given".format(
-                    type(optimizer)
-                )
-            )
+            raise TypeError("Not torch.optim.Optimizer like optimizer format, {} given".format(type(optimizer)))
         self.optimizer = optimizer
         optimizer_params = optimizer_params or {}
         self.optim_params = {**optimizer_params, "lr": self.learning_rate}
@@ -242,44 +238,28 @@ class L2XTextExplainer:
         self.valid_batch_size = valid_batch_size
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature should be positive, but {} given".format(temperature)
-            )
+            raise ValueError("Temperature should be positive, but {} given".format(temperature))
         self.T = temperature
 
         if temp_anneal_factor <= 0:
-            raise ValueError(
-                "Temperature annealing factor should be positive, but {} given".format(
-                    temp_anneal_factor
-                )
-            )
+            raise ValueError("Temperature annealing factor should be positive, but {} given".format(temp_anneal_factor))
         self.temp_anneal_factor = temp_anneal_factor
 
         if conv_filters <= 0:
             raise ValueError(
-                "Number of filters in convolution layers should be positive, but {} given".format(
-                    conv_filters
-                )
+                "Number of filters in convolution layers should be positive, but {} given".format(conv_filters)
             )
         self.conv_filters = conv_filters
         if conv_ksize <= 0:
             raise ValueError(
-                "Kernel size of filters in convolution layers should be positive, but {} given".format(
-                    conv_ksize
-                )
+                "Kernel size of filters in convolution layers should be positive, but {} given".format(conv_ksize)
             )
         self.conv_ksize = conv_ksize
         if hidden_dim <= 0:
-            raise ValueError(
-                "Dimention of hidden layer should be positive, but {} given".format(
-                    hidden_dim
-                )
-            )
+            raise ValueError("Dimention of hidden layer should be positive, but {} given".format(hidden_dim))
         self.hidden_dim = hidden_dim
         if drop_rate >= 1 or drop_rate < 0:
-            raise ValueError(
-                "Dropout rate should be in [0, 1), but {} given".format(drop_rate)
-            )
+            raise ValueError("Dropout rate should be in [0, 1), but {} given".format(drop_rate))
         self.drop_rate = drop_rate
 
         if importance_sampler not in ["gumbeltopk", "softsub"]:
@@ -292,18 +272,14 @@ class L2XTextExplainer:
         if embedder is None:
             self.embedder = None
             if embedding_dim is None:
-                raise ValueError(
-                    "At least embedding_dim or embedder should be not none"
-                )
+                raise ValueError("At least embedding_dim or embedder should be not none")
             self.embedding_dim = embedding_dim
         elif isinstance(embedder, str):
             try:
                 self.embedder = gensim.models.FastText.load(embedder).wv
             except:
                 try:
-                    self.embedder = gensim.models.FastText.load_fasttext_format(
-                        embedder
-                    ).wv
+                    self.embedder = gensim.models.FastText.load_fasttext_format(embedder).wv
                 except:
                     self.embedder = gensim.models.KeyedVectors.load(embedder).wv
             self.embedding_dim = self.embedder.vector_size
@@ -318,30 +294,18 @@ class L2XTextExplainer:
         self.trainable_embeds = trainable_embeds
 
         if not isinstance(max_vocab_length, int):
-            raise TypeError(
-                "max_vocab_length should be int, but {} given".format(
-                    type(max_vocab_length)
-                )
-            )
+            raise TypeError("max_vocab_length should be int, but {} given".format(type(max_vocab_length)))
         elif max_vocab_length < -1 or max_vocab_length == 0:
             raise ValueError(
-                "Only avaliable values for max_vocab_length: -1 or grater 0, but {} given".format(
-                    max_vocab_length
-                )
+                "Only avaliable values for max_vocab_length: -1 or grater 0, but {} given".format(max_vocab_length)
             )
         self.max_vocab_length = max_vocab_length
 
         if gamma < 0:
-            logger.info2(
-                "For now sparse token highlighting will be encouraged, since gamma < 0"
-            )
+            logger.info2("For now sparse token highlighting will be encouraged, since gamma < 0")
         self.gamma = gamma
         if gamma_anneal_factor <= 0:
-            raise ValueError(
-                "Gamma annealing factor should be positive, but {} given".format(
-                    temp_anneal_factor
-                )
-            )
+            raise ValueError("Gamma annealing factor should be positive, but {} given".format(temp_anneal_factor))
         self.gamma_anneal_factor = gamma_anneal_factor
         self.explainers = {}
         self.random_seed = random_seed
@@ -405,9 +369,7 @@ class L2XTextExplainer:
         if valid_data is not None:
             valid_preds = self.automl.predict(valid_data).data
         for col in cols:
-            self.explainers[col] = self._fit_one(
-                col, train_data, train_preds, valid_data, valid_preds
-            )
+            self.explainers[col] = self._fit_one(col, train_data, train_preds, valid_data, valid_preds)
 
     def _get_cols(self, cols_to_explain: Union[None, str, List[str]]) -> List[str]:
         """
@@ -457,24 +419,18 @@ class L2XTextExplainer:
         train_tokenized = get_tokenized(train_data, col_to_explain, self.tokenizer)
         word_to_id, id_to_word = get_vocab(train_tokenized, self.max_vocab_length)
         word_to_id = WrappedVocabulary(word_to_id)
-        weights_matrix = get_embedding_matrix(
-            id_to_word, self.embedder, self.embedding_dim
-        )
+        weights_matrix = get_embedding_matrix(id_to_word, self.embedder, self.embedding_dim)
         train_data = map_tokenized_to_id(train_tokenized, word_to_id, self.k)
         train_dataset = get_len_dataset(train_data, train_preds)
         data_lens = self._get_lens(train_dataset)
         boundaries = self.calc_bins(data_lens, train_preds)
-        train_dataloader = get_len_dataloader(
-            train_dataset, self.train_batch_size, boundaries, mode="train"
-        )
+        train_dataloader = get_len_dataloader(train_dataset, self.train_batch_size, boundaries, mode="train")
         valid_dataloader = None
         if valid_data is not None:
             valid_tokenized = get_tokenized(valid_data, col_to_explain, self.tokenizer)
             valid_data = map_tokenized_to_id(valid_tokenized, word_to_id, self.k)
             valid_dataset = get_len_dataset(valid_data, valid_preds)
-            valid_dataloader = get_len_dataloader(
-                valid_dataset, self.valid_batch_size, boundaries, mode="valid"
-            )
+            valid_dataloader = get_len_dataloader(valid_dataset, self.valid_batch_size, boundaries, mode="valid")
 
         model = L2XModel(
             task_name=self.task_name,
@@ -495,9 +451,7 @@ class L2XTextExplainer:
         train_loss_logs = []
         if valid_data is not None:
             valid_loss_logs = []
-        self.train(
-            model, train_dataloader, train_loss_logs, valid_dataloader, valid_loss_logs
-        )
+        self.train(model, train_dataloader, train_loss_logs, valid_dataloader, valid_loss_logs)
 
         return _L2XExplainer(
             model,
@@ -539,22 +493,14 @@ class L2XTextExplainer:
 
         scheduler = ReduceLROnPlateau(optimizer, patience=self.patience)
         for epoch in range(self.n_epochs):
-            train_loss = self._train_epoch(
-                model, train_dataloader, loss, optimizer, self.train_device, gamma
-            )
-            valid_loss = self._validate(
-                model, valid_dataloader, loss, self.train_device
-            )
+            train_loss = self._train_epoch(model, train_dataloader, loss, optimizer, self.train_device, gamma)
+            valid_loss = self._validate(model, valid_dataloader, loss, self.train_device)
             train_loss_logs.append(train_loss)
             if valid_loss_logs is not None:
                 valid_loss_logs.append(valid_loss)
             if self.verbose:
                 if valid_loss is None:
-                    logger.info3(
-                        "Epoch: {}/{}, train loss: {}".format(
-                            epoch + 1, self.n_epochs, train_loss
-                        )
-                    )
+                    logger.info3("Epoch: {}/{}, train loss: {}".format(epoch + 1, self.n_epochs, train_loss))
                 else:
                     logger.info3(
                         "Epoch: {}/{}, train loss: {}, valid loss: {}".format(
@@ -568,10 +514,7 @@ class L2XTextExplainer:
                     prev_best = epoch
                     torch.save(model.state_dict(), self._checkpoint_path)
 
-                elif (
-                    self.extreme_patience > 0
-                    and epoch - prev_best > self.extreme_patience
-                ):
+                elif self.extreme_patience > 0 and epoch - prev_best > self.extreme_patience:
                     model.load_state_dict(torch.load(self._checkpoint_path))
                     break
             if epoch != self.n_epochs - 1:
@@ -615,9 +558,7 @@ class L2XTextExplainer:
             # Negative loglikelihood up to a constant
             nll_loss = criterion(pred, y)
             # Encouragement of neighbour tokens
-            corr_loss = torch.mean(
-                ((corr_pred[:, 1:]) ** 2 * (corr_pred[:, :-1]) ** 2).sum(-1)
-            )
+            corr_loss = torch.mean(((corr_pred[:, 1:]) ** 2 * (corr_pred[:, :-1]) ** 2).sum(-1))
             # Not sure that optima of this pair of losses is the same
             # but dunno how get best validation score
             loss = nll_loss - gamma * corr_loss
@@ -628,9 +569,7 @@ class L2XTextExplainer:
             iters += 1
 
             if self.verbose:
-                train_dataloader.set_description(
-                    "train nll (loss={:.4f})".format(accum_loss / iters)
-                )
+                train_dataloader.set_description("train nll (loss={:.4f})".format(accum_loss / iters))
 
         return accum_loss / iters
 
@@ -676,9 +615,7 @@ class L2XTextExplainer:
             return self._mi_bins(lens, target)
 
     def _linear_bins(self, lens) -> np.ndarray:
-        return np.r_[
-            0, np.linspace(lens.min(), lens.max() + 1, self.bins_number + 1)[1:]
-        ]
+        return np.r_[0, np.linspace(lens.min(), lens.max() + 1, self.bins_number + 1)[1:]]
 
     def _hist_bins(self, lens) -> np.ndarray:
         return np.r_[0, np.hist(lens, self.bins_number)[1]]
@@ -751,9 +688,7 @@ class _L2XExplainer:
     def n_important(self):
         return self.k
 
-    def explain_instances(
-        self, data: pd.DataFrame, batch_size: int = 1
-    ) -> "L2XExplanationsContainer":
+    def explain_instances(self, data: pd.DataFrame, batch_size: int = 1) -> "L2XExplanationsContainer":
         """
         Get explanations for data.
 
@@ -766,6 +701,7 @@ class _L2XExplainer:
         data_tokenized = get_tokenized(data, self.col_to_explain, self.tokenizer)
         data = map_tokenized_to_id(data_tokenized, self.word_to_id, self.k)
         dataset = get_len_dataset(data, np.ones((len(data), 1)))
+
         dataloader = get_len_dataloader(dataset, batch_size, mode="test")
         masks = self._get_masks(dataloader)  # care the order.
         tokens = [self._tokens_to_text(dataset[i]["text"]) for i in range(len(dataset))]
@@ -819,9 +755,7 @@ class L2XExplanation:
         from IPython.display import display_html
 
         token_weights = [(escape(x), y) for x, y in zip(self.tokens, self.mask)]
-        html_code = draw_html(
-            token_weights, self.task_name, self._hightliting_color, grad_line=False
-        )
+        html_code = draw_html(token_weights, self.task_name, self._hightliting_color, grad_line=False)
         display_html(HTML(html_code))
 
 

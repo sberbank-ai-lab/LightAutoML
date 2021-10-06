@@ -47,7 +47,9 @@ pd.DataFrame({
 }).to_csv('submit.csv', index = False)
 ```
 
+
 * Build your own custom pipeline:
+
 ```python
 import pandas as pd
 from sklearn.metrics import f1_score
@@ -117,6 +119,7 @@ pd.DataFrame({
 LighAutoML framework has a lot of ready-to-use parts and extensive customization options, to learn more check out the [resources](#Resources) section.
 
 # Resources
+
 * Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/) or you can generate it:
 
   To generate documentation for LAMA framework, you can use command below:
@@ -147,11 +150,10 @@ LighAutoML framework has a lot of ready-to-use parts and extensive customization
 
 
 
-    Each tutorial has the step to enable Profiler and completes with Profiler run, which generates distribution for each function call time and shows it in interactive HTML report: the report show full time of run on its top and interactive tree of calls with percent of total time spent by the specific subtree.
-
     **Important 1**: for production you have no need to use profiler (which increase work time and memory consomption), so please do not turn it on - it is in off state by default
 
     **Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command.
+
 
 * Video guides
     - (Russian) [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Dmitry Simakov](https://kaggle.com/simakov))
@@ -164,22 +166,26 @@ LighAutoML framework has a lot of ready-to-use parts and extensive customization
     - (English) [LightAutoML vs Titanic: 80% accuracy in several lines of code (Medium)](https://alexmryzhkov.medium.com/lightautoml-preset-usage-tutorial-2cce7da6f936)
     - (English) [Hands-On Python Guide to LightAutoML – An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
 
+
 # Installation
-### Installation via pip from PyPI
+## Installation via pip from PyPI
 To install LAMA framework on your machine:
 ```bash
+
+# Installation base functionality:
+
 pip install -U lightautoml
+
+# Available partial installation
+# Use extra dependecies = ['nlp', 'cv', 'report']
+# Or may use 'all' for installation full functionality, example:
+
+pip install -U lightautoml[nlp]
+
 ```
-### Installation from sources with virtual environment creation
-If you want to create a specific virtual environment for LAMA, you need to install  `python3-venv` system package and run the following command, which creates `lama_venv` virtual env with LAMA inside:
-```bash
-bash build_package.sh
-```
-To check this variant of installation and run all the demo scripts, use the command below:
-```bash
-bash test_package.sh
-```
-To install optional support for generating reports in pdf format run following commands:
+
+Additionaly, run following commands for generating report in pdf format:
+
 ```bash
 # MacOS
 brew install cairo pango gdk-pixbuf libffi
@@ -192,12 +198,65 @@ sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
 
 # Windows
 # follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
-
-poetry install -E pdf
 ```
+
+
+## Installation from source code
+
+First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation).
+
+```bash
+
+# Load LAMA source code
+git clone https://github.com/sberbank-ai-lab/LightAutoML.git
+
+cd LightAutoML/
+
+# !!!Choose only one item!!!
+
+# 1. Global installation: Don't create virtual environment
+poetry config virtualenvs.create false --local
+
+# 2. Recommended: Create virtual environment inside your project directory
+poetry config virtualenvs.in-project true
+
+# For more information read poetry docs
+
+# Install LAMA
+poetry lock
+poetry install
+
+```
+
+
+*******
+# Docs generation
+To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
+
+```bash
+cd docs
+mkdir docs/_static
+make clean html
+cd ..
+
+# Check docs construction
+python check_docs.py
+
+```
+
+*******
+# Testing
+
+When installing from source code, to check the success of the installation and run all the demo scripts, use the command below:
+
+```
+poetry run pytest tests
+```
+
 
 # Contributing to LightAutoML
 If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
+
 
 Authors: [Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Anton Vakhrushev](https://kaggle.com/btbpanda), [Dmitry Simakov](https://kaggle.com/simakov), Vasilii Bunakov, Rinchin Damdinov, Pavel Shvets, Alexander Kirilin.
 # Questions / Issues / Suggestions

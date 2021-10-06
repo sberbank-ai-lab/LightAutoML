@@ -21,12 +21,9 @@ data = pd.read_csv("./data/sampled_app_train.csv")
 print("Data loaded")
 
 print("Features modification from user side...")
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["constant"] = 1
@@ -36,17 +33,11 @@ data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 print("Features modification finished")
 
 print("Split data...")
-train_data, test_data = train_test_split(
-    data, test_size=2000, stratify=data["TARGET"], random_state=13
-)
+train_data, test_data = train_test_split(data, test_size=2000, stratify=data["TARGET"], random_state=13)
 
 train_data.reset_index(drop=True, inplace=True)
 test_data.reset_index(drop=True, inplace=True)
-print(
-    "Data splitted. Parts sizes: train_data = {}, test_data = {}".format(
-        train_data.shape, test_data.shape
-    )
-)
+print("Data splitted. Parts sizes: train_data = {}, test_data = {}".format(train_data.shape, test_data.shape))
 
 for task_params, target in zip(
     [
@@ -110,25 +101,11 @@ for task_params, target in zip(
     print("Start AutoML pipeline fit_predict...")
     start_time = time.time()
     oof_pred = automl.fit_predict(train_data, roles={"target": target})
-    print(
-        "AutoML pipeline fitted and predicted. Time = {:.3f} sec".format(
-            time.time() - start_time
-        )
-    )
+    print("AutoML pipeline fitted and predicted. Time = {:.3f} sec".format(time.time() - start_time))
 
     test_pred = automl.predict(test_data)
-    print(
-        "Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape)
-    )
+    print("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape))
 
     print("Check scores...")
-    print(
-        "OOF score: {}".format(
-            task.metric_func(train_data[target].values, oof_pred.data[:, 0])
-        )
-    )
-    print(
-        "TEST score: {}".format(
-            task.metric_func(test_data[target].values, test_pred.data[:, 0])
-        )
-    )
+    print("OOF score: {}".format(task.metric_func(train_data[target].values, oof_pred.data[:, 0])))
+    print("TEST score: {}".format(task.metric_func(test_data[target].values, test_pred.data[:, 0])))

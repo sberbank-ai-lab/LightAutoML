@@ -16,11 +16,7 @@ def calc_one_feat_imp(iters, feat, model, data, norm_score, target, metric, sile
     new_score = metric(preds)
 
     if not silent:
-        logger.info3(
-            "{}/{} Calculated score for {}: {:.7f}".format(
-                iters[0], iters[1], feat, norm_score - new_score
-            )
-        )
+        logger.info3("{}/{} Calculated score for {}: {:.7f}".format(iters[0], iters[1], feat, norm_score - new_score))
     data[feat] = initial_col
     return feat, norm_score - new_score
 
@@ -48,7 +44,5 @@ def calc_feats_permutation_imps(model, used_feats, data, target, metric, silent=
             )
         )
     feat_imp = pd.DataFrame(feat_imp, columns=["Feature", "Importance"])
-    feat_imp = feat_imp.sort_values("Importance", ascending=False).reset_index(
-        drop=True
-    )
+    feat_imp = feat_imp.sort_values("Importance", ascending=False).reset_index(drop=True)
     return feat_imp
