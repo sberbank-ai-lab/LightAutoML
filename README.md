@@ -122,11 +122,6 @@ LighAutoML framework has a lot of ready-to-use parts and extensive customization
 
 * Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/) or you can generate it:
 
-  To generate documentation for LAMA framework, you can use command below:
-  ```bash
-  bash build_docs.sh
-  ```
-
 
 * Kaggle kernel examples of LightAutoML usage:
     - [Tabular Playground Series April 2021 competition solution](https://www.kaggle.com/alexryzhkov/n3-tps-april-21-lightautoml-starter)
