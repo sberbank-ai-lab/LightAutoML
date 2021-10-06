@@ -220,6 +220,14 @@ class TorchBasedLinearEstimator:
         self.loss = loss  # loss(preds, true) -> loss_arr, assume reduction='none'
         self.metric = metric  # metric(y_true, y_preds, sample_weight = None) -> float (greater_is_better)
 
+
+    def _init_model(self):
+        """
+        Initialization of ML model
+        :return:
+        """
+        raise NotImplementedError
+
     def _prepare_data(self, data: ArrayOrSparseMatrix):
         """Prepare data based on input type.
 
@@ -296,6 +304,7 @@ class TorchBasedLinearEstimator:
             c: Regularization coefficient.
 
         """
+        self._init_model()
         self.model.train()
         opt = optim.LBFGS(
             self.model.parameters(),
@@ -501,11 +510,9 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
         """
         if output_size == 1:
             _loss = nn.BCELoss
-            _model = CatLogisticRegression
             self._binary = True
         else:
             _loss = nn.CrossEntropyLoss
-            _model = CatMulticlass
             self._binary = False
 
         if loss is None:
@@ -523,11 +530,19 @@ class TorchBasedLogisticRegression(TorchBasedLinearEstimator):
             loss,
             metric,
         )
-        self.model = _model(
-            self.data_size - len(self.categorical_idx),
-            self.embed_sizes,
-            self.output_size,
-        )
+        self._init_model()
+
+    def _init_model(self):
+        """
+        Initialize ML model
+        :return:
+        """
+        if self._binary:
+            model_class = CatLogisticRegression
+        else:
+            model_class = CatMulticlass
+        self.model = model_class(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
+
 
     def predict(self, data: np.ndarray) -> np.ndarray:
         """Inference phase.
@@ -606,11 +621,10 @@ class TorchBasedLinearRegression(TorchBasedLinearEstimator):
             loss,
             metric,
         )
-        self.model = CatRegression(
-            self.data_size - len(self.categorical_idx),
-            self.embed_sizes,
-            self.output_size,
-        )
+        self._init_model()
+
+    def _init_model(self):
+        self.model = CatRegression(self.data_size - len(self.categorical_idx), self.embed_sizes, self.output_size)
 
     def predict(self, data: np.ndarray) -> np.ndarray:
         """Inference phase.
