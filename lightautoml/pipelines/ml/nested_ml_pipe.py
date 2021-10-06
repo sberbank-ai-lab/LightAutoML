@@ -22,7 +22,6 @@ from ...ml_algo.base import TabularDataset
 from ...ml_algo.base import TabularMLAlgo
 from ...ml_algo.tuning.base import DefaultTuner
 from ...ml_algo.tuning.base import ParamsTuner
-from ...ml_algo.tuning.optuna import OptunaTunableMixin
 from ...ml_algo.utils import tune_and_fit_predict
 from ...reader.utils import set_sklearn_folds
 from ...utils.timer import PipelineTimer
@@ -37,7 +36,7 @@ from .base import MLPipeline
 logger = logging.getLogger(__name__)
 
 
-class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator):
+class NestedTabularMLAlgo(TabularMLAlgo, ImportanceEstimator):
     """
     Wrapper for MLAlgo to make it trainable over nested folds.
     Limitations - only for ``TabularMLAlgo``.
@@ -166,10 +165,12 @@ class NestedTabularMLAlgo(TabularMLAlgo, OptunaTunableMixin, ImportanceEstimator
 
         return pred
 
-    def _get_search_spaces(
+    def _get_default_search_spaces(
         self, suggested_params: dict, estimated_n_trials: int
     ) -> dict:
-        return self._ml_algo._get_search_spaces(suggested_params, estimated_n_trials)
+        return self._ml_algo._get_default_search_spaces(
+            suggested_params, estimated_n_trials
+        )
 
     def get_features_score(self) -> Series:
         scores = pd.concat([x.get_features_score() for x in self.models], axis=1).mean(

@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 
 """
-Simple example for binary classification on tabular data.
+Simple example for sequetial parameter search with OptunaTuner.
 """
+
+import copy
 
 import pandas as pd
 
@@ -10,8 +12,6 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
-from lightautoml.ml_algo.tuning.optuna import Distribution
-from lightautoml.ml_algo.tuning.optuna import SearchSpace
 from lightautoml.tasks import Task
 
 
@@ -21,17 +21,23 @@ train_data, test_data = train_test_split(
     data, test_size=0.2, stratify=data["TARGET"], random_state=42
 )
 
+
+def sample(optimization_search_space, trial, suggested_params):
+    trial_values = copy.copy(suggested_params)
+
+    for feature_fraction in range(10):
+        feature_fraction = feature_fraction / 10
+        trial_values["feature_fraction"] = feature_fraction
+        trial_values["min_sum_hessian_in_leaf"] = trial.suggest_uniform(
+            "min_sum_hessian_in_leaf", low=0.5, high=1
+        )
+        yield trial_values
+
+
 # run automl with custom search spaces
 automl = TabularAutoML(
     task=Task("binary"),
-    lgb_params={
-        "optimization_search_space": {
-            "feature_fraction": SearchSpace(Distribution.UNIFORM, low=0.5, high=1.0),
-            "min_sum_hessian_in_leaf": SearchSpace(
-                Distribution.LOGUNIFORM, low=1e-3, high=10.0
-            ),
-        }
-    },
+    lgb_params={"optimization_search_space": sample},
 )
 oof_predictions = automl.fit_predict(
     train_data, roles={"target": "TARGET", "drop": ["SK_ID_CURR"]}

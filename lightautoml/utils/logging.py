@@ -72,13 +72,30 @@ add_logging_level("INFO3", INFO3)
 
 
 class LoggerStream(io.IOBase):
-    def __init__(self, new_write) -> None:
+    def __init__(self, logger, verbose_eval=100) -> None:
         super().__init__()
-        self.new_write = new_write
+        self.logger = logger
+        self.verbose_eval = verbose_eval
+        self.counter = 1
 
     def write(self, message):
-        if message != "\n":
-            self.new_write(message.rstrip())
+        if message == "\n":
+            return
+        iter_num = message.split("\t")[0]
+        if (
+            (iter_num == "[1]")
+            or (iter_num == "0:")
+            or ((iter_num[-1] != "]") and (iter_num[-1] != ":"))
+        ):
+            self.logger.info3(message.rstrip())
+            return
+
+        if self.counter < self.verbose_eval - 1:
+            self.logger.debug(message.rstrip())
+            self.counter += 1
+        else:
+            self.logger.info3(message.rstrip())
+            self.counter = 0
 
 
 def verbosity_to_loglevel(verbosity: int):

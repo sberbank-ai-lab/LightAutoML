@@ -42,7 +42,7 @@ holidays = "*"
 networkx = "*"
 cmaes = "*"
 pyyaml = "*"
-catboost = "*"
+catboost = "^0.26.1"
 
 autowoe = ">=1.2"
 
