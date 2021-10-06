@@ -162,7 +162,7 @@ class TextExplanation:
         prediction = self.prediction[label]
         if not self.draw_prediction:
             prediction = None
-     
+
         if self.task_name == "reg":
             return draw_html(weight_string, self.task_name, prediction=prediction)
         elif self.task_name == "binary":
