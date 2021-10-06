@@ -21,12 +21,9 @@ np.random.seed(42)
 
 data = pd.read_csv("./data/sampled_app_train.csv")
 
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["report_dt"] = np.datetime64("2018-01-01")
@@ -69,9 +66,5 @@ test_pred = automl.predict(test)
 
 not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
-print(
-    f"OOF score: {roc_auc_score(train[roles['target']].values[not_nan], oof_pred.data[not_nan][:, 0])}"
-)
-print(
-    f"TEST score: {roc_auc_score(test[roles['target']].values, test_pred.data[:, 0])}"
-)
+print(f"OOF score: {roc_auc_score(train[roles['target']].values[not_nan], oof_pred.data[not_nan][:, 0])}")
+print(f"TEST score: {roc_auc_score(test[roles['target']].values, test_pred.data[:, 0])}")

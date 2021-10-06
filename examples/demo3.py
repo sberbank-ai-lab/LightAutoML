@@ -36,12 +36,9 @@ data = pd.read_csv("./data/sampled_app_train.csv")
 print("Data loaded")
 
 print("Features modification from user side...")
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["constant"] = 1
@@ -51,16 +48,10 @@ data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 print("Features modification finished")
 
 print("Split data...")
-train_data, test_data = train_test_split(
-    data, test_size=2000, stratify=data["TARGET"], random_state=13
-)
+train_data, test_data = train_test_split(data, test_size=2000, stratify=data["TARGET"], random_state=13)
 train_data.reset_index(drop=True, inplace=True)
 test_data.reset_index(drop=True, inplace=True)
-print(
-    "Data splitted. Parts sizes: train_data = {}, test_data = {}".format(
-        train_data.shape, test_data.shape
-    )
-)
+print("Data splitted. Parts sizes: train_data = {}, test_data = {}".format(train_data.shape, test_data.shape))
 
 print("Create task..")
 task = Task("binary")
@@ -92,9 +83,7 @@ pipe0 = LGBSimpleFeatures()
 pie = NpPermutationImportanceEstimator()
 pie1 = ModelBasedImportanceEstimator()
 sel1 = ImportanceCutoffSelector(pipe0, model01, pie1, cutoff=0)
-sel2 = NpIterativeFeatureSelector(
-    pipe0, model02, pie, feature_group_size=1, max_features_cnt_in_result=15
-)
+sel2 = NpIterativeFeatureSelector(pipe0, model02, pie, feature_group_size=1, max_features_cnt_in_result=15)
 selector = ComposedSelector([sel1, sel2])
 print("Feature selector created")
 
@@ -151,9 +140,7 @@ model = BoostLGBM(
 print("\t Tuner and model created")
 
 print("\t Pipeline2...")
-pipeline_lvl2 = MLPipeline(
-    [model], pre_selection=None, features_pipeline=pipe1, post_selection=None
-)
+pipeline_lvl2 = MLPipeline([model], pre_selection=None, features_pipeline=pipe1, post_selection=None)
 print("Pipeline2 created")
 
 print("Create AutoML pipeline...")
@@ -171,21 +158,13 @@ print("AutoML pipeline created...")
 print("Start AutoML pipeline fit_predict...")
 start_time = time.time()
 oof_pred = automl.fit_predict(train_data, roles={"target": "TARGET"})
-print(
-    "AutoML pipeline fitted and predicted. Time = {:.3f} sec".format(
-        time.time() - start_time
-    )
-)
+print("AutoML pipeline fitted and predicted. Time = {:.3f} sec".format(time.time() - start_time))
 
 print("Feature importances of selector:\n{}".format(selector.get_features_score()))
 
 print("oof_pred:\n{}\nShape = {}".format(oof_pred, oof_pred.shape))
 
-print(
-    "Feature importances of top level algorithm:\n{}".format(
-        automl.levels[-1][0].ml_algos[0].get_features_score()
-    )
-)
+print("Feature importances of top level algorithm:\n{}".format(automl.levels[-1][0].ml_algos[0].get_features_score()))
 
 print(
     "Feature importances of lowest level algorithm - model 0:\n{}".format(
@@ -203,13 +182,5 @@ test_pred = automl.predict(test_data)
 print("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.shape))
 
 print("Check scores...")
-print(
-    "OOF score: {}".format(
-        roc_auc_score(train_data["TARGET"].values, oof_pred.data[:, 0])
-    )
-)
-print(
-    "TEST score: {}".format(
-        roc_auc_score(test_data["TARGET"].values, test_pred.data[:, 0])
-    )
-)
+print("OOF score: {}".format(roc_auc_score(train_data["TARGET"].values, oof_pred.data[:, 0])))
+print("TEST score: {}".format(roc_auc_score(test_data["TARGET"].values, test_pred.data[:, 0])))

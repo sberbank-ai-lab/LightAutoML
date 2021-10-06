@@ -41,12 +41,10 @@ data = pd.read_csv(
 
 # Fix dates and convert to date type
 print("Fix dates and convert to date type")
-data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(
+data["BIRTH_DATE"] = np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
+data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(
     np.dtype("timedelta64[D]")
 )
-data["EMP_DATE"] = np.datetime64("2018-01-01") + np.clip(
-    data["DAYS_EMPLOYED"], None, 0
-).astype(np.dtype("timedelta64[D]"))
 data.drop(["DAYS_BIRTH", "DAYS_EMPLOYED"], axis=1, inplace=True)
 
 # Create folds

@@ -47,12 +47,9 @@ data = pd.read_csv("./data/sampled_app_train.csv")
 print("Data loaded")
 
 print("Features modification from user side...")
-data["BIRTH_DATE"] = (
-    np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))
-).astype(str)
+data["BIRTH_DATE"] = (np.datetime64("2018-01-01") + data["DAYS_BIRTH"].astype(np.dtype("timedelta64[D]"))).astype(str)
 data["EMP_DATE"] = (
-    np.datetime64("2018-01-01")
-    + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
+    np.datetime64("2018-01-01") + np.clip(data["DAYS_EMPLOYED"], None, 0).astype(np.dtype("timedelta64[D]"))
 ).astype(str)
 
 data["report_dt"] = np.datetime64("2018-01-01")
@@ -69,11 +66,7 @@ print("Split data...")
 train, test = train_test_split(data, test_size=0.2, random_state=42)
 train.reset_index(drop=True, inplace=True)
 test.reset_index(drop=True, inplace=True)
-print(
-    "Data splitted. Parts sizes: train_data = {}, test_data = {}".format(
-        train.shape, test.shape
-    )
-)
+print("Data splitted. Parts sizes: train_data = {}, test_data = {}".format(train.shape, test.shape))
 
 print("Start creation selector_0...")
 feat_sel_0 = LGBSimpleFeatures()
@@ -110,9 +103,7 @@ print("Start creation composed selector...")
 feat_sel_1 = LGBSimpleFeatures()
 mod_sel_1 = BoostLGBM()
 imp_sel_1 = NpPermutationImportanceEstimator()
-selector_1 = NpIterativeFeatureSelector(
-    feat_sel_1, mod_sel_1, imp_sel_1, feature_group_size=1
-)
+selector_1 = NpIterativeFeatureSelector(feat_sel_1, mod_sel_1, imp_sel_1, feature_group_size=1)
 print("End creation composed selector...")
 
 print("Start creation reg_l1_0...")
@@ -173,18 +164,8 @@ print("Prediction for test data:\n{}\nShape = {}".format(test_pred, test_pred.sh
 not_nan = np.any(~np.isnan(oof_pred.data), axis=1)
 
 print("Check scores...")
-print(
-    "OOF score: {}".format(
-        roc_auc_score(
-            train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0]
-        )
-    )
-)
-print(
-    "TEST score: {}".format(
-        roc_auc_score(test[roles["target"]].values, test_pred.data[:, 0])
-    )
-)
+print("OOF score: {}".format(roc_auc_score(train[roles["target"]].values[not_nan], oof_pred.data[not_nan][:, 0])))
+print("TEST score: {}".format(roc_auc_score(test[roles["target"]].values, test_pred.data[:, 0])))
 print("Pickle automl")
 with open("automl.pickle", "wb") as f:
     pickle.dump(automl, f)
@@ -195,10 +176,6 @@ with open("automl.pickle", "rb") as f:
 
 print("Predict loaded automl")
 test_pred = automl.predict(test)
-print(
-    "TEST score, loaded: {}".format(
-        roc_auc_score(test["TARGET"].values, test_pred.data[:, 0])
-    )
-)
+print("TEST score, loaded: {}".format(roc_auc_score(test["TARGET"].values, test_pred.data[:, 0])))
 
 os.remove("automl.pickle")
