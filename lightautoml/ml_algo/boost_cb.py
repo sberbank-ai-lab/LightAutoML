@@ -188,7 +188,7 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def _get_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
+    def _get_default_search_spaces(self, suggested_params: Dict, estimated_n_trials: int) -> Dict:
         """Sample hyperparameters from suggested.
 
         Args:
