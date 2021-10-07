@@ -83,6 +83,8 @@ pandoc = "*"
 pre-commit = "*"
 notebook = "*"
 mypy = "^0.910"
+tox = "*"
+tox-gh-actions = "*"
 
 
 [tool.poetry.extras]
@@ -151,3 +153,27 @@ exclude = '''
   | tests/.*/setup.py
 )/
 '''
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py{36}
+
+[gh-actions]
+python =
+    3.7: py37
+    3.8: py38
+
+[gh-actions:env]
+PLATFORM =
+    ubuntu-latest: linux
+    macos-latest: macos
+    windows-latest: windows
+
+[testenv]
+whitelist_externals = poetry
+commands = 
+    poetry install -vvv
+    poetry run pytest tests -v
+"""

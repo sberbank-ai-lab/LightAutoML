@@ -10,12 +10,13 @@ jobs:
     - uses: actions/setup-python@v2
     - uses: pre-commit/action@v2.0.3
 
-  pytest:
+  tests:
     needs: pre-commit
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubunutu-latest, windows-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
@@ -30,7 +31,8 @@ jobs:
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
 
     - name: install dependencies
-      run: poetry install
-    - name: run pytest
       run: |
-        poetry run pytest tests/ -v
+        poetry install
+    - name: test with tox
+      run: |
+        tox
