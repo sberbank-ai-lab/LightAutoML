@@ -33,6 +33,7 @@ jobs:
     - name: install dependencies
       run: |
         poetry install
+        poetry add -D tox-gh-actions
     - name: test with tox
       run: |
-        tox
+        poetry run tox

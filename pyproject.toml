@@ -84,7 +84,6 @@ pre-commit = "*"
 notebook = "*"
 mypy = "^0.910"
 tox = "*"
-tox-gh-actions = "*"
 
 
 [tool.poetry.extras]
@@ -158,10 +157,11 @@ exclude = '''
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py{36}
+envlist = py{36, 37, 38}
 
 [gh-actions]
 python =
+    3.6: py36
     3.7: py37
     3.8: py38
 
@@ -173,7 +173,7 @@ PLATFORM =
 
 [testenv]
 whitelist_externals = poetry
-commands = 
+commands =
     poetry install -vvv
     poetry run pytest tests -v
 """
