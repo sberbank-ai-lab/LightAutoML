@@ -27,12 +27,20 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - uses: Gr1N/setup-poetry@v4
+    - uses: Gr1N/setup-poetry@v7
 
     - name: install dependencies
       run: |
         poetry install
         poetry add -D tox-gh-actions
+
+    - name: install libomp for MacOS
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: brew install libomp
+
+    - name: install torch+cpu for Windows
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: poetry run pip install torch==1.7.0+cpu torchvision==0.8.1+cpu torchaudio===0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
 
     - name: test with tox
       run: |
