@@ -223,32 +223,6 @@ poetry install
 
 ```
 
-
-*******
-# Docs generation
-To generate documentation for LAMA framework, you can use command below (it uses virtual env created on installation step from sources):
-
-```bash
-cd docs
-mkdir docs/_static
-make clean html
-cd ..
-
-# Check docs construction
-python check_docs.py
-
-```
-
-*******
-# Testing
-
-When installing from source code, to check the success of the installation and run all the demo scripts, use the command below:
-
-```
-poetry run pytest tests
-```
-
-
 # Contributing to LightAutoML
 If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
