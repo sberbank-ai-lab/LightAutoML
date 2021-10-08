@@ -620,7 +620,7 @@ class ReportDeco:
             self._inference_content["error_hist"] = "valid_error_hist.png"
             self._inference_content["scatter_plot"] = "valid_scatter_plot.png"
             # graphics and metrics
-            mean_ae, median_ae, mse, r2 = self._regression_details(data)
+            mean_ae, median_ae, mse, r2, evs = self._regression_details(data)
             # model section
 
             evaluation_parameters = [
@@ -716,7 +716,7 @@ class ReportDeco:
             self._inference_content["error_hist"] = "test_error_hist_{}.png".format(self._n_test_sample)
             self._inference_content["scatter_plot"] = "test_scatter_plot_{}.png".format(self._n_test_sample)
             # graphics
-            mean_ae, median_ae, mse, r2 = self._regression_details(data)
+            mean_ae, median_ae, mse, r2, evs = self._regression_details(data)
             # update model section
             if self._n_test_sample >= 2:
                 self._model_summary["Test sample {}".format(self._n_test_sample)] = [
