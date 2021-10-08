@@ -12,7 +12,7 @@ import torch.nn as nn
 
 
 try:
-    from transformers import AutoTokenizer
+    from transformers import AutoModel
 except:
     import warnings
 

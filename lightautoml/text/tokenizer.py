@@ -23,7 +23,6 @@ except:
 
 from ..dataset.base import RolesDict
 from ..dataset.roles import ColumnRole
-from .abbreviations import ABBREVIATIONS
 
 
 Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
@@ -198,7 +197,7 @@ class SimpleRuTokenizer(BaseTokenizer):
     ):
         """Tokenizer for Russian language.
 
-        Include numeric, abbreviations, punctuation and short word filtering.
+        Include numeric, punctuation and short word filtering.
         Use stemmer by default and do lowercase.
 
         Args:
@@ -274,8 +273,6 @@ class SimpleRuTokenizer(BaseTokenizer):
                 pass
             elif w.lower() in self.stopwords:
                 pass
-            elif w.lower() in ABBREVIATIONS:
-                filtered_s.extend(ABBREVIATIONS[w.lower()].split())
             elif self._is_abbr(w):
                 filtered_s.append(w)
             # ignore short words
