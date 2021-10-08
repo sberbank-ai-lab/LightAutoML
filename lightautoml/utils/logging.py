@@ -4,7 +4,6 @@ import io
 import logging
 import os
 import sys
-import warnings
 
 from .. import _logger
 

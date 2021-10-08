@@ -6,8 +6,7 @@ import pickle
 
 import pytest
 
-from lightautoml.dataset.np_pd_dataset import *
-from lightautoml.dataset.roles import *
+from lightautoml.dataset.np_pd_dataset import PandasDataset
 from lightautoml.dataset.utils import roles_parser
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
