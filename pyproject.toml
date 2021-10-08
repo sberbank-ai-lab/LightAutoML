@@ -9,7 +9,7 @@ authors = [
     "Rinchin Damdinov <RGDamdinov@sberbank.ru>",
     "Alexander Kirilin <ADKirilin@sberbank.ru>",
     "Vasilii Bunakov <VABunakov@sberbank.ru>",
-    "Pavel Shvets <PIShvets@sberbank.ru>", 
+    "Pavel Shvets <PIShvets@sberbank.ru>",
 ]
 readme = "README.md"
 license = "Apache-2.0"
