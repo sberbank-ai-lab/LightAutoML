@@ -103,7 +103,5 @@ class DefaultTuner(ParamsTuner):
         Returns:s
             Tuple (None, None).
         """
-        self._best_params = ml_algo.init_params_on_input(
-            train_valid_iterator=train_valid_iterator
-        )
+        self._best_params = ml_algo.init_params_on_input(train_valid_iterator=train_valid_iterator)
         return None, None

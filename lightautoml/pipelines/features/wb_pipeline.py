@@ -29,9 +29,7 @@ class WBFeatures(FeaturesPipeline, TabularDataFeatures):
             Transformer.
 
         """
-        others = get_columns_by_role(train, "Category") + get_columns_by_role(
-            train, "Numeric"
-        )
+        others = get_columns_by_role(train, "Category") + get_columns_by_role(train, "Numeric")
 
         transformer_list = [
             self.get_datetime_diffs(train),

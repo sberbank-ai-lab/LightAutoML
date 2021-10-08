@@ -68,11 +68,7 @@ class NaNFlags(LAMLTransformer):
         data = dataset.data
         # fit ...
         ds_nan_rate = np.isnan(data).mean(axis=0)
-        self.nan_cols = [
-            name
-            for (name, nan_rate) in zip(dataset.features, ds_nan_rate)
-            if nan_rate > self.nan_rate
-        ]
+        self.nan_cols = [name for (name, nan_rate) in zip(dataset.features, ds_nan_rate) if nan_rate > self.nan_rate]
         self._features = list(self.nan_cols)
 
         return self
@@ -351,16 +347,12 @@ class QuantileBinning(LAMLTransformer):
         new_data = np.zeros(data.shape, dtype=np.int32)
 
         for n, b in enumerate(self.bins):
-            new_data[:, n] = (
-                np.searchsorted(b, np.where(sl[:, n], np.inf, data[:, n])) + 1
-            )
+            new_data[:, n] = np.searchsorted(b, np.where(sl[:, n], np.inf, data[:, n])) + 1
 
         new_data = np.where(sl, 0, new_data)
 
         # create resulted
         output = dataset.empty().to_numpy()
-        output.set_data(
-            new_data, self.features, CategoryRole(np.int32, label_encoded=True)
-        )
+        output.set_data(new_data, self.features, CategoryRole(np.int32, label_encoded=True))
 
         return output

@@ -69,9 +69,7 @@ class MetaLearner(metaclass=ABCMeta):
         self._fit(train_data, roles, verbose)
         self._is_fitted = True
         if self._timer.time_limit_exceeded():
-            logger.warning(
-                "{} is trained, but time limit exceeded.", self.__class__.__name__
-            )
+            logger.warning("{} is trained, but time limit exceeded.", self.__class__.__name__)
 
     def predict(self, data: DataFrame) -> Tuple[np.ndarray, ...]:
         """Predict treatment effects
@@ -232,14 +230,10 @@ class TLearner(MetaLearner):
         super().__init__(base_task, timeout, cpu_limit, gpu_ids)
 
         self.treatment_learner = (
-            treatment_learner
-            if treatment_learner is not None
-            else self._get_default_learner(self.base_task)
+            treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
         )
         self.control_learner = (
-            control_learner
-            if control_learner is not None
-            else self._get_default_learner(self.base_task)
+            control_learner if control_learner is not None else self._get_default_learner(self.base_task)
         )
 
     def _fit(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
@@ -261,9 +255,7 @@ class TLearner(MetaLearner):
         control_train_data.drop(treatment_col, axis=1, inplace=True)
         treatment_train_data.drop(treatment_col, axis=1, inplace=True)
 
-        self.treatment_learner.fit_predict(
-            treatment_train_data, new_roles, verbose=verbose
-        )
+        self.treatment_learner.fit_predict(treatment_train_data, new_roles, verbose=verbose)
         self._check_timer()
         self.control_learner.fit_predict(control_train_data, new_roles, verbose=verbose)
 
@@ -334,14 +326,10 @@ class T2Learner(MetaLearner):
         self._n_uplift_iterator_folds = n_uplift_iterator_folds
 
         self.treatment_learner = (
-            treatment_learner
-            if treatment_learner is not None
-            else self._get_default_learner(self.base_task)
+            treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
         )
         self.control_learner = (
-            control_learner
-            if control_learner is not None
-            else self._get_default_learner(self.base_task)
+            control_learner if control_learner is not None else self._get_default_learner(self.base_task)
         )
 
     def _fit(self, train_data: DataFrame, roles: Dict):
@@ -370,9 +358,7 @@ class T2Learner(MetaLearner):
             self.base_task,
             self._n_uplift_iterator_folds,
         )
-        self.treatment_learner.fit_predict(
-            train_data_c, new_roles, cv_iter=treatment_iterator
-        )
+        self.treatment_learner.fit_predict(train_data_c, new_roles, cv_iter=treatment_iterator)
 
         control_iterator = UpliftIterator(
             treatment_values,
@@ -381,9 +367,7 @@ class T2Learner(MetaLearner):
             self.base_task,
             self._n_uplift_iterator_folds,
         )
-        self.control_learner.fit_predict(
-            train_data_c, new_roles, cv_iter=control_iterator
-        )
+        self.control_learner.fit_predict(train_data_c, new_roles, cv_iter=control_iterator)
 
     def _predict(self, data: DataFrame):
         """Predict treatment effects
@@ -452,14 +436,10 @@ class TDLearner(MetaLearner):
         super().__init__(base_task, timeout, cpu_limit, gpu_ids)
 
         self.treatment_learner = (
-            treatment_learner
-            if treatment_learner is not None
-            else self._get_default_learner(self.base_task)
+            treatment_learner if treatment_learner is not None else self._get_default_learner(self.base_task)
         )
         self.control_learner = (
-            control_learner
-            if control_learner is not None
-            else self._get_default_learner(self.base_task)
+            control_learner if control_learner is not None else self._get_default_learner(self.base_task)
         )
 
         self._other_group_pred_col = "__OTHER_GROUP_PREDICTION__"
@@ -595,9 +575,7 @@ class XLearner(MetaLearner):
             base_task: Task - 'binary' or 'reg'
 
         """
-        if (
-            outcome_learners is None or len(outcome_learners) == 0
-        ) and base_task is None:
+        if (outcome_learners is None or len(outcome_learners) == 0) and base_task is None:
             raise RuntimeError('Must specify any of learners or "base_task"')
 
         if outcome_learners is not None and len(outcome_learners) > 0:
@@ -616,12 +594,8 @@ class XLearner(MetaLearner):
             self.learners["propensity"] = propensity_learner
 
         if outcome_learners is None or len(outcome_learners) == 0:
-            self.learners["outcome"]["control"] = self._get_default_learner(
-                self.base_task
-            )
-            self.learners["outcome"]["treatment"] = self._get_default_learner(
-                self.base_task
-            )
+            self.learners["outcome"]["control"] = self._get_default_learner(self.base_task)
+            self.learners["outcome"]["treatment"] = self._get_default_learner(self.base_task)
         elif len(outcome_learners) == 1:
             self.learners["outcome"]["control"] = outcome_learners[0]
             self.learners["outcome"]["treatment"] = copy.deepcopy(outcome_learners[0])
@@ -633,9 +607,7 @@ class XLearner(MetaLearner):
 
         if effect_learners is None or len(effect_learners) == 0:
             self.learners["effect"]["control"] = self._get_default_learner(Task("reg"))
-            self.learners["effect"]["treatment"] = self._get_default_learner(
-                Task("reg")
-            )
+            self.learners["effect"]["treatment"] = self._get_default_learner(Task("reg"))
         elif len(effect_learners) == 1:
             self.learners["effect"]["control"] = effect_learners[0]
             self.learners["effect"]["treatment"] = copy.deepcopy(effect_learners[0])
@@ -658,9 +630,7 @@ class XLearner(MetaLearner):
         self._fit_outcome_learners(train_data, roles, verbose)
         self._fit_effect_learners(train_data, roles, verbose)
 
-    def _fit_propensity_learner(
-        self, train_data: DataFrame, roles: Dict, verbose: int = 0
-    ):
+    def _fit_propensity_learner(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit propensity score
 
         Args:
@@ -681,13 +651,9 @@ class XLearner(MetaLearner):
         train_cp = train_data.copy()
         train_cp.drop(target_col, axis=1, inplace=True)
 
-        self.learners["propensity"].fit_predict(
-            train_cp, propensity_roles, verbose=verbose
-        )
+        self.learners["propensity"].fit_predict(train_cp, propensity_roles, verbose=verbose)
 
-    def _fit_outcome_learners(
-        self, train_data: DataFrame, roles: Dict, verbose: int = 0
-    ):
+    def _fit_outcome_learners(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit outcome
 
         Args:
@@ -707,13 +673,9 @@ class XLearner(MetaLearner):
             train_data_outcome = train_data[train_data[treatment_col] == group].copy()
             train_data_outcome.drop(treatment_col, axis=1, inplace=True)
 
-            outcome_learner.fit_predict(
-                train_data_outcome, outcome_roles, verbose=verbose
-            )
+            outcome_learner.fit_predict(train_data_outcome, outcome_roles, verbose=verbose)
 
-    def _fit_effect_learners(
-        self, train_data: DataFrame, roles: Dict, verbose: int = 0
-    ):
+    def _fit_effect_learners(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit treatment effects
 
         Args:
@@ -736,19 +698,13 @@ class XLearner(MetaLearner):
             train_data_effect = train_data[train_data[treatment_col] == group].copy()
             train_data_effect.drop(treatment_col, axis=1, inplace=True)
 
-            outcome_pred = (
-                self.learners["outcome"][opposite_group_name]
-                .predict(train_data_effect)
-                .data.ravel()
-            )
+            outcome_pred = self.learners["outcome"][opposite_group_name].predict(train_data_effect).data.ravel()
             train_data_effect[target_col] = train_data_effect[target_col] - outcome_pred
 
             if group_name == "control":
                 train_data_effect[target_col] *= -1
 
-            train_data_effect = train_data_effect[
-                train_data_effect[target_col].notnull()
-            ]
+            train_data_effect = train_data_effect[train_data_effect[target_col].notnull()]
 
             effect_learner.fit_predict(train_data_effect, effect_roles, verbose=verbose)
 
@@ -764,24 +720,13 @@ class XLearner(MetaLearner):
             effect_wo_interaction: Predictions of base task values on control-group
 
         """
-        outcome_control_pred = (
-            self.learners["outcome"]["control"].predict(data).data.ravel()
-        )
-        outcome_treatment_pred = (
-            self.learners["outcome"]["treatment"].predict(data).data.ravel()
-        )
+        outcome_control_pred = self.learners["outcome"]["control"].predict(data).data.ravel()
+        outcome_treatment_pred = self.learners["outcome"]["treatment"].predict(data).data.ravel()
 
         propensity_score = self.learners["propensity"].predict(data).data.ravel()
-        uplift_control_pred = (
-            self.learners["effect"]["control"].predict(data).data.ravel()
-        )
-        uplift_treatment_pred = (
-            self.learners["effect"]["treatment"].predict(data).data.ravel()
-        )
-        uplift = (
-            propensity_score * uplift_treatment_pred
-            + (1.0 - propensity_score) * uplift_control_pred
-        )
+        uplift_control_pred = self.learners["effect"]["control"].predict(data).data.ravel()
+        uplift_treatment_pred = self.learners["effect"]["treatment"].predict(data).data.ravel()
+        uplift = propensity_score * uplift_treatment_pred + (1.0 - propensity_score) * uplift_control_pred
 
         return uplift, outcome_treatment_pred, outcome_control_pred
 
@@ -794,7 +739,7 @@ class RLearner(MetaLearner):
     tau(x) - the treatment effect
 
     .. math::
-        \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) + (W_i - e(X_i))\tau(X_i) \Big]^2
+        \tau(\cdot) = argmin_{\tau} \sum_{i} \Big[ (Y_i - m(X_i)) - (W_i - e(X_i))\tau(X_i) \Big]^2
 
     """
 
@@ -821,10 +766,7 @@ class RLearner(MetaLearner):
             gpu_ids: GPU IDs that are passed to each automl.
 
         """
-        if (
-            propensity_learner is not None
-            and self._get_task(propensity_learner).name != "binary"
-        ):
+        if propensity_learner is not None and self._get_task(propensity_learner).name != "binary":
             raise RuntimeError("Task of 'propensity_learner' must be 'binary'")
 
         if mean_outcome_learner is None and base_task is None:
@@ -839,17 +781,11 @@ class RLearner(MetaLearner):
         self.mean_outcome_learner: AutoML
         self.effect_learner: AutoML
 
-        no_learners = (
-            (propensity_learner is None)
-            and (mean_outcome_learner is None)
-            and (effect_learner is None)
-        )
+        no_learners = (propensity_learner is None) and (mean_outcome_learner is None) and (effect_learner is None)
         tabular_timeout = timeout / 3 if no_learners and timeout is not None else None
 
         if propensity_learner is None:
-            self.propensity_learner = TabularAutoML(
-                task=Task("binary"), timeout=tabular_timeout
-            )
+            self.propensity_learner = TabularAutoML(task=Task("binary"), timeout=tabular_timeout)
         else:
             self.propensity_learner = propensity_learner
 
@@ -857,14 +793,10 @@ class RLearner(MetaLearner):
             self.mean_outcome_learner = mean_outcome_learner
             self.base_task = self._get_task(mean_outcome_learner)
         elif base_task is not None:
-            self.mean_outcome_learner = TabularAutoML(
-                task=base_task, timeout=tabular_timeout
-            )
+            self.mean_outcome_learner = TabularAutoML(task=base_task, timeout=tabular_timeout)
 
         if effect_learner is None:
-            self.effect_learner = TabularAutoML(
-                task=Task("reg"), timeout=tabular_timeout
-            )
+            self.effect_learner = TabularAutoML(task=Task("reg"), timeout=tabular_timeout)
         else:
             self.effect_learner = effect_learner
 
@@ -877,17 +809,11 @@ class RLearner(MetaLearner):
             verbose: Verbose
 
         """
-        propensity_pred = self._fit_predict_propensity_learner(
-            train_data, roles, verbose
-        )
+        propensity_pred = self._fit_predict_propensity_learner(train_data, roles, verbose)
         self._check_timer()
-        mean_outcome_pred = self._fit_predict_mean_outcome_learner(
-            train_data, roles, verbose
-        )
+        mean_outcome_pred = self._fit_predict_mean_outcome_learner(train_data, roles, verbose)
         self._check_timer()
-        self._fit_effect_learner(
-            train_data, roles, propensity_pred, mean_outcome_pred, verbose
-        )
+        self._fit_effect_learner(train_data, roles, propensity_pred, mean_outcome_pred, verbose)
 
     def _predict(self, data: Any) -> Tuple[np.ndarray, None, None]:
         """Predict treatment effects
@@ -903,9 +829,7 @@ class RLearner(MetaLearner):
         """
         return self.effect_learner.predict(data).data.ravel(), None, None
 
-    def _fit_predict_propensity_learner(
-        self, train_data: DataFrame, roles: Dict, verbose: int = 0
-    ):
+    def _fit_predict_propensity_learner(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit propensity score
 
         Args:
@@ -925,15 +849,11 @@ class RLearner(MetaLearner):
         train_cp = train_data.copy()
         train_cp.drop(target_col, axis=1, inplace=True)
 
-        propensity_pred = self.propensity_learner.fit_predict(
-            train_cp, propensity_roles, verbose=verbose
-        ).data.ravel()
+        propensity_pred = self.propensity_learner.fit_predict(train_cp, propensity_roles, verbose=verbose).data.ravel()
 
         return propensity_pred
 
-    def _fit_predict_mean_outcome_learner(
-        self, train_data: DataFrame, roles: Dict, verbose: int = 0
-    ):
+    def _fit_predict_mean_outcome_learner(self, train_data: DataFrame, roles: Dict, verbose: int = 0):
         """Fit mean outcome
 
         Args:
@@ -952,9 +872,7 @@ class RLearner(MetaLearner):
         train_cp = train_data.copy()
         train_cp.drop(treatment_col, axis=1, inplace=True)
 
-        mean_outcome_pred = self.mean_outcome_learner.fit_predict(
-            train_cp, outcome_roles
-        ).data.ravel()
+        mean_outcome_pred = self.mean_outcome_learner.fit_predict(train_cp, outcome_roles).data.ravel()
 
         return mean_outcome_pred
 

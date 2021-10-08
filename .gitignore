@@ -124,6 +124,9 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+# VSCode
+.vscode
+
 # mkdocs documentation
 /site
 
@@ -148,3 +151,5 @@ cython_debug/
 lama_venv/
 poetry.lock
 *.db
+
+temp/

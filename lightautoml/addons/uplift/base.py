@@ -9,6 +9,7 @@ from dataclasses import field
 from itertools import product
 from itertools import zip_longest
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -103,8 +104,8 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def __init__(
         self,
         base_task: Task,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
@@ -118,7 +119,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
         Args:
             base_task: Task ('binary'/'reg') if there aren't candidates.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
@@ -130,13 +131,13 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
 
         """
         assert 0.0 < test_size < 1.0, "'test_size' must be between (0.0, 1.0)"
-        assert isinstance(metric, str) or isinstance(
-            metric, TUpliftMetric
-        ), "Invalid metric type: available = {'str', 'TUpliftMetric'}"
+        assert (
+            isinstance(metric, str) or isinstance(metric, TUpliftMetric) or callable(metric)
+        ), "Invalid metric type: available = {'str', 'TUpliftMetric', 'function'}"
 
         self.base_task = base_task
         self.metric = metric
-        self.normed_metric = normed_metric
+        self.has_report = has_report
         self.increasing_metric = increasing_metric
         self.test_size = test_size
         self.timeout = timeout
@@ -158,27 +159,21 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def predict(self, data: Any) -> Tuple[np.ndarray, ...]:
         pass
 
-    def calculate_metric(
-        self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray
-    ) -> float:
+    def calculate_metric(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
         if isinstance(self.metric, str):
             try:
-                auc = calculate_uplift_auc(
-                    y_true, uplift_pred, treatment, self.metric, self.normed_metric
-                )
+                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
             except ConstPredictError as e:
                 logger.error(str(e) + "\nMetric set to zero.")
                 auc = 0.0
 
             return auc
-        elif isinstance(self.metric, TUpliftMetric):
+        elif isinstance(self.metric, TUpliftMetric) or callable(self.metric):
             return self.metric(y_true, uplift_pred, treatment)
         else:
             raise Exception("Invalid metric type: available = {'str', 'TUpliftMetric'}")
 
-    def _prepare_data(
-        self, data: DataFrame, roles: dict
-    ) -> Tuple[DataFrame, DataFrame, np.ndarray, np.ndarray]:
+    def _prepare_data(self, data: DataFrame, roles: dict) -> Tuple[DataFrame, DataFrame, np.ndarray, np.ndarray]:
         """Prepare data for training part.
 
         Args:
@@ -227,8 +222,8 @@ class AutoUplift(BaseAutoUplift):
         base_task: Task,
         uplift_candidates: List[MetaLearnerWrapper] = [],
         add_dd_candidates: bool = False,
-        metric: Union[str, TUpliftMetric] = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
+        has_report: bool = False,
         increasing_metric: bool = True,
         test_size: float = 0.2,
         threshold_imbalance_treatment: float = 0.2,
@@ -245,7 +240,7 @@ class AutoUplift(BaseAutoUplift):
             uplift_candidates: List of metalearners with params and custom name.
             add_dd_candidates: Add data depend candidates. Doesn't work when uplift_candidates is not default.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
+            has_report: Use metalearner for which report can be constructed.
             increasing_metric: Increasing metric
             test_size: Size of test part, which use for.
             threshold_imbalance_treatment: Threshold for imbalance treatment.
@@ -261,7 +256,7 @@ class AutoUplift(BaseAutoUplift):
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            has_report,
             increasing_metric,
             test_size,
             timeout,
@@ -276,9 +271,7 @@ class AutoUplift(BaseAutoUplift):
             if timeout is not None:
                 logger.warning("'timeout' is used only for a global time.")
             if add_dd_candidates:
-                logger.warning(
-                    "'add_dd_candidates' isn't used when 'uplift_candidates' is specified."
-                )
+                logger.warning("'add_dd_candidates' isn't used when 'uplift_candidates' is specified.")
 
         # self.checkout_timeout = True
         if len(uplift_candidates) > 0:
@@ -304,9 +297,7 @@ class AutoUplift(BaseAutoUplift):
             verbose: Verbose.
 
         """
-        train_data, test_data, test_treatment, test_target = self._prepare_data(
-            data, roles
-        )
+        train_data, test_data, test_treatment, test_target = self._prepare_data(data, roles)
 
         best_metalearner: Optional[MetaLearner] = None
         best_metalearner_candidate_info: Optional[MetaLearnerWrapper] = None
@@ -326,20 +317,14 @@ class AutoUplift(BaseAutoUplift):
             try:
                 start_fit = time.time()
                 metalearner.fit(train_data, roles, verbose)
-                logger.info(
-                    "Uplift candidate #{} [{}] is fitted".format(
-                        idx_candidate, candidate_info.name
-                    )
-                )
+                logger.info("Uplift candidate #{} [{}] is fitted".format(idx_candidate, candidate_info.name))
                 end_fit = time.time()
                 self.candidate_worktime[idx_candidate] = end_fit - start_fit
 
                 uplift_pred, _, _ = metalearner.predict(test_data)
                 uplift_pred = uplift_pred.ravel()
 
-                metric_value = self.calculate_metric(
-                    test_target, uplift_pred, test_treatment
-                )
+                metric_value = self.calculate_metric(test_target, uplift_pred, test_treatment)
                 self.candidate_holdout_metrics[idx_candidate] = metric_value
 
                 if best_metalearner_candidate_info is None:
@@ -358,19 +343,13 @@ class AutoUplift(BaseAutoUplift):
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
-                    "Time of training exceeds 'timeout': {} > {}.".format(
-                        self._timer.time_spent, self.timeout
-                    )
+                    "Time of training exceeds 'timeout': {} > {}.".format(self._timer.time_spent, self.timeout)
                 )
                 logger.warning(
-                    "There is fitted {}/{} candidates".format(
-                        idx_candidate + 1, len(self.uplift_candidates)
-                    )
+                    "There is fitted {}/{} candidates".format(idx_candidate + 1, len(self.uplift_candidates))
                 )
                 if idx_candidate + 1 < len(self.uplift_candidates):
-                    logger.warning(
-                        "Try to increase 'timeout' or set 'None'(eq. infinity)"
-                    )
+                    logger.warning("Try to increase 'timeout' or set 'None'(eq. infinity)")
                 break
 
         self.best_metalearner_candidate_info = best_metalearner_candidate_info
@@ -389,9 +368,7 @@ class AutoUplift(BaseAutoUplift):
             ...: None or predictions of base task values on treated(control)-stage
 
         """
-        assert (
-            self.best_metalearner is not None
-        ), "First call 'self.fit(...)', to choose best metalearner"
+        assert self.best_metalearner is not None, "First call 'self.fit(...)', to choose best metalearner"
 
         return self.best_metalearner.predict(data)
 
@@ -416,13 +393,12 @@ class AutoUplift(BaseAutoUplift):
             metalearner_deco: Best metalearner is wrapped or not by ReportDecoUplift.
 
         """
-        assert (
-            self.best_metalearner_candidate_info is not None
-        ), "First call 'self.fit(...), to choose best metalearner"
+        assert self.best_metalearner_candidate_info is not None, "First call 'self.fit(...), to choose best metalearner"
 
         candidate_info = deepcopy(self.best_metalearner_candidate_info)
-        if update_metalearner_params:
+        if len(update_metalearner_params) > 0:
             candidate_info.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
             candidate_info.update_baselearner_params(update_baselearner_params)
 
         best_metalearner = candidate_info()
@@ -432,9 +408,7 @@ class AutoUplift(BaseAutoUplift):
                 rdu = ReportDecoUplift()
                 best_metalearner = rdu(best_metalearner)
             else:
-                logger.warning(
-                    "Report doesn't work with custom metric, return just best_metalearner."
-                )
+                logger.warning("Report doesn't work with custom metric, return just best_metalearner.")
 
         return best_metalearner
 
@@ -454,9 +428,7 @@ class AutoUplift(BaseAutoUplift):
             }
         )
 
-        rating_table["Rank"] = rating_table["Metrics"].rank(
-            method="first", ascending=not self.increasing_metric
-        )
+        rating_table["Rank"] = rating_table["Metrics"].rank(method="first", ascending=not self.increasing_metric)
         rating_table.sort_values("Rank", inplace=True)
         rating_table.reset_index(drop=True, inplace=True)
 
@@ -478,16 +450,24 @@ class AutoUplift(BaseAutoUplift):
         self._calculate_tabular_time()
 
         self.uplift_candidates = self._default_uplift_candidates
+        if self.has_report:
+            self.uplift_candidates = [
+                c for c in self.uplift_candidates if c.klass in ReportDecoUplift._available_metalearners
+            ]
 
         if self.add_dd_candidates:
-            self.uplift_candidates.extend(
-                self._generate_data_depend_uplift_candidates(data, roles)
-            )
+            dd_candidates = self._generate_data_depend_uplift_candidates(data, roles)
+            if self.has_report:
+                dd_candidates = [c for c in dd_candidates if c.klass in ReportDecoUplift._available_metalearners]
+            self.uplift_candidates.extend(dd_candidates)
 
     def _calculate_tabular_time(self):
         # Number TabularAutoML in all posible uplift candidates
         # TODO: rewrite this
-        num_tabular_automls = 16 if self.add_dd_candidates else 11
+        if self.has_report:
+            num_tabular_automls = 16 if self.add_dd_candidates else 11
+        else:
+            num_tabular_automls = 22 if self.add_dd_candidates else 17
 
         if self.timeout_single_learner is not None:
             self._tabular_timeout = self.timeout_single_learner
@@ -563,11 +543,7 @@ class AutoUplift(BaseAutoUplift):
                     "base_task": self.base_task,
                     "timeout": self.timeout_metalearner
                     if self.timeout_metalearner is not None
-                    else (
-                        self._tabular_timeout * 3
-                        if self._tabular_timeout is not None
-                        else None
-                    ),
+                    else (self._tabular_timeout * 3 if self._tabular_timeout is not None else None),
                 },
             ),
             MetaLearnerWrapper(
@@ -720,9 +696,7 @@ class AutoUplift(BaseAutoUplift):
             ),
         ]
 
-    def _generate_data_depend_uplift_candidates(
-        self, data: DataFrame, roles: dict
-    ) -> List[MetaLearnerWrapper]:
+    def _generate_data_depend_uplift_candidates(self, data: DataFrame, roles: dict) -> List[MetaLearnerWrapper]:
         """Generate uplift candidates.
 
         Generate new uplift candidates which depend from data.
@@ -799,9 +773,7 @@ class AutoUplift(BaseAutoUplift):
                         },
                     ),
                     MetaLearnerWrapper(
-                        name="XLearner__Control_{}__Treatment_{}".format(
-                            control_model, treatment_model
-                        ),
+                        name="XLearner__Control_{}__Treatment_{}".format(control_model, treatment_model),
                         klass=XLearner,
                         params={
                             "timeout": self.timeout_metalearner,
@@ -891,12 +863,10 @@ class AutoUpliftTX(BaseAutoUplift):
             ]
         ] = None,
         metalearners: List[str] = [],
-        metric: str = "adj_qini",
-        normed_metric: bool = True,
+        metric: Union[str, TUpliftMetric, Callable] = "adj_qini",
         increasing_metric: bool = True,
         test_size: float = 0.2,
         timeout: Optional[int] = None,
-        timeout_metalearner: Optional[int] = None,
         timeout_single_learner: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",
@@ -908,29 +878,27 @@ class AutoUpliftTX(BaseAutoUplift):
             baselearners: List of baselearners or baselearner divided into the groups (Dict).
             metalearners: List of metalearners.
             metric: Uplift metric.
-            normed_metric: Normalize or not uplift metric.
             increasing_metric: Increasing metric.
             test_size: Size of test part, which use for.
             timeout: Global timeout of autouplift. Doesn't work when uplift_candidates is not default.
-            timeout_metalearner: Timeout for metalearner.
             timeout_single_learner: Timeout single baselearner, if not specified, it's selected automatically.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
             random_state: Random state.
 
         """
-        assert all(
-            ml in self.__MAP_META_TO_STAGES__ for ml in metalearners
-        ), "Currently available for {}.".format(self.__MAP_META_TO_STAGES__)
+        assert all(ml in self.__MAP_META_TO_STAGES__ for ml in metalearners), "Currently available for {}.".format(
+            self.__MAP_META_TO_STAGES__
+        )
 
         super().__init__(
             base_task,
             metric,
-            normed_metric,
+            True,
             increasing_metric,
             test_size,
             timeout,
-            timeout_metalearner,
+            None,
             timeout_single_learner,
             cpu_limit,
             gpu_ids,
@@ -938,21 +906,17 @@ class AutoUpliftTX(BaseAutoUplift):
         )
 
         self.baselearners = baselearners
-        self.metalearners = (
-            metalearners if len(metalearners) > 0 else list(self.__MAP_META_TO_STAGES__)
-        )
+        self.metalearners = metalearners if len(metalearners) > 0 else list(self.__MAP_META_TO_STAGES__)
 
         self._best_metalearner: MetaLearner
         self._best_metalearner_wrap: MetaLearnerWrapper
 
-        self._trained_stage_baselearners: Dict[
-            MLStageFullName, List[TrainedStageBaseLearner]
-        ] = defaultdict(list)
+        self._trained_stage_baselearners: Dict[MLStageFullName, List[TrainedStageBaseLearner]] = defaultdict(list)
         self._metalearner_metrics: Dict[TrainedMetaLearnerFullName, float] = {}
 
         self._n_run_l2 = 3
 
-    def fit(self, data: DataFrame, roles: dict):
+    def fit(self, data: DataFrame, roles: dict, verbose: int = 0):
         """Fit AutoUplift.
 
         Choose best metalearner and fit it.
@@ -960,22 +924,19 @@ class AutoUpliftTX(BaseAutoUplift):
         Args:
             train_data: Dataset to train.
             roles: Roles dict with 'treatment' roles.
+            verbosee: Verbose.
 
         """
-        train_data, test_data, test_treatment, test_target = self._prepare_data(
-            data, roles
-        )
+        train_data, test_data, test_treatment, test_target = self._prepare_data(data, roles)
 
         self._timer.start()
 
         for stage_info in self._generate_stage_baselearner_candidates():
-            self._evaluate(stage_info, train_data, test_data, roles)
+            self._evaluate(stage_info, train_data, test_data, roles, verbose)
 
             if self._timer.time_limit_exceeded():
                 logger.warning(
-                    "Time of training exceeds 'timeout': {} > {}.".format(
-                        self._timer.time_spent, self.timeout
-                    )
+                    "Time of training exceeds 'timeout': {} > {}.".format(self._timer.time_spent, self.timeout)
                 )
                 break
 
@@ -996,14 +957,15 @@ class AutoUpliftTX(BaseAutoUplift):
             ...: None or predictions of base task values on treated(control)-group
 
         """
-        assert (
-            self._best_metalearner is not None
-        ), "First call 'self.fit(...)', to choose best metalearner."
+        assert self._best_metalearner is not None, "First call 'self.fit(...)', to choose best metalearner."
 
         return self._best_metalearner.predict(data)
 
     def create_best_metalearner(
-        self, need_report: bool = True, update_metalearner_params: Dict[str, Any] = {}
+        self,
+        need_report: bool = True,
+        update_metalearner_params: Dict[str, Any] = {},
+        update_baselearner_params: Dict[str, Any] = {},
     ) -> Union[MetaLearner, ReportDecoUplift]:
         """Create 'raw' best metalearner with(without) report functionality.
 
@@ -1011,7 +973,8 @@ class AutoUpliftTX(BaseAutoUplift):
 
         Args:
             need_report: Wrap best metalearner into Report
-            update_metalearner_params: Parameters inner learner.
+            update_metalearner_params: MetaLearner parameters.
+            update_baselearner_params: Parameters inner learner.
                 Recommended using - increasing timeout of 'TabularAutoML' learner for better scores.
                 Example: {'timeout': None}.
 
@@ -1019,13 +982,14 @@ class AutoUpliftTX(BaseAutoUplift):
             metalearner_deco: Best metalearner is wrapped or not by ReportDecoUplift.
 
         """
-        assert (
-            len(self._trained_stage_baselearners) > 0
-        ), "First call 'self.fit(...), to choose best metalearner."
+        assert len(self._trained_stage_baselearners) > 0, "First call 'self.fit(...), to choose best metalearner."
 
         ml_wrap = deepcopy(self._best_metalearner_wrap)
-        if update_metalearner_params:
-            ml_wrap.update_baselearner_params(update_metalearner_params)
+
+        if len(update_metalearner_params) > 0:
+            ml_wrap.update_params(update_metalearner_params)
+        if len(update_baselearner_params) > 0:
+            ml_wrap.update_baselearner_params(update_baselearner_params)
 
         best_metalearner_raw = ml_wrap()
 
@@ -1034,9 +998,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 rdu = ReportDecoUplift()
                 best_metalearner_raw = rdu(best_metalearner_raw)
             else:
-                logger.warning(
-                    "Report doesn't work with custom metric, return just best_metalearner."
-                )
+                logger.warning("Report doesn't work with custom metric, return just best_metalearner.")
 
         return best_metalearner_raw
 
@@ -1061,9 +1023,7 @@ class AutoUpliftTX(BaseAutoUplift):
             }
         )
 
-        rating_table["Rank"] = rating_table["Metrics"].rank(
-            method="first", ascending=not self.increasing_metric
-        )
+        rating_table["Rank"] = rating_table["Metrics"].rank(method="first", ascending=not self.increasing_metric)
         rating_table.sort_values("Rank", inplace=True)
         rating_table.reset_index(drop=True, inplace=True)
 
@@ -1071,9 +1031,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
     def _generate_stage_baselearner_candidates(
         self,
-    ) -> Generator[
-        Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None
-    ]:  # -> Generator[Tuple[str, BaseLearnerWrapper], None, None]:
+    ) -> Generator[Tuple[Tuple[MetaLearnerStage, BaseLearnerWrapper], ...], None, None]:
         """Iterate through a stage of baselearners one at a time."""
         stage_baselearners = self._set_stage_baselearners()
 
@@ -1085,11 +1043,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         # TODO - WARNING! Work only with two levels.
         bls_level_1 = zip_longest(
-            *(
-                deepcopy(bls)
-                for stage, bls in stage_baselearners.items()
-                if stage in stage_by_levels[1]
-            )
+            *(deepcopy(bls) for stage, bls in stage_baselearners.items() if stage in stage_by_levels[1])
         )
         first_run = True
         n_runs = 0
@@ -1178,15 +1132,10 @@ class AutoUpliftTX(BaseAutoUplift):
 
         stage_baselearners = {}
         if isinstance(self.baselearners, dict):
-            stage_baselearners = {
-                k: deepcopy(self._validate_baselearners(v))
-                for k, v in self.baselearners.items()
-            }
+            stage_baselearners = {k: deepcopy(self._validate_baselearners(v)) for k, v in self.baselearners.items()}
 
         all_stages_full_names = set(
-            stage.full_name()
-            for ml, ml_stages in self.__MAP_META_TO_STAGES__.items()
-            for stage in ml_stages
+            stage.full_name() for ml, ml_stages in self.__MAP_META_TO_STAGES__.items() for stage in ml_stages
         )
 
         if len(stage_baselearners) != len(all_stages_full_names):
@@ -1195,9 +1144,7 @@ class AutoUpliftTX(BaseAutoUplift):
             if isinstance(self.baselearners, list) and len(self.baselearners) > 0:
                 baselearners = deepcopy(self._validate_baselearners(self.baselearners))
             elif self.baselearners is None or isinstance(self.baselearners, dict):
-                baselearners = deepcopy(
-                    self.__default_learners(tab_params={"timeout": timeout})
-                )
+                baselearners = deepcopy(self.__default_learners(tab_params={"timeout": timeout}))
 
             remain_stages_full_names = all_stages_full_names - set(stage_baselearners)
 
@@ -1218,9 +1165,7 @@ class AutoUpliftTX(BaseAutoUplift):
             for full_name in remain_stages_full_names:
                 stage = self._extract_stage(full_name)
 
-                stage_task = (
-                    stage.params["task"] if "task" in stage.params else self.base_task
-                )
+                stage_task = stage.params["task"] if "task" in stage.params else self.base_task
 
                 filled_baselearners = deepcopy(raw_baselearners)
                 for idx in range(len(filled_baselearners)):
@@ -1247,11 +1192,7 @@ class AutoUpliftTX(BaseAutoUplift):
         if not specify_stages:
             if self.timeout is not None:
                 timeout = int(
-                    self.timeout
-                    / (
-                        2 * ("TLearner" in self.metalearners)
-                        + 5 * ("XLearner" in self.metalearners)
-                    )
+                    self.timeout / (2 * ("TLearner" in self.metalearners) + 5 * ("XLearner" in self.metalearners))
                 )
             elif self.timeout_single_learner is not None:
                 timeout = self.timeout_single_learner
@@ -1283,9 +1224,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         if is_name_duplicates:
             logger.warning("Naming of baselearner should be unique.")
-            logger.warning(
-                "Name of baselearner would be updated with postfix '__order_idx_bl__'."
-            )
+            logger.warning("Name of baselearner would be updated with postfix '__order_idx_bl__'.")
 
             rename = lambda name, idx: "{}__#{}__".format(name, idx)
 
@@ -1311,6 +1250,7 @@ class AutoUpliftTX(BaseAutoUplift):
         train: DataFrame,
         test: DataFrame,
         roles: dict,
+        verbose: int = 0,
     ):
         """Evaluate baselearner: fit-train/predict-test.
 
@@ -1328,7 +1268,7 @@ class AutoUpliftTX(BaseAutoUplift):
 
         bl = bl_wrap()
 
-        bl.fit_predict(train_data, train_roles)
+        bl.fit_predict(train_data, train_roles, verbose)
         test_pred = bl.predict(test).data.ravel()
 
         tsbl = TrainedStageBaseLearner(
@@ -1368,15 +1308,11 @@ class AutoUpliftTX(BaseAutoUplift):
             elif stage_name == "outcome_control":
                 train_roles = deepcopy(roles)
                 train_roles.pop(treatment_role)
-                train_data = train[train[treatment_col] == 0].drop(
-                    treatment_col, axis=1
-                )
+                train_data = train[train[treatment_col] == 0].drop(treatment_col, axis=1)
             elif stage_name == "outcome_treatment":
                 train_roles = deepcopy(roles)
                 train_roles.pop(treatment_role)
-                train_data = train[train[treatment_col] == 1].drop(
-                    treatment_col, axis=1
-                )
+                train_data = train[train[treatment_col] == 1].drop(treatment_col, axis=1)
             else:
                 raise Exception("Wrong l1 stage name")
         elif len(stage_info) == 2:
@@ -1392,16 +1328,12 @@ class AutoUpliftTX(BaseAutoUplift):
             ][0]
 
             if stage_name == "effect_control":
-                train_data = train[train[treatment_col] == 0].drop(
-                    treatment_col, axis=1
-                )
+                train_data = train[train[treatment_col] == 0].drop(treatment_col, axis=1)
                 opposite_gr_pred = prev_stage_bl.predict(train_data).data.ravel()
 
                 train_data[target_col] = opposite_gr_pred - train_data[target_col]
             elif stage_name == "effect_treatment":
-                train_data = train[train[treatment_col] == 1].drop(
-                    treatment_col, axis=1
-                )
+                train_data = train[train[treatment_col] == 1].drop(treatment_col, axis=1)
                 opposite_gr_pred = prev_stage_bl.predict(train_data).data.ravel()
 
                 train_data[target_col] = train_data[target_col] - opposite_gr_pred
@@ -1410,42 +1342,25 @@ class AutoUpliftTX(BaseAutoUplift):
 
         return train_data, train_roles
 
-    def _calculate_metalearners_metrics(
-        self, test_target: np.ndarray, test_treatment: np.ndarray
-    ):
+    def _calculate_metalearners_metrics(self, test_target: np.ndarray, test_treatment: np.ndarray):
         """Calculate metalearners' metric."""
         for set_ml_stage_bls in self._bl_for_ml():
             for ml_name, stage_bls in set_ml_stage_bls.items():
-                sbls = tuple(
-                    sorted(
-                        [
-                            (stage_name, bl.stage_bl.name)
-                            for stage_name, bl in stage_bls.items()
-                        ]
-                    )
-                )
+                sbls = tuple(sorted([(stage_name, bl.stage_bl.name) for stage_name, bl in stage_bls.items()]))
 
                 trained_ml_full_name = (ml_name, sbls)
 
                 uplift_pred = self._metalearner_predict(ml_name, stage_bls)
-                metric_value = self.calculate_metric(
-                    test_target, uplift_pred, test_treatment
-                )
+                metric_value = self.calculate_metric(test_target, uplift_pred, test_treatment)
                 self._metalearner_metrics[trained_ml_full_name] = metric_value
 
     def _bl_for_ml(
         self,
-    ) -> Generator[
-        Dict[str, Dict[MLStageFullName, TrainedStageBaseLearner]], None, None
-    ]:
+    ) -> Generator[Dict[str, Dict[MLStageFullName, TrainedStageBaseLearner]], None, None]:
         """Prepare stage-baselearners for calculating metalearner metrics."""
         ready_metalearners = []
         for ml_name, ml_stages in self.__MAP_META_TO_STAGES__.items():
-            ready_metalearners.append(
-                all(
-                    s.full_name() in self._trained_stage_baselearners for s in ml_stages
-                )
-            )
+            ready_metalearners.append(all(s.full_name() in self._trained_stage_baselearners for s in ml_stages))
 
         if not any(ready_metalearners):
             raise Exception("No one metalearner can predict.")
@@ -1473,10 +1388,7 @@ class AutoUpliftTX(BaseAutoUplift):
                             if not ml_stage_full_name[0:1] in set_bls:
                                 continue
 
-                            if (
-                                trained_sbl.prev_stage_bl.name
-                                == set_bls[ml_stage_full_name[0:1]].stage_bl.name
-                            ):
+                            if trained_sbl.prev_stage_bl.name == set_bls[ml_stage_full_name[0:1]].stage_bl.name:
                                 ml_bls[ml_stage_full_name] = set_bls[ml_stage_full_name]
 
                 if len(ml_bls) == len(ml_stages):
@@ -1509,9 +1421,7 @@ class AutoUpliftTX(BaseAutoUplift):
             control_pred = baselearners[("outcome_treatment", "effect_control")].pred
             treatment_pred = baselearners[("outcome_control", "effect_treatment")].pred
             propensity_pred = baselearners[("propensity",)].pred
-            uplift_pred = (
-                propensity_pred * treatment_pred + (1 - propensity_pred) * control_pred
-            )
+            uplift_pred = propensity_pred * treatment_pred + (1 - propensity_pred) * control_pred
         else:
             raise Exception()
 
@@ -1535,13 +1445,9 @@ class AutoUpliftTX(BaseAutoUplift):
         stages_params = dict(stages_params)
 
         self._best_metalearner = self._init_metalearner(ml_name, stages_params)
-        self._best_metalearner_wrap = self._create_metalearner_wrap(
-            ml_name, stages_params
-        )
+        self._best_metalearner_wrap = self._create_metalearner_wrap(ml_name, stages_params)
 
-    def _init_metalearner(
-        self, metalearner_name: str, bls: Dict[MLStageFullName, str]
-    ) -> MetaLearner:
+    def _init_metalearner(self, metalearner_name: str, bls: Dict[MLStageFullName, str]) -> MetaLearner:
         """Initialize best metalearner from trained baselearners.
 
         Args:
@@ -1554,24 +1460,14 @@ class AutoUpliftTX(BaseAutoUplift):
         """
         ml: Optional[MetaLearner] = None
         if metalearner_name == "TLearner":
-            ocl = self._get_trained_bl(
-                ("outcome_control",), bls[("outcome_control",)]
-            ).trained_model
-            otl = self._get_trained_bl(
-                ("outcome_treatment",), bls[("outcome_treatment",)]
-            ).trained_model
+            ocl = self._get_trained_bl(("outcome_control",), bls[("outcome_control",)]).trained_model
+            otl = self._get_trained_bl(("outcome_treatment",), bls[("outcome_treatment",)]).trained_model
 
             ml = TLearner(control_learner=ocl, treatment_learner=otl)
         elif metalearner_name == "XLearner":
-            ocl = self._get_trained_bl(
-                ("outcome_control",), bls[("outcome_control",)]
-            ).trained_model
-            otl = self._get_trained_bl(
-                ("outcome_treatment",), bls[("outcome_treatment",)]
-            ).trained_model
-            pl = self._get_trained_bl(
-                ("propensity",), bls[("propensity",)]
-            ).trained_model
+            ocl = self._get_trained_bl(("outcome_control",), bls[("outcome_control",)]).trained_model
+            otl = self._get_trained_bl(("outcome_treatment",), bls[("outcome_treatment",)]).trained_model
+            pl = self._get_trained_bl(("propensity",), bls[("propensity",)]).trained_model
             ecl = self._get_trained_bl(
                 ("outcome_treatment", "effect_control"),
                 bls[("outcome_treatment", "effect_control")],
@@ -1591,17 +1487,13 @@ class AutoUpliftTX(BaseAutoUplift):
 
         return ml
 
-    def _get_trained_bl(
-        self, metalearner_stage: MLStageFullName, baselearner_name: str
-    ):
+    def _get_trained_bl(self, metalearner_stage: MLStageFullName, baselearner_name: str):
         for bl in self._trained_stage_baselearners[metalearner_stage]:
             if bl.stage_bl.name == baselearner_name:
                 return bl
         raise Exception("There isn't baselearner {}".format(baselearner_name))
 
-    def _create_metalearner_wrap(
-        self, metalearner_name: str, bls: Dict[MLStageFullName, str]
-    ) -> MetaLearnerWrapper:
+    def _create_metalearner_wrap(self, metalearner_name: str, bls: Dict[MLStageFullName, str]) -> MetaLearnerWrapper:
         """Create of best metalearner wrapper.
 
         Args:
@@ -1616,12 +1508,8 @@ class AutoUpliftTX(BaseAutoUplift):
 
         ml_wrap: Optional[MetaLearnerWrapper] = None
         if metalearner_name == "TLearner":
-            ocl = self._get_trained_bl(
-                ("outcome_control",), bls[("outcome_control",)]
-            ).stage_bl
-            otl = self._get_trained_bl(
-                ("outcome_treatment",), bls[("outcome_treatment",)]
-            ).stage_bl
+            ocl = self._get_trained_bl(("outcome_control",), bls[("outcome_control",)]).stage_bl
+            otl = self._get_trained_bl(("outcome_treatment",), bls[("outcome_treatment",)]).stage_bl
 
             ml_wrap = MetaLearnerWrapper(
                 name=ml_wrap_name,
@@ -1629,12 +1517,8 @@ class AutoUpliftTX(BaseAutoUplift):
                 params={"control_learner": ocl, "treatment_learner": otl},
             )
         elif metalearner_name == "XLearner":
-            ocl = self._get_trained_bl(
-                ("outcome_control",), bls[("outcome_control",)]
-            ).stage_bl
-            otl = self._get_trained_bl(
-                ("outcome_treatment",), bls[("outcome_treatment",)]
-            ).stage_bl
+            ocl = self._get_trained_bl(("outcome_control",), bls[("outcome_control",)]).stage_bl
+            otl = self._get_trained_bl(("outcome_treatment",), bls[("outcome_treatment",)]).stage_bl
             pl = self._get_trained_bl(("propensity",), bls[("propensity",)]).stage_bl
             ecl = self._get_trained_bl(
                 ("outcome_treatment", "effect_control"),
