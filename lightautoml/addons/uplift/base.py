@@ -1226,7 +1226,8 @@ class AutoUpliftTX(BaseAutoUplift):
             logger.warning("Naming of baselearner should be unique.")
             logger.warning("Name of baselearner would be updated with postfix '__order_idx_bl__'.")
 
-            rename = lambda name, idx: "{}__#{}__".format(name, idx)
+            def rename(name, idx):
+                return f"{name}__#{idx}__"
 
             renaming_by_idxs: Dict[int, str] = {}
             for bl_name, idxs in k2n.items():
