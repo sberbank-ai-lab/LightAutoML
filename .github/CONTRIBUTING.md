@@ -110,9 +110,14 @@ usual help channels.
 
 ### Testing
 
-Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests.
+Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests:
 ```bash
 poetry run pytest tests
+```
+
+To run tests with different Python versions, run tox
+```bash
+poetry run tox:
 ```
 Also if you develop new functionality, please add your own tests.
 
