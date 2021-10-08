@@ -9,7 +9,6 @@ __validate_extra_deps("nlp", error=True)
 import logging
 import os
 
-from typing import TYPE_CHECKING
 from typing import Optional
 from typing import Sequence
 

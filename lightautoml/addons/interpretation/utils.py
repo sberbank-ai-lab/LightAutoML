@@ -49,7 +49,7 @@ class WrappedTokenizer:
 
     """
 
-    def __init__(self, tokenizer: "lightautoml.text.tokenizer.BaseTokenizer"):
+    def __init__(self, tokenizer: "lightautoml.text.tokenizer.BaseTokenizer"):  # noqa F821
         self._tokenizer = tokenizer
 
     def __call__(self, x: str) -> List[str]:

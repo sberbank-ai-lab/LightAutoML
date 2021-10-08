@@ -1,17 +1,15 @@
 from collections import Counter
 from collections import defaultdict
-from numbers import Number
 from random import shuffle
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 import numpy as np
+import pandas as pd
 import torch
 
 from torch import nn
@@ -156,7 +154,7 @@ def pad_max_len(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def get_tokenized(data: "pd.DataFrame", tokenized_col: str, tokenizer: Callable) -> List[List[str]]:
+def get_tokenized(data: pd.DataFrame, tokenized_col: str, tokenizer: Callable) -> List[List[str]]:
     """
     Get tokenized column.
 
@@ -230,7 +228,7 @@ def get_embedding_matrix(id_to_word: Dict[int, str], embedder: Any, embedder_dim
 
 def map_tokenized_to_id(
     tokenized: List[List[str]],
-    word_to_id: "lightautoml.addons.interpretation.utils.WrappedVocabulary",
+    word_to_id: "lightautoml.addons.interpretation.utils.WrappedVocabulary",  # noqa F821
     min_k: int,
 ) -> List[torch.LongTensor]:
     """Mapping from word dataset to tokenized dataset.

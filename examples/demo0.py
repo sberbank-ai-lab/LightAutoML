@@ -12,7 +12,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from lightautoml.dataset.np_pd_dataset import *
+from lightautoml.dataset.np_pd_dataset import PandasDataset
 from lightautoml.dataset.roles import CategoryRole
 from lightautoml.dataset.roles import DatetimeRole
 from lightautoml.dataset.roles import FoldsRole
