@@ -13,6 +13,7 @@ import numpy as np
 import torch
 
 from matplotlib.colors import Colormap
+from torch.distributions.utils import clamp_probs
 
 
 T_untokenized = Union[List[str], Tuple[List[str], List[Any]]]
@@ -393,4 +394,4 @@ def draw_html(
 
 
 def cross_entropy_multiple_class(input: torch.FloatTensor, target: torch.FloatTensor) -> torch.Tensor:
-    return torch.mean(torch.sum(target * -torch.log(clamp_probs(input)), dim=1))
+    return torch.mean(torch.sum(-target * torch.log(clamp_probs(input)), dim=1))
