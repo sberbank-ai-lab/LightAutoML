@@ -20,7 +20,6 @@ from pandas import DataFrame
 from lightautoml.automl.base import AutoML
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.tasks import Task
-from lightautoml.utils.logging import verbosity_to_loglevel
 from lightautoml.utils.timer import Timer
 from lightautoml.validation.np_iterators import UpliftIterator
 

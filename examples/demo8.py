@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 from sklearn.metrics import log_loss
-from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
 from lightautoml.automl.base import AutoML
