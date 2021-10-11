@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+import logging
 
 from lightautoml.validation.base import TrainValidIterator
 
@@ -19,6 +20,7 @@ from ..features.base import FeaturesPipeline
 from ..selection.base import EmptySelector
 from ..selection.base import SelectionPipeline
 
+_logger = logging.getLogger(__name__)
 
 class MLPipeline:
     """Single ML pipeline.
@@ -142,12 +144,11 @@ class MLPipeline:
             )
             if ml_algo is not None:
                 self.ml_algos.append(ml_algo)
-
                 predictions.append(preds)
 
-        assert (
-            len(predictions) > 0
-        ), "Pipeline finished with 0 models for some reason.\nProbably one or more models failed"
+        if len(predictions) == 0:
+            _logger.error("Pipeline finished with 0 models for some reason.\nProbably one or more models failed")
+            return []
 
         predictions = concatenate(predictions)
 

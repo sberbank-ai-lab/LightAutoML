@@ -7,10 +7,12 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import logging
 
 from ..common_metric import _valid_str_metric_names
 from ..utils import infer_gib
 
+_logger = logging.getLogger(__name__)
 
 class MetricFunc:
     """
@@ -37,6 +39,9 @@ class MetricFunc:
             val = self.metric_func(y_true, y_pred, sample_weight=sample_weight)
         except TypeError:
             val = self.metric_func(y_true, y_pred)
+        except ValueError as err:
+            _logger.error("Can not evaluate metric. Error message: %r", err)
+            return None
 
         return val * self.m
 
