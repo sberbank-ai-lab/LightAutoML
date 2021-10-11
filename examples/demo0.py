@@ -9,8 +9,15 @@ import os
 import pickle
 import time
 
-from lightautoml.dataset.np_pd_dataset import *
-from lightautoml.dataset.roles import *
+import numpy as np
+import pandas as pd
+
+from lightautoml.dataset.np_pd_dataset import PandasDataset
+from lightautoml.dataset.roles import CategoryRole
+from lightautoml.dataset.roles import DatetimeRole
+from lightautoml.dataset.roles import FoldsRole
+from lightautoml.dataset.roles import NumericRole
+from lightautoml.dataset.roles import TargetRole
 from lightautoml.dataset.utils import roles_parser
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner

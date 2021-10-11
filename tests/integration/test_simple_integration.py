@@ -3,12 +3,10 @@
 
 import os
 import pickle
-import time
 
 import pytest
 
-from lightautoml.dataset.np_pd_dataset import *
-from lightautoml.dataset.roles import *
+from lightautoml.dataset.np_pd_dataset import PandasDataset
 from lightautoml.dataset.utils import roles_parser
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
@@ -65,7 +63,7 @@ def test_manual_pipeline(sampled_app_train_test, sampled_app_roles, binary_task)
 
     total.fit_predict(train_valid)
 
-    train_pred = total.predict(pd_dataset)
+    total.predict(pd_dataset)
 
     with open("automl.pickle", "wb") as f:
         pickle.dump(total, f)
@@ -73,7 +71,7 @@ def test_manual_pipeline(sampled_app_train_test, sampled_app_roles, binary_task)
     with open("automl.pickle", "rb") as f:
         total = pickle.load(f)
 
-    train_pred = total.predict(pd_dataset)
+    total.predict(pd_dataset)
     os.remove("automl.pickle")
 
     # assert

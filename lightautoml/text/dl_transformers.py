@@ -24,8 +24,6 @@ except:
 
     warnings.warn("'transformers' - package isn't installed")
 
-from copy import deepcopy
-
 from .dp_utils import CustomDataParallel
 from .sentence_pooling import SequenceAvgPooler
 from .sentence_pooling import SequenceClsPooler

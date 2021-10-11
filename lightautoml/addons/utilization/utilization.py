@@ -1,7 +1,6 @@
 """Tools to configure time utilization."""
 
 import logging
-import os
 
 from copy import deepcopy
 from typing import Any

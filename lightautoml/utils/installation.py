@@ -8,9 +8,6 @@ except ModuleNotFoundError:
 
 import logging
 
-from typing import Dict
-from typing import List
-
 
 logger = logging.getLogger(__name__)
 

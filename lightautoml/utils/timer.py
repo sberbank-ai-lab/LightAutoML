@@ -1,7 +1,6 @@
 """Timer."""
 
 import logging
-import warnings
 
 from time import time
 from typing import List

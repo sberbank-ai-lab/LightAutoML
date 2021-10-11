@@ -4,13 +4,12 @@ import io
 import logging
 import os
 import sys
-import warnings
 
 from .. import _logger
 
 
-formatter_debug = logging.Formatter(f"%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
-formatter_default = logging.Formatter(f"[%(asctime)s] %(message)s", "%H:%M:%S")
+formatter_debug = logging.Formatter("%(asctime)s\t[%(levelname)s]\t%(pathname)s.%(funcName)s:%(lineno)d\t%(message)s")
+formatter_default = logging.Formatter("[%(asctime)s] %(message)s", "%H:%M:%S")
 
 INFO2 = 17
 INFO3 = 13
