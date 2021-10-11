@@ -69,7 +69,7 @@ class DenseLightModel(nn.Module):
             block = DenseLightBlock(
                 n_in=num_features,
                 n_out=hid_size,
-                drop_rate=drop_rate[i],
+                drop_rate=drop_rate[i] if use_dropout else 0,
                 noise_std=noise_std,
                 act_fun=act_fun,
                 use_bn=use_bn,
@@ -165,7 +165,7 @@ class DenseLayer(nn.Module):
             bottleneck_output = bn_function(*prev_features)
         new_features = self.features2(bottleneck_output)
 
-        if self.drop_rate > 0 and self.use_dropout:
+        if self.use_dropout:
             new_features = F.dropout(new_features, p=self.drop_rate, training=self.training)
         return new_features
 
@@ -229,7 +229,7 @@ class DenseModel(nn.Module):
                 n_in=num_features,
                 bn_size=bn_size,
                 growth_rate=growth_rate,
-                drop_rate=drop_rate[i],
+                drop_rate=drop_rate[i] if use_dropout else 0,
                 act_fun=act_fun,
                 efficient=efficient,
                 use_bn=use_bn,
@@ -239,11 +239,11 @@ class DenseModel(nn.Module):
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
                 trans = Transition(n_in=num_features,
-                                   n_out=int(num_features * compression),
+                                   n_out=max(10, int(num_features * compression)),
                                    act_fun=act_fun,
                                    use_bn=use_bn)
                 self.features.add_module("transition%d" % (i + 1), trans)
-                num_features = int(num_features * compression)
+                num_features = max(10, int(num_features * compression))
 
         if use_bn:
             self.features.add_module("norm_final", nn.BatchNorm1d(num_features))
@@ -306,19 +306,23 @@ class ResNetBlock(nn.Module):
 
 class ResNetModel(nn.Module):
     def __init__(self, n_in, n_out=1, hidden_factor=(5, 5, 5), drop_rate=((0.1, 0.1), (0.1, 0.1), (0.1, 0.1)),
-                 bias=None, noise_std=0.05, drop_connect_rate=0.1, act_fun=nn.ReLU,
+                 bias=None, noise_std=0.05, drop_connect_rate=0.1, act_fun=nn.ReLU, num_init_features=512,
                  use_bn=True, use_noise=True, use_dropout=True, **kwargs):
         super(ResNetModel, self).__init__()
 
         self.drop_connect_rate = drop_connect_rate
         self.use_dropout = use_dropout
-        self.features = nn.Sequential(OrderedDict([]))
+        self.features = nn.Sequential(OrderedDict([
+            ("dense0", nn.Linear(n_in, num_init_features)),
+        ]))
+
+        num_features = num_init_features
         for i, hid_factor in enumerate(hidden_factor):
             block = ResNetBlock(
-                n_in=n_in,
+                n_in=num_features,
                 hidden_factor=hid_factor,
-                n_out=n_in,
-                drop_rate=drop_rate[i],
+                n_out=num_features,
+                drop_rate=drop_rate[i] if use_dropout else 0,
                 noise_std=noise_std,
                 act_fun=act_fun,
                 use_bn=use_bn,
@@ -327,13 +331,13 @@ class ResNetModel(nn.Module):
             )
             self.features.add_module("resnetblock%d" % (i + 1), block)
 
-        self.fc = nn.Linear(n_in, n_out)
+        self.fc = nn.Linear(num_features, n_out)
 
         if bias is not None:
             print("init bias!")
             bias = torch.Tensor(bias)
             self.fc.bias.data = bias
-            self.fc.weight.data = torch.zeros(n_out, n_in, requires_grad=True)
+            self.fc.weight.data = torch.zeros(n_out, num_features, requires_grad=True)
 
     def predict(self, x):
         identity = x
@@ -341,7 +345,8 @@ class ResNetModel(nn.Module):
             if name != "resnetblock1":
                 if self.use_dropout:
                     p = torch.bernoulli(torch.Tensor([self.drop_connect_rate])).item()
-                    x += identity * (1 / 1 - p)
+                    if p != 1:
+                        x += identity * (1 / 1 - p)
                 else:
                     x += identity
                 identity = x
@@ -360,11 +365,12 @@ class ResNetModel(nn.Module):
 
 
 class SNN(nn.Module):
-    def __init__(self, n_in, n_out, hidden_size=512, n_layers=3, dropout_prob=0.1,
+    def __init__(self, n_in, n_out, hidden_size=512, num_layers=3, drop_rate=0.1,
                  use_dropout=True, **kwargs):
         super().__init__()
         layers = OrderedDict()
-        for i in range(n_layers - 1):
+        i = 0
+        while i != num_layers:
             if i == 0:
                 layers[f"fc{i}"] = nn.Linear(n_in, hidden_size, bias=False)
             else:
@@ -372,9 +378,10 @@ class SNN(nn.Module):
             layers[f"selu_{i}"] = nn.SELU()
 
             if use_dropout:
-                layers[f"dropout_{i}"] = nn.AlphaDropout(p=dropout_prob)
+                layers[f"dropout_{i}"] = nn.AlphaDropout(p=drop_rate)
+            i += 1
 
-        layers[f"fc_{i + 1}"] = nn.Linear(hidden_size, n_out, bias=True)
+        layers[f"fc_{i}"] = nn.Linear(hidden_size, n_out, bias=True)
         self.network = nn.Sequential(layers)
         self.reset_parameters()
 
