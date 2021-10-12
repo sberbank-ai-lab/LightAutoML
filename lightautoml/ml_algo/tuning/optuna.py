@@ -25,6 +25,8 @@ from lightautoml.pipelines import ml
 from lightautoml.validation.base import HoldoutIterator
 from lightautoml.validation.base import TrainValidIterator
 
+from optuna.pruners import MedianPruner
+
 
 logger = logging.getLogger(__name__)
 optuna.logging.enable_propagation()
@@ -42,131 +44,6 @@ OPTUNA_DISTRIBUTIONS_MAP = {
 }
 
 
-class OptunaTunableMixin(ABC):
-    """Optuna Sampler."""
-
-    mean_trial_time: float = None
-    optimization_search_space: dict = None
-
-    def __init__(self, *args, **kwargs):
-        if "optimization_search_space" in kwargs:
-            self.optimization_search_space = kwargs["optimization_search_space"]
-            del kwargs["optimization_search_space"]
-        super().__init__(*args, **kwargs)
-
-    def _sample_parameters(
-        self, trial: optuna.trial.Trial, suggested_params: dict, estimated_n_trials: int
-    ) -> dict:
-        if self.optimization_search_space is None:
-            self.optimization_search_space = self._get_search_spaces(
-                suggested_params, estimated_n_trials
-            )
-        return self._sample(trial, suggested_params)
-
-    def _sample(self, trial: optuna.trial.Trial, suggested_params: dict) -> dict:
-        # logger.info3(f'Suggested parameters: {suggested_params}')
-
-        trial_values = copy(suggested_params)
-
-        for parameter, SearchSpace in self.optimization_search_space.items():
-            if isinstance(SearchSpace, dict):
-                sub_dict = {}
-                for subparameter, SubSearchSpace in SearchSpace.items():
-                    if SubSearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                        trial_values[subparameter] = getattr(
-                            trial, OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type]
-                        )(name=subparameter, **SubSearchSpace.params)
-                        sub_dict[subparameter] = trial_values[subparameter]
-                    else:
-                        raise ValueError(
-                            f"Optuna does not support distribution {SubSearchSpace.distribution_type}"
-                        )
-                trial_values[parameter] = sub_dict
-
-            else:
-                if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                    trial_values[parameter] = getattr(
-                        trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
-                    )(name=parameter, **SearchSpace.params)
-                else:
-                    raise ValueError(
-                        f"Optuna does not support distribution {SearchSpace.distribution_type}"
-                    )
-
-        return trial_values
-
-    @abstractmethod
-    def _get_search_spaces(
-        self, suggested_params: dict, estimated_n_trials: int
-    ) -> dict:
-        """Get search spaces for hyperparameters.
-
-        Args:
-            suggested_params: Dict with parameters.
-            estimated_n_trials: Maximum number of hyperparameter estimations.
-
-        Returns:
-            Dict with search spaces for hyperparameters.
-
-        """
-
-    def trial_params_values(
-        self: TunableAlgo,
-        estimated_n_trials: int,
-        trial: optuna.trial.Trial,
-        train_valid_iterator: Optional[TrainValidIterator] = None,
-    ) -> dict:
-        """
-
-        Args:
-            estimated_n_trials: Maximum number of hyperparameter estimations.
-            trial: Optuna trial object.
-            train_valid_iterator: Iterator used for getting
-              parameters depending on dataset.
-
-        """
-
-        return self._sample_parameters(
-            estimated_n_trials=estimated_n_trials,
-            trial=trial,
-            suggested_params=self.init_params_on_input(train_valid_iterator),
-        )
-
-    def get_objective(
-        self: TunableAlgo,
-        estimated_n_trials: int,
-        train_valid_iterator: TrainValidIterator,
-    ) -> Callable[[optuna.trial.Trial], Union[float, int]]:
-        """Get objective.
-
-        Args:
-            estimated_n_trials: Maximum number of hyperparameter estimations.
-            train_valid_iterator: Used for getting parameters
-              depending on dataset.
-
-        Returns:
-            Callable objective.
-
-        """
-        assert isinstance(self, MLAlgo)
-
-        def objective(trial: optuna.trial.Trial) -> float:
-            _ml_algo = deepcopy(self)
-            _ml_algo.params = _ml_algo.trial_params_values(
-                estimated_n_trials=estimated_n_trials,
-                train_valid_iterator=train_valid_iterator,
-                trial=trial,
-            )
-
-            output_dataset = _ml_algo.fit_predict(
-                train_valid_iterator=train_valid_iterator
-            )
-
-            return _ml_algo.score(output_dataset)
-
-        return objective
-
-
 class OptunaTuner(ParamsTuner):
     """Wrapper for optuna tuner."""
 
@@ -174,6 +51,7 @@ class OptunaTuner(ParamsTuner):
 
     study: optuna.study.Study = None
     estimated_n_trials: int = None
+    mean_trial_time: Optional[int] = None
 
     def __init__(
         # TODO: For now, metric is designed to be greater is better. Change maximize param after metric refactor if needed
@@ -258,11 +136,11 @@ class OptunaTuner(ParamsTuner):
                 trial: Optuna trial object.
 
             """
-            ml_algo.mean_trial_time = (
+            self.mean_trial_time = (
                 study.trials_dataframe()["duration"].mean().total_seconds()
             )
             self.estimated_n_trials = min(
-                self.n_trials, self.timeout // ml_algo.mean_trial_time
+                self.n_trials, self.timeout // self.mean_trial_time
             )
             logger.info3(
                 f"Trial {len(study.trials)} with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
@@ -289,7 +167,8 @@ class OptunaTuner(ParamsTuner):
             ml_algo.params["is_optuna_tuning"] = True
 
             self.study.optimize(
-                func=ml_algo.get_objective(
+                func=self.get_objective(
+                    ml_algo=ml_algo,
                     estimated_n_trials=self.estimated_n_trials,
                     train_valid_iterator=train_valid_iterator,
                 ),
@@ -325,6 +204,98 @@ class OptunaTuner(ParamsTuner):
             return ml_algo, preds_ds
         except optuna.exceptions.OptunaError:
             return None, None
+
+    def get_objective(
+            self,
+            ml_algo: TunableAlgo,
+            estimated_n_trials: int,
+            train_valid_iterator: TrainValidIterator,
+    ) -> Callable[[optuna.trial.Trial], Union[float, int]]:
+        """Get objective.
+        Args:
+            estimated_n_trials: Maximum number of hyperparameter estimations.
+            train_valid_iterator: Used for getting parameters
+              depending on dataset.
+        Returns:
+            Callable objective.
+        """
+        assert isinstance(ml_algo, MLAlgo)
+
+        def objective(trial: optuna.trial.Trial) -> float:
+            _ml_algo = deepcopy(ml_algo)
+            _ml_algo.params["trial"] = trial
+
+            optimization_search_space = _ml_algo.params['optimization_search_space']
+
+            if optimization_search_space is None:
+                optimization_search_space = _ml_algo._get_default_search_spaces(
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
+                    estimated_n_trials=estimated_n_trials,
+                )
+
+            if callable(optimization_search_space):
+                _ml_algo.params = optimization_search_space(
+                    trial=trial,
+                    optimization_search_space=optimization_search_space,
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
+                )
+            else:
+                _ml_algo.params = self.sample(
+                    trial=trial,
+                    optimization_search_space=optimization_search_space,
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
+                )
+
+            output_dataset = _ml_algo.fit_predict(
+                train_valid_iterator=train_valid_iterator
+            )
+
+            return _ml_algo.score(output_dataset)
+
+        return objective
+
+    def sample(
+            self,
+            optimization_search_space,
+            trial: optuna.trial.Trial,
+            suggested_params: dict,
+    ) -> dict:
+        # logger.info3(f'Suggested parameters: {suggested_params}')
+
+        trial_values = copy(suggested_params)
+
+        for parameter, SearchSpace in optimization_search_space.items():
+            if isinstance(SearchSpace, dict):
+                sub_dict = {}
+                for subparameter, SubSearchSpace in SearchSpace.items():
+                    if SubSearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                        trial_values[subparameter] = getattr(
+                            trial, OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type]
+                        )(name=subparameter, **SubSearchSpace.params)
+                        sub_dict[subparameter] = trial_values[subparameter]
+                    else:
+                        raise ValueError(
+                            f"Optuna does not support distribution {SubSearchSpace.distribution_type}"
+                        )
+                trial_values[parameter] = sub_dict
+
+            else:
+                if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                    trial_values[parameter] = getattr(
+                        trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
+                    )(name=parameter, **SearchSpace.params)
+                else:
+                    raise ValueError(
+                        f"Optuna does not support distribution {SearchSpace.distribution_type}"
+                    )
+
+        return trial_values
 
     def plot(self):
         """Plot optimization history of all trials in a study."""
