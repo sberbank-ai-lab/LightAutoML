@@ -288,6 +288,9 @@ class OptunaTuner(ParamsTuner):
             self._best_params = self.study.best_params
             default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
             ml_algo.params = {**default_input_params, **ml_algo.params, **self._best_params}
+            
+            if hasattr(ml_algo, "_construct_tune_params"):
+                ml_algo.params = {**ml_algo.params, **ml_algo._construct_tune_params(ml_algo.params, False)}
             self._best_params = ml_algo.params
 
             logger.info(

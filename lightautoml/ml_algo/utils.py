@@ -65,8 +65,12 @@ def tune_and_fit_predict(
         or timer.time_limit_exceeded()
     ):
         return None, None
-
-    ml_algo.params = params_tuner.best_params
+    
+    # TODO: change "_construct_tune_params" to be compatable with tunning off
+    ml_algo.params = {**ml_algo.params, **params_tuner.best_params}
+    if hasattr(ml_algo, "_construct_tune_params"):
+        ml_algo._construct_tune_params(ml_algo.params, update=True)
+    
     # this try/except clause was added because catboost died for some unexpected reason
     try:
         preds = ml_algo.fit_predict(train_valid)
