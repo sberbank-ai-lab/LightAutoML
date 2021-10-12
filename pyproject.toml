@@ -186,6 +186,6 @@ PLATFORM =
 [testenv]
 whitelist_externals = poetry
 commands =
-    poetry install -vvv
+    poetry install
     poetry run pytest tests -v
 """
