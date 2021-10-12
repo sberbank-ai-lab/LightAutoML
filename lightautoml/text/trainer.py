@@ -508,6 +508,8 @@ class Trainer:
                     scaled_loss.backward()
             else:
                 loss.backward()
+            
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
             self.optimizer.step()
             self.optimizer.zero_grad()
             loss = loss.data.cpu().numpy()
