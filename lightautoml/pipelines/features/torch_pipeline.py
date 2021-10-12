@@ -8,13 +8,17 @@ from ...transformers.base import LAMLTransformer, SequentialTransformer, UnionTr
 from ...transformers.categorical import LabelEncoder
 from ...transformers.datetime import TimeToNum
 from ...transformers.numeric import QuantileTransformer
+from ...transformers.numeric import FillInf
+from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import NaNFlags
+from ...transformers.numeric import StandardScaler
 
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
 class TorchSimpleFeatures(FeaturesPipeline):
     def __init__(self, use_qnt=True, output_qnt_dist='normal', **kwargs):
-        super().__init__(**kwargs)
+        super(TorchSimpleFeatures, self).__init__(**kwargs)
         self.use_qnt = use_qnt
         self.output_qnt_dist = output_qnt_dist
 
@@ -47,7 +51,17 @@ class TorchSimpleFeatures(FeaturesPipeline):
             num_processing = SequentialTransformer([
 
                 ColumnsSelector(keys=numerics),
-                QuantileTransformer(output_distribution=self.output_qnt_dist) if self.use_qnt else LAMLTransformer(),
+                UnionTransformer(
+                        [
+                            SequentialTransformer(
+                                [FillInf(),
+                                FillnaMedian(),
+                                QuantileTransformer(output_distribution=self.output_qnt_dist) if self.use_qnt else StandardScaler(),#,LAMLTransformer(),
+                                ]
+                            ),
+                            NaNFlags(),
+                        ]
+                ),
                 ConvertDataset(dataset_type=NumpyDataset)
             ])
             transformers_list.append(num_processing)
