@@ -43,7 +43,10 @@ scikit-learn = ">=0.22"
 lightgbm = "^2.3"
 catboost = "*"
 optuna = "*"
-torch = "<1.9"
+torch = [
+    {platform = "win32", python = "3.6.1", version = "1.7.0"},
+    {platform = "*", version = "<1.9"}
+]
 dataclasses = "0.6"
 holidays = "*"
 networkx = "*"
@@ -70,7 +73,10 @@ efficientnet-pytorch = {version = "*", optional = true}
 opencv-python = {version = "*", optional = true}
 PyWavelets = {version = "*", optional = true}
 scikit-image = {version = "*", optional = true}
-torchvision = {version = "*", optional = true}
+torchvision = [
+    {platform = "win32", python = "3.6.1", version = "0.8.0", optional = true},
+    {platform = "*", version = "*", optional = true}
+]
 
 # Report (pdf)
 weasyprint = {version = "^52.5", optional = true}
