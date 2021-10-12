@@ -162,7 +162,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def calculate_metric(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
         if isinstance(self.metric, str):
             try:
-                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
+                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, False)
             except ConstPredictError as e:
                 logger.error(str(e) + "\nMetric set to zero.")
                 auc = 0.0
