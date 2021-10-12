@@ -16,7 +16,6 @@ from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
 from .nn_models import DenseLightModel, DenseModel, ResNetModel, MLP, LinearLayer, SNN
 from .tuning.base import Distribution, SearchSpace
-from .tuning.optuna import OptunaTunableMixin
 
 from ..ml_algo.base import TabularDataset
 from ..ml_algo.base import TabularMLAlgo
@@ -36,6 +35,7 @@ from ..text.utils import parse_devices
 from ..text.utils import seed_everything
 
 from ..ml_algo.torch_based.act_funcs import TS
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, CosineAnnealingLR
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ model_by_name = {'dense_light': DenseLightModel, 'dense': DenseModel, 'resnet': 
                  'mlp': MLP, 'dense_layer': LinearLayer, 'snn': SNN}
 
 
-class TorchModel(TabularMLAlgo, OptunaTunableMixin):
+class TorchModel(TabularMLAlgo):
     """Neural net for tabular datasets.
 
     default_params:
@@ -88,11 +88,11 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
     _name: str = 'TorchNN'
 
     _default_params = {
-        'bs': 16,
+        'bs': 32,
         'num_workers': 4,
         'max_length': 256,
         'opt': torch.optim.Adam,
-        'opt_params': {'lr': 1e-4},
+        'opt_params': {'lr': 1e-5},
         'scheduler_params': {'patience': 5, 'factor': 0.5, 'verbose': True},
         'is_snap': False,
         'snap_params': {'k': 1, 'early_stopping': True, 'patience': 1, 'swa': False},
@@ -116,7 +116,22 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
         'model': None,
         'path_to_save': os.path.join('./models/', 'model'),
         'verbose_inside': None,
-        'verbose': 1
+        'verbose': 1,
+
+        'num_layers': 1,
+        'hidden_size_0': 512,
+        'drop_rate_base': 0.2,
+
+        'num_blocks': 1,
+        'block_size_0': 4,
+
+        'hidden_factor_0': 2,
+        'drop_rate_base_1': 0.2,
+        'drop_rate_base_2': 0.4,
+
+        'sch': lr_scheduler.ReduceLROnPlateau,
+        'use_dropout': True,
+        'use_noise': False,
     }
 
     def _infer_params(self):
@@ -184,6 +199,7 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
                     "emb_dropout": params["emb_dropout"],
                     "emb_ratio": params["emb_ratio"],
                     "max_emb_size": params["max_emb_size"],
+                    "device": params["device"]
                 }
                 if is_cat
                 else None,
@@ -198,19 +214,20 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
                 "torch_model": torch_model,
                 **params
             },
-            opt=params["opt"],
-            opt_params=params["opt_params"],
-            n_epochs=params["n_epochs"],
-            device=params["device"],
-            device_ids=params["device_ids"],
-            is_snap=params["is_snap"],
-            snap_params=params["snap_params"],
-            sch=lr_scheduler.ReduceLROnPlateau,
-            scheduler_params=params["scheduler_params"],
-            verbose=params["verbose"],
-            verbose_inside=params["verbose_inside"],
-            metric=params["metric"],
+            # opt=params["opt"],
+            # opt_params=params["opt_params"],
+            # n_epochs=params["n_epochs"],
+            # device=params["device"],
+            # device_ids=params["device_ids"],
+            # is_snap=params["is_snap"],
+            # snap_params=params["snap_params"],
+            # sch=lr_scheduler.ReduceLROnPlateau,
+            # scheduler_params=params["scheduler_params"],
+            # verbose=params["verbose"],
+            # verbose_inside=params["verbose_inside"],
+            # metric=params["metric"],
             apex=False,
+            **params
         )
 
         self.train_params = {
@@ -276,7 +293,7 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
         )
         for cat_feature in suggested_params["cat_features"]:
             num_unique_categories = (
-                max(train_valid_iterator.train[:, cat_feature].data)
+                    max(train_valid_iterator.train[:, cat_feature].data) + 2
             )
             cat_dims.append(num_unique_categories)
         suggested_params["cat_dims"] = cat_dims
@@ -408,7 +425,7 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
 
         return pred
 
-    def _get_search_spaces(
+    def _get_default_search_spaces(
             self, suggested_params: Dict, estimated_n_trials: int
     ) -> Dict:
         """Sample hyperparameters from suggested.
@@ -658,3 +675,104 @@ class TorchModel(TabularMLAlgo, OptunaTunableMixin):
         #          )
 
         return op_search_space
+
+    def _construct_tune_params(self, params, update=False):
+        new_params = {}
+
+        new_params["opt_params"] = params.get("opt_params", dict())
+        if "lr" in params:
+            new_params["opt_params"]["lr"] = params["lr"]
+        if "weight_decay" in params:
+            new_params["opt_params"]["weight_decay"] = params["weight_decay"]
+        elif params.get("weight_decay_bin", -1) == 0:
+            new_params["opt_params"]["weight_decay"] = 0
+
+        new_params["scheduler_params"] = params.get("scheduler_params", dict())
+        if params["sch"] == StepLR:
+            if "step_size" in params:
+                new_params["scheduler_params"]["step_size"] = params["step_size"]
+            if "gamma" in params:
+                new_params["scheduler_params"]["gamma"] = params["gamma"]
+
+            new_params["scheduler_params"] = {
+                "step_size": new_params["scheduler_params"]["step_size"],
+                "gamma": new_params["scheduler_params"]["gamma"],
+            }
+
+        elif params["sch"] == ReduceLROnPlateau:
+            if "patience" in params:
+                new_params["scheduler_params"]["patience"] = params["patience"]
+            if "factor" in params:
+                new_params["scheduler_params"]["factor"] = params["factor"]
+
+            new_params["scheduler_params"] = {
+                "patience": new_params["scheduler_params"]["patience"],
+                "factor": new_params["scheduler_params"]["factor"],
+            }
+
+        elif params["sch"] == CosineAnnealingLR:
+            if "T_max" in params:
+                new_params["scheduler_params"]["T_max"] = params["T_max"]
+            if "eta_min" in params:
+                new_params["scheduler_params"]["eta_min"] = params["eta_min"]
+
+            new_params["scheduler_params"] = {
+                "T_max": new_params["scheduler_params"]["T_max"],
+                "eta_min": new_params["scheduler_params"]["eta_min"],
+            }
+
+        else:
+            raise ValueError("Worng sch")
+
+        if self.params["model"] == "dense_light" or self.params["model"] == "mlp":
+            hidden_size = ()
+            drop_rate = ()
+
+            for layer in range(int(params["num_layers"])):
+                hidden_name = "hidden_size_" + str(layer)
+                drop_name = "drop_rate_base"
+
+                hidden_size = hidden_size + (params[hidden_name],)
+                if self.params["use_dropout"]:
+                    drop_rate = drop_rate + (params[drop_name],)
+
+            new_params["hidden_size"] = hidden_size
+            if self.params["use_dropout"]:
+                new_params["drop_rate"] = drop_rate
+
+        elif self.params["model"] == "dense":
+            block_config = ()
+            drop_rate = ()
+
+            for layer in range(int(params["num_blocks"])):
+                block_name = "block_size_" + str(layer)
+                drop_name = "drop_rate_base"
+
+                block_config = block_config + (params[block_name],)
+                if self.params["use_dropout"]:
+                    drop_rate = drop_rate + (params[drop_name],)
+
+            new_params["block_config"] = block_config
+            if self.params["use_dropout"]:
+                new_params["drop_rate"] = drop_rate
+
+        elif self.params["model"] == "resnet":
+            hidden_factor = ()
+            drop_rate = ()
+
+            for layer in range(int(params['num_layers'])):
+                hidden_name = 'hidden_factor_' + str(layer)
+                drop_name = "drop_rate_base"
+
+                hidden_factor = hidden_factor + (params[hidden_name],)
+                if self.params["use_dropout"]:
+                    drop_rate = drop_rate + ((params[drop_name + '_1'], params[drop_name + '_2']),)
+
+            new_params['hidden_factor'] = hidden_factor
+            if self.params["use_dropout"]:
+                new_params["drop_rate"] = drop_rate
+
+        if update:
+            self.params.update({**params, **new_params})
+
+        return new_params
