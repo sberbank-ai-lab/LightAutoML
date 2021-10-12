@@ -271,7 +271,22 @@ class OptunaTuner(ParamsTuner):
         try:
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
-            self.study = optuna.create_study(direction=self.direction, sampler=sampler)
+            n_startup_trials = 10
+            n_warmup_steps = 1
+            interval_steps = 1
+            
+            if 'optuna_pruner_params' in ml_algo.params:
+                n_startup_trials = ml_algo.params['optuna_pruner_params'].get('n_startup_trials', n_startup_trials)
+                n_warmup_steps = ml_algo.params['optuna_pruner_params'].get('n_warmup_steps', n_warmup_steps)
+                interval_steps = ml_algo.params['optuna_pruner_params'].get('interval_steps', interval_steps)
+            
+            pruner = MedianPruner(
+                n_startup_trials=n_startup_trials,
+                n_warmup_steps=n_warmup_steps,
+                interval_steps=interval_steps
+            )
+            self.study = optuna.create_study(direction=self.direction, sampler=sampler, pruner=pruner)
+            ml_algo.params["is_optuna_tuning"] = True
 
             self.study.optimize(
                 func=ml_algo.get_objective(
@@ -283,7 +298,8 @@ class OptunaTuner(ParamsTuner):
                 callbacks=[update_trial_time],
                 # show_progress_bar=True,
             )
-
+            
+            ml_algo.params["is_optuna_tuning"] = False
             # need to update best params here
             self._best_params = self.study.best_params
             default_input_params = ml_algo.init_params_on_input(train_valid_iterator)

@@ -18,6 +18,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .dp_utils import CustomDataParallel
+from optuna import TrialPruned
 
 
 try:
@@ -257,6 +258,9 @@ class Trainer:
         verbose_inside: Optional[int] = None,
         apex: bool = False,
         pretrained_path: Optional[str] = None,
+        is_optuna_tuning=False,
+        trial=None,
+        **kwargs
     ):
         """Train, validation and test loops for NN models.
 
@@ -306,6 +310,9 @@ class Trainer:
         self.se = None
         self.amp = None
         self.is_fitted = False
+        
+        self.is_optuna_tuning = is_optuna_tuning
+        self._trial = trial
 
     def clean(self):
         """Clean all models."""
@@ -436,17 +443,24 @@ class Trainer:
             if self.sch is not None:
                 self.scheduler.step(np.mean(val_loss))
 
+            val_metric = self.metric(*val_data)
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
                 logger.info3(
                     "Epoch: {e}, train loss: {tl}, val loss: {vl}, val metric: {me}".format(
-                        me=self.metric(*val_data),
+                        me=val_metric,
                         e=self.epoch,
                         tl=np.mean(train_loss),
                         vl=np.mean(val_loss),
                     )
                 )
+
             if self.se.early_stop:
                 break
+
+            if self.is_optuna_tuning:
+                self._trial.report(val_metric, step=self.epoch)
+                if self._trial.should_prune():
+                    raise TrialPruned()
 
         self.se.set_best_params(self.model)
 
@@ -532,7 +546,6 @@ class Trainer:
                         )
             if logging_level <= logging.INFO and self.verbose:
                 loader.set_description("train (loss=%g)" % (running_loss / c))
-
         return loss_log
 
     def test(
