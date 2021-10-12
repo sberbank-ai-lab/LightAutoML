@@ -169,6 +169,7 @@ class CatEmbedder(nn.Module):
         emb_dropout: bool = 0.1,
         emb_ratio: int = 3,
         max_emb_size: int = 50,
+        device=torch.device("cuda:0")
     ):
         """Class for working with category data using embedding layer.
 
@@ -185,11 +186,13 @@ class CatEmbedder(nn.Module):
             (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))
             for x in cat_dims
         ]
+        self.x = [x[0] for x in emb_dims]
         self.no_of_embs = sum([y for x, y in emb_dims])
         assert self.no_of_embs != 0, "The input is empty."
         # Embedding layers
         self.emb_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in emb_dims])
         self.emb_dropout_layer = nn.Dropout(emb_dropout)
+        self.device = device
 
     def get_out_shape(self) -> int:
         """Output shape.
@@ -201,11 +204,15 @@ class CatEmbedder(nn.Module):
         return self.no_of_embs
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
+        outputs = []
+        for i, emb_layer in enumerate(self.emb_layers):
+            output = torch.where(inp["cat"][:, i] >= self.x[i], torch.tensor(0, device=self.device), inp["cat"][:, i])
+            output = emb_layer(output)
+            outputs.append(output)
+        
+        output = outputs
         output = torch.cat(
-            [
-                emb_layer(inp["cat"][:, i] - 1)
-                for i, emb_layer in enumerate(self.emb_layers)
-            ],
+            output,
             dim=1,
         )
         output = self.emb_dropout_layer(output)
