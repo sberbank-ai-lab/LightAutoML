@@ -21,14 +21,13 @@ from .base import TabularDataset
 from .base import TabularMLAlgo
 from .tuning.base import Distribution
 from .tuning.base import SearchSpace
-from .tuning.optuna import OptunaTunableMixin
 
 
 logger = logging.getLogger(__name__)
 logger_stream = LoggerStream(logger.debug)
 
 
-class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
+class BoostLGBM(TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from LightGBM library.
 
     default_params: All available parameters listed in lightgbm documentation:
@@ -179,7 +178,7 @@ class BoostLGBM(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def _get_search_spaces(
+    def _get_default_search_spaces(
         self, suggested_params: Dict, estimated_n_trials: int
     ) -> Dict:
         """Sample hyperparameters from suggested.

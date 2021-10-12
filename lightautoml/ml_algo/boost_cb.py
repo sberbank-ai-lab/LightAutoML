@@ -23,7 +23,6 @@ from ..validation.base import TrainValidIterator
 from .base import TabularMLAlgo
 from .tuning.base import Distribution
 from .tuning.base import SearchSpace
-from .tuning.optuna import OptunaTunableMixin
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ TabularDataset = Union[NumpyDataset, CSRSparseDataset, PandasDataset]
 logger_stream = LoggerStream(logger.debug)
 
 
-class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
+class BoostCB(TabularMLAlgo, ImportanceEstimator):
     """Gradient boosting on decision trees from catboost library.
 
     All available parameters listed in CatBoost documentation:
@@ -192,7 +191,7 @@ class BoostCB(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator):
 
         return suggested_params
 
-    def _get_search_spaces(
+    def _get_default_search_spaces(
         self, suggested_params: Dict, estimated_n_trials: int
     ) -> Dict:
         """Sample hyperparameters from suggested.

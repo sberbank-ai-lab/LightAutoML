@@ -96,6 +96,7 @@ class MLAlgo(ABC):
         default_params: Optional[dict] = None,
         freeze_defaults: bool = True,
         timer: Optional[TaskTimer] = None,
+        optimization_search_space: Optional[dict] = None
     ):
         """
 
@@ -109,6 +110,7 @@ class MLAlgo(ABC):
 
         """
         self.task = None
+        self.optimization_search_space = optimization_search_space
 
         self.freeze_defaults = freeze_defaults
         if default_params is None:
