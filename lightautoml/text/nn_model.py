@@ -309,7 +309,8 @@ class TorchUniversalModel(nn.Module):
         if (self.task.name == "binary") or (self.task.name == "multilabel"):
             self.torch_model = nn.Sequential(self.torch_model, Clump(), nn.Sigmoid())
         elif self.task.name == "multiclass":
-            self.torch_model = nn.Sequential(self.torch_model, Clump(), nn.Softmax(dim=1))
+#             self.torch_model = nn.Sequential(self.torch_model, Clump(-50, 50), nn.Softmax(dim=1))
+            self.torch_model = nn.Sequential(self.torch_model, Clump(-40, 40), nn.Softmax(dim=1))
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         x = self.predict(inp)
