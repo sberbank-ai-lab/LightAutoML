@@ -121,7 +121,7 @@ LighAutoML framework has a lot of ready-to-use parts and extensive customization
 
 # Resources
 
-* Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/) or you can generate it:
+* Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/), you can also [generate](https://github.com/sberbank-ai-lab/LightAutoML/blob/master/.github/CONTRIBUTING.md#building-documentation) it.
 
 
 * Kaggle kernel examples of LightAutoML usage:
