@@ -28,16 +28,18 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - uses: Gr1N/setup-poetry@v7
-
-    - name: install dependencies
-      run: |
-        poetry install
-        poetry add -D tox-gh-actions
+      with:
+        poetry-version: 1.1.7
 
     - name: install libomp for MacOS
       if: ${{ matrix.os == 'macos-latest' }}
       run: brew install libomp
 
+    - name: install tox
+      run: |
+        pip3 install tox==3.24.4
+        pip3 install tox-gh-actions==2.8.1
+
     - name: test with tox
       run: |
-        poetry run tox
+        tox
