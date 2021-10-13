@@ -343,25 +343,12 @@ class ResNetModel(nn.Module):
         identity = x
         for name, layer in self.features.named_children():
             if name != "resnetblock1":
-                if self.use_dropout:
-                    p = torch.bernoulli(torch.Tensor([self.drop_connect_rate])).item()
-                    if p != 1:
-                        x += identity * (1 / 1 - p)
-                else:
-                    x += identity
+                x += identity
                 identity = x
             x = layer(x)
 
         logits = self.fc(x)
         return logits.view(logits.shape[0], -1)
-
-    def forward(self, x):
-        features = self.features(x)
-        out = F.relu(features, inplace=True)
-        out = torch.flatten(out, 1)
-        out = self.fc(out)
-        out = out.view(out.shape[0], -1)
-        return out
 
 
 class SNN(nn.Module):
