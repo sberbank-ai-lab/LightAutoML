@@ -339,7 +339,7 @@ class ResNetModel(nn.Module):
             self.fc.bias.data = bias
             self.fc.weight.data = torch.zeros(n_out, num_features, requires_grad=True)
 
-    def predict(self, x):
+    def forward(self, x):
         identity = x
         for name, layer in self.features.named_children():
             if name != "resnetblock1":
