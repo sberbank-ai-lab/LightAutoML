@@ -167,7 +167,7 @@ def plot_pdp_with_distribution(
                 for k, name in enumerate(classes)
             ]
         ).reset_index(drop=True)
-        if self.reader._roles[feature_name].name in ["Numeric", "Datetime"]:
+        if reader._roles[feature_name].name in ["Numeric", "Datetime"]:
             g0 = sns.lineplot(data=data, x="x", y="y", hue="class", ax=axs[0])
         else:
             g0 = sns.boxplot(data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False)

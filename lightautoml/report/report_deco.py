@@ -1,9 +1,10 @@
 """Classes for report generation and add-ons."""
 
+import logging
 import os
-import warnings
 
 from copy import copy
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +28,11 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+
+from lightautoml.addons.uplift import metrics as uplift_metrics
+from lightautoml.addons.uplift.metalearners import TLearner
+from lightautoml.addons.uplift.metalearners import XLearner
+from lightautoml.addons.uplift.utils import _get_treatment_role
 
 
 base_dir = os.path.dirname(__file__)
