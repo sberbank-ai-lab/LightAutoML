@@ -2,6 +2,7 @@
 
 import logging
 import os
+import warnings
 
 from copy import copy
 from copy import deepcopy
@@ -359,19 +360,38 @@ def plot_confusion_matrix(data, path):
     plt.close()
 
 
+# Feature importance
+
+
+def plot_feature_importance(feat_imp, path, features_max=100):
+    sns.set(style="whitegrid", font_scale=1.5)
+    fig, axs = plt.subplots(figsize=(16, features_max / 2.5))
+    sns.barplot(x="Importance", y="Feature", data=feat_imp[:features_max], ax=axs, color="m")
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+
+
 class ReportDeco:
     """
-    Decorator to wrap automl class to generate html report on fit_predict and predict.
-    Usage: report_automl = ReportDeco(output_path='output_path', report_file_name='report_file_name')(automl).
-    then call report_automl.fit_predict... and report_automl.predict...
+    Decorator to wrap :class:`~lightautoml.automl.base.AutoML` class to generate html report on ``fit_predict`` and ``predict``.
+
+    Example:
+
+        >>> report_automl = ReportDeco(output_path="output_path", report_file_name="report_file_name")(automl).
+        >>> report_automl.fit_predict(train_data)
+        >>> report_automl.predict(test_data)
+
     Report will be generated at output_path/report_file_name automatically.
-    Attention: do not use it just to inference (if you don't need report), because:
 
-        - it needs target variable to calc performance metrics
-        - it takes additional time to generate report
-        - dump of decorated automl takes more memory to store
+    Warning:
+         Do not use it just to inference (if you don"t need report), because:
 
-    To get unwrapped fitted instance to pickle and inferecne access report_automl.model attribute.
+            - It needs target variable to calc performance metrics.
+            - It takes additional time to generate report.
+            - Dump of decorated automl takes more memory to store.
+
+    To get unwrapped fitted instance to pickle
+    and inferecne access ``report_automl.model`` attribute.
 
     """
 
@@ -396,20 +416,37 @@ class ReportDeco:
     def __init__(self, *args, **kwargs):
         """
 
-        Valid kwargs are
+        Note:
+            Valid kwargs are:
 
-            - output_path: folder with report files.
-            - report_file_name: name of main report file.
+                - output_path: Folder with report files.
+                - report_file_name: Name of main report file.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         """
         if not kwargs:
             kwargs = {}
 
-        # self.task = kwargs.get('task', 'binary')
+        # default params
+        self.fi_params = {"method": "fast", "n_sample": 100_000}
+        self.interpretation_params = {
+            "top_n_features": 5,
+            "top_n_categories": 10,
+            "ton_n_classes": 10,
+            "n_bins": 30,
+            "datetime_level": "year",
+            "n_sample": 100_000,
+        }
+
+        fi_input_params = kwargs.get("fi_params", {})
+        self.fi_params.update(fi_input_params)
+        interpretation_input_params = kwargs.get("interpretation_params", {})
+        self.interpretation_params.update(interpretation_input_params)
+        self.interpretation = kwargs.get("interpretation", False)
+
         self.n_bins = kwargs.get("n_bins", 20)
         self.template_path = kwargs.get("template_path", os.path.join(base_dir, "lama_report_templates/"))
         self.output_path = kwargs.get("output_path", "lama_report/")
@@ -423,6 +460,9 @@ class ReportDeco:
         self._model_section_path = "model_section.html"
         self._train_set_section_path = "train_set_section.html"
         self._results_section_path = "results_section.html"
+        self._fi_section_path = "feature_importance_section.html"
+        self._interpretation_section_path = "interpretation_section.html"
+        self._interpretation_subsection_path = "interpretation_subsection.html"
 
         self._inference_section_path = {
             "binary": "binary_inference_section.html",
@@ -431,7 +471,18 @@ class ReportDeco:
         }
 
         self.title = "LAMA report"
-        self.sections_order = ["intro", "model", "train_set", "results"]
+        if self.interpretation:
+            self.sections_order = [
+                "intro",
+                "model",
+                "train_set",
+                "fi",
+                "interpretation",
+                "results",
+            ]
+            self._interpretation_top = []
+        else:
+            self.sections_order = ["intro", "model", "train_set", "fi", "results"]
         self._sections = {}
         self._sections["intro"] = "<p>This report was generated automatically.</p>"
         self._model_results = []
@@ -569,22 +620,21 @@ class ReportDeco:
         return data
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped automl.fit_predict method.
+        """Wrapped ``automl.fit_predict`` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            oof predictions.
+            OOF predictions.
 
         """
         # TODO: parameters parsing in general case
 
         preds = self._model.fit_predict(*args, **kwargs)
-
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
         input_roles = kwargs["roles"] if "roles" in kwargs else args[1]
         self._target = input_roles["target"]
@@ -593,7 +643,6 @@ class ReportDeco:
             data = self._collect_data(preds, train_data)
         else:
             data = self._collect_data(preds, valid_data)
-
         self._inference_content = {}
         if self.task == "binary":
             # filling for html
@@ -622,7 +671,6 @@ class ReportDeco:
             # graphics and metrics
             mean_ae, median_ae, mse, r2, evs = self._regression_details(data)
             # model section
-
             evaluation_parameters = [
                 "Mean absolute error",
                 "Median absolute error",
@@ -655,9 +703,13 @@ class ReportDeco:
         self._describe_roles(train_data)
         self._describe_dropped_features(train_data)
         self._generate_train_set_section()
-
         # generate fit_predict section
-        self._generate_inference_section(data)
+        self._generate_inference_section()
+        # generate feature importance and interpretation sections
+        self._generate_fi_section(valid_data)
+        if self.interpretation:
+            self._generate_interpretation_section(valid_data)
+
         self.generate_report()
         return preds
 
@@ -746,11 +798,150 @@ class ReportDeco:
 
         # update model section
         self._generate_model_section()
-
         # generate predict section
-        self._generate_inference_section(data)
+        self._generate_inference_section()
+
         self.generate_report()
         return test_preds
+
+    def _generate_fi_section(self, valid_data):
+        if (
+            self.fi_params["method"] == "accurate"
+            and valid_data is not None
+            and valid_data.shape[0] > self.fi_params["n_sample"]
+        ):
+            valid_data = valid_data.sample(n=self.fi_params["n_sample"])
+            print(
+                "valid_data was sampled for feature importance calculation: n_sample = {}".format(
+                    self.fi_params["n_sample"]
+                )
+            )
+
+        if self.fi_params["method"] == "accurate" and valid_data is None:
+            # raise ValueError("You must set valid_data with accurate feature importance method")
+            self.fi_params["method"] = "fast"
+            warnings.warn(
+                "You must set valid_data with 'accurate' feature importance method. Changed to 'fast' automatically."
+            )
+
+        self.feat_imp = self._model.get_feature_scores(
+            calc_method=self.fi_params["method"], data=valid_data, silent=False
+        )
+        if self.feat_imp is None:
+            fi_path = None
+        else:
+            fi_path = "feature_importance.png"
+            plot_feature_importance(self.feat_imp, path=os.path.join(self.output_path, fi_path))
+        # add to _sections
+        fi_content = {
+            "fi_method": self.fi_params["method"],
+            "feature_importance": fi_path,
+        }
+        env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+        fi_section = env.get_template(self._fi_section_path).render(fi_content)
+        self._sections["fi"] = fi_section
+
+    def _generate_interpretation_content(self, test_data):
+        self._interpretation_content = {}
+        if test_data is None:
+            self._interpretation_content["interpretation_top"] = None
+            return
+        if self.feat_imp is None:
+            interpretation_feat_list = list(self._model.reader._roles.keys())[
+                : self.interpretation_params["top_n_features"]
+            ]
+        else:
+            interpretation_feat_list = self.feat_imp["Feature"].values[: self.interpretation_params["top_n_features"]]
+        for feature_name in interpretation_feat_list:
+            interpretaton_subsection = {}
+            interpretaton_subsection["feature_name"] = feature_name
+            interpretaton_subsection["feature_interpretation_plot"] = feature_name + "_interpretation.png"
+            self._plot_pdp(
+                test_data,
+                feature_name,
+                path=os.path.join(
+                    self.output_path,
+                    interpretaton_subsection["feature_interpretation_plot"],
+                ),
+            )
+            env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+            interpretation_subsection = env.get_template(self._interpretation_subsection_path).render(
+                interpretaton_subsection
+            )
+            self._interpretation_top.append(interpretation_subsection)
+            print(f"Interpretation info for {feature_name} appended")
+        self._interpretation_content["interpretation_top"] = self._interpretation_top
+
+    def _generate_interpretation_section(self, test_data):
+        if test_data is not None and test_data.shape[0] > self.interpretation_params["n_sample"]:
+            test_data = test_data.sample(n=self.interpretation_params["n_sample"])
+        self._generate_interpretation_content(test_data)
+        env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+        interpretation_section = env.get_template(self._interpretation_section_path).render(
+            self._interpretation_content
+        )
+        self._sections["interpretation"] = interpretation_section
+
+    def _plot_pdp(self, test_data, feature_name, path):
+        feature_role = self._model.reader._roles[feature_name].name
+        # I. Count interpretation
+        print("Calculating interpretation for {}:".format(feature_name))
+        grid, ys, counts = self._model.get_individual_pdp(
+            test_data=test_data,
+            feature_name=feature_name,
+            n_bins=self.interpretation_params["n_bins"],
+            top_n_categories=self.interpretation_params["top_n_categories"],
+            datetime_level=self.interpretation_params["datetime_level"],
+        )
+        # II. Plot pdp
+        sns.set(style="whitegrid", font_scale=1.5)
+        fig, axs = plt.subplots(2, 1, figsize=(16, 12), gridspec_kw={"height_ratios": [3, 1]})
+        axs[0].set_title("PDP plot: " + feature_name)
+        n_classes = ys[0].shape[1]
+        if n_classes == 1:
+            data = pd.concat(
+                [pd.DataFrame({"x": grid[i], "y": ys[i].ravel()}) for i, _ in enumerate(grid)]
+            ).reset_index(drop=True)
+            if feature_role in ["Numeric", "Datetime"]:
+                g0 = sns.lineplot(data=data, x="x", y="y", ax=axs[0], color="m")
+            else:
+                g0 = sns.boxplot(data=data, x="x", y="y", ax=axs[0], showfliers=False, color="m")
+        else:
+            if self.mapping:
+                classes = sorted(self.mapping, key=self.mapping.get)[: self.interpretation_params["top_n_classes"]]
+            else:
+                classes = np.arange(min(n_classes, self.interpretation_params["top_n_classes"]))
+            data = pd.concat(
+                [
+                    pd.DataFrame({"x": grid[i], "y": ys[i][:, k], "class": name})
+                    for i, _ in enumerate(grid)
+                    for k, name in enumerate(classes)
+                ]
+            ).reset_index(drop=True)
+            if self._model.reader._roles[feature_name].name in ["Numeric", "Datetime"]:
+                g0 = sns.lineplot(data=data, x="x", y="y", hue="class", ax=axs[0])
+            else:
+                g0 = sns.boxplot(data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False)
+        g0.set(ylabel="y_pred")
+        # III. Plot distribution
+        counts = np.array(counts) / sum(counts)
+        if feature_role == "Numeric":
+            g0.set(xlabel="feature value")
+            g1 = sns.histplot(test_data[feature_name], kde=True, color="gray", ax=axs[1])
+        elif feature_role == "Category":
+            g0.set(xlabel=None)
+            axs[0].set_xticklabels(grid, rotation=90)
+            g1 = sns.barplot(x=grid, y=counts, ax=axs[1], color="gray")
+        else:
+            g0.set(xlabel=self.interpretation_params["datetime_level"])
+            g1 = sns.barplot(x=grid, y=counts, ax=axs[1], color="gray")
+        g1.set(xlabel=None)
+        g1.set(ylabel="Frequency")
+        g1.set(xticklabels=[])
+        # IV. Save picture
+        plt.tight_layout()
+        fig.savefig(path, bbox_inches="tight")
+        plt.close()
 
     def _data_genenal_info(self, data):
         general_info = pd.DataFrame(columns=["Parameter", "Value"])
@@ -761,8 +952,8 @@ class ReportDeco:
             "Dropped features",
             len(self._model.reader._dropped_features),
         )
-        # general_info.loc[4] = ('Number of positive cases', np.sum(data[self._target] == 1))
-        # general_info.loc[5] = ('Number of negative cases', np.sum(data[self._target] == 0))
+        # general_info.loc[4] = ("Number of positive cases", np.sum(data[self._target] == 1))
+        # general_info.loc[5] = ("Number of negative cases", np.sum(data[self._target] == 0))
         return general_info.to_html(index=False, justify="left")
 
     def _describe_roles(self, train_data):
@@ -882,7 +1073,7 @@ class ReportDeco:
         )
         self._sections["train_set"] = train_set_section
 
-    def _generate_inference_section(self, data):
+    def _generate_inference_section(self):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         inference_section = env.get_template(self._inference_section_path[self.task]).render(self._inference_content)
         self._model_results.append(inference_section)
@@ -937,23 +1128,32 @@ _default_wb_report_params = {
 
 class ReportDecoWhitebox(ReportDeco):
     """
-    Special report wrapper for WhiteBoxPreset. Usage case is the same as main ReportDeco class.
-    It generates same report as ReportDeco, but with additional whitebox report part.
+    Special report wrapper for :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`.
+    Usage case is the same as main
+    :class:`~lightautoml.report.report_deco.ReportDeco` class.
+    It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
+    but with additional whitebox report part.
 
     Difference:
 
-        - report_automl.predict gets additional report argument. It stands for updating whitebox report part.
-          Calling report_automl.predict(test_data, report=True) will update test part of whitebox report.
-          Calling report_automl.predict(test_data, report=False) will extend general report with.
-          new data and keeps whitebox part as is (much more faster).
-        - WhiteboxPreset should be created with parameter general_params={'report': True} to get white box report part.
-          if general_params set to {'report': False}, only standard ReportDeco part will be created (much fasted).
+        - report_automl.predict gets additional report argument.
+          It stands for updating whitebox report part.
+          Calling ``report_automl.predict(test_data, report=True)``
+          will update test part of whitebox report.
+          Calling ``report_automl.predict(test_data, report=False)``
+          will extend general report with.
+          New data and keeps whitebox part as is (much more faster).
+        - :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset`
+          should be created with parameter ``general_params={"report": True}``
+          to get white box report part.
+          If ``general_params`` set to ``{"report": False}``,
+          only standard ReportDeco part will be created (much faster).
 
     """
 
     @property
     def model(self):
-        """Get unwrapped whitebox.
+        """Get unwrapped WhiteBox.
 
         Returns:
             model.
@@ -991,16 +1191,16 @@ class ReportDecoWhitebox(ReportDeco):
         self.sections_order.append("whitebox")
 
     def fit_predict(self, *args, **kwargs):
-        """Wrapped automl.fit_predict method.
+        """Wrapped :meth:`AutoML.fit_predict` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            oof predictions.
+            OOF predictions.
 
         """
         predict_proba = super().fit_predict(*args, **kwargs)
@@ -1014,16 +1214,16 @@ class ReportDecoWhitebox(ReportDeco):
         return predict_proba
 
     def predict(self, *args, **kwargs):
-        """Wrapped automl.predict method.
+        """Wrapped :meth:`AutoML.predict` method.
 
         Valid args, kwargs are the same as wrapped automl.
 
         Args:
-            *args: arguments.
-            **kwargs: additional parameters.
+            *args: Arguments.
+            **kwargs: Additional parameters.
 
         Returns:
-            predictions.
+            Predictions.
 
         """
         if len(args) >= 2:
@@ -1087,6 +1287,7 @@ class ReportDecoNLP(ReportDeco):
     :class:`~lightautoml.report.report_deco.ReportDeco` class.
     It generates same report as :class:`~lightautoml.report.report_deco.ReportDeco` ,
     but with additional NLP report part.
+
     """
 
     def __init__(self, **kwargs):
@@ -1115,12 +1316,16 @@ class ReportDecoNLP(ReportDeco):
 
     def fit_predict(self, *args, **kwargs):
         """Wrapped :meth:`TabularNLPAutoML.fit_predict` method.
+
         Valid args, kwargs are the same as wrapped automl.
+
         Args:
             *args: Arguments.
             **kwargs: Additional parameters.
+
         Returns:
             OOF predictions.
+
         """
         preds = super().fit_predict(*args, **kwargs)
 

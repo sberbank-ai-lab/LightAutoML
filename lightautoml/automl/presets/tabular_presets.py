@@ -3,6 +3,7 @@
 import logging
 import os
 
+from collections import Counter
 from copy import copy
 from copy import deepcopy
 from typing import Iterable
@@ -17,6 +18,7 @@ import torch
 from joblib import Parallel
 from joblib import delayed
 from pandas import DataFrame
+from tqdm import tqdm
 
 from ...addons.utilization import TimeUtilization
 from ...dataset.np_pd_dataset import NumpyDataset
@@ -48,6 +50,8 @@ from ..blend import WeightedBlender
 from .base import AutoMLPreset
 from .base import upd_params
 from .utils import calc_feats_permutation_imps
+from .utils import change_datetime
+from .utils import plot_pdp_with_distribution
 
 
 _base_dir = os.path.dirname(__file__)
@@ -612,6 +616,98 @@ class TabularAutoML(AutoMLPreset):
         )
         return fi
 
+    def get_individual_pdp(
+        self,
+        test_data: ReadableToDf,
+        feature_name: str,
+        n_bins: Optional[int] = 30,
+        top_n_categories: Optional[int] = 10,
+        datetime_level: Optional[str] = "year",
+    ):
+        assert feature_name in self.reader._roles
+        assert datetime_level in ["year", "month", "dayofweek"]
+        test_i = test_data.copy()
+        # Numerical features
+        if self.reader._roles[feature_name].name == "Numeric":
+            counts, bin_edges = np.histogram(test_data[feature_name].dropna(), bins=n_bins)
+            grid = (bin_edges[:-1] + bin_edges[1:]) / 2
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+        # Categorical features
+        if self.reader._roles[feature_name].name == "Category":
+            feature_cnt = test_data[feature_name].value_counts()
+            grid = list(feature_cnt.index.values[:top_n_categories])
+            counts = list(feature_cnt.values[:top_n_categories])
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            if len(feature_cnt) > top_n_categories:
+                freq_mapping = {feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)}
+                # add "OTHER" class
+                test_i = test_data.copy()
+                # sample from other classes with the same distribution
+                test_i[feature_name] = (
+                    test_i[feature_name][np.array([freq_mapping[k] for k in test_i[feature_name]]) > top_n_categories]
+                    .sample(n=test_data.shape[0], replace=True)
+                    .values
+                )
+                preds = self.predict(test_i).data
+                grid.append("<OTHER>")
+                ys.append(preds)
+                counts.append(feature_cnt.values[top_n_categories:].sum())
+        # Datetime Features
+        if self.reader._roles[feature_name].name == "Datetime":
+            test_data_read = self.reader.read(test_data)
+            feature_datetime = pd.arrays.DatetimeArray(test_data_read._data[feature_name])
+            if datetime_level == "year":
+                grid = np.unique([i.year for i in feature_datetime])
+            elif datetime_level == "month":
+                grid = np.arange(1, 13)
+            else:
+                grid = np.arange(7)
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = change_datetime(feature_datetime, datetime_level, i)
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            counts = Counter([getattr(i, datetime_level) for i in feature_datetime])
+            counts = [counts[i] for i in grid]
+        return grid, ys, counts
+
+    def plot_pdp(
+        self,
+        test_data: ReadableToDf,
+        feature_name: str,
+        individual: Optional[bool] = False,
+        n_bins: Optional[int] = 30,
+        top_n_categories: Optional[int] = 10,
+        top_n_classes: Optional[int] = 10,
+        datetime_level: Optional[str] = "year",
+    ):
+        grid, ys, counts = self.get_individual_pdp(
+            test_data=test_data,
+            feature_name=feature_name,
+            n_bins=n_bins,
+            top_n_categories=top_n_categories,
+            datetime_level=datetime_level,
+        )
+        plot_pdp_with_distribution(
+            test_data,
+            grid,
+            ys,
+            counts,
+            self.reader,
+            feature_name,
+            individual,
+            top_n_classes,
+            datetime_level,
+        )
+
 
 class TabularUtilizedAutoML(TimeUtilization):
     """Template to make TimeUtilization from TabularAutoML."""
@@ -752,3 +848,97 @@ class TabularUtilizedAutoML(TimeUtilization):
                 res += "\t" * (pref_tab_num + 1) + "    Model #{}.\n{}\n\n".format(it1, cur_model_desc)
 
         return res
+
+    def get_individual_pdp(
+        self,
+        test_data: ReadableToDf,
+        feature_name: str,
+        n_bins: Optional[int] = 30,
+        top_n_categories: Optional[int] = 10,
+        datetime_level: Optional[str] = "year",
+    ):
+        reader = self.outer_pipes[0].ml_algos[0].models[0][0].reader
+        assert feature_name in reader._roles
+        assert datetime_level in ["year", "month", "dayofweek"]
+        test_i = test_data.copy()
+        # Numerical features
+        if reader._roles[feature_name].name == "Numeric":
+            counts, bin_edges = np.histogram(test_data[feature_name].dropna(), bins=n_bins)
+            grid = (bin_edges[:-1] + bin_edges[1:]) / 2
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+        # Categorical features
+        if reader._roles[feature_name].name == "Category":
+            feature_cnt = test_data[feature_name].value_counts()
+            grid = list(feature_cnt.index.values[:top_n_categories])
+            counts = list(feature_cnt.values[:top_n_categories])
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = i
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            if len(feature_cnt) > top_n_categories:
+                freq_mapping = {feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)}
+                # add "OTHER" class
+                test_i = test_data.copy()
+                # sample from other classes with the same distribution
+                test_i[feature_name] = (
+                    test_i[feature_name][np.array([freq_mapping[k] for k in test_i[feature_name]]) > top_n_categories]
+                    .sample(n=test_data.shape[0], replace=True)
+                    .values
+                )
+                preds = self.predict(test_i).data
+                grid.append("<OTHER>")
+                ys.append(preds)
+                counts.append(feature_cnt.values[top_n_categories:].sum())
+        # Datetime Features
+        if reader._roles[feature_name].name == "Datetime":
+            test_data_read = reader.read(test_data)
+            feature_datetime = pd.arrays.DatetimeArray(test_data_read._data[feature_name])
+            if datetime_level == "year":
+                grid = np.unique([i.year for i in feature_datetime])
+            elif datetime_level == "month":
+                grid = np.arange(1, 13)
+            else:
+                grid = np.arange(7)
+            ys = []
+            for i in tqdm(grid):
+                test_i[feature_name] = change_datetime(feature_datetime, datetime_level, i)
+                preds = self.predict(test_i).data
+                ys.append(preds)
+            counts = Counter([getattr(i, datetime_level) for i in feature_datetime])
+            counts = [counts[i] for i in grid]
+        return grid, ys, counts
+
+    def plot_pdp(
+        self,
+        test_data: ReadableToDf,
+        feature_name: str,
+        individual: Optional[bool] = False,
+        n_bins: Optional[int] = 30,
+        top_n_categories: Optional[int] = 10,
+        top_n_classes: Optional[int] = 10,
+        datetime_level: Optional[str] = "year",
+    ):
+        reader = self.outer_pipes[0].ml_algos[0].models[0][0].reader
+        grid, ys, counts = self.get_individual_pdp(
+            test_data=test_data,
+            feature_name=feature_name,
+            n_bins=n_bins,
+            top_n_categories=top_n_categories,
+            datetime_level=datetime_level,
+        )
+        plot_pdp_with_distribution(
+            test_data,
+            grid,
+            ys,
+            counts,
+            reader,
+            feature_name,
+            individual,
+            top_n_classes,
+            datetime_level,
+        )
