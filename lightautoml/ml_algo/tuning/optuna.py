@@ -2,8 +2,6 @@
 
 import logging
 
-from abc import ABC
-from abc import abstractmethod
 from copy import copy
 from copy import deepcopy
 from typing import Callable
@@ -13,8 +11,6 @@ from typing import TypeVar
 from typing import Union
 
 import optuna
-
-from numpy.lib.twodim_base import tri
 
 from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo

@@ -315,7 +315,7 @@ def plot_error_hist(data, path):
     sns.set(style="whitegrid", font_scale=1.5)
     fig, ax = plt.subplots(figsize=(16, 10))
 
-    g = sns.kdeplot(data["y_pred"] - data["y_true"], shade=True, color="m", ax=ax)
+    sns.kdeplot(data["y_pred"] - data["y_true"], shade=True, color="m", ax=ax)
     ax.set_xlabel("Error = y_pred - y_true")
     ax.set_ylabel("Density")
     ax.set_title("Error histogram")
@@ -351,7 +351,7 @@ def plot_confusion_matrix(data, path):
     fig, ax = plt.subplots(figsize=(16, 12))
 
     cmat = confusion_matrix(data["y_true"], data["y_pred"], normalize="true")
-    g = sns.heatmap(cmat, annot=True, linewidths=0.5, cmap="Purples", ax=ax)
+    sns.heatmap(cmat, annot=True, linewidths=0.5, cmap="Purples", ax=ax)
     ax.set_xlabel("y_pred")
     ax.set_ylabel("y_true")
     ax.set_title("Confusion matrix")

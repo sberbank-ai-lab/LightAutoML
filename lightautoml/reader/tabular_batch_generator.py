@@ -10,7 +10,6 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
-from typing import TypeVar
 from typing import Union
 
 import numpy as np
@@ -344,7 +343,8 @@ class SqlDataSource:
         Data wrapper for SQL connection
 
         Args:
-            connection_string: database url; for reference see https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
+            connection_string: database url; for reference see
+            https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
             query: SQL query to obtain data from
             index: optional index column to be removed from the query result; can be None, str of List[str]
         """

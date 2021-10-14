@@ -2,8 +2,6 @@
 
 from typing import Any
 
-import torch
-
 from ...dataset.base import LAMLDataset
 from ...text.tokenizer import BaseTokenizer
 from ...text.tokenizer import SimpleEnTokenizer

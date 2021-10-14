@@ -553,7 +553,7 @@ class ChangeRoles(LAMLTransformer):
             New dataset.
 
         """
-        data, features, roles = dataset.data, dataset.features, dataset.roles
+        data, features, _ = dataset.data, dataset.features, dataset.roles
         dataset = dataset.empty()
         dataset.set_data(data, features, self.roles)
 

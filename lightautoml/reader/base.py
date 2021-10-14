@@ -2,7 +2,6 @@
 
 import logging
 
-from copy import copy
 from copy import deepcopy
 from typing import Any
 from typing import Dict

@@ -31,15 +31,12 @@ from tqdm import tqdm
 
 from ...pipelines.features.text_pipeline import _tokenizer_by_lang
 from ...text.utils import seed_everything
-from .data_process import BySequenceLengthSampler
-from .data_process import LengthDataset
 from .data_process import get_embedding_matrix
 from .data_process import get_len_dataloader
 from .data_process import get_len_dataset
 from .data_process import get_tokenized
 from .data_process import get_vocab
 from .data_process import map_tokenized_to_id
-from .data_process import pad_max_len
 from .l2x_model import L2XModel
 from .utils import WrappedTokenizer
 from .utils import WrappedVocabulary
@@ -487,7 +484,7 @@ class L2XTextExplainer:
         loss = self._loss
         optimizer = self.optimizer(model.parameters(), **self.optim_params)
         model.to(self.train_device)
-        best_iter = -1
+        prev_best = -1
         best_loss = torch.finfo(float).max
         gamma = self.gamma
 

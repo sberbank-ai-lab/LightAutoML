@@ -1,7 +1,6 @@
 """Timer."""
 
 import logging
-import warnings
 
 from time import time
 from typing import List
@@ -29,25 +28,25 @@ class Timer:
 
     @property
     def time_left(self) -> float:
-        if self.time_spent:
+        if self.time_spent is not None:
             return self.timeout - self.time_spent
         return None
 
     @property
     def time_spent(self) -> float:
-        if self.start_time:
+        if self.start_time is not None:
             return time() - self.start_time
         return None
 
     @property
     def perc_left(self) -> float:
-        if self.time_left:
+        if self.time_left is not None:
             return self.time_left / self.timeout
         return None
 
     @property
     def perc_spent(self) -> float:
-        if self.time_spent:
+        if self.time_spent is not None:
             return self.time_spent / self.timeout
         return None
 

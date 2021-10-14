@@ -162,7 +162,7 @@ class BaseAutoUplift(metaclass=abc.ABCMeta):
     def calculate_metric(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
         if isinstance(self.metric, str):
             try:
-                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, self.normed_metric)
+                auc = calculate_uplift_auc(y_true, uplift_pred, treatment, self.metric, False)
             except ConstPredictError as e:
                 logger.error(str(e) + "\nMetric set to zero.")
                 auc = 0.0
@@ -1158,7 +1158,7 @@ class AutoUpliftTX(BaseAutoUplift):
                     if bl.params["task"].name == "binary":
                         bin_baselearners.append(bl)
                     if bl.params["task"].name == "reg":
-                        bin_baselearners.append(bl)
+                        reg_baselearners.append(bl)
                 else:
                     raw_baselearners.append(bl)
 
@@ -1175,7 +1175,7 @@ class AutoUpliftTX(BaseAutoUplift):
                 if stage_task.name == "binary":
                     baselearners_on_stage.extend(bin_baselearners)
                 elif stage_task.name == "reg":
-                    baselearners_on_stage.extend(bin_baselearners)
+                    baselearners_on_stage.extend(reg_baselearners)
 
                 stage_baselearners[full_name] = baselearners_on_stage
 
@@ -1226,13 +1226,11 @@ class AutoUpliftTX(BaseAutoUplift):
             logger.warning("Naming of baselearner should be unique.")
             logger.warning("Name of baselearner would be updated with postfix '__order_idx_bl__'.")
 
-            rename = lambda name, idx: "{}__#{}__".format(name, idx)
-
             renaming_by_idxs: Dict[int, str] = {}
             for bl_name, idxs in k2n.items():
                 if len(idxs) > 1:
                     for idx in idxs:
-                        renaming_by_idxs[idx] = rename(bl_name, idx)
+                        renaming_by_idxs[idx] = "{}__#{}__".format(bl_name, idx)
 
             baselearners_t = []
             for idx, bl in enumerate(baselearners):

@@ -7,7 +7,6 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
-from typing import TypeVar
 from typing import Union
 
 from ..tasks.base import Task
