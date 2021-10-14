@@ -2,6 +2,7 @@
 
 import logging
 import os
+import warnings
 
 from copy import copy
 from copy import deepcopy
@@ -34,6 +35,8 @@ from lightautoml.addons.uplift.metalearners import TLearner
 from lightautoml.addons.uplift.metalearners import XLearner
 from lightautoml.addons.uplift.utils import _get_treatment_role
 
+
+logger = logging.getLogger(__name__)
 
 base_dir = os.path.dirname(__file__)
 
