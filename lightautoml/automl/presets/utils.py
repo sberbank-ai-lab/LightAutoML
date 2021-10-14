@@ -106,9 +106,7 @@ def plot_pdp_with_distribution(
     feature_role = reader._roles[feature_name].name
     # I. Plot pdp
     sns.set(style="whitegrid", font_scale=1.5)
-    fig, axs = plt.subplots(
-        2, 1, figsize=(16, 12), gridspec_kw={"height_ratios": [3, 1]}
-    )
+    fig, axs = plt.subplots(2, 1, figsize=(16, 12), gridspec_kw={"height_ratios": [3, 1]})
     axs[0].set_title("PDP: " + feature_name)
     n_classes = ys[0].shape[1]
     if n_classes == 1:
@@ -156,14 +154,10 @@ def plot_pdp_with_distribution(
             else:
                 g0 = sns.lineplot(data=data, x="x", y="y", ax=axs[0], color="b")
         else:
-            g0 = sns.boxplot(
-                data=data, x="x", y="y", ax=axs[0], showfliers=False, color="b"
-            )
+            g0 = sns.boxplot(data=data, x="x", y="y", ax=axs[0], showfliers=False, color="b")
     else:
         if reader.class_mapping:
-            classes = sorted(reader.class_mapping, key=reader.class_mapping.get)[
-                :top_n_classes
-            ]
+            classes = sorted(reader.class_mapping, key=reader.class_mapping.get)[:top_n_classes]
         else:
             classes = np.arange(min(n_classes, top_n_classes))
         data = pd.concat(
@@ -176,9 +170,7 @@ def plot_pdp_with_distribution(
         if self.reader._roles[feature_name].name in ["Numeric", "Datetime"]:
             g0 = sns.lineplot(data=data, x="x", y="y", hue="class", ax=axs[0])
         else:
-            g0 = sns.boxplot(
-                data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False
-            )
+            g0 = sns.boxplot(data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False)
     g0.set(ylabel="y_pred")
     # II. Plot distribution
     counts = np.array(counts) / sum(counts)

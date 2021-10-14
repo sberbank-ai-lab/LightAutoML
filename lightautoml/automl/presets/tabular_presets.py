@@ -628,9 +628,7 @@ class TabularAutoML(AutoMLPreset):
         test_i = test_data.copy()
         # Numerical features
         if self.reader._roles[feature_name].name == "Numeric":
-            counts, bin_edges = np.histogram(
-                test_data[feature_name].dropna(), bins=n_bins
-            )
+            counts, bin_edges = np.histogram(test_data[feature_name].dropna(), bins=n_bins)
             grid = (bin_edges[:-1] + bin_edges[1:]) / 2
             ys = []
             for i in tqdm(grid):
@@ -648,17 +646,12 @@ class TabularAutoML(AutoMLPreset):
                 preds = self.predict(test_i).data
                 ys.append(preds)
             if len(feature_cnt) > top_n_categories:
-                freq_mapping = {
-                    feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)
-                }
+                freq_mapping = {feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)}
                 # add "OTHER" class
                 test_i = test_data.copy()
                 # sample from other classes with the same distribution
                 test_i[feature_name] = (
-                    test_i[feature_name][
-                        np.array([freq_mapping[k] for k in test_i[feature_name]])
-                        > top_n_categories
-                    ]
+                    test_i[feature_name][np.array([freq_mapping[k] for k in test_i[feature_name]]) > top_n_categories]
                     .sample(n=test_data.shape[0], replace=True)
                     .values
                 )
@@ -669,9 +662,7 @@ class TabularAutoML(AutoMLPreset):
         # Datetime Features
         if self.reader._roles[feature_name].name == "Datetime":
             test_data_read = self.reader.read(test_data)
-            feature_datetime = pd.arrays.DatetimeArray(
-                test_data_read._data[feature_name]
-            )
+            feature_datetime = pd.arrays.DatetimeArray(test_data_read._data[feature_name])
             if datetime_level == "year":
                 grid = np.unique([i.year for i in feature_datetime])
             elif datetime_level == "month":
@@ -680,9 +671,7 @@ class TabularAutoML(AutoMLPreset):
                 grid = np.arange(7)
             ys = []
             for i in tqdm(grid):
-                test_i[feature_name] = change_datetime(
-                    feature_datetime, datetime_level, i
-                )
+                test_i[feature_name] = change_datetime(feature_datetime, datetime_level, i)
                 preds = self.predict(test_i).data
                 ys.append(preds)
             counts = Counter([getattr(i, datetime_level) for i in feature_datetime])
@@ -873,9 +862,7 @@ class TabularUtilizedAutoML(TimeUtilization):
         test_i = test_data.copy()
         # Numerical features
         if reader._roles[feature_name].name == "Numeric":
-            counts, bin_edges = np.histogram(
-                test_data[feature_name].dropna(), bins=n_bins
-            )
+            counts, bin_edges = np.histogram(test_data[feature_name].dropna(), bins=n_bins)
             grid = (bin_edges[:-1] + bin_edges[1:]) / 2
             ys = []
             for i in tqdm(grid):
@@ -893,17 +880,12 @@ class TabularUtilizedAutoML(TimeUtilization):
                 preds = self.predict(test_i).data
                 ys.append(preds)
             if len(feature_cnt) > top_n_categories:
-                freq_mapping = {
-                    feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)
-                }
+                freq_mapping = {feature_cnt.index[i]: i for i, _ in enumerate(feature_cnt)}
                 # add "OTHER" class
                 test_i = test_data.copy()
                 # sample from other classes with the same distribution
                 test_i[feature_name] = (
-                    test_i[feature_name][
-                        np.array([freq_mapping[k] for k in test_i[feature_name]])
-                        > top_n_categories
-                    ]
+                    test_i[feature_name][np.array([freq_mapping[k] for k in test_i[feature_name]]) > top_n_categories]
                     .sample(n=test_data.shape[0], replace=True)
                     .values
                 )
@@ -914,9 +896,7 @@ class TabularUtilizedAutoML(TimeUtilization):
         # Datetime Features
         if reader._roles[feature_name].name == "Datetime":
             test_data_read = reader.read(test_data)
-            feature_datetime = pd.arrays.DatetimeArray(
-                test_data_read._data[feature_name]
-            )
+            feature_datetime = pd.arrays.DatetimeArray(test_data_read._data[feature_name])
             if datetime_level == "year":
                 grid = np.unique([i.year for i in feature_datetime])
             elif datetime_level == "month":
@@ -925,9 +905,7 @@ class TabularUtilizedAutoML(TimeUtilization):
                 grid = np.arange(7)
             ys = []
             for i in tqdm(grid):
-                test_i[feature_name] = change_datetime(
-                    feature_datetime, datetime_level, i
-                )
+                test_i[feature_name] = change_datetime(feature_datetime, datetime_level, i)
                 preds = self.predict(test_i).data
                 ys.append(preds)
             counts = Counter([getattr(i, datetime_level) for i in feature_datetime])

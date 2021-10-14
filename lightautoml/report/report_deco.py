@@ -357,9 +357,7 @@ def plot_confusion_matrix(data, path):
 def plot_feature_importance(feat_imp, path, features_max=100):
     sns.set(style="whitegrid", font_scale=1.5)
     fig, axs = plt.subplots(figsize=(16, features_max / 2.5))
-    sns.barplot(
-        x="Importance", y="Feature", data=feat_imp[:features_max], ax=axs, color="m"
-    )
+    sns.barplot(x="Importance", y="Feature", data=feat_imp[:features_max], ax=axs, color="m")
     plt.savefig(path, bbox_inches="tight")
     plt.close()
 
@@ -824,9 +822,7 @@ class ReportDeco:
             fi_path = None
         else:
             fi_path = "feature_importance.png"
-            plot_feature_importance(
-                self.feat_imp, path=os.path.join(self.output_path, fi_path)
-            )
+            plot_feature_importance(self.feat_imp, path=os.path.join(self.output_path, fi_path))
         # add to _sections
         fi_content = {
             "fi_method": self.fi_params["method"],
@@ -846,15 +842,11 @@ class ReportDeco:
                 : self.interpretation_params["top_n_features"]
             ]
         else:
-            interpretation_feat_list = self.feat_imp["Feature"].values[
-                : self.interpretation_params["top_n_features"]
-            ]
+            interpretation_feat_list = self.feat_imp["Feature"].values[: self.interpretation_params["top_n_features"]]
         for feature_name in interpretation_feat_list:
             interpretaton_subsection = {}
             interpretaton_subsection["feature_name"] = feature_name
-            interpretaton_subsection["feature_interpretation_plot"] = (
-                feature_name + "_interpretation.png"
-            )
+            interpretaton_subsection["feature_interpretation_plot"] = feature_name + "_interpretation.png"
             self._plot_pdp(
                 test_data,
                 feature_name,
@@ -864,24 +856,21 @@ class ReportDeco:
                 ),
             )
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-            interpretation_subsection = env.get_template(
-                self._interpretation_subsection_path
-            ).render(interpretaton_subsection)
+            interpretation_subsection = env.get_template(self._interpretation_subsection_path).render(
+                interpretaton_subsection
+            )
             self._interpretation_top.append(interpretation_subsection)
             print(f"Interpretation info for {feature_name} appended")
         self._interpretation_content["interpretation_top"] = self._interpretation_top
 
     def _generate_interpretation_section(self, test_data):
-        if (
-            test_data is not None
-            and test_data.shape[0] > self.interpretation_params["n_sample"]
-        ):
+        if test_data is not None and test_data.shape[0] > self.interpretation_params["n_sample"]:
             test_data = test_data.sample(n=self.interpretation_params["n_sample"])
         self._generate_interpretation_content(test_data)
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
-        interpretation_section = env.get_template(
-            self._interpretation_section_path
-        ).render(self._interpretation_content)
+        interpretation_section = env.get_template(self._interpretation_section_path).render(
+            self._interpretation_content
+        )
         self._sections["interpretation"] = interpretation_section
 
     def _plot_pdp(self, test_data, feature_name, path):
@@ -897,33 +886,22 @@ class ReportDeco:
         )
         # II. Plot pdp
         sns.set(style="whitegrid", font_scale=1.5)
-        fig, axs = plt.subplots(
-            2, 1, figsize=(16, 12), gridspec_kw={"height_ratios": [3, 1]}
-        )
+        fig, axs = plt.subplots(2, 1, figsize=(16, 12), gridspec_kw={"height_ratios": [3, 1]})
         axs[0].set_title("PDP plot: " + feature_name)
         n_classes = ys[0].shape[1]
         if n_classes == 1:
             data = pd.concat(
-                [
-                    pd.DataFrame({"x": grid[i], "y": ys[i].ravel()})
-                    for i, _ in enumerate(grid)
-                ]
+                [pd.DataFrame({"x": grid[i], "y": ys[i].ravel()}) for i, _ in enumerate(grid)]
             ).reset_index(drop=True)
             if feature_role in ["Numeric", "Datetime"]:
                 g0 = sns.lineplot(data=data, x="x", y="y", ax=axs[0], color="m")
             else:
-                g0 = sns.boxplot(
-                    data=data, x="x", y="y", ax=axs[0], showfliers=False, color="m"
-                )
+                g0 = sns.boxplot(data=data, x="x", y="y", ax=axs[0], showfliers=False, color="m")
         else:
             if self.mapping:
-                classes = sorted(self.mapping, key=self.mapping.get)[
-                    : self.interpretation_params["top_n_classes"]
-                ]
+                classes = sorted(self.mapping, key=self.mapping.get)[: self.interpretation_params["top_n_classes"]]
             else:
-                classes = np.arange(
-                    min(n_classes, self.interpretation_params["top_n_classes"])
-                )
+                classes = np.arange(min(n_classes, self.interpretation_params["top_n_classes"]))
             data = pd.concat(
                 [
                     pd.DataFrame({"x": grid[i], "y": ys[i][:, k], "class": name})
@@ -934,17 +912,13 @@ class ReportDeco:
             if self._model.reader._roles[feature_name].name in ["Numeric", "Datetime"]:
                 g0 = sns.lineplot(data=data, x="x", y="y", hue="class", ax=axs[0])
             else:
-                g0 = sns.boxplot(
-                    data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False
-                )
+                g0 = sns.boxplot(data=data, x="x", y="y", hue="class", ax=axs[0], showfliers=False)
         g0.set(ylabel="y_pred")
         # III. Plot distribution
         counts = np.array(counts) / sum(counts)
         if feature_role == "Numeric":
             g0.set(xlabel="feature value")
-            g1 = sns.histplot(
-                test_data[feature_name], kde=True, color="gray", ax=axs[1]
-            )
+            g1 = sns.histplot(test_data[feature_name], kde=True, color="gray", ax=axs[1])
         elif feature_role == "Category":
             g0.set(xlabel=None)
             axs[0].set_xticklabels(grid, rotation=90)
