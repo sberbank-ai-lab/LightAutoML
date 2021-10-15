@@ -1,12 +1,7 @@
-import pandas as pd
 import pytest
 
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
-
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
-from lightautoml.tasks import Task
-
 
 @pytest.mark.integtest
 def test_default_tabular(sampled_app_train_test, sampled_app_roles, binary_task):
