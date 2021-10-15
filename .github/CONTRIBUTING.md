@@ -117,7 +117,7 @@ poetry run pytest tests
 
 To run tests with different Python versions, run tox
 ```bash
-poetry run tox:
+poetry run tox
 ```
 Also if you develop new functionality, please add your own tests.
 
