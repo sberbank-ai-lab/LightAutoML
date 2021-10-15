@@ -30,7 +30,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = ">=3.6.1, <3.9"
+python = ">=3.6.1"
 
 poetry-core = "^1.0.0"
 numpy = [
@@ -169,13 +169,14 @@ exclude = '''
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py{36, 37, 38}
+envlist = py{36, 37, 38, 39}
 
 [gh-actions]
 python =
     3.6: py36
     3.7: py37
     3.8: py38
+    3.9: py39
 
 [gh-actions:env]
 PLATFORM =
