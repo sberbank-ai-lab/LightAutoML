@@ -1,5 +1,5 @@
-import pytest
 import pandas as pd
+import pytest
 
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -20,5 +20,7 @@ def test_default_tabular():
     te_pred = automl.predict(test_data)
 
     # calculate scores
-    print(f"Score for out-of-fold predictions: {roc_auc_score(train_data['TARGET'].values, oof_predictions.data[:, 0])}")
+    print(
+        f"Score for out-of-fold predictions: {roc_auc_score(train_data['TARGET'].values, oof_predictions.data[:, 0])}"
+    )
     print(f"Score for hold-out: {roc_auc_score(test_data['TARGET'].values, te_pred.data[:, 0])}")
