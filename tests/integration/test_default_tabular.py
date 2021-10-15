@@ -19,7 +19,5 @@ def test_default_tabular(sampled_app_train_test, sampled_app_roles, binary_task)
     te_pred = automl.predict(test)
 
     # calculate scores
-    print(
-        f"Score for out-of-fold predictions: {roc_auc_score(train['TARGET'].values, oof_predictions.data[:, 0])}"
-    )
+    print(f"Score for out-of-fold predictions: {roc_auc_score(train['TARGET'].values, oof_predictions.data[:, 0])}")
     print(f"Score for hold-out: {roc_auc_score(test['TARGET'].values, te_pred.data[:, 0])}")
