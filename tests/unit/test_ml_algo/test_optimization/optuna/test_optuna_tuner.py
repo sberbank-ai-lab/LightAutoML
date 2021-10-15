@@ -2,14 +2,16 @@ from unittest import mock
 
 import pytest
 
-from lightautoml.dataset.np_pd_dataset import PandasDataset
-from lightautoml.dataset.utils import roles_parser
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.tuning.base import Distribution
 from lightautoml.ml_algo.tuning.base import SearchSpace
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
-from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
-from lightautoml.validation.np_iterators import FoldsIterator
+
+
+# from lightautoml.dataset.np_pd_dataset import PandasDataset
+# from lightautoml.dataset.utils import roles_parser
+# from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
+# from lightautoml.validation.np_iterators import FoldsIterator
 
 
 # @pytest.mark.parametrize(
