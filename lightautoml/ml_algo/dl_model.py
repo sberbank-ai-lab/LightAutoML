@@ -291,9 +291,12 @@ class TorchModel(TabularMLAlgo):
         suggested_params["cat_features"] = get_columns_by_role(
             train_valid_iterator.train, "Category"
         )
+
+        valid = train_valid_iterator.get_validation_data()
         for cat_feature in suggested_params["cat_features"]:
             num_unique_categories = (
-                    max(train_valid_iterator.train[:, cat_feature].data) + 2
+                    max(max(train_valid_iterator.train[:, cat_feature].data),
+                       max(valid[:, cat_feature].data)) + 1
             )
             cat_dims.append(num_unique_categories)
         suggested_params["cat_dims"] = cat_dims

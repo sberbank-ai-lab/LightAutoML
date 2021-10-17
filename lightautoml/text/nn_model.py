@@ -204,17 +204,7 @@ class CatEmbedder(nn.Module):
         return self.no_of_embs
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
-        outputs = []
-        for i, emb_layer in enumerate(self.emb_layers):
-            output = torch.where(inp["cat"][:, i] >= self.x[i], torch.tensor(0, device=self.device), inp["cat"][:, i])
-            output = emb_layer(output)
-            outputs.append(output)
-        
-        output = outputs
-        output = torch.cat(
-            output,
-            dim=1,
-        )
+        output = torch.cat([emb_layer(inp['cat'][:, i]) for i, emb_layer in enumerate(self.emb_layers)], dim=1)
         output = self.emb_dropout_layer(output)
         return output
 
