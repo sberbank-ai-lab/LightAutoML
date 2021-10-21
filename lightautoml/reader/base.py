@@ -501,7 +501,7 @@ class PandasToPandasReader(Reader):
             _ = t.dt.tz_localize("UTC")
             return dt_role
         except TypeError:
-            # The exception is raised when TimeSeries is tz-aware and tz is not None.
+            # The exception is raised when TimeSeries is tz-aware and tz is not None
             return dt_role
         except:
             return CategoryRole(object)
