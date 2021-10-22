@@ -56,15 +56,19 @@ class DenseLightBlock(nn.Module):
 
 class DenseLightModel(nn.Module):
     def __init__(self, n_in, n_out=1, hidden_size=(512, 750,), drop_rate=(0.1, 0.1,),
-                 act_fun=nn.ReLU, noise_std=0.05, bias=None,
+                 act_fun=nn.ReLU, noise_std=0.05, bias=None, num_init_features=None,
                  use_bn=True, use_noise=True, use_dropout=True, use_act=True,
                  concat_input=True, **kwargs):
         super(DenseLightModel, self).__init__()
         assert len(hidden_size) == len(drop_rate), "Wrong number hidden_sizes/drop_rates. Must be equal."
 
         self.concat_input = concat_input
-        self.features = nn.Sequential(OrderedDict([]))
-        num_features = n_in
+        num_features = n_in if num_init_features is None else num_init_features
+        
+        self.features = nn.Sequential(OrderedDict([
+            ("dense0", nn.Linear(n_in, num_features)),
+        ]))
+        
         for i, hid_size in enumerate(hidden_size):
             block = DenseLightBlock(
                 n_in=num_features,
@@ -96,7 +100,7 @@ class DenseLightModel(nn.Module):
     def forward(self, x):
         input = x.detach().clone()
         for name, layer in self.features.named_children():
-            if name != "denseblock1" and self.concat_input:
+            if name != "denseblock1" and name != "dense0" and self.concat_input:
                 x = torch.cat([x, input], 1)
             x = layer(x)
 
@@ -131,27 +135,25 @@ def bn_function_factory(features):
 
 
 class DenseLayer(nn.Module):
-    def __init__(self, n_in, growth_rate=12, bn_size=32, drop_rate=0.1, act_fun=nn.ReLU,
+    def __init__(self, n_in, growth_size=256, bn_factor=2, drop_rate=0.1, act_fun=nn.ReLU,
                  use_bn=True, use_dropout=True, efficient=False, **kwargs):
         super(DenseLayer, self).__init__()
-
+        
         self.features1 = nn.Sequential(OrderedDict([]))
         self.features2 = nn.Sequential(OrderedDict([]))
 
         if use_bn:
             self.features1.add_module("norm1", nn.BatchNorm1d(n_in))
-            self.features1.add_module("act1", act_fun())
-            self.features1.add_module("dense1", nn.Linear(n_in, bn_size * growth_rate))
 
-            self.features2.add_module("norm2", nn.BatchNorm1d(bn_size * growth_rate))
-            self.features2.add_module("act2", act_fun())
-            self.features2.add_module("dense2", nn.Linear(bn_size * growth_rate, growth_rate))
-        else:
-            self.features1.add_module("dense1", nn.Linear(n_in, bn_size * growth_rate))
-            self.features1.add_module("act1", act_fun())
+        self.features1.add_module("dense1", nn.Linear(n_in, int(bn_factor * n_in)))
+        self.features1.add_module("act1", act_fun())
 
-            self.features2.add_module("dense2", nn.Linear(bn_size * growth_rate, growth_rate))
-            self.features2.add_module("act2", act_fun())
+        if use_bn:
+            self.features2.add_module("norm2", nn.BatchNorm1d(int(bn_factor * n_in)))
+
+        self.features2.add_module("dense2", nn.Linear(int(bn_factor * n_in), growth_size))
+        self.features2.add_module("act2", act_fun())
+
 
         self.drop_rate = drop_rate
         self.efficient = efficient
@@ -163,6 +165,7 @@ class DenseLayer(nn.Module):
             bottleneck_output = cp.checkpoint(bn_function, *prev_features)
         else:
             bottleneck_output = bn_function(*prev_features)
+        
         new_features = self.features2(bottleneck_output)
 
         if self.use_dropout:
@@ -175,22 +178,20 @@ class Transition(nn.Sequential):
         super(Transition, self).__init__()
         if use_bn:
             self.add_module("norm", nn.BatchNorm1d(n_in))
-            self.add_module("act", act_fun())
-            self.add_module("dense", nn.Linear(n_in, n_out))
-        else:
-            self.add_module("dense", nn.Linear(n_in, n_out))
-            self.add_module("act", act_fun())
+        
+        self.add_module("dense", nn.Linear(n_in, n_out))
+        self.add_module("act", act_fun())
 
 
 class DenseBlock(nn.Module):
-    def __init__(self, num_layers, n_in, bn_size, growth_rate, drop_rate=0.1, act_fun=nn.ReLU,
+    def __init__(self, num_layers, n_in, bn_factor, growth_size, drop_rate=0.1, act_fun=nn.ReLU,
                  use_bn=True, use_dropout=True, efficient=False, **kwargs):
         super(DenseBlock, self).__init__()
         for i in range(num_layers):
             layer = DenseLayer(
-                n_in + i * growth_rate,
-                growth_rate=growth_rate,
-                bn_size=bn_size,
+                n_in + i * growth_size,
+                growth_size=growth_size,
+                bn_factor=bn_factor,
                 drop_rate=drop_rate,
                 act_fun=act_fun,
                 efficient=efficient,
@@ -208,27 +209,24 @@ class DenseBlock(nn.Module):
 
 
 class DenseModel(nn.Module):
-    def __init__(self, n_in, n_out=1, block_config=(2, 2), drop_rate=(0.1, 0.1), num_init_features=512,
-                 compression=0.5, growth_rate=16, bn_size=4, bias=None, act_fun=nn.ReLU,
+    def __init__(self, n_in, n_out=1, block_config=(2, 2), drop_rate=(0.1, 0.1), num_init_features=None,
+                 compression=0.5, growth_size=256, bn_factor=2, bias=None, act_fun=nn.ReLU,
                  use_bn=True, use_dropout=True, efficient=False, **kwargs):
 
         super(DenseModel, self).__init__()
         assert 0 < compression <= 1, "compression of densenet should be between 0 and 1"
-
+        
+        num_features = n_in if num_init_features is None else num_init_features
         self.features = nn.Sequential(OrderedDict([
-            ("dense0", nn.Linear(n_in, num_init_features)),
+            ("dense0", nn.Linear(n_in, num_features)),
         ]))
-        if use_bn:
-            self.features.add_module("norm0", nn.BatchNorm1d(num_init_features))
-        self.features.add_module("act0", act_fun())
 
-        num_features = num_init_features
         for i, num_layers in enumerate(block_config):
             block = DenseBlock(
                 num_layers=num_layers,
                 n_in=num_features,
-                bn_size=bn_size,
-                growth_rate=growth_rate,
+                bn_factor=bn_factor,
+                growth_size=growth_size,
                 drop_rate=drop_rate[i] if use_dropout else 0,
                 act_fun=act_fun,
                 efficient=efficient,
@@ -236,7 +234,7 @@ class DenseModel(nn.Module):
                 use_dropout=use_dropout
             )
             self.features.add_module("denseblock%d" % (i + 1), block)
-            num_features = num_features + num_layers * growth_rate
+            num_features = num_features + num_layers * growth_size
             if i != len(block_config) - 1:
                 trans = Transition(n_in=num_features,
                                    n_out=max(10, int(num_features * compression)),
@@ -249,6 +247,7 @@ class DenseModel(nn.Module):
             self.features.add_module("norm_final", nn.BatchNorm1d(num_features))
 
         self.fc = nn.Linear(num_features, n_out)
+        
         if bias is not None:
             print("init bias!")
             bias = torch.Tensor(bias)
@@ -256,71 +255,57 @@ class DenseModel(nn.Module):
             self.fc.weight.data = torch.zeros(n_out, num_features, requires_grad=True)
 
     def forward(self, x):
-        features = self.features(x)
-        out = F.relu(features, inplace=True)
-        out = torch.flatten(out, 1)
-        out = self.fc(out)
-        out = out.view(out.shape[0], -1)
-        return out
+        x = self.features(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = x.view(x.shape[0], -1)
+        return x
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, n_in, hidden_factor, n_out, drop_rate=(0.1, 0.1), noise_std=0.05, act_fun=nn.ReLU,
+    def __init__(self, n_in, hid_factor, n_out, drop_rate=(0.1, 0.1), noise_std=0.05, act_fun=nn.ReLU,
                  use_bn=True, use_noise=True, use_dropout=True, **kwargs):
         super(ResNetBlock, self).__init__()
-
-        self.features1 = nn.Sequential(OrderedDict([]))
-        self.features2 = nn.Sequential(OrderedDict([]))
-
+        self.features = nn.Sequential(OrderedDict([]))
+        
         if use_bn:
-            self.features1.add_module("norm", nn.BatchNorm1d(n_in))
-            self.features1.add_module("act1", act_fun())
-            if use_dropout:
-                self.features1.add_module("drop1", nn.Dropout(p=drop_rate[0]))
-            if use_noise:
-                self.features1.add_module("noise", GaussianNoise(noise_std, torch.device("cuda:0")))
+            self.features.add_module("norm", nn.BatchNorm1d(n_in))
+        if use_noise:
+            self.features.add_module("noise", GaussianNoise(noise_std, torch.device("cuda:0")))
 
-            self.features2.add_module("dense1", nn.Linear(n_in, int(n_in * hidden_factor)))
-            self.features2.add_module("act2", act_fun())
-            if use_dropout:
-                self.features2.add_module("drop2", nn.Dropout(p=drop_rate[1]))
-            self.features2.add_module("dense2", nn.Linear(int(n_in * hidden_factor), n_out))
-        else:
-            self.features1.add_module("dense1", nn.Linear(n_in, int(n_in * hidden_factor)))
-            self.features1.add_module("act1", act_fun())
-            if use_dropout:
-                self.features1.add_module("drop1", nn.Dropout(p=drop_rate[0]))
-            if use_noise:
-                self.features1.add_module("noise", GaussianNoise(noise_std, torch.device("cuda:0")))
+        self.features.add_module("dense1", nn.Linear(n_in, int(hid_factor * n_in)))
+        self.features.add_module("act1", act_fun())
+                                 
+        if use_dropout:
+            self.features.add_module("drop1", nn.Dropout(p=drop_rate[0]))
+        
+        self.features.add_module("dense2", nn.Linear(int(hid_factor * n_in), n_out))
+                                 
+        if use_dropout:
+            self.features.add_module("drop2", nn.Dropout(p=drop_rate[1]))
 
-            self.features2.add_module("dense2", nn.Linear(int(n_in * hidden_factor), n_out))
-            self.features2.add_module("act2", act_fun())
-            if use_dropout:
-                self.features2.add_module("drop2", nn.Dropout(p=drop_rate[1]))
 
     def forward(self, x):
-        x = self.features1(x)
-        x = self.features2(x)
+        x = self.features(x)
         return x
 
 
 class ResNetModel(nn.Module):
-    def __init__(self, n_in, n_out=1, hidden_factor=(5, 5, 5), drop_rate=((0.1, 0.1), (0.1, 0.1), (0.1, 0.1)),
-                 bias=None, noise_std=0.05, drop_connect_rate=0.1, act_fun=nn.ReLU, num_init_features=512,
+    """The ResNet model from 
+        https://github.com/yandex-research/rtdl/blob/main/rtdl/modules.py#L410
+    """
+    def __init__(self, n_in, n_out=1, hid_factor=(2, 2), drop_rate=((0.1, 0.1), (0.1, 0.1)),
+                 bias=None, noise_std=0.05, act_fun=nn.ReLU, num_init_features=None,
                  use_bn=True, use_noise=True, use_dropout=True, **kwargs):
         super(ResNetModel, self).__init__()
-
-        self.drop_connect_rate = drop_connect_rate
-        self.use_dropout = use_dropout
-        self.features = nn.Sequential(OrderedDict([
-            ("dense0", nn.Linear(n_in, num_init_features)),
-        ]))
-
-        num_features = num_init_features
-        for i, hid_factor in enumerate(hidden_factor):
+        num_features = n_in if num_init_features is None else num_init_features
+        self.dense0 = nn.Linear(n_in, num_features)
+        self.features1 = nn.Sequential(OrderedDict([]))
+        
+        for i, hd_factor in enumerate(hid_factor):
             block = ResNetBlock(
                 n_in=num_features,
-                hidden_factor=hid_factor,
+                hid_factor=hd_factor,
                 n_out=num_features,
                 drop_rate=drop_rate[i] if use_dropout else 0,
                 noise_std=noise_std,
@@ -329,8 +314,13 @@ class ResNetModel(nn.Module):
                 use_noise=use_noise,
                 use_dropout=use_dropout
             )
-            self.features.add_module("resnetblock%d" % (i + 1), block)
-
+            self.features1.add_module("resnetblock%d" % (i + 1), block)
+        
+        self.features2 = nn.Sequential(OrderedDict([]))
+        if use_bn:
+            self.features2.add_module("norm", nn.BatchNorm1d(num_features))
+        
+        self.features2.add_module("act", act_fun())
         self.fc = nn.Linear(num_features, n_out)
 
         if bias is not None:
@@ -340,42 +330,49 @@ class ResNetModel(nn.Module):
             self.fc.weight.data = torch.zeros(n_out, num_features, requires_grad=True)
 
     def forward(self, x):
+        x = self.dense0(x)
         identity = x
-        for name, layer in self.features.named_children():
+        for name, layer in self.features1.named_children():
             if name != "resnetblock1":
                 x += identity
                 identity = x
             x = layer(x)
-
+        
+        x = self.features2(x)
         logits = self.fc(x)
         return logits.view(logits.shape[0], -1)
 
 
 class SNN(nn.Module):
     def __init__(self, n_in, n_out, hidden_size=512, num_layers=3, drop_rate=0.1,
-                 use_dropout=True, **kwargs):
+                 num_init_features=None, use_dropout=True, **kwargs):
         super().__init__()
-        layers = OrderedDict()
+        num_features = n_in if num_init_features is None else num_init_features
+        
+        layers = OrderedDict([])
+        self.dense0 = nn.Linear(n_in, num_features)
+    
         i = 0
         while i != num_layers:
             if i == 0:
-                layers[f"fc{i}"] = nn.Linear(n_in, hidden_size, bias=False)
+                layers[f"dense{i}"] = nn.Linear(num_features, hidden_size, bias=False)
             else:
-                layers[f"fc{i}"] = nn.Linear(hidden_size, hidden_size, bias=False)
+                layers[f"dense{i}"] = nn.Linear(hidden_size, hidden_size, bias=False)
             layers[f"selu_{i}"] = nn.SELU()
 
             if use_dropout:
                 layers[f"dropout_{i}"] = nn.AlphaDropout(p=drop_rate)
             i += 1
-
-        layers[f"fc_{i}"] = nn.Linear(hidden_size, n_out, bias=True)
+        
+        layers[f"dense_{i}"] = nn.Linear(hidden_size, n_out, bias=True)
         self.network = nn.Sequential(layers)
         self.reset_parameters()
 
     def forward(self, x):
-        out = self.network(x)
-        out = out.view(out.shape[0], -1)
-        return out
+        x = self.dense0(x)
+        x = self.network(x)
+        x = x.view(x.shape[0], -1)
+        return x
 
     def reset_parameters(self):
         for layer in self.network:
@@ -386,3 +383,4 @@ class SNN(nn.Module):
                 fan_in, _ = nn.init._calculate_fan_in_and_fan_out(layer.weight)
                 bound = 1 / np.sqrt(fan_in)
                 nn.init.uniform_(layer.bias, -bound, bound)
+
