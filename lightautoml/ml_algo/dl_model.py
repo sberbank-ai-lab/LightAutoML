@@ -93,7 +93,7 @@ class TorchModel(TabularMLAlgo):
         'max_length': 256,
         'opt': torch.optim.Adam,
         'opt_params': {'lr': 1e-5},
-        'scheduler_params': {'patience': 5, 'factor': 0.5, 'verbose': True},
+        'scheduler_params': {'patience': 5, 'factor': 0.5, 'min_lr': 1e-6, 'verbose': True},
         'is_snap': False,
         'snap_params': {'k': 1, 'early_stopping': True, 'patience': 1, 'swa': False},
         'init_bias': True,
@@ -119,13 +119,13 @@ class TorchModel(TabularMLAlgo):
         'verbose': 1,
 
         'num_layers': 1,
-        'hidden_size_0': 512,
+        'hidden_size_base': 512,
         'drop_rate_base': 0.2,
 
         'num_blocks': 1,
-        'block_size_0': 4,
+        'block_size_base': 4,
 
-        'hidden_factor_0': 2,
+        'hid_factor_base': 2,
         'drop_rate_base_1': 0.2,
         'drop_rate_base_2': 0.4,
 
@@ -291,7 +291,8 @@ class TorchModel(TabularMLAlgo):
         suggested_params["cat_features"] = get_columns_by_role(
             train_valid_iterator.train, "Category"
         )
-
+        
+        # Cat_features are needed to be preprocessed with LE, where 0 = not known category
         valid = train_valid_iterator.get_validation_data()
         for cat_feature in suggested_params["cat_features"]:
             num_unique_categories = (
@@ -711,6 +712,7 @@ class TorchModel(TabularMLAlgo):
             new_params["scheduler_params"] = {
                 "patience": new_params["scheduler_params"]["patience"],
                 "factor": new_params["scheduler_params"]["factor"],
+                'min_lr': 1e-6,
             }
 
         elif params["sch"] == CosineAnnealingLR:
@@ -718,7 +720,9 @@ class TorchModel(TabularMLAlgo):
                 new_params["scheduler_params"]["T_max"] = params["T_max"]
             if "eta_min" in params:
                 new_params["scheduler_params"]["eta_min"] = params["eta_min"]
-
+            elif params.get("eta_min_bin", -1) == 0:
+                new_params["scheduler_params"]["eta_min"] = 0 
+            
             new_params["scheduler_params"] = {
                 "T_max": new_params["scheduler_params"]["T_max"],
                 "eta_min": new_params["scheduler_params"]["eta_min"],
@@ -732,7 +736,7 @@ class TorchModel(TabularMLAlgo):
             drop_rate = ()
 
             for layer in range(int(params["num_layers"])):
-                hidden_name = "hidden_size_" + str(layer)
+                hidden_name = "hidden_size_base"
                 drop_name = "drop_rate_base"
 
                 hidden_size = hidden_size + (params[hidden_name],)
@@ -748,7 +752,7 @@ class TorchModel(TabularMLAlgo):
             drop_rate = ()
 
             for layer in range(int(params["num_blocks"])):
-                block_name = "block_size_" + str(layer)
+                block_name = "block_size_base"
                 drop_name = "drop_rate_base"
 
                 block_config = block_config + (params[block_name],)
@@ -764,14 +768,14 @@ class TorchModel(TabularMLAlgo):
             drop_rate = ()
 
             for layer in range(int(params['num_layers'])):
-                hidden_name = 'hidden_factor_' + str(layer)
+                hidden_name = "hid_factor_base"
                 drop_name = "drop_rate_base"
 
                 hidden_factor = hidden_factor + (params[hidden_name],)
                 if self.params["use_dropout"]:
                     drop_rate = drop_rate + ((params[drop_name + '_1'], params[drop_name + '_2']),)
 
-            new_params['hidden_factor'] = hidden_factor
+            new_params['hid_factor'] = hidden_factor
             if self.params["use_dropout"]:
                 new_params["drop_rate"] = drop_rate
 
