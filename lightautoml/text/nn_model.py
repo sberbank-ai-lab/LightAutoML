@@ -182,6 +182,15 @@ class CatEmbedder(nn.Module):
 
         """
         super(CatEmbedder, self).__init__()
+        if len(cat_dims) > 100:
+            max_emb_size = 128
+            
+        if len(cat_dims) > 500:
+            max_emb_size = 64
+            
+        if len(cat_dims) > 1000:
+            max_emb_size = 32
+        
         emb_dims = [
             (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))
             for x in cat_dims
@@ -302,15 +311,28 @@ class TorchUniversalModel(nn.Module):
         self.torch_model = torch_model(**{**kwargs,
                                           **{'n_in': n_in, 'n_out': self.n_out,
                                              'loss': loss, 'task': task}})
-
-        if (self.task.name == "binary") or (self.task.name == "multilabel"):
-            self.torch_model = nn.Sequential(self.torch_model, Clump(), nn.Sigmoid())
-        elif self.task.name == "multiclass":
-#             self.torch_model = nn.Sequential(self.torch_model, Clump(-50, 50), nn.Softmax(dim=1))
-            self.torch_model = nn.Sequential(self.torch_model, Clump(-40, 40), nn.Softmax(dim=1))
+        
+        self.сlump = Clump()
+        self.sig = nn.Sigmoid()
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
-        x = self.predict(inp)
+        outputs = []
+        if self.cont_embedder is not None:
+            outputs.append(self.cont_embedder(inp))
+        
+        if self.cat_embedder is not None:
+            outputs.append(self.cat_embedder(inp))
+        
+        if self.text_embedder is not None:
+            outputs.append(self.text_embedder(inp))
+        
+        if len(outputs) > 1:
+            output = torch.cat(outputs, dim=1)
+        else:
+            output = outputs[0]
+        
+        x = self.torch_model(output)
 
         if self.custom_loss:
             loss = self.loss(
@@ -339,4 +361,10 @@ class TorchUniversalModel(nn.Module):
             output = outputs[0]
 
         logits = self.torch_model(output)
-        return logits
+        
+        if (self.task.name == "binary") or (self.task.name == "multilabel"):
+            out = self.sig(self.сlump(logits))
+        elif self.task.name == "multiclass":
+            out = self.softmax(self.clump(logits))
+        
+        return out
