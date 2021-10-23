@@ -11,7 +11,6 @@ from typing import Tuple
 from typing import Union
 
 import numpy as np
-import optuna
 import pandas as pd
 
 from pandas import Series
@@ -99,9 +98,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, ImportanceEstimator):
 
         return super().fit_predict(train_valid_iterator)
 
-    def fit_predict_single_fold(
-        self, train: TabularDataset, valid: TabularDataset
-    ) -> Tuple[Any, np.ndarray]:
+    def fit_predict_single_fold(self, train: TabularDataset, valid: TabularDataset) -> Tuple[Any, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -136,11 +133,7 @@ class NestedTabularMLAlgo(TabularMLAlgo, ImportanceEstimator):
         train_valid = create_validation_iterator(train, n_folds=self.n_folds)
 
         model = deepcopy(self._ml_algo)
-        model.set_timer(
-            PipelineTimer(timeout=self._per_task_timer, overhead=0)
-            .start()
-            .get_task_timer()
-        )
+        model.set_timer(PipelineTimer(timeout=self._per_task_timer, overhead=0).start().get_task_timer())
         logger.debug(self._ml_algo.params)
         tuner = self._params_tuner
         if self._refit_tuner:
@@ -165,15 +158,11 @@ class NestedTabularMLAlgo(TabularMLAlgo, ImportanceEstimator):
 
         return pred
 
-    def _get_default_search_spaces(
-        self, suggested_params: dict, estimated_n_trials: int
-    ) -> dict:
-        return self._ml_algo._get_default_search_spaces(suggested_params, estimated_n_trials)
+    def _get_search_spaces(self, suggested_params: dict, estimated_n_trials: int) -> dict:
+        return self._ml_algo._get_search_spaces(suggested_params, estimated_n_trials)
 
     def get_features_score(self) -> Series:
-        scores = pd.concat([x.get_features_score() for x in self.models], axis=1).mean(
-            axis=1
-        )
+        scores = pd.concat([x.get_features_score() for x in self.models], axis=1).mean(axis=1)
 
         return scores
 
@@ -242,16 +231,10 @@ class NestedTabularMLPipeline(MLPipeline):
                     mod, tuner = mt_pair, DefaultTuner()
 
                 if inner_tune:
-                    new_ml_algos.append(
-                        NestedTabularMLAlgo(mod, tuner, refit_tuner, cv, n_folds)
-                    )
+                    new_ml_algos.append(NestedTabularMLAlgo(mod, tuner, refit_tuner, cv, n_folds))
                 else:
-                    new_ml_algos.append(
-                        (NestedTabularMLAlgo(mod, None, True, cv, n_folds), tuner)
-                    )
+                    new_ml_algos.append((NestedTabularMLAlgo(mod, None, True, cv, n_folds), tuner))
 
             ml_algos = new_ml_algos
 
-        super().__init__(
-            ml_algos, force_calc, pre_selection, features_pipeline, post_selection
-        )
+        super().__init__(ml_algos, force_calc, pre_selection, features_pipeline, post_selection)

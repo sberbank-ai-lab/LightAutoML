@@ -1,7 +1,6 @@
 """Timer."""
 
 import logging
-import warnings
 
 from time import time
 from typing import List
@@ -29,19 +28,27 @@ class Timer:
 
     @property
     def time_left(self) -> float:
-        return self.timeout - self.time_spent
+        if self.time_spent is not None:
+            return self.timeout - self.time_spent
+        return None
 
     @property
     def time_spent(self) -> float:
-        return time() - self.start_time
+        if self.start_time is not None:
+            return time() - self.start_time
+        return None
 
     @property
     def perc_left(self) -> float:
-        return self.time_left / self.timeout
+        if self.time_left is not None:
+            return self.time_left / self.timeout
+        return None
 
     @property
     def perc_spent(self) -> float:
-        return self.time_spent / self.timeout
+        if self.time_spent is not None:
+            return self.time_spent / self.timeout
+        return None
 
     @property
     def timeout(self) -> float:
@@ -55,7 +62,9 @@ class Timer:
             return self.time_left < 0
 
         if self._mode == 2:
-            return (self.time_left - self._overhead) < 0
+            if self.time_left:
+                return (self.time_left - self._overhead) < 0
+            return None
 
     def start(self):
         self.start_time = time()
@@ -123,12 +132,8 @@ class PipelineTimer(Timer):
 
         return (self.time_left - self._overhead) * (score / self._task_scores)
 
-    def get_task_timer(
-        self, key: Optional[str] = None, score: float = 1.0
-    ) -> "TaskTimer":
-        return TaskTimer(
-            self, key, score, self._rate_overhead, self._mode, self.tuning_rate
-        )
+    def get_task_timer(self, key: Optional[str] = None, score: float = 1.0) -> "TaskTimer":
+        return TaskTimer(self, key, score, self._rate_overhead, self._mode, self.tuning_rate)
 
 
 class TaskTimer(Timer):
@@ -256,11 +261,7 @@ class TaskTimer(Timer):
             if len(total_run_info) == 0:
                 return None
 
-            single_run_est = (
-                np.array(total_run_info).sum()
-                / np.array(total_run_scores).sum()
-                * self.score
-            )
+            single_run_est = np.array(total_run_info).sum() / np.array(total_run_scores).sum() * self.score
             return single_run_est * n_folds
 
         # case - algo runs at least ones
@@ -281,7 +282,10 @@ class TaskTimer(Timer):
         """
         folds_est = self.estimate_folds_time(n_folds)
         if folds_est is None:
-            return self.default_tuner_rate * self.time_left
+            if self.time_left:
+                return self.default_tuner_rate * self.time_left
+            else:
+                return None
         return self.time_left - folds_est
 
     def time_limit_exceeded(self) -> bool:
@@ -317,10 +321,7 @@ class TaskTimer(Timer):
 
         """
         new_tasks_score = self.score / n_parts
-        timers = [
-            self.pipe_timer.get_task_timer(self.key, new_tasks_score)
-            for _ in range(n_parts)
-        ]
+        timers = [self.pipe_timer.get_task_timer(self.key, new_tasks_score) for _ in range(n_parts)]
         self.pipe_timer.close_task(self.score)
 
         return timers

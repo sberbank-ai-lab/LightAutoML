@@ -74,9 +74,7 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
               on multiclass task if number of classes is high.
 
         """
-        assert (
-            max_bin_count is None or max_bin_count > 1
-        ), "Max bin count should be >= 2 or None"
+        assert max_bin_count is None or max_bin_count > 1, "Max bin count should be >= 2 or None"
 
         super().__init__(
             multiclass_te=False,
@@ -115,9 +113,9 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         dense_list.append(self.get_freq_encoding(train))
 
         # 2 - check 'auto' type (int is the same - no label encoded numbers in linear models)
-        auto = get_columns_by_role(
-            train, "Category", encoding_type="auto"
-        ) + get_columns_by_role(train, "Category", encoding_type="int")
+        auto = get_columns_by_role(train, "Category", encoding_type="auto") + get_columns_by_role(
+            train, "Category", encoding_type="int"
+        )
 
         # if self.output_categories or target_encoder is None:
         if target_encoder is None:
@@ -187,9 +185,7 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
                     UnionTransformer(dense_list),
                     UnionTransformer(
                         [
-                            SequentialTransformer(
-                                [FillInf(), FillnaMedian(), StandardScaler()]
-                            ),
+                            SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
                             NaNFlags(),
                         ]
                     ),

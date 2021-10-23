@@ -31,6 +31,7 @@ class TextExplanation:
         prediction: np.ndarray,
         class_names: Optional[List[Any]] = None,
         random_state=None,
+        draw_prediction: bool = False,
     ):
         """
 
@@ -47,6 +48,7 @@ class TextExplanation:
         self.task_name = task_name
         self.prediction = prediction
         self.class_names = class_names
+        self.draw_prediction = draw_prediction
 
         if task_name == "reg":
             self.default_label = 0
@@ -113,9 +115,7 @@ class TextExplanation:
             for k, v in fw.items():
                 weights[self.idx_str.pos[k]] = v
 
-            ans = [
-                (k, float(w) * norm_const) for k, w in zip(self.idx_str.as_np_, weights)
-            ]
+            ans = [(k, float(w) * norm_const) for k, w in zip(self.idx_str.as_np_, weights)]
         else:
             ans = [(self.idx_str.word(k), float(v) * norm_const) for k, v in fw.items()]
 
@@ -136,10 +136,7 @@ class TextExplanation:
 
         """
         label = self._label(label)
-        return {
-            f"{k}_{i}": v
-            for i, (k, v) in enumerate(self.instance[label]["feature_weights"])
-        }
+        return {f"{k}_{i}": v for i, (k, v) in enumerate(self.instance[label]["feature_weights"])}
 
     def as_html(self, label: Optional[int] = None) -> str:
         """Generates inline HTML with colors.
@@ -158,6 +155,9 @@ class TextExplanation:
         label = self._label(label)
         weight_string = self.as_features(label, add_not_rel=True, normalize=False)
         prediction = self.prediction[label]
+        if not self.draw_prediction:
+            prediction = None
+
         if self.task_name == "reg":
             return draw_html(weight_string, self.task_name, prediction=prediction)
         elif self.task_name == "binary":
@@ -246,6 +246,7 @@ class LimeTextExplainer:
         model_regressor: Any = None,
         distance_metric: str = "cosine",
         random_state: Union[int, np.random.RandomState] = 0,
+        draw_prediction: bool = False,
     ):
         """
 
@@ -282,9 +283,7 @@ class LimeTextExplainer:
         self.random_state = check_random_state(random_state)
 
         if model_regressor is None:
-            model_regressor = Ridge(
-                alpha=1, fit_intercept=True, random_state=self.random_state
-            )
+            model_regressor = Ridge(alpha=1, fit_intercept=True, random_state=self.random_state)
 
         self.distil_model = model_regressor
 
@@ -302,15 +301,16 @@ class LimeTextExplainer:
         self.distance_metric = distance_metric
 
         class_names = automl.reader.class_mapping
-        if class_names == None:
+        if class_names is None:
             if self.task_name == "reg":
                 class_names = [0]
             else:
                 class_names = np.arange(automl.reader._n_classes)
         else:
-            class_names = list(class_mapping.values())
+            class_names = list(class_names.values())
 
         self.class_names = class_names
+        self.draw_prediction = draw_prediction
 
     def explain_instance(
         self,
@@ -344,9 +344,7 @@ class LimeTextExplainer:
         data, y, dst, expl = self._get_perturb_dataset(data, perturb_column, n_samples)
 
         for label in labels:
-            expl.instance[label] = self._explain_dataset(
-                data, y, dst, label, n_features
-            )
+            expl.instance[label] = self._explain_dataset(data, y, dst, label, n_features)
 
         return expl
 
@@ -372,13 +370,9 @@ class LimeTextExplainer:
         if self.task_name == "binary":
             pred = np.concatenate([1 - pred, pred], axis=1)
 
-        distance = pairwise_distances(
-            dataset, dataset[0].reshape(1, -1), metric=self.distance_metric
-        ).ravel()
+        distance = pairwise_distances(dataset, dataset[0].reshape(1, -1), metric=self.distance_metric).ravel()
 
-        expl = TextExplanation(
-            idx_str, self.task_name, pred[0], self.class_names, self.random_state
-        )
+        expl = TextExplanation(idx_str, self.task_name, pred[0], self.class_names, self.random_state)
 
         return dataset, pred, distance * 100, expl
 
@@ -392,17 +386,13 @@ class LimeTextExplainer:
     ) -> Dict[str, Union[float, np.array]]:
         weights = self.kernel_fn(dst)
         y = y[:, label]
-        features = self._feature_selection(
-            data, y, weights, n_features, mode=self.feature_selection
-        )
+        features = self._feature_selection(data, y, weights, n_features, mode=self.feature_selection)
         model = self.distil_model
         model.fit(data[:, features], y, sample_weight=weights)
         score = model.score(data[:, features], y, sample_weight=weights)
 
         pred = model.predict(data[0, features].reshape(1, -1))
-        feature_weights = list(
-            sorted(zip(features, model.coef_), key=lambda x: np.abs(x[1]), reverse=True)
-        )
+        feature_weights = list(sorted(zip(features, model.coef_), key=lambda x: np.abs(x[1]), reverse=True))
         res = {
             "bias": model.intercept_,
             "feature_weights": feature_weights,
@@ -423,15 +413,11 @@ class LimeTextExplainer:
         if mode == "none":
             return np.arange(data.shape[1])
         if mode == "lasso":
-            weighted_data = (
-                data - np.average(data, axis=0, weights=weights)
-            ) * np.sqrt(weights[:, np.newaxis])
+            weighted_data = (data - np.average(data, axis=0, weights=weights)) * np.sqrt(weights[:, np.newaxis])
             weighted_y = (y - np.average(y, weights=weights)) * np.sqrt(weights)
 
             features = np.arange(weighted_data.shape[1])
-            _, _, coefs = lars_path(
-                weighted_data, weighted_y, method="lasso", verbose=False
-            )
+            _, _, coefs = lars_path(weighted_data, weighted_y, method="lasso", verbose=False)
 
             for i in range(len(coefs.T) - 1, 0, -1):
                 features = coefs.T[i].nonzero()[0]

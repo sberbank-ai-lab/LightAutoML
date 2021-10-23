@@ -1,5 +1,6 @@
 """Neural Net modules for differen data types."""
 
+
 from typing import Callable
 from typing import Dict
 from typing import Optional
@@ -9,7 +10,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from transformers import AutoModel
+
+try:
+    from transformers import AutoModel
+except:
+    import warnings
+
+    warnings.warn("'transformers' - package isn't installed")
 
 from ..tasks.base import Task
 from .dl_transformers import pooling_by_name
@@ -50,19 +57,13 @@ class UniversalDataset:
 
     def __getitem__(self, index: int) -> Dict[str, np.ndarray]:
         res = {"label": self.y[index]}
-        res.update(
-            {key: value[index] for key, value in self.data.items() if key != "text"}
-        )
+        res.update({key: value[index] for key, value in self.data.items() if key != "text"})
         if (self.tokenizer is not None) and ("text" in self.data):
             sent = self.data["text"][index, 0]  # only one column
             _split = sent.split("[SEP]")
             sent = _split if len(_split) == 2 else (sent,)
             data = self.tokenizer.encode_plus(
-                *sent,
-                add_special_tokens=True,
-                max_length=self.max_length,
-                padding="max_length",
-                truncation=True
+                *sent, add_special_tokens=True, max_length=self.max_length, padding="max_length", truncation=True
             )
 
             res.update({i: np.array(data[i]) for i in data.keys()})
@@ -121,11 +122,7 @@ class TextBert(nn.Module):
         """
         super(TextBert, self).__init__()
         if pooling not in self._poolers:
-            raise ValueError(
-                "pooling - {} - not in the list of available types {}".format(
-                    pooling, self._poolers
-                )
-            )
+            raise ValueError("pooling - {} - not in the list of available types {}".format(pooling, self._poolers))
 
         self.transformer = AutoModel.from_pretrained(model_name)
         self.n_out = self.transformer.config.hidden_size
@@ -152,9 +149,7 @@ class TextBert(nn.Module):
         )
 
         # pool the outputs into a vector
-        encoded_layers = self.pooling(
-            encoded_layers, inp["attention_mask"].unsqueeze(-1).bool()
-        )
+        encoded_layers = self.pooling(encoded_layers, inp["attention_mask"].unsqueeze(-1).bool())
         mean_last_hidden_state = self.activation(encoded_layers)
         mean_last_hidden_state = self.dropout(mean_last_hidden_state)
         return mean_last_hidden_state
@@ -184,13 +179,13 @@ class CatEmbedder(nn.Module):
         super(CatEmbedder, self).__init__()
         if len(cat_dims) > 100:
             max_emb_size = 128
-            
+
         if len(cat_dims) > 500:
             max_emb_size = 64
-            
+
         if len(cat_dims) > 1000:
             max_emb_size = 32
-        
+
         emb_dims = [
             (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))
             for x in cat_dims
@@ -201,7 +196,6 @@ class CatEmbedder(nn.Module):
         # Embedding layers
         self.emb_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in emb_dims])
         self.emb_dropout_layer = nn.Dropout(emb_dropout)
-        self.device = device
 
     def get_out_shape(self) -> int:
         """Output shape.
@@ -213,7 +207,10 @@ class CatEmbedder(nn.Module):
         return self.no_of_embs
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
-        output = torch.cat([emb_layer(inp['cat'][:, i]) for i, emb_layer in enumerate(self.emb_layers)], dim=1)
+        output = torch.cat(
+            [emb_layer(inp["cat"][:, i]) for i, emb_layer in enumerate(self.emb_layers)],
+            dim=1,
+        )
         output = self.emb_dropout_layer(output)
         return output
 
@@ -289,7 +286,6 @@ class TorchUniversalModel(nn.Module):
         super(TorchUniversalModel, self).__init__()
         self.n_out = n_out
         self.loss = loss
-        self.custom_loss = custom_loss
         self.task = task
 
         self.cont_embedder = None
@@ -311,7 +307,7 @@ class TorchUniversalModel(nn.Module):
         self.torch_model = torch_model(**{**kwargs,
                                           **{'n_in': n_in, 'n_out': self.n_out,
                                              'loss': loss, 'task': task}})
-        
+
         self.сlump = Clump()
         self.sig = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
@@ -320,18 +316,18 @@ class TorchUniversalModel(nn.Module):
         outputs = []
         if self.cont_embedder is not None:
             outputs.append(self.cont_embedder(inp))
-        
+
         if self.cat_embedder is not None:
             outputs.append(self.cat_embedder(inp))
-        
+
         if self.text_embedder is not None:
             outputs.append(self.text_embedder(inp))
-        
+
         if len(outputs) > 1:
             output = torch.cat(outputs, dim=1)
         else:
             output = outputs[0]
-        
+
         x = self.torch_model(output)
 
         if self.custom_loss:
@@ -361,10 +357,10 @@ class TorchUniversalModel(nn.Module):
             output = outputs[0]
 
         logits = self.torch_model(output)
-        
+
         if (self.task.name == "binary") or (self.task.name == "multilabel"):
             out = self.sig(self.сlump(logits))
         elif self.task.name == "multiclass":
             out = self.softmax(self.clump(logits))
-        
+
         return out

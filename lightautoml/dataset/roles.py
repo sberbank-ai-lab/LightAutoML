@@ -47,13 +47,9 @@ class ColumnRole:
             Representation string.
 
         """
-        params = [
-            (x, self.__dict__[x]) for x in self.__dict__ if x not in ["dtype", "name"]
-        ]
+        params = [(x, self.__dict__[x]) for x in self.__dict__ if x not in ["dtype", "name"]]
 
-        return "{0} role, dtype {1}. Additional params: {2}".format(
-            self.name, self.dtype, params
-        )
+        return "{0} role, dtype {1}. Additional params: {2}".format(self.name, self.dtype, params)
 
     def __hash__(self) -> int:
         """Define how to hash - hash from str view.
@@ -126,6 +122,9 @@ class ColumnRole:
 
         if name in ["path"]:
             return PathRole()
+
+        if name in ["treatment"]:
+            return TreatmentRole()
 
         raise ValueError("Unknown string role: {}".format(name))
 
@@ -328,3 +327,9 @@ class PathRole(ColumnRole):
     """Path role."""
 
     _name = "Path"
+
+
+class TreatmentRole(ColumnRole):
+    """Uplift Treatment Role."""
+
+    _name = "Treatment"

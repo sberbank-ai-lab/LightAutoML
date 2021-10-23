@@ -10,13 +10,19 @@ from typing import Optional
 from typing import Sequence
 from typing import Union
 
-import nltk
 
-from nltk.stem import SnowballStemmer
+try:
+    import nltk
+
+    from nltk.stem import SnowballStemmer
+except:
+    import warnings
+
+    warnings.warn("'nltk' - package isn't installed")
+
 
 from ..dataset.base import RolesDict
 from ..dataset.roles import ColumnRole
-from .abbreviations import ABBREVIATIONS
 
 
 Roles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]
@@ -191,7 +197,7 @@ class SimpleRuTokenizer(BaseTokenizer):
     ):
         """Tokenizer for Russian language.
 
-        Include numeric, abbreviations, punctuation and short word filtering.
+        Include numeric, punctuation and short word filtering.
         Use stemmer by default and do lowercase.
 
         Args:
@@ -212,11 +218,7 @@ class SimpleRuTokenizer(BaseTokenizer):
         else:
             self.stopwords = {}
 
-        self.stemmer = (
-            SnowballStemmer("russian", ignore_stopwords=len(self.stopwords) > 0)
-            if is_stemmer
-            else None
-        )
+        self.stemmer = SnowballStemmer("russian", ignore_stopwords=len(self.stopwords) > 0) if is_stemmer else None
 
     @staticmethod
     def _is_abbr(word: str) -> bool:
@@ -271,8 +273,6 @@ class SimpleRuTokenizer(BaseTokenizer):
                 pass
             elif w.lower() in self.stopwords:
                 pass
-            elif w.lower() in ABBREVIATIONS:
-                filtered_s.extend(ABBREVIATIONS[w.lower()].split())
             elif self._is_abbr(w):
                 filtered_s.append(w)
             # ignore short words
@@ -343,11 +343,7 @@ class SimpleEnTokenizer(BaseTokenizer):
         else:
             self.stopwords = {}
 
-        self.stemmer = (
-            SnowballStemmer("english", ignore_stopwords=len(self.stopwords) > 0)
-            if is_stemmer
-            else None
-        )
+        self.stemmer = SnowballStemmer("english", ignore_stopwords=len(self.stopwords) > 0) if is_stemmer else None
 
     def preprocess_sentence(self, snt: str) -> str:
         """Preprocess sentence string (lowercase, etc.).

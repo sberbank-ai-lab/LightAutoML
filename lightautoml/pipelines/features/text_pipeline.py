@@ -2,8 +2,6 @@
 
 from typing import Any
 
-import torch
-
 from ...dataset.base import LAMLDataset
 from ...text.tokenizer import BaseTokenizer
 from ...text.tokenizer import SimpleEnTokenizer
@@ -50,9 +48,7 @@ class NLPDataFeatures:
 
         """
         if "lang" in kwargs:
-            assert (
-                kwargs["lang"] in self._lang
-            ), f"Language must be one of: {self._lang}"
+            assert kwargs["lang"] in self._lang, f"Language must be one of: {self._lang}"
 
         self.lang = "en" if "lang" not in kwargs else kwargs["lang"]
         self.is_tokenize_autonlp = False
@@ -69,12 +65,8 @@ class NLPDataFeatures:
         self.tfidf_params = None
         self.cache_dir = None
         self.train_fasttext = False
-        self.embedding_model = (
-            None  # path to fasttext model or model with dict interface
-        )
-        self.transformer_params = (
-            None  # params of random_lstm, bert_embedder, borep or wat
-        )
+        self.embedding_model = None  # path to fasttext model or model with dict interface
+        self.transformer_params = None  # params of random_lstm, bert_embedder, borep or wat
         self.fasttext_params = None  # init fasttext params
         self.fasttext_epochs = 2
         self.stopwords = False
@@ -126,9 +118,7 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
             if self.is_tokenize_autonlp:
                 transforms.append(
                     TokenizerTransformer(
-                        tokenizer=_tokenizer_by_lang[self.lang](
-                            is_stemmer=self.use_stem, stopwords=self.stopwords
-                        )
+                        tokenizer=_tokenizer_by_lang[self.lang](is_stemmer=self.use_stem, stopwords=self.stopwords)
                     )
                 )
             transforms.append(
@@ -182,13 +172,9 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
             transforms = [
                 ColumnsSelector(keys=texts),
                 TokenizerTransformer(
-                    tokenizer=_tokenizer_by_lang[self.lang](
-                        is_stemmer=self.use_stem, stopwords=self.stopwords
-                    )
+                    tokenizer=_tokenizer_by_lang[self.lang](is_stemmer=self.use_stem, stopwords=self.stopwords)
                 ),
-                TfidfTextTransformer(
-                    default_params=self.tfidf_params, subs=None, random_state=42
-                ),
+                TfidfTextTransformer(default_params=self.tfidf_params, subs=None, random_state=42),
             ]
             if self.svd:
                 transforms.append(SVDTransformer(n_components=self.n_components))

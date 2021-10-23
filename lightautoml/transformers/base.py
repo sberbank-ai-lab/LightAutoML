@@ -39,10 +39,7 @@ class LAMLTransformer:
             raise AttributeError("Should be fitted at first.")
 
         feats = [
-            "{0}__{1}".format(self._fname_prefix, x)
-            if self._fname_prefix is not None
-            else x
-            for x in self._features
+            "{0}__{1}".format(self._fname_prefix, x) if self._fname_prefix is not None else x for x in self._features
         ]
 
         return feats
@@ -379,9 +376,7 @@ class ColumnsSelector(LAMLTransformer):
 
         """
         # to avoid coping if not needed
-        if len(self.keys) == len(dataset.features) and all(
-            (x == y for (x, y) in zip(self.keys, dataset.features))
-        ):
+        if len(self.keys) == len(dataset.features) and all((x == y for (x, y) in zip(self.keys, dataset.features))):
             return dataset
         return dataset[:, self.keys]
 
@@ -452,9 +447,7 @@ class ColumnwiseUnion(UnionTransformer):
 class BestOfTransformers(LAMLTransformer):
     """Apply multiple transformers and select best."""
 
-    def __init__(
-        self, transformer_list: Sequence[LAMLTransformer], criterion: Callable
-    ):
+    def __init__(self, transformer_list: Sequence[LAMLTransformer], criterion: Callable):
         """Create selector from candidate list and selection criterion.
 
         Args:
@@ -560,7 +553,7 @@ class ChangeRoles(LAMLTransformer):
             New dataset.
 
         """
-        data, features, roles = dataset.data, dataset.features, dataset.roles
+        data, features, _ = dataset.data, dataset.features, dataset.roles
         dataset = dataset.empty()
         dataset.set_data(data, features, self.roles)
 

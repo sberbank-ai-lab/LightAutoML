@@ -10,7 +10,6 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
-from typing import TypeVar
 from typing import Union
 
 import numpy as np
@@ -71,9 +70,7 @@ def get_file_offsets(
         Offsets tuple.
 
     """
-    assert (
-        n_jobs is not None or batch_size is not None
-    ), "One of n_jobs or batch size should be defined"
+    assert n_jobs is not None or batch_size is not None, "One of n_jobs or batch size should be defined"
 
     lens = []
     with open(file, "rb") as f:
@@ -146,15 +143,7 @@ def read_csv_batch(file: str, offset, cnt, **read_csv_params):
 
     with open(file, "rb") as f:
         f.seek(offset)
-        data = pd.read_csv(
-            f,
-            header=None,
-            names=header,
-            chunksize=None,
-            nrows=cnt,
-            usecols=usecols,
-            **read_csv_params
-        )
+        data = pd.read_csv(f, header=None, names=header, chunksize=None, nrows=cnt, usecols=usecols, **read_csv_params)
 
     return data
 
@@ -223,9 +212,7 @@ class FileBatch(Batch):
             Read data.
 
         """
-        data_part = read_csv_batch(
-            self.file, cnt=self.cnt, offset=self.offset, **self.read_csv_params
-        )
+        data_part = read_csv_batch(self.file, cnt=self.cnt, offset=self.offset, **self.read_csv_params)
 
         return data_part
 
@@ -275,9 +262,7 @@ class DfBatchGenerator(BatchGenerator):
     Batch generator from :class:`~pandas.DataFrame`.
     """
 
-    def __init__(
-        self, data: DataFrame, n_jobs: int = 1, batch_size: Optional[int] = None
-    ):
+    def __init__(self, data: DataFrame, n_jobs: int = 1, batch_size: Optional[int] = None):
         """
 
         Args:
@@ -293,11 +278,7 @@ class DfBatchGenerator(BatchGenerator):
         if self.batch_size is not None:
             self.idxs = list(get_batch_ids(np.arange(data.shape[0]), batch_size))
         else:
-            self.idxs = [
-                x
-                for x in np.array_split(np.arange(data.shape[0]), n_jobs)
-                if len(x) > 0
-            ]
+            self.idxs = [x for x in np.array_split(np.arange(data.shape[0]), n_jobs) if len(x) > 0]
 
     def __len__(self) -> int:
 
@@ -347,9 +328,7 @@ class FileBatchGenerator(BatchGenerator):
         return len(self.cnts)
 
     def __getitem__(self, idx):
-        return FileBatch(
-            self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params
-        )
+        return FileBatch(self.file, self.offsets[idx], self.cnts[idx], self.read_csv_params)
 
 
 class SqlDataSource:
@@ -364,7 +343,8 @@ class SqlDataSource:
         Data wrapper for SQL connection
 
         Args:
-            connection_string: database url; for reference see https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
+            connection_string: database url; for reference see
+            https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
             query: SQL query to obtain data from
             index: optional index column to be removed from the query result; can be None, str of List[str]
         """
@@ -449,9 +429,7 @@ def read_data(
         for k in data:
             if k != "data":
                 name = "__{0}__".format(k.upper())
-                assert name not in df.columns, "Not supported feature name {0}".format(
-                    name
-                )
+                assert name not in df.columns, "Not supported feature name {0}".format(name)
                 df[name] = data[k]
                 upd_roles[k] = name
         return df, upd_roles

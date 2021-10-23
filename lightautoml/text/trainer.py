@@ -18,7 +18,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .dp_utils import CustomDataParallel
-from optuna import TrialPruned
 
 
 try:
@@ -33,9 +32,7 @@ from .utils import _dtypes_mapping
 logger = logging.getLogger(__name__)
 
 
-def optim_to_device(
-    optim: torch.optim.Optimizer, device: torch.device
-) -> torch.optim.Optimizer:
+def optim_to_device(optim: torch.optim.Optimizer, device: torch.device) -> torch.optim.Optimizer:
     """Change optimizer device.
 
     Args:
@@ -310,7 +307,7 @@ class Trainer:
         self.se = None
         self.amp = None
         self.is_fitted = False
-        
+
         self.is_optuna_tuning = is_optuna_tuning
         self._trial = trial
 
@@ -336,15 +333,9 @@ class Trainer:
         self.amp = amp if self.apex else None
         if self.amp is not None:
             opt_level = "O1"
-            self.model, self.optimizer = self.amp.initialize(
-                self.model, self.optimizer, opt_level=opt_level
-            )
+            self.model, self.optimizer = self.amp.initialize(self.model, self.optimizer, opt_level=opt_level)
         self.model.to(self.device)
-        self.scheduler = (
-            self.sch(self.optimizer, **self.scheduler_params)
-            if self.sch is not None
-            else None
-        )
+        self.scheduler = self.sch(self.optimizer, **self.scheduler_params) if self.sch is not None else None
         return self
 
     def load_state(self, path: Union[str, Dict]):
@@ -453,7 +444,6 @@ class Trainer:
                         vl=np.mean(val_loss),
                     )
                 )
-
             if self.se.early_stop:
                 break
 
@@ -465,13 +455,9 @@ class Trainer:
         self.se.set_best_params(self.model)
 
         if self.is_snap:
-            val_loss, val_data = self.test(
-                dataloader=dataloaders["val"], snap=True, stage="val"
-            )
+            val_loss, val_data = self.test(dataloader=dataloaders["val"], snap=True, stage="val")
             logger.info3(
-                "Result SE, val loss: {vl}, val metric: {me}".format(
-                    me=self.metric(*val_data), vl=np.mean(val_loss)
-                )
+                "Result SE, val loss: {vl}, val metric: {me}".format(me=self.metric(*val_data), vl=np.mean(val_loss))
             )
         elif self.se.early_stop:
             val_loss, val_data = self.test(dataloader=dataloaders["val"])
@@ -508,11 +494,7 @@ class Trainer:
 
         for sample in loader:
             data = {
-                i: (
-                    sample[i].long().to(self.device)
-                    if _dtypes_mapping[i] == "long"
-                    else sample[i].to(self.device)
-                )
+                i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == "long" else sample[i].to(self.device))
                 for i in sample.keys()
             }
 
@@ -522,7 +504,7 @@ class Trainer:
                     scaled_loss.backward()
             else:
                 loss.backward()
-            
+
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -546,6 +528,7 @@ class Trainer:
                         )
             if logging_level <= logging.INFO and self.verbose:
                 loader.set_description("train (loss=%g)" % (running_loss / c))
+
         return loss_log
 
     def test(
@@ -575,11 +558,7 @@ class Trainer:
         with torch.no_grad():
             for sample in loader:
                 data = {
-                    i: (
-                        sample[i].long().to(self.device)
-                        if _dtypes_mapping[i] == "long"
-                        else sample[i].to(self.device)
-                    )
+                    i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == "long" else sample[i].to(self.device))
                     for i in sample.keys()
                 }
 
@@ -620,7 +599,5 @@ class Trainer:
 
         """
 
-        loss, (target, pred) = self.test(
-            stage=stage, snap=self.is_snap, dataloader=dataloader
-        )
+        loss, (target, pred) = self.test(stage=stage, snap=self.is_snap, dataloader=dataloader)
         return pred
