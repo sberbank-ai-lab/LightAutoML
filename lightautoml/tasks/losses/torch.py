@@ -208,9 +208,7 @@ def torch_f1(
         sm = sample_weight.mean()
         tp = (tp * sample_weight).mean(dim=0) / sm
         f1 = (2 * tp) / (
-            (y_pred * sample_weight).mean(dim=0) / sm
-            + (y_true_ohe * sample_weight).mean(dim=0) / sm
-            + 1e-7
+            (y_pred * sample_weight).mean(dim=0) / sm + (y_true_ohe * sample_weight).mean(dim=0) / sm + 1e-7
         )
 
         return -f1.mean()

@@ -1,6 +1,5 @@
 """ Utils """
 
-from dataclasses import dataclass
 from typing import Dict
 from typing import Optional
 from typing import Sequence
@@ -43,14 +42,10 @@ def create_linear_automl(
     """
     torch.set_num_threads(cpu_limit)
 
-    reader = PandasToPandasReader(
-        task, cv=n_folds, random_state=random_state, n_jobs=n_reader_jobs
-    )
+    reader = PandasToPandasReader(task, cv=n_folds, random_state=random_state, n_jobs=n_reader_jobs)
     pipe = LinearFeatures()
     model = LinearLBFGS()
-    pipeline = MLPipeline(
-        [model], pre_selection=None, features_pipeline=pipe, post_selection=None
-    )
+    pipeline = MLPipeline([model], pre_selection=None, features_pipeline=pipe, post_selection=None)
     automl = AutoML(reader, [[pipeline]], skip_conn=False)  # , verbose=0)
 
     return automl

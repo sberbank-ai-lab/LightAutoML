@@ -1,5 +1,11 @@
 """Neural net for tabular datasets."""
 
+from lightautoml.utils.installation import __validate_extra_deps
+
+
+__validate_extra_deps("nlp")
+
+
 import gc
 import logging
 import os
@@ -125,7 +131,7 @@ class TorchModel(TabularMLAlgo):
         params["loss"] = self.task.losses["torch"].loss
         params["metric"] = self.task.losses["torch"].metric_func
 
-        is_text = (len(params["text_features"]) > 0) and (params["use_text"])
+        is_text = (len(params["text_features"]) > 0) and (params["use_text"]) and (params["device"].type == "cuda")
         is_cat = (len(params["cat_features"]) > 0) and (params["use_cat"])
         is_cont = (len(params["cont_features"]) > 0) and (params["use_cont"])
 
@@ -179,11 +185,7 @@ class TorchModel(TabularMLAlgo):
             "dataset": UniversalDataset,
             "bs": params["bs"],
             "num_workers": params["num_workers"],
-            "tokenizer": AutoTokenizer.from_pretrained(
-                params["bert_name"], use_fast=False
-            )
-            if is_text
-            else None,
+            "tokenizer": AutoTokenizer.from_pretrained(params["bert_name"], use_fast=False) if is_text else None,
             "max_length": params["max_length"],
         }
 
@@ -228,42 +230,26 @@ class TorchModel(TabularMLAlgo):
 
         task_name = train_valid_iterator.train.task.name
         target = train_valid_iterator.train.target
-        suggested_params["n_out"] = (
-            1 if task_name != "multiclass" else np.max(target) + 1
-        )
+        suggested_params["n_out"] = 1 if task_name != "multiclass" else np.max(target) + 1
 
         cat_dims = []
-        suggested_params["cat_features"] = get_columns_by_role(
-            train_valid_iterator.train, "Category"
-        )
+        suggested_params["cat_features"] = get_columns_by_role(train_valid_iterator.train, "Category")
         for cat_feature in suggested_params["cat_features"]:
-            num_unique_categories = (
-                max(train_valid_iterator.train[:, cat_feature].data) + 1
-            )
+            num_unique_categories = max(train_valid_iterator.train[:, cat_feature].data) + 1
             cat_dims.append(num_unique_categories)
         suggested_params["cat_dims"] = cat_dims
 
-        suggested_params["cont_features"] = get_columns_by_role(
-            train_valid_iterator.train, "Numeric"
-        )
+        suggested_params["cont_features"] = get_columns_by_role(train_valid_iterator.train, "Numeric")
         suggested_params["cont_dim"] = len(suggested_params["cont_features"])
 
-        suggested_params["text_features"] = get_columns_by_role(
-            train_valid_iterator.train, "Text"
-        )
-        suggested_params["bias"] = (
-            self.get_mean_target(target, task_name)
-            if suggested_params["init_bias"]
-            else None
-        )
+        suggested_params["text_features"] = get_columns_by_role(train_valid_iterator.train, "Text")
+        suggested_params["bias"] = self.get_mean_target(target, task_name) if suggested_params["init_bias"] else None
 
         return suggested_params
 
     def get_dataloaders_from_dicts(self, data_dict):
         logger.debug(f'number of text features: {len(self.params["text_features"])} ')
-        logger.debug(
-            f'number of categorical features: {len(self.params["cat_features"])} '
-        )
+        logger.debug(f'number of categorical features: {len(self.params["cat_features"])} ')
         logger.debug(f'number of continuous features: {self.params["cont_dim"]} ')
 
         datasets = {}
@@ -284,9 +270,7 @@ class TorchModel(TabularMLAlgo):
             datasets[stage] = self.train_params["dataset"](
                 data=data,
                 y=value.target.values if stage != "test" else np.ones(len(value.data)),
-                w=value.weights.values
-                if value.weights is not None
-                else np.ones(len(value.data)),
+                w=value.weights.values if value.weights is not None else np.ones(len(value.data)),
                 tokenizer=self.train_params["tokenizer"],
                 max_length=self.train_params["max_length"],
                 stage=stage,
@@ -320,9 +304,7 @@ class TorchModel(TabularMLAlgo):
         model = self._infer_params()
 
         model_path = (
-            os.path.join(self.path_to_save, f"{uuid.uuid4()}.pickle")
-            if self.path_to_save is not None
-            else None
+            os.path.join(self.path_to_save, f"{uuid.uuid4()}.pickle") if self.path_to_save is not None else None
         )
         # init datasets
         dataloaders = self.get_dataloaders_from_dicts({"train": train, "val": valid})

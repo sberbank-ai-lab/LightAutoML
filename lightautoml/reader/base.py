@@ -2,7 +2,6 @@
 
 import logging
 
-from copy import copy
 from copy import deepcopy
 from typing import Any
 from typing import Dict
@@ -50,9 +49,7 @@ UserDefinedRole = Optional[Union[str, RoleType]]
 
 UserDefinedRolesDict = Dict[UserDefinedRole, Sequence[str]]
 UserDefinedRolesSequence = Sequence[UserDefinedRole]
-UserRolesDefinition = Optional[
-    Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]
-]
+UserRolesDefinition = Optional[Union[UserDefinedRole, UserDefinedRolesDict, UserDefinedRolesSequence]]
 
 
 class Reader:
@@ -259,11 +256,7 @@ class PandasToPandasReader(Reader):
         self.params = kwargs
 
     def fit_read(
-        self,
-        train_data: DataFrame,
-        features_names: Any = None,
-        roles: UserDefinedRolesDict = None,
-        **kwargs: Any
+        self, train_data: DataFrame, features_names: Any = None, roles: UserDefinedRolesDict = None, **kwargs: Any
     ) -> PandasDataset:
         """Get dataset with initial feature selection.
 
@@ -318,10 +311,9 @@ class PandasToPandasReader(Reader):
 
         # infer roles
         for feat in subsample.columns:
-            assert isinstance(feat, str), (
-                "Feature names must be string,"
-                " find feature name: {}, with type: {}".format(feat, type(feat))
-            )
+            assert isinstance(
+                feat, str
+            ), "Feature names must be string," " find feature name: {}, with type: {}".format(feat, type(feat))
             if feat in parsed_roles:
                 r = parsed_roles[feat]
                 # handle datetimes
@@ -335,9 +327,7 @@ class PandasToPandasReader(Reader):
                             unit=r.unit,
                         )
                     except ValueError:
-                        raise ValueError(
-                            "Looks like given datetime parsing params are not correctly defined"
-                        )
+                        raise ValueError("Looks like given datetime parsing params are not correctly defined")
 
                 # replace default category dtype for numeric roles dtype if cat col dtype is numeric
                 if r.name == "Category":
@@ -386,22 +376,14 @@ class PandasToPandasReader(Reader):
             kwargs["folds"] = Series(folds, index=train_data.index)
 
         # get dataset
-        dataset = PandasDataset(
-            train_data[self.used_features], self.roles, task=self.task, **kwargs
-        )
+        dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
         if self.advanced_roles:
             new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
 
-            droplist = [
-                x
-                for x in new_roles
-                if new_roles[x].name == "Drop" and not self._roles[x].force_input
-            ]
+            droplist = [x for x in new_roles if new_roles[x].name == "Drop" and not self._roles[x].force_input]
             self.upd_used_features(remove=droplist)
             self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
-            dataset = PandasDataset(
-                train_data[self.used_features], self.roles, task=self.task, **kwargs
-            )
+            dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
 
         return dataset
 
@@ -430,9 +412,7 @@ class PandasToPandasReader(Reader):
 
                 assert srtd.shape[0] > 1, "Less than 2 unique values in target"
                 if self.task.name == "binary":
-                    assert (
-                        srtd.shape[0] == 2
-                    ), "Binary task and more than 2 values in target"
+                    assert srtd.shape[0] == 2, "Binary task and more than 2 values in target"
                 return target
 
             # case - create mapping
@@ -518,15 +498,11 @@ class PandasToPandasReader(Reader):
         """
         if feature.isnull().mean() >= self.max_nan_rate:
             return False
-        if (
-            feature.value_counts().values[0] / feature.shape[0]
-        ) >= self.max_constant_rate:
+        if (feature.value_counts().values[0] / feature.shape[0]) >= self.max_constant_rate:
             return False
         return True
 
-    def read(
-        self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False
-    ) -> PandasDataset:
+    def read(self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
         """Read dataset with fitted metadata.
 
         Args:
@@ -556,15 +532,11 @@ class PandasToPandasReader(Reader):
                     )
                 kwargs[array_attr] = val
 
-        dataset = PandasDataset(
-            data[self.used_features], roles=self.roles, task=self.task, **kwargs
-        )
+        dataset = PandasDataset(data[self.used_features], roles=self.roles, task=self.task, **kwargs)
 
         return dataset
 
-    def advanced_roles_guess(
-        self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None
-    ) -> RolesDict:
+    def advanced_roles_guess(self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None) -> RolesDict:
         """Advanced roles guess over user's definition and reader's simple guessing.
 
         Strategy - compute feature's NormalizedGini
@@ -632,9 +604,7 @@ class PandasToPandasReader(Reader):
             )
             top_scores = pd.concat([null_scores, top_scores], axis=1).max(axis=1)
             rejected = list(top_scores[top_scores < drop_co].index)
-            logger.info3(
-                "Feats was rejected during automatic roles guess: {0}".format(rejected)
-            )
+            logger.info3("Feats was rejected during automatic roles guess: {0}".format(rejected))
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict

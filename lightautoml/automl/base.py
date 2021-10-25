@@ -97,9 +97,7 @@ class AutoML:
                 - `3`: Debug.
 
         """
-        self._initialize(
-            reader, levels, timer, blender, skip_conn, return_all_predictions
-        )
+        self._initialize(reader, levels, timer, blender, skip_conn, return_all_predictions)
 
     def _initialize(
         self,
@@ -198,13 +196,9 @@ class AutoML:
 
         valid_dataset = None
         if valid_data is not None:
-            valid_dataset = self.reader.read(
-                valid_data, valid_features, add_array_attrs=True
-            )
+            valid_dataset = self.reader.read(valid_data, valid_features, add_array_attrs=True)
 
-        train_valid = create_validation_iterator(
-            train_dataset, valid_dataset, n_folds=None, cv_iter=cv_iter
-        )
+        train_valid = create_validation_iterator(train_dataset, valid_dataset, n_folds=None, cv_iter=cv_iter)
         # for pycharm)
         level_predictions = None
         pipes = None
@@ -244,9 +238,7 @@ class AutoML:
                     )
                     flg_last_level = True
 
-            logger.info(
-                "\x1b[1mLayer {} training completed.\x1b[0m\n".format(leven_number)
-            )
+            logger.info("\x1b[1mLayer {} training completed.\x1b[0m\n".format(leven_number))
 
             # here is split on exit condition
             if not flg_last_level:
@@ -264,20 +256,14 @@ class AutoML:
                             "Can not convert prediction dataset type to input features. Set skip_conn=False"
                         )
                     level_predictions = concatenate([level_predictions, valid_part])
-                train_valid = create_validation_iterator(
-                    level_predictions, None, n_folds=None, cv_iter=None
-                )
+                train_valid = create_validation_iterator(level_predictions, None, n_folds=None, cv_iter=None)
             else:
                 break
 
-        blended_prediction, last_pipes = self.blender.fit_predict(
-            level_predictions, pipes
-        )
+        blended_prediction, last_pipes = self.blender.fit_predict(level_predictions, pipes)
         self.levels.append(last_pipes)
 
-        self.reader.upd_used_features(
-            remove=list(set(self.reader.used_features) - set(self.collect_used_feats()))
-        )
+        self.reader.upd_used_features(remove=list(set(self.reader.used_features) - set(self.collect_used_feats())))
 
         del self._levels
 
@@ -303,9 +289,7 @@ class AutoML:
             Dataset with predictions.
 
         """
-        dataset = self.reader.read(
-            data, features_names=features_names, add_array_attrs=False
-        )
+        dataset = self.reader.read(data, features_names=features_names, add_array_attrs=False)
 
         for n, level in enumerate(self.levels, 1):
             # check if last level
@@ -331,9 +315,7 @@ class AutoML:
                 else:
                     dataset = level_predictions
             else:
-                if (
-                    return_all_predictions is None and self.return_all_predictions
-                ) or return_all_predictions:
+                if (return_all_predictions is None and self.return_all_predictions) or return_all_predictions:
                     return concatenate(level_predictions)
                 return self.blender.predict(level_predictions)
 

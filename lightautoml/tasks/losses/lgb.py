@@ -94,9 +94,7 @@ class LGBFunc:
         self.greater_is_better = greater_is_better
         self.bw_func = bw_func
 
-    def __call__(
-        self, pred: np.ndarray, dtrain: lgb.Dataset
-    ) -> Tuple[str, float, bool]:
+    def __call__(self, pred: np.ndarray, dtrain: lgb.Dataset) -> Tuple[str, float, bool]:
 
         label = dtrain.get_label()
 
@@ -238,9 +236,7 @@ class LGBLoss(Loss):
         if self.fobj_name in _lgb_force_metric:
             metric, greater_is_better, metric_params = _lgb_force_metric[self.fobj_name]
             logger.info2(
-                "For lgbm {0} callback metric switched to {1}".format(
-                    self.fobj_name, metric
-                ),
+                "For lgbm {0} callback metric switched to {1}".format(self.fobj_name, metric),
                 UserWarning,
             )
 
@@ -266,6 +262,4 @@ class LGBLoss(Loss):
         else:
             self.metric_name = None
             # metric = CustomWrapper(metric)
-            self.feval = self.metric_wrapper(
-                metric, greater_is_better, self.metric_params
-            )
+            self.feval = self.metric_wrapper(metric, greater_is_better, self.metric_params)
