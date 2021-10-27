@@ -91,17 +91,25 @@ class LoggerStream(io.IOBase):
             self.counter = 0
 
 
-def verbosity_to_loglevel(verbosity: int):
-    if verbosity <= 0:
-        log_level = logging.ERROR
-    elif verbosity == 1:
-        log_level = logging.INFO
-    elif verbosity == 2:
-        log_level = logging.INFO2
-    elif verbosity == 3:
-        log_level = logging.INFO3
+def verbosity_to_loglevel(verbosity: int, extended=True):
+    if extended:
+        if verbosity <= 0:
+            log_level = logging.ERROR
+        elif verbosity == 1:
+            log_level = logging.INFO
+        elif verbosity == 2:
+            log_level = logging.INFO2
+        elif verbosity == 3:
+            log_level = logging.INFO3
+        else:
+            log_level = logging.DEBUG
     else:
-        log_level = logging.DEBUG
+        if verbosity <= 0:
+            log_level = logging.ERROR
+        elif verbosity == 1:
+            log_level = logging.INFO
+        else:
+            log_level = logging.DEBUG
 
     return log_level
 

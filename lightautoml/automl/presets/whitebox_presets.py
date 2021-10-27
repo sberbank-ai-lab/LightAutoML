@@ -65,7 +65,6 @@ class WhiteBoxPreset(AutoMLPreset):
         memory_limit: int = 16,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = None,
-        verbose: int = 2,
         timing_params: Optional[dict] = None,
         config_path: Optional[str] = None,
         general_params: Optional[dict] = None,
@@ -90,12 +89,6 @@ class WhiteBoxPreset(AutoMLPreset):
             memory_limit: Memory limit that are passed to each automl.
             cpu_limit: CPU limit that that are passed to each automl.
             gpu_ids: GPU IDs that are passed to each automl.
-            verbose: Controls the verbosity: the higher, the more messages.
-                <1  : messages are not displayed;
-                >=1 : the computation process for layers is displayed;
-                >=2 : the information about folds processing is also displayed;
-                >=3 : the hyperparameters optimization process is also displayed;
-                >=4 : the training process for every algorithm is displayed;
             timing_params: Timing param dict.
             config_path: Path to config file.
             general_params: General param dict.
@@ -111,7 +104,6 @@ class WhiteBoxPreset(AutoMLPreset):
             memory_limit,
             cpu_limit,
             gpu_ids,
-            verbose,
             timing_params,
             config_path,
         )
@@ -143,7 +135,6 @@ class WhiteBoxPreset(AutoMLPreset):
             self.whitebox_params["default_params"]["n_jobs"], cpu_cnt
         )
         self.reader_params["n_jobs"] = min(self.reader_params["n_jobs"], cpu_cnt)
-        self.whitebox_params["verbose"] = self.verbose
 
     def create_automl(self, *args, **kwargs):
         """Create basic :class:`~lightautoml.automl.presets.whitebox_presets.WhiteBoxPreset` instance from data.
@@ -160,13 +151,14 @@ class WhiteBoxPreset(AutoMLPreset):
         whitebox_params = deepcopy(self.whitebox_params)
         whitebox_params["fit_params"] = self.fit_params
         whitebox_params["report"] = self.general_params["report"]
+        whitebox_params["verbose"] = self.verbose
 
         _whitebox = WbMLAlgo(timer=wb_timer, default_params=whitebox_params)
         whitebox = WBPipeline(_whitebox)
         levels = [[whitebox]]
 
         # initialize
-        self._initialize(reader, levels, skip_conn=False, timer=self.timer, verbose=self.verbose)
+        self._initialize(reader, levels, skip_conn=False, timer=self.timer)
 
     def fit_predict(
         self,
@@ -176,6 +168,7 @@ class WhiteBoxPreset(AutoMLPreset):
         cv_iter: Optional[Iterable] = None,
         valid_data: Optional[Any] = None,
         valid_features: Optional[Sequence[str]] = None,
+        verbose: int = 0,
         **fit_params
     ) -> NumpyDataset:
         """Fit and get prediction on validation dataset.
@@ -202,6 +195,12 @@ class WhiteBoxPreset(AutoMLPreset):
             valid_data: Optional validation dataset.
             valid_features: Optional validation dataset features
               if cannot be inferred from `valid_data`.
+            verbose: Controls the verbosity: the higher, the more messages.
+                <1  : messages are not displayed;
+                >=1 : the computation process for layers is displayed;
+                >=2 : the information about folds processing is also displayed;
+                >=3 : the hyperparameters optimization process is also displayed;
+                >=4 : the training process for every algorithm is displayed;
 
         Returns:
             Dataset with predictions. Call ``.data`` to get predictions array.
@@ -214,7 +213,10 @@ class WhiteBoxPreset(AutoMLPreset):
             valid_features = train_features
 
         self.fit_params = fit_params
-        pred = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features)
+        self.verbose = verbose
+
+        pred = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features, verbose)
+
         return cast(NumpyDataset, pred)
 
     def predict(
@@ -244,3 +246,6 @@ class WhiteBoxPreset(AutoMLPreset):
         pred = self.levels[0][0].predict(dataset, report=report)
 
         return cast(NumpyDataset, pred)
+
+    def create_model_str_desc(self) -> str:
+        return ""
