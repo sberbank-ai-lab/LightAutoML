@@ -31,7 +31,6 @@ LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 class LinearLBFGS(TabularMLAlgo):
     """LBFGS L2 regression based on torch.
 
-
     default_params:
 
         - cs: List of regularization coefficients.
@@ -93,7 +92,7 @@ class LinearLBFGS(TabularMLAlgo):
 
         return model
 
-    def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
+    def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:  # noqa: D102
 
         suggested_params = copy(self.default_params)
         train = train_valid_iterator.train
@@ -211,7 +210,6 @@ class LinearL1CD(TabularMLAlgo):
             Parameters of model.
 
         """
-
         suggested_params = copy(self.default_params)
         task = train_valid_iterator.train.task
 

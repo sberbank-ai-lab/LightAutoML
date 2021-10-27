@@ -1,3 +1,5 @@
+"""Uplift metrics."""
+
 import abc
 
 from typing import Tuple
@@ -12,17 +14,22 @@ _available_uplift_modes = ("qini", "cum_gain", "adj_qini")
 
 
 class ConstPredictError(Exception):
+    """Exception: constant prediction."""
+
     pass
 
 
 class TUpliftMetric(metaclass=abc.ABCMeta):
+    """Base Uplift Metric."""
+
     @abc.abstractclassmethod
     def __call__(self, y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray) -> float:
+        """Calculate metric."""
         pass
 
 
-def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray):
-    """Calculate perfect curve
+def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray) -> np.ndarray:
+    """Calculate perfect curve.
 
     Method return curve's coordinates if the model is a perfect.
     Perfect model ranking:
@@ -65,13 +72,13 @@ def _get_uplift_curve(
     n_control: np.ndarray,
     mode: str,
 ):
-    """Calculate uplift curve
+    """Calculate uplift curve.
 
     Args:
         y_treatment: Cumulative number of target in treatment group
         y_control: Cumulative number of target in control group
-        num_treatment: Cumulative number of treatment group
-        num_control: Cumulative number of treatment group
+        n_treatment: Cumulative number of treatment group
+        n_control: Cumulative number of treatment group
         mode: Name of available metrics
 
     Returns:
@@ -102,11 +109,11 @@ def calculate_graphic_uplift_curve(
     treatment: np.ndarray,
     mode: str = "adj_qini",
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Calculate uplift curve
+    """Calculate uplift curve.
 
     Args:
         y_true: Target values
-        uplift: Prediction of models
+        uplift_pred: Prediction of models
         treatment: Treatment column
         mode: Name of available metrics
 
@@ -136,6 +143,7 @@ def calculate_graphic_uplift_curve(
     n_control_samples_cs = n_join_samples_cs - n_treatment_samples_cs
 
     y_true_control, y_true_treatment = y_true.copy(), y_true.copy()
+
     y_true_control[treatment == 1] = 0
     y_true_treatment[treatment == 0] = 0
 
@@ -164,7 +172,7 @@ def calculate_uplift_auc(
     mode: str = "adj_qini",
     normed: bool = False,
 ):
-    """Calculate area under uplift curve
+    """Calculate area under uplift curve.
 
     Args:
         y_true: Target values
@@ -182,15 +190,22 @@ def calculate_uplift_auc(
     uplift_auc = auc(xs, ys)
 
     if normed:
-        min_auc, max_auc = calculate_min_max_uplift_auc(y_true, treatment, mode)
+        (
+            min_auc,
+            max_auc,
+        ) = calculate_min_max_uplift_auc(y_true, treatment, mode)
 
         uplift_auc = (uplift_auc - min_auc) / (max_auc - min_auc)
 
     return uplift_auc
 
 
-def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode: str = "adj_qini"):
-    """Calculate AUC uplift curve for `base` and `perfect` models
+def calculate_min_max_uplift_auc(
+    y_true: np.ndarray,
+    treatment: np.ndarray,
+    mode: str = "adj_qini",
+):
+    """Calculate AUC uplift curve for `base` and `perfect` models.
 
     Args:
         y_true: Target values
@@ -214,8 +229,13 @@ def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode
     return auc_base, auc_perfect
 
 
-def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
-    """Calculate Uplift metric at TOP
+def calculate_uplift_at_top(
+    y_true: np.ndarray,
+    uplift_pred: np.ndarray,
+    treatment: np.ndarray,
+    top: float = 30,
+):
+    """Calculate Uplift metric at TOP.
 
     Calculate uplift metric at top
 
@@ -248,14 +268,20 @@ def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatme
     return score
 
 
-def calculate_total_score(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
-    """Calculate total target
+def calculate_total_score(
+    y_true: np.ndarray,
+    uplift_pred: np.ndarray,
+    treatment: np.ndarray,
+    top: float = 30,
+):
+    """Calculate total target.
 
     Args:
         y_true: Target values
         uplift_pred: Prediction of meta model
         treatment: Treatment column
         top: Rate, value between (0, 100]
+
 
     Returns:
         score: Score

@@ -32,7 +32,6 @@ def tune_and_fit_predict(
         Tuple (BestMlAlgo, predictions).
 
     """
-
     timer = ml_algo.timer
     timer.start()
     single_fold_time = timer.estimate_folds_time(1)

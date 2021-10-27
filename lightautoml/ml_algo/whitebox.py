@@ -179,7 +179,7 @@ class WbMLAlgo(TabularMLAlgo):
         self._report_on_inference = report
         return params, report, fit_params
 
-    def fit_predict(self, train_valid_iterator: TrainValidIterator, **kwargs) -> NumpyDataset:
+    def fit_predict(self, train_valid_iterator: TrainValidIterator, **kwargs) -> NumpyDataset:  # noqa: D102
 
         self._dataset_fit_params = kwargs
 
@@ -253,7 +253,7 @@ class WbMLAlgo(TabularMLAlgo):
             model: WhiteBox model
             dataset: Test dataset.
 
-        Return:
+        Returns:
             Predicted target values.
 
         """

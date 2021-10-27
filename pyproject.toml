@@ -93,10 +93,14 @@ nbsphinx = "*"
 nbsphinx-link = "*"
 sphinx-autodoc-typehints = "*"
 pandoc = "*"
-pre-commit = "*"
+pre-commit = "2.15.0"
 notebook = "*"
 mypy = "^0.910"
 tox = "*"
+darglint = "^1.8.1"
+black = "20.8b1"
+flake8-docstrings = "^1.6.0"
+isort = "5.7.0"
 
 
 [tool.poetry.extras]
@@ -131,20 +135,10 @@ all = [
     "weasyprint"
 ]
 
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-
-[tool.isort]
-profile = "black"
-force_single_line = true
-atomic = true
-include_trailing_comma = true
-lines_after_imports = 2
-lines_between_types = 1
-use_parentheses = true
-filter_files = true
 
 
 [tool.black]
@@ -165,6 +159,18 @@ exclude = '''
   | tests/.*/setup.py
 )/
 '''
+
+
+[tool.isort]
+profile = "black"
+force_single_line = true
+atomic = true
+include_trailing_comma = true
+lines_after_imports = 2
+lines_between_types = 1
+use_parentheses = true
+filter_files = true
+
 
 [tool.tox]
 legacy_tox_ini = """

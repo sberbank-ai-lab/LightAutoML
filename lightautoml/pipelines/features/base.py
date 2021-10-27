@@ -95,7 +95,7 @@ class FeaturesPipeline:
         Args:
             train: Dataset with train data.
 
-        Returns:
+        Returns:  # noqa DAR202
             Composite transformer (pipeline).
 
         """
@@ -129,11 +129,11 @@ class FeaturesPipeline:
         """
         return self._pipeline.transform(test)
 
-    def set_sequential(self, val: bool = True):
+    def set_sequential(self, val: bool = True):  # noqa D102
         self.sequential = val
         return self
 
-    def append(self, pipeline):
+    def append(self, pipeline):  # noqa D102
         if isinstance(pipeline, FeaturesPipeline):
             pipeline = [pipeline]
 
@@ -142,7 +142,7 @@ class FeaturesPipeline:
 
         return self
 
-    def prepend(self, pipeline):
+    def prepend(self, pipeline):  # noqa D102
         if isinstance(pipeline, FeaturesPipeline):
             pipeline = [pipeline]
 
@@ -151,7 +151,7 @@ class FeaturesPipeline:
 
         return self
 
-    def pop(self, i: int = -1) -> Optional[Callable[[LAMLDataset], LAMLTransformer]]:
+    def pop(self, i: int = -1) -> Optional[Callable[[LAMLDataset], LAMLTransformer]]:  # noqa D102
         if len(self.pipes) > 1:
             return self.pipes.pop(i)
 
@@ -392,7 +392,6 @@ class TabularDataFeatures:
             Transformer.
 
         """
-
         if feats_to_select is None:
             feats_to_select = []
             for i in ["auto", "oof", "int", "ohe"]:
@@ -469,7 +468,6 @@ class TabularDataFeatures:
             Transformer.
 
         """
-
         if feats_to_select is None:
 
             categories = get_columns_by_role(train, "Category")
@@ -507,7 +505,6 @@ class TabularDataFeatures:
             Series.
 
         """
-
         uns = []
         for col in feats:
             feat = Series(train[:, col].data)

@@ -80,7 +80,6 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
             Tuple (params, num_trees, early_stopping_rounds, fobj, feval).
 
         """
-
         params = copy(self.params)
         early_stopping_rounds = params.pop("od_wait")
         num_trees = params.pop("num_trees")
@@ -106,7 +105,6 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
             Parameters of model.
 
         """
-
         rows_num = len(train_valid_iterator.train)
         dataset = train_valid_iterator.train
         self.task = train_valid_iterator.train.task
@@ -192,7 +190,6 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
         """Sample hyperparameters from suggested.
 
         Args:
-            trial: Optuna trial object.
             suggested_params: Dict with parameters.
             estimated_n_trials: Maximum number of hyperparameter estimation.
 
@@ -200,7 +197,6 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
             Dict with sampled hyperparameters.
 
         """
-
         optimization_search_space = {}
 
         try:
@@ -320,11 +316,10 @@ class BoostCB(TabularMLAlgo, ImportanceEstimator):
             model: CatBoost object.
             dataset: Test dataset.
 
-        Return:
+        Returns:
             Predicted target values.
 
         """
-
         params = self._infer_params()[0]
         cb_test = self._get_pool(dataset)
 

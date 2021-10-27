@@ -92,6 +92,17 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         - Dates handling - extracting seasons and create datediffs.
         - Create categorical intersections.
 
+
+    Args:
+        feats_imp: Features importances mapping.
+        top_intersections: Max number of categories
+            to generate intersections.
+        max_intersection_depth: Max depth of cat intersection.
+        subsample: Subsample to calc data statistics.
+        multiclass_te_co: Cutoff if use target encoding in cat
+            handling on multiclass task if number of classes is high.
+        auto_unique_co: Switch to target encoding if high cardinality.
+
     """
 
     def __init__(
@@ -105,19 +116,6 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         output_categories: bool = False,
         **kwargs
     ):
-        """
-
-        Args:
-            feats_imp: Features importances mapping.
-            top_intersections: Max number of categories
-              to generate intersections.
-            max_intersection_depth: Max depth of cat intersection.
-            subsample: Subsample to calc data statistics.
-            multiclass_te_co: Cutoff if use target encoding in cat
-              handling on multiclass task if number of classes is high.
-            auto_unique_co: Switch to target encoding if high cardinality.
-
-        """
         super().__init__(
             multiclass_te_co=multiclass_te_co,
             top_intersections=top_intersections,
@@ -139,7 +137,6 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
             Transformer.
 
         """
-
         transformer_list = []
         target_encoder = self.get_target_encoder(train)
 

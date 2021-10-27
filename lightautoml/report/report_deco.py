@@ -1,4 +1,5 @@
 """Classes for report generation and add-ons."""
+# flake8: noqa
 
 import logging
 import os
@@ -1495,12 +1496,13 @@ class ReportDecoUplift(ReportDeco):
 
     def fit(self, *args, **kwargs):
         """Wrapped automl.fit_predict method.
+
         Valid args, kwargs are the same as wrapped automl.
+
         Args:
             *args: arguments.
             **kwargs: additional parameters.
-        Returns:
-            oof predictions.
+
         """
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
         input_roles = kwargs["roles"] if "roles" in kwargs else args[1]
@@ -1519,13 +1521,16 @@ class ReportDecoUplift(ReportDeco):
         self.generate_report()
 
     def predict(self, test_data):
-
         """Wrapped tlearner.predict method.
+
         Valid args, kwargs are the same as wrapped automl.
+
         Args:
             test_data: Dataset to perform inference.
+
         Returns:
             predictions.
+
         """
         self._n_test_sample += 1
 

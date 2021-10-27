@@ -29,8 +29,7 @@ NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
 
 class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
-    """
-    Creates pipeline for linear models and nnets.
+    """Creates pipeline for linear models and nnets.
 
     Includes:
 
@@ -41,6 +40,21 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         - Numbers discretization if needed.
         - Dates handling.
         - Handling probs (output of lower level models).
+
+    Args:
+        feats_imp: Features importances mapping.
+        top_intersections: Max number of categories
+            to generate intersections.
+        max_bin_count: Max number of bins to discretize numbers.
+        max_intersection_depth: Max depth of cat intersection.
+        subsample: Subsample to calc data statistics.
+        sparse_ohe: Should we output sparse if ohe encoding
+            was used during cat handling.
+        auto_unique_co: Switch to target encoding if high cardinality.
+        output_categories: Output encoded categories or embed idxs.
+        multiclass_te_co: Cutoff if use target encoding in cat handling
+            on multiclass task if number of classes is high.
+
 
     """
 
@@ -57,23 +71,6 @@ class LinearFeatures(FeaturesPipeline, TabularDataFeatures):
         multiclass_te_co: int = 3,
         **kwargs
     ):
-        """
-
-        Args:
-            feats_imp: Features importances mapping.
-            top_intersections: Max number of categories
-              to generate intersections.
-            max_bin_count: Max number of bins to discretize numbers.
-            max_intersection_depth: Max depth of cat intersection.
-            subsample: Subsample to calc data statistics.
-            sparse_ohe: Should we output sparse if ohe encoding
-              was used during cat handling.
-            auto_unique_co: Switch to target encoding if high cardinality.
-            output_categories: Output encoded categories or embed idxs.
-            multiclass_te_co: Cutoff if use target encoding in cat handling
-              on multiclass task if number of classes is high.
-
-        """
         assert max_bin_count is None or max_bin_count > 1, "Max bin count should be >= 2 or None"
 
         super().__init__(
