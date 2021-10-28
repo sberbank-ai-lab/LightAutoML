@@ -1399,7 +1399,10 @@ class ReportDecoNLP(ReportDeco):
         text_roles = roles.get('text', [])
         for role_type, role_name in roles.items():
             if isinstance(role_type, laml_roles.TextRole):
-                text_roles.append(role_name)
+                if isinstance(role_name, str):
+                    text_roles.append(role_name)
+                elif isinstance(role_name, list):
+                    text_roles.extend(role_name)
         return text_roles
 
 
