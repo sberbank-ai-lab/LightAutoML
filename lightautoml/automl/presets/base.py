@@ -208,7 +208,7 @@ class AutoMLPreset(AutoML):
             cv_iter,
             valid_data,
             valid_features,
-            verbose,
+            verbose=verbose,
         )
 
         logger.info("\x1b[1mAutoml preset training completed in {:.2f} seconds\x1b[0m\n".format(self.timer.time_spent))
