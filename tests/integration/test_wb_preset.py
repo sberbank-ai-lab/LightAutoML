@@ -12,7 +12,7 @@ def tests_wb_preset(jobs_train_test, binary_task):
 
     # run automl
     automl = WhiteBoxPreset(binary_task)
-    _ = automl.fit_predict(train.reset_index(drop=True), roles={"target": "target"})
+    _ = automl.fit_predict(train.reset_index(drop=True), roles={"target": "target"}, verbose=2)
     test_prediction = automl.predict(test).data[:, 0]
 
     # calculate scores
