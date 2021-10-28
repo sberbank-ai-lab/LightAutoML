@@ -34,6 +34,7 @@ from lightautoml.addons.uplift import metrics as uplift_metrics
 from lightautoml.addons.uplift.metalearners import TLearner
 from lightautoml.addons.uplift.metalearners import XLearner
 from lightautoml.addons.uplift.utils import _get_treatment_role
+from lightautoml.dataset import roles as laml_roles
 
 
 logger = logging.getLogger(__name__)
@@ -1332,7 +1333,7 @@ class ReportDecoNLP(ReportDeco):
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
         roles = kwargs["roles"] if "roles" in kwargs else args[1]
 
-        self._text_fields = roles["text"]
+        self._text_fields = self._get_text_fields(roles)
         for text_field in self._text_fields:
             content = {}
             content["title"] = "Text field: " + text_field
@@ -1386,6 +1387,20 @@ class ReportDecoNLP(ReportDeco):
             env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
             nlp_section = env.get_template(self._nlp_section_path).render(nlp_subsections=self._nlp_subsections)
             self._sections["nlp"] = nlp_section
+
+    @staticmethod
+    def _get_text_fields(roles: dict) -> list:
+        """
+        Returns all text fields, mentioned in roles.
+
+        :param roles:
+        :return: list of text fields
+        """
+        text_roles = roles.get('text', [])
+        for role_type, role_name in roles.items():
+            if isinstance(role_type, laml_roles.TextRole):
+                text_roles.append(role_name)
+        return text_roles
 
 
 def get_uplift_data(test_target, uplift_pred, test_treatment, mode):
