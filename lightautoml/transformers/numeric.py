@@ -11,6 +11,7 @@ from ..dataset.roles import CategoryRole
 from ..dataset.roles import NumericRole
 from .base import LAMLTransformer
 
+from sklearn.preprocessing import QuantileTransformer as SklQntTr
 
 # type - something that can be converted to pandas dataset
 NumpyTransformable = Union[NumpyDataset, PandasDataset]

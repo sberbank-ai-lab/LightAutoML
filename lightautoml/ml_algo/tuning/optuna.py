@@ -37,6 +37,8 @@ OPTUNA_DISTRIBUTIONS_MAP = {
     Distribution.DISCRETEUNIFORM: "suggest_discrete_uniform",
 }
 
+BIG_INT = 999999999
+
 
 class OptunaTuner(ParamsTuner):
     """Wrapper for optuna tuner."""
@@ -114,9 +116,23 @@ class OptunaTuner(ParamsTuner):
         ml_algo = deepcopy(ml_algo)
 
         flg_new_iterator = False
+        
+        # n_folds for pruning for 1st fold
+        n_folds = None
         if self._fit_on_holdout and type(train_valid_iterator) != HoldoutIterator:
             train_valid_iterator = train_valid_iterator.convert_to_holdout_iterator()
             flg_new_iterator = True
+            n_folds = 1
+
+        if n_folds is None:
+            if hasattr(train_valid_iterator, "n_folds"):
+                n_folds = train_valid_iterator.n_folds
+            else:
+                n_folds = BIG_INT
+        
+        # default_input_params init for nn
+        default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
+        ml_algo.params = {**ml_algo.params, **default_input_params}
 
         # TODO: Check if time estimation will be ok with multiprocessing
         def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
@@ -152,7 +168,12 @@ class OptunaTuner(ParamsTuner):
                 interval_steps=interval_steps
             )
             self.study = optuna.create_study(direction=self.direction, sampler=sampler, pruner=pruner)
-            ml_algo.params["is_optuna_tuning"] = True
+            if "model_name" in ml_algo.params:
+                ml_algo.params["is_optuna_tuning"] = True
+                ml_algo.params["num_folds"] = n_folds
+            
+            # start with default params
+            self.study.enqueue_trial(ml_algo.params)
 
             self.study.optimize(
                 func=self._get_objective(
@@ -165,15 +186,17 @@ class OptunaTuner(ParamsTuner):
                 callbacks=[update_trial_time],
                 # show_progress_bar=True,
             )
-
-            ml_algo.params["is_optuna_tuning"] = False
+            
+            if "model_name" in ml_algo.params:
+                ml_algo.params["is_optuna_tuning"] = False
+            
             # need to update best params here
             self._best_params = self.study.best_params
             default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
             ml_algo.params = {**default_input_params, **ml_algo.params, **self._best_params}
 
             if hasattr(ml_algo, "_construct_tune_params"):
-                ml_algo.params = {**ml_algo.params, **ml_algo._construct_tune_params(ml_algo.params, False)}
+                ml_algo._construct_tune_params(ml_algo.params, update=True)
             self._best_params = ml_algo.params
 
             logger.info(f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed")
@@ -212,33 +235,39 @@ class OptunaTuner(ParamsTuner):
 
         def objective(trial: optuna.trial.Trial) -> float:
             _ml_algo = deepcopy(ml_algo)
-            _ml_algo.params["trial"] = trial
 
-            optimization_search_space = _ml_algo.params.get("optimization_search_space", None)
-            if optimization_search_space is None:
+            optimization_search_space = _ml_algo.params.get("optimization_search_space", -1)
+            if optimization_search_space == -1:
                 optimization_search_space = _ml_algo.optimization_search_space
 
-            if optimization_search_space is None:
+            if not optimization_search_space:
                 optimization_search_space = _ml_algo._get_default_search_spaces(
                     suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
                     estimated_n_trials=estimated_n_trials,
                 )
 
             if callable(optimization_search_space):
-                _ml_algo.params = optimization_search_space(
+                sampled_params = optimization_search_space(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
                     suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
                 )
             else:
-                _ml_algo.params = self._sample(
+                sampled_params = self._sample(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
                     suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
                 )
-
+            
+            
+            _ml_algo.params = {**_ml_algo.params, **sampled_params}
+            if hasattr(_ml_algo, "_construct_tune_params"):
+                _ml_algo._construct_tune_params(_ml_algo.params, update=True)
+            
+            if "model_name" in _ml_algo.params:
+                _ml_algo.params["trial"] = trial
+            
             output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
-
             return _ml_algo.score(output_dataset)
 
         return objective

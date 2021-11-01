@@ -264,7 +264,6 @@ class TorchUniversalModel(nn.Module):
         cat_params: Optional[Dict] = None,
         text_embedder: Optional = None,
         text_params: Optional[Dict] = None,
-        bias: Optional[Sequence] = None,
         custom_loss=False,
         **kwargs,
     ):
@@ -287,6 +286,7 @@ class TorchUniversalModel(nn.Module):
         self.n_out = n_out
         self.loss = loss
         self.task = task
+        self.custom_loss = custom_loss
 
         self.cont_embedder = None
         self.cat_embedder = None

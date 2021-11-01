@@ -14,7 +14,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from optuna import TrialPruned
+
 from torch.utils.data import DataLoader
+
 from tqdm import tqdm
 
 from .dp_utils import CustomDataParallel
@@ -236,7 +239,11 @@ class SnapshotEns:
 
 class Trainer:
     """Torch main trainer class."""
-
+    
+    # Think about compatibility with multigpu
+    _num_folds = 5
+    cur_fold = 0
+    
     def __init__(
         self,
         net,
@@ -256,6 +263,7 @@ class Trainer:
         apex: bool = False,
         pretrained_path: Optional[str] = None,
         is_optuna_tuning=False,
+        num_folds=None,
         trial=None,
         **kwargs
     ):
@@ -310,6 +318,8 @@ class Trainer:
 
         self.is_optuna_tuning = is_optuna_tuning
         self._trial = trial
+        
+        Trainer._num_folds = num_folds
 
     def clean(self):
         """Clean all models."""
@@ -447,7 +457,7 @@ class Trainer:
             if self.se.early_stop:
                 break
 
-            if self.is_optuna_tuning:
+            if self.is_optuna_tuning and Trainer.cur_fold == 0:
                 self._trial.report(val_metric, step=self.epoch)
                 if self._trial.should_prune():
                     raise TrialPruned()
@@ -468,7 +478,9 @@ class Trainer:
             )
 
         self.is_fitted = True
-
+        if self.is_optuna_tuning:
+            Trainer.cur_fold += 1
+            Trainer.cur_fold %= self._num_folds
         return val_data[1]
 
     def train(self, dataloaders: Dict[str, DataLoader]) -> List[float]:
@@ -497,17 +509,18 @@ class Trainer:
                 i: (sample[i].long().to(self.device) if _dtypes_mapping[i] == "long" else sample[i].to(self.device))
                 for i in sample.keys()
             }
-
+            
+            self.optimizer.zero_grad()
             loss = self.model(data).mean()
             if self.apex:
                 with self.amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
             else:
                 loss.backward()
-
+            
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
             self.optimizer.step()
-            self.optimizer.zero_grad()
+            
             loss = loss.data.cpu().numpy()
             loss_log.append(loss)
             running_loss += loss

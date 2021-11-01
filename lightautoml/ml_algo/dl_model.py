@@ -425,12 +425,12 @@ class TorchModel(TabularMLAlgo):
         op_search_space["opt_params"] = {
             "lr": SearchSpace(
                 Distribution.LOGUNIFORM,
-                low=1e-5,
-                high=1e-2
+                low=1e-6,
+                high=1e-1
             ),
             "weight_decay": SearchSpace(
                 Distribution.LOGUNIFORM,
-                low=0,
+                low=1e-10,
                 high=1e-2
             )
         }
