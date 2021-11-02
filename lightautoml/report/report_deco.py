@@ -372,6 +372,23 @@ def plot_feature_importance(feat_imp, path, features_max=100):
     plt.close()
 
 
+def list2table(feature_list: list, html_params: dict = {}) -> str:
+    """
+    Creates HTML table with feature description from list of
+    Converts list of items
+
+    :param feature_list: list of dictionaries with features' properties (e.g. name, length, stat. properties, etc.);
+    :param html_params: extra parameters for pandas.DataFrame().to_html() function;
+    :return: string representation of HTML table.
+    """
+    default_html_params = {'index': False, 'justify': 'left'}
+    default_html_params.update(html_params)
+    if len(feature_list) == 0:
+        return None
+    else:
+        return pd.DataFrame(feature_list).to_html(**default_html_params)
+
+
 class ReportDeco:
     """
     Decorator to wrap :class:`~lightautoml.automl.base.AutoML` class to generate html report on ``fit_predict`` and ``predict``.
@@ -964,6 +981,7 @@ class ReportDeco:
         numerical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Numeric"]
         categorical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Category"]
         datetime_features = [feat_name for feat_name in roles if roles[feat_name].name == "Datetime"]
+        text_features = [feat_name for feat_name in roles if roles[feat_name].name == "Text"]
 
         # numerical roles
         numerical_features_df = []
@@ -978,12 +996,8 @@ class ReportDeco:
             item["quantile_75"] = np.quantile(values, 0.75)
             item["max"] = np.max(values)
             numerical_features_df.append(item)
-        if numerical_features_df == []:
-            self._numerical_features_table = None
-        else:
-            self._numerical_features_table = pd.DataFrame(numerical_features_df).to_html(
-                index=False, float_format="{:.2f}".format, justify="left"
-            )
+        self._numerical_features_table = list2table(numerical_features_df, {'float_format': '{:.2f}'.format})
+
         # categorical roles
         categorical_features_df = []
         for feature_name in categorical_features:
@@ -998,12 +1012,8 @@ class ReportDeco:
             item["Least frequent value"] = values[-1]
             item["Occurance of least frequent"] = "{:.1f}%".format(100 * counts[-1])
             categorical_features_df.append(item)
-        if categorical_features_df == []:
-            self._categorical_features_table = None
-        else:
-            self._categorical_features_table = pd.DataFrame(categorical_features_df).to_html(
-                index=False, justify="left"
-            )
+        self._categorical_features_table = list2table(categorical_features_df)
+
         # datetime roles
         datetime_features_df = []
         for feature_name in datetime_features:
@@ -1014,10 +1024,18 @@ class ReportDeco:
             item["max"] = np.max(values)
             item["base_date"] = self._model.reader._roles[feature_name].base_date
             datetime_features_df.append(item)
-        if datetime_features_df == []:
-            self._datetime_features_table = None
-        else:
-            self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify="left")
+        self._datetime_features_table = list2table(datetime_features_df)
+
+        # text roles
+        text_features_df = []
+        for feature_name in text_features:
+            item = {'Feature name': feature_name}
+            feature_length = train_data[feature_name].str.len()
+            item['Amount of empty records'] = (feature_length == 0).sum(axis=0)
+            item['Length of the shortest sentence'] = feature_length.min()
+            item['Length of the longest sentence'] = feature_length.max()
+            text_features_df.append(item)
+        self._text_features_table = list2table(text_features_df)
 
     def _describe_dropped_features(self, train_data):
         self._max_nan_rate = self._model.reader.max_nan_rate
@@ -1067,6 +1085,7 @@ class ReportDeco:
             numerical_features_table=self._numerical_features_table,
             categorical_features_table=self._categorical_features_table,
             datetime_features_table=self._datetime_features_table,
+            text_features_table=self._text_features_table,
             target=self._target,
             max_nan_rate=self._max_nan_rate,
             max_constant_rate=self._max_constant_rate,
