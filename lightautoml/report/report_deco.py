@@ -1550,7 +1550,7 @@ class ReportDecoUplift(ReportDeco):
         data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         data = data[~data["y_pred"].isnull()]
         self._generate_test_subsection(data, "treatment", treatment_title)
-        self._generate_inference_section(data)
+        self._generate_inference_section()
 
         # control data
         data = pd.DataFrame({"y_true": test_target[test_treatment == 0]})
@@ -1559,7 +1559,7 @@ class ReportDecoUplift(ReportDeco):
         data["bin"] = (np.arange(data.shape[0]) / data.shape[0] * self.n_bins).astype(int)
         data = data[~data["y_pred"].isnull()]
         self._generate_test_subsection(data, "control", control_title)
-        self._generate_inference_section(data)
+        self._generate_inference_section()
 
         # update model section
         self._generate_model_section()
@@ -1681,11 +1681,11 @@ class ReportDecoUplift(ReportDeco):
         # treatment model
         treatment_data = self._collect_data(treatment_preds, treatment_target)
         self._generate_training_subsection(treatment_data, "treatment", "Treatment train")
-        self._generate_inference_section(treatment_data)
+        self._generate_inference_section()
 
         control_data = self._collect_data(control_preds, control_target)
         self._generate_training_subsection(control_data, "control", "Control train")
-        self._generate_inference_section(control_data)
+        self._generate_inference_section()
 
     def _collect_data(self, preds, target):
         data = pd.DataFrame({"y_true": target})
