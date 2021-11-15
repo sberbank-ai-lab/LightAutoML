@@ -381,7 +381,7 @@ def list2table(feature_list: list, html_params: dict = {}) -> str:
     :param html_params: extra parameters for pandas.DataFrame().to_html() function;
     :return: string representation of HTML table.
     """
-    default_html_params = {'index': False, 'justify': 'left'}
+    default_html_params = {"index": False, "justify": "left"}
     default_html_params.update(html_params)
     if len(feature_list) == 0:
         return None
@@ -996,7 +996,7 @@ class ReportDeco:
             item["quantile_75"] = np.quantile(values, 0.75)
             item["max"] = np.max(values)
             numerical_features_df.append(item)
-        self._numerical_features_table = list2table(numerical_features_df, {'float_format': '{:.2f}'.format})
+        self._numerical_features_table = list2table(numerical_features_df, {"float_format": "{:.2f}".format})
 
         # categorical roles
         categorical_features_df = []
@@ -1029,11 +1029,11 @@ class ReportDeco:
         # text roles
         text_features_df = []
         for feature_name in text_features:
-            item = {'Feature name': feature_name}
+            item = {"Feature name": feature_name}
             feature_length = train_data[feature_name].str.len()
-            item['Amount of empty records'] = (feature_length == 0).sum(axis=0)
-            item['Length of the shortest sentence'] = feature_length.min()
-            item['Length of the longest sentence'] = feature_length.max()
+            item["Amount of empty records"] = (feature_length == 0).sum(axis=0)
+            item["Length of the shortest sentence"] = feature_length.min()
+            item["Length of the longest sentence"] = feature_length.max()
             text_features_df.append(item)
         self._text_features_table = list2table(text_features_df)
 
@@ -1415,7 +1415,7 @@ class ReportDecoNLP(ReportDeco):
         :param roles:
         :return: list of text fields
         """
-        text_roles = roles.get('text', [])
+        text_roles = roles.get("text", [])
         for role_type, role_name in roles.items():
             if isinstance(role_type, laml_roles.TextRole):
                 if isinstance(role_name, str):
