@@ -179,8 +179,6 @@ class CatEmbedder(nn.Module):
 
         """
         super(CatEmbedder, self).__init__()
-#         if len(cat_dims) > 4000:
-#             max_emb_size = 25
 
         emb_dims = [
             (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))

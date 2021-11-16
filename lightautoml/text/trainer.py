@@ -262,9 +262,6 @@ class Trainer:
         verbose_inside: Optional[int] = None,
         apex: bool = False,
         pretrained_path: Optional[str] = None,
-        is_optuna_tuning=False,
-        num_folds=None,
-        trial=None,
         **kwargs
     ):
         """Train, validation and test loops for NN models.
@@ -315,11 +312,6 @@ class Trainer:
         self.se = None
         self.amp = None
         self.is_fitted = False
-
-        self.is_optuna_tuning = is_optuna_tuning
-        self._trial = trial
-        
-        Trainer._num_folds = num_folds
 
     def clean(self):
         """Clean all models."""
@@ -457,11 +449,6 @@ class Trainer:
             if self.se.early_stop:
                 break
 
-            if self.is_optuna_tuning and Trainer.cur_fold == 0:
-                self._trial.report(val_metric, step=self.epoch)
-                if self._trial.should_prune():
-                    raise TrialPruned()
-
         self.se.set_best_params(self.model)
 
         if self.is_snap:
@@ -478,9 +465,6 @@ class Trainer:
             )
 
         self.is_fitted = True
-        if self.is_optuna_tuning:
-            Trainer.cur_fold += 1
-            Trainer.cur_fold %= self._num_folds
         return val_data[1]
 
     def train(self, dataloaders: Dict[str, DataLoader]) -> List[float]:

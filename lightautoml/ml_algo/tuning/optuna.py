@@ -117,22 +117,9 @@ class OptunaTuner(ParamsTuner):
 
         flg_new_iterator = False
         
-        # n_folds for pruning for 1st fold
-        n_folds = None
-        if self._fit_on_holdout and type(train_valid_iterator) != HoldoutIterator:
-            train_valid_iterator = train_valid_iterator.convert_to_holdout_iterator()
-            flg_new_iterator = True
-            n_folds = 1
-
-        if n_folds is None:
-            if hasattr(train_valid_iterator, "n_folds"):
-                n_folds = train_valid_iterator.n_folds
-            else:
-                n_folds = BIG_INT
-        
         # default_input_params init for nn
         default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
-        ml_algo.params = {**ml_algo.params, **default_input_params}
+        ml_algo.params = {**default_input_params, **ml_algo.params}
 
         # TODO: Check if time estimation will be ok with multiprocessing
         def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
@@ -153,24 +140,7 @@ class OptunaTuner(ParamsTuner):
         try:
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
-            n_startup_trials = 999999999
-            n_warmup_steps = 1
-            interval_steps = 1
-
-            if isinstance(ml_algo.params.get('optuna_pruner_params', None), dict):
-                n_startup_trials = ml_algo.params['optuna_pruner_params'].get('n_startup_trials', n_startup_trials)
-                n_warmup_steps = ml_algo.params['optuna_pruner_params'].get('n_warmup_steps', n_warmup_steps)
-                interval_steps = ml_algo.params['optuna_pruner_params'].get('interval_steps', interval_steps)
-
-            pruner = MedianPruner(
-                n_startup_trials=n_startup_trials,
-                n_warmup_steps=n_warmup_steps,
-                interval_steps=interval_steps
-            )
-            self.study = optuna.create_study(direction=self.direction, sampler=sampler, pruner=pruner)
-            if "_torch_flag_" in ml_algo.params:
-                ml_algo.params["is_optuna_tuning"] = True
-                ml_algo.params["num_folds"] = n_folds
+            self.study = optuna.create_study(direction=self.direction, sampler=sampler)
             
             # start with default params
             self.study.enqueue_trial(ml_algo.params)
@@ -187,18 +157,9 @@ class OptunaTuner(ParamsTuner):
                 # show_progress_bar=True,
             )
             
-            if "_torch_flag_" in ml_algo.params:
-                ml_algo.params["is_optuna_tuning"] = False
-                del ml_algo.params["num_folds"]
-            
             # need to update best params here
             self._best_params = self.study.best_params
-            default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
-            ml_algo.params = {**default_input_params, **ml_algo.params, **self._best_params}
-
-            if hasattr(ml_algo, "_construct_tune_params"):
-                ml_algo._construct_tune_params(ml_algo.params, update=True)
-            self._best_params = ml_algo.params
+            ml_algo.params = self._best_params
 
             logger.info(f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed")
             logger.info2(
@@ -237,9 +198,7 @@ class OptunaTuner(ParamsTuner):
         def objective(trial: optuna.trial.Trial) -> float:
             _ml_algo = deepcopy(ml_algo)
 
-            optimization_search_space = _ml_algo.params.get("optimization_search_space", -1)
-            if optimization_search_space == -1:
-                optimization_search_space = _ml_algo.optimization_search_space
+            optimization_search_space = _ml_algo.optimization_search_space
 
             if not optimization_search_space:
                 optimization_search_space = _ml_algo._get_default_search_spaces(
@@ -260,13 +219,7 @@ class OptunaTuner(ParamsTuner):
                     suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
                 )
             
-            _ml_algo.params = {**_ml_algo.params, **sampled_params}
-            if hasattr(_ml_algo, "_construct_tune_params"):
-                _ml_algo._construct_tune_params(_ml_algo.params, update=True)
-            
-            if "_torch_flag_" in _ml_algo.params:
-                _ml_algo.params["trial"] = trial
-            
+            _ml_algo.params = sampled_params
             output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
             return _ml_algo.score(output_dataset)
 
