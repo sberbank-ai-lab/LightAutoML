@@ -17,7 +17,6 @@ from typing import Dict
 import numpy as np
 import torch
 import torch.nn as nn
-from optuna import Trial
 from torch.optim import lr_scheduler
 from transformers import AutoTokenizer
 from .nn_models import DenseLightModel, DenseModel, ResNetModel, MLP, LinearLayer, SNN
@@ -40,7 +39,6 @@ from ..text.utils import is_shuffle
 from ..text.utils import parse_devices
 from ..text.utils import seed_everything
 
-from ..ml_algo.torch_based.act_funcs import TS
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, CosineAnnealingLR
 from lightautoml.tasks.losses.torch import TorchLossWrapper
 

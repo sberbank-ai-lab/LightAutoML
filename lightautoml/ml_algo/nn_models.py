@@ -1,10 +1,10 @@
 from collections import OrderedDict
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
-import numpy as np
 
 
 class GaussianNoise(nn.Module):

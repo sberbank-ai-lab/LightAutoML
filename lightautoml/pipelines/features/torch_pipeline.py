@@ -1,22 +1,21 @@
 from typing import Optional, Union
 
+import numpy as np
+
 from .base import FeaturesPipeline, TabularDataFeatures
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
 from ...dataset.np_pd_dataset import NumpyDataset, PandasDataset
+from ...dataset.roles import NumericRole
+from ...transformers.base import ChangeRoles
 from ...transformers.base import LAMLTransformer, SequentialTransformer, UnionTransformer, ColumnsSelector, \
     ConvertDataset
 from ...transformers.categorical import LabelEncoder
 from ...transformers.datetime import TimeToNum
-from ...transformers.numeric import QuantileTransformer
 from ...transformers.numeric import FillInf
 from ...transformers.numeric import FillnaMedian
-from ...transformers.numeric import NaNFlags
+from ...transformers.numeric import QuantileTransformer
 from ...transformers.numeric import StandardScaler
-from ...transformers.base import ChangeRoles
-from ...dataset.roles import NumericRole
-
-import numpy as np
 
 NumpyOrPandas = Union[PandasDataset, NumpyDataset]
 
