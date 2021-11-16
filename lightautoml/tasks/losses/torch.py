@@ -254,7 +254,7 @@ def torch_mape(
 _torch_loss_dict = {
     "mse": (nn.MSELoss, False, False),
     "mae": (nn.L1Loss, False, False),
-    "logloss": (nn.BCEWithLogitsLoss, False, False),
+    "logloss": (nn.BCELoss, False, False),
     "crossentropy": (nn.CrossEntropyLoss, True, True),
     "rmsle": (torch_rmsle, False, False),
     "mape": (torch_mape, False, False),

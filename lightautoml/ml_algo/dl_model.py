@@ -42,6 +42,7 @@ from ..text.utils import seed_everything
 
 from ..ml_algo.torch_based.act_funcs import TS
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, CosineAnnealingLR
+from lightautoml.tasks.losses.torch import TorchLossWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class TorchModel(TabularMLAlgo):
     _name: str = 'TorchNN'
 
     _default_params = {
-        'bs': 32,
+        'bs': 64,
         'num_workers': 4,
         'max_length': 256,
         'opt': torch.optim.Adam,
@@ -137,7 +138,16 @@ class TorchModel(TabularMLAlgo):
 
         'sch': lr_scheduler.ReduceLROnPlateau,
         'use_dropout': True,
+        'use_bn': True,
         'use_noise': False,
+        '_torch_flag_': True,
+        'freeze_defaults': False
+    }
+    
+    _task_to_loss = {
+        'binary': nn.BCEWithLogitsLoss(),
+        'multiclass': TorchLossWrapper(nn.CrossEntropyLoss, True, False),
+        'reg': nn.MSELoss()
     }
 
     def _infer_params(self):
@@ -157,7 +167,11 @@ class TorchModel(TabularMLAlgo):
             params["loss"] = self.params["loss"]
         else:
             self.custom_loss = False
-            params["loss"] = self.task.losses["torch"].loss
+            if self.task._name in self._task_to_loss:
+                params["loss"] = self._task_to_loss[self.task._name]
+                self.custom_loss = True
+            else:
+                params["loss"] = self.task.losses["torch"]
 
         params["custom_loss"] = self.custom_loss
         params["metric"] = self.task.losses["torch"].metric_func
@@ -705,7 +719,7 @@ class TorchModel(TabularMLAlgo):
                 "eta_min": new_params["scheduler_params"]["eta_min"],
             }
 
-        else:
+        elif params["sch"] is not None:
             raise ValueError("Worng sch")
 
         if self.params["model"] == "dense_light" or self.params["model"] == "mlp":

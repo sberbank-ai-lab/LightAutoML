@@ -33,16 +33,17 @@ class UniformNoise(nn.Module):
 
 class DenseLightBlock(nn.Module):
     def __init__(self, n_in, n_out, drop_rate=0.1, noise_std=0.05, act_fun=nn.ReLU,
-                 use_bn=True, use_noise=True, use_dropout=True, use_act=True, **kwargs):
+                 use_bn=True, use_noise=True, use_dropout=True, use_act=True, device=torch.device("cuda:0"),
+                 **kwargs):
         super(DenseLightBlock, self).__init__()
         self.features = nn.Sequential(OrderedDict([]))
-
+        
         if use_bn:
             self.features.add_module("norm", nn.BatchNorm1d(n_in))
         if use_dropout:
             self.features.add_module("dropout", nn.Dropout(p=drop_rate))
         if use_noise:
-            self.features.add_module("noise", GaussianNoise(noise_std, torch.device("cuda:0")))
+            self.features.add_module("noise", GaussianNoise(noise_std, device))
 
         self.features.add_module("dense", nn.Linear(n_in, n_out))
 
@@ -50,7 +51,8 @@ class DenseLightBlock(nn.Module):
             self.features.add_module("act", act_fun())
 
     def forward(self, x):
-        x = self.features(x)
+        for name, layer in self.features.named_children():
+            x = layer(x)
         return x
 
 
@@ -58,7 +60,7 @@ class DenseLightModel(nn.Module):
     def __init__(self, n_in, n_out=1, hidden_size=(512, 750,), drop_rate=(0.1, 0.1,),
                  act_fun=nn.ReLU, noise_std=0.05, bias=None, num_init_features=None,
                  use_bn=True, use_noise=True, use_dropout=True, use_act=True,
-                 concat_input=True, **kwargs):
+                 concat_input=True, device=torch.device("cuda:0"), **kwargs):
         super(DenseLightModel, self).__init__()
         assert len(hidden_size) == len(drop_rate), "Wrong number hidden_sizes/drop_rates. Must be equal."
 
@@ -79,7 +81,8 @@ class DenseLightModel(nn.Module):
                 use_bn=use_bn,
                 use_noise=use_noise,
                 use_dropout=use_dropout,
-                use_act=use_act
+                use_act=use_act,
+                device=device
             )
             self.features.add_module("denseblock%d" % (i + 1), block)
 
@@ -264,14 +267,14 @@ class DenseModel(nn.Module):
 
 class ResNetBlock(nn.Module):
     def __init__(self, n_in, hid_factor, n_out, drop_rate=(0.1, 0.1), noise_std=0.05, act_fun=nn.ReLU,
-                 use_bn=True, use_noise=True, use_dropout=True, **kwargs):
+                 use_bn=True, use_noise=True, use_dropout=True, device=torch.device("cuda:0"), **kwargs):
         super(ResNetBlock, self).__init__()
         self.features = nn.Sequential(OrderedDict([]))
         
         if use_bn:
             self.features.add_module("norm", nn.BatchNorm1d(n_in))
         if use_noise:
-            self.features.add_module("noise", GaussianNoise(noise_std, torch.device("cuda:0")))
+            self.features.add_module("noise", GaussianNoise(noise_std, device))
 
         self.features.add_module("dense1", nn.Linear(n_in, int(hid_factor * n_in)))
         self.features.add_module("act1", act_fun())
@@ -296,7 +299,8 @@ class ResNetModel(nn.Module):
     """
     def __init__(self, n_in, n_out=1, hid_factor=(2, 2), drop_rate=((0.1, 0.1), (0.1, 0.1)),
                  bias=None, noise_std=0.05, act_fun=nn.ReLU, num_init_features=None,
-                 use_bn=True, use_noise=True, use_dropout=True, **kwargs):
+                 use_bn=True, use_noise=True, use_dropout=True, device=torch.device("cuda:0"),
+                 **kwargs):
         super(ResNetModel, self).__init__()
         num_features = n_in if num_init_features is None else num_init_features
         self.dense0 = nn.Linear(n_in, num_features)
@@ -312,7 +316,8 @@ class ResNetModel(nn.Module):
                 act_fun=act_fun,
                 use_bn=use_bn,
                 use_noise=use_noise,
-                use_dropout=use_dropout
+                use_dropout=use_dropout,
+                device=device
             )
             self.features1.add_module("resnetblock%d" % (i + 1), block)
         

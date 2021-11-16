@@ -21,6 +21,8 @@ except:
 from ..tasks.base import Task
 from .dl_transformers import pooling_by_name
 
+from lightautoml.tasks.losses.torch import TorchLossWrapper
+
 
 class UniversalDataset:
     """Dataset class for mixed data."""
@@ -177,14 +179,8 @@ class CatEmbedder(nn.Module):
 
         """
         super(CatEmbedder, self).__init__()
-        if len(cat_dims) > 100:
-            max_emb_size = 128
-
-        if len(cat_dims) > 500:
-            max_emb_size = 64
-
-        if len(cat_dims) > 1000:
-            max_emb_size = 32
+#         if len(cat_dims) > 4000:
+#             max_emb_size = 25
 
         emb_dims = [
             (int(x), int(min(max_emb_size, max(1, (x + 1) // emb_ratio))))
@@ -303,7 +299,6 @@ class TorchUniversalModel(nn.Module):
             self.text_embedder = text_embedder(**text_params)
             n_in += self.text_embedder.get_out_shape()
 
-        self.bn = nn.BatchNorm1d(n_in)
         self.torch_model = torch_model(**{**kwargs,
                                           **{'n_in': n_in, 'n_out': self.n_out,
                                              'loss': loss, 'task': task}})
@@ -311,6 +306,8 @@ class TorchUniversalModel(nn.Module):
         self.сlump = Clump()
         self.sig = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
+        
+        self.is_wrapper_loss = True if isinstance(loss, TorchLossWrapper) else False
 
     def forward(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
         outputs = []
@@ -329,15 +326,16 @@ class TorchUniversalModel(nn.Module):
             output = outputs[0]
 
         x = self.torch_model(output)
-
-        if self.custom_loss:
-            loss = self.loss(
-                x, inp["label"].view(inp["label"].shape[0], -1)
-            )
-        else:
+        
+        if self.is_wrapper_loss or not self.custom_loss:
             loss = self.loss(
                 inp["label"].view(inp["label"].shape[0], -1), x, inp.get("weight", None)
             )
+        else:
+            loss = self.loss(
+                x, inp["label"].view(inp["label"].shape[0], -1)
+            )
+           
         return loss
 
     def predict(self, inp: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -361,6 +359,9 @@ class TorchUniversalModel(nn.Module):
         if (self.task.name == "binary") or (self.task.name == "multilabel"):
             out = self.sig(self.сlump(logits))
         elif self.task.name == "multiclass":
-            out = self.softmax(self.clump(logits))
-
+            # cant find self.clump when predicting 
+            out = self.softmax(torch.clamp(logits, -50, 50))
+        else:
+            out = logits
+        
         return out

@@ -153,11 +153,11 @@ class OptunaTuner(ParamsTuner):
         try:
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
-            n_startup_trials = 10
+            n_startup_trials = 999999999
             n_warmup_steps = 1
             interval_steps = 1
 
-            if 'optuna_pruner_params' in ml_algo.params:
+            if isinstance(ml_algo.params.get('optuna_pruner_params', None), dict):
                 n_startup_trials = ml_algo.params['optuna_pruner_params'].get('n_startup_trials', n_startup_trials)
                 n_warmup_steps = ml_algo.params['optuna_pruner_params'].get('n_warmup_steps', n_warmup_steps)
                 interval_steps = ml_algo.params['optuna_pruner_params'].get('interval_steps', interval_steps)
@@ -168,7 +168,7 @@ class OptunaTuner(ParamsTuner):
                 interval_steps=interval_steps
             )
             self.study = optuna.create_study(direction=self.direction, sampler=sampler, pruner=pruner)
-            if "model_name" in ml_algo.params:
+            if "_torch_flag_" in ml_algo.params:
                 ml_algo.params["is_optuna_tuning"] = True
                 ml_algo.params["num_folds"] = n_folds
             
@@ -187,8 +187,9 @@ class OptunaTuner(ParamsTuner):
                 # show_progress_bar=True,
             )
             
-            if "model_name" in ml_algo.params:
+            if "_torch_flag_" in ml_algo.params:
                 ml_algo.params["is_optuna_tuning"] = False
+                del ml_algo.params["num_folds"]
             
             # need to update best params here
             self._best_params = self.study.best_params
@@ -259,12 +260,11 @@ class OptunaTuner(ParamsTuner):
                     suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
                 )
             
-            
             _ml_algo.params = {**_ml_algo.params, **sampled_params}
             if hasattr(_ml_algo, "_construct_tune_params"):
                 _ml_algo._construct_tune_params(_ml_algo.params, update=True)
             
-            if "model_name" in _ml_algo.params:
+            if "_torch_flag_" in _ml_algo.params:
                 _ml_algo.params["trial"] = trial
             
             output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
