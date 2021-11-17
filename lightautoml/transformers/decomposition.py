@@ -88,7 +88,9 @@ class PCATransformer(LAMLTransformer):
         dataset = dataset.to_numpy()
         data = dataset.data
         self.n_components = np.minimum(self.n_components, data.shape[1] - 1)
-        self.pca = self._pca(n_components=self.n_components, random_state=self.random_state)
+        self.pca = self._pca(
+            n_components=self.n_components, random_state=self.random_state
+        )
         self.pca.fit(data)
 
         orig_name = dataset.features[0].split("__")[-1]
@@ -173,7 +175,9 @@ class SVDTransformer(LAMLTransformer):
         # convert to accepted dtype and get attributes
         data = dataset.data
         self.n_components = np.minimum(self.n_components, data.shape[1] - 1)
-        self.svd = self._svd(n_components=self.n_components, random_state=self.random_state)
+        self.svd = self._svd(
+            n_components=self.n_components, random_state=self.random_state
+        )
         self.svd.fit(data)
 
         orig_name = dataset.features[0].split("__")[-1]

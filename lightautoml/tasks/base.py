@@ -74,7 +74,9 @@ class LAMLMetric:
             AttributeError: If metric isn't defined.
 
         """
-        assert hasattr(dataset, "target"), "Dataset should have target to calculate metric"
+        assert hasattr(
+            dataset, "target"
+        ), "Dataset should have target to calculate metric"
         raise NotImplementedError
 
 
@@ -175,9 +177,13 @@ class SkMetric(LAMLMetric):
                 target specified as one-dimensioned, but it is not.
 
         """
-        assert hasattr(dataset, "target"), "Dataset should have target to calculate metric"
+        assert hasattr(
+            dataset, "target"
+        ), "Dataset should have target to calculate metric"
         if self.one_dim:
-            assert dataset.shape[1] == 1, "Dataset should have single column if metric is one_dim"
+            assert (
+                dataset.shape[1] == 1
+            ), "Dataset should have single column if metric is one_dim"
         # TODO: maybe refactor this part?
         dataset = dataset.to_numpy()
         y_true = dataset.target
@@ -296,7 +302,9 @@ class Task:
 
         """
 
-        assert name in _valid_task_names, "Invalid task name: {}, allowed task names: {}".format(
+        assert (
+            name in _valid_task_names
+        ), "Invalid task name: {}, allowed task names: {}".format(
             name, _valid_task_names
         )
         self._name = name
@@ -320,7 +328,9 @@ class Task:
                 # ??? "rewrite METRIC params" ???
                 if loss == metric:
                     metric_params = loss_params
-                    logger.info2("As loss and metric are equal, metric params are ignored.")
+                    logger.info2(
+                        "As loss and metric are equal, metric params are ignored."
+                    )
 
             else:
                 assert (
@@ -328,26 +338,36 @@ class Task:
                 ), "Loss should be defined with arguments. Ex. loss='quantile', loss_params={'q': 0.7}."
                 loss_params = None
 
-            assert loss in _valid_str_loss_names[self.name], "Invalid loss name: {} for task {}.".format(
-                loss, self.name
-            )
+            assert (
+                loss in _valid_str_loss_names[self.name]
+            ), "Invalid loss name: {} for task {}.".format(loss, self.name)
 
-            for loss_key, loss_factory in zip(["lgb", "sklearn", "torch", "cb"], [LGBLoss, SKLoss, TORCHLoss, CBLoss]):
+            for loss_key, loss_factory in zip(
+                ["lgb", "sklearn", "torch", "cb"], [LGBLoss, SKLoss, TORCHLoss, CBLoss]
+            ):
                 try:
                     self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
                 except (AssertionError, TypeError, ValueError):
-                    logger.info2("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
+                    logger.info2(
+                        "{0} doesn't support in general case {1} and will not be used.".format(
+                            loss_key, loss
+                        )
+                    )
 
                 # self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
 
-            assert len(self.losses) > 0, "None of frameworks supports {0} loss.".format(loss)
+            assert len(self.losses) > 0, "None of frameworks supports {0} loss.".format(
+                loss
+            )
 
         elif type(loss) is dict:
             # case - dict passed directly
             # TODO: check loss parameters?
             #  Or it there will be assert when use functools.partial
             # assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
-            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(loss), "Invalid loss key."
+            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(
+                loss
+            ), "Invalid loss key."
             self.losses = loss
 
         else:
@@ -383,7 +403,9 @@ class Task:
         self.greater_is_better = greater_is_better
 
         for loss_key in self.losses:
-            self.losses[loss_key].set_callback_metric(metric, greater_is_better, self.metric_params, self.name)
+            self.losses[loss_key].set_callback_metric(
+                metric, greater_is_better, self.metric_params, self.name
+            )
 
     def get_dataset_metric(self) -> LAMLMetric:
         """Create metric for dataset.
@@ -413,9 +435,13 @@ class Task:
             required_params = set()
         given_params = set(loss_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0, "For loss {0} given extra params {1}".format(loss_name, extra_params)
+        assert len(extra_params) == 0, "For loss {0} given extra params {1}".format(
+            loss_name, extra_params
+        )
         needed_params = required_params - given_params
-        assert len(needed_params) == 0, "For loss {0} required params {1} are not defined".format(
+        assert (
+            len(needed_params) == 0
+        ), "For loss {0} required params {1} are not defined".format(
             loss_name, needed_params
         )
 
@@ -427,8 +453,12 @@ class Task:
             required_params = set()
         given_params = set(metric_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0, "For metric {0} given extra params {1}".format(metric_name, extra_params)
+        assert len(extra_params) == 0, "For metric {0} given extra params {1}".format(
+            metric_name, extra_params
+        )
         needed_params = required_params - given_params
-        assert len(needed_params) == 0, "For metric {0} required params {1} are not defined".format(
+        assert (
+            len(needed_params) == 0
+        ), "For metric {0} required params {1} are not defined".format(
             metric_name, needed_params
         )

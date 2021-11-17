@@ -166,7 +166,9 @@ class WhiteBoxPreset(AutoMLPreset):
         levels = [[whitebox]]
 
         # initialize
-        self._initialize(reader, levels, skip_conn=False, timer=self.timer, verbose=self.verbose)
+        self._initialize(
+            reader, levels, skip_conn=False, timer=self.timer, verbose=self.verbose
+        )
 
     def fit_predict(
         self,
@@ -209,12 +211,16 @@ class WhiteBoxPreset(AutoMLPreset):
         """
         assert cv_iter is None or len(cv_iter) == 2, "Expect custom iterator with len 2"
         if valid_data is None and cv_iter is None:
-            logger.info2("Validation data is not set. Train will be used as valid in report and valid prediction")
+            logger.info2(
+                "Validation data is not set. Train will be used as valid in report and valid prediction"
+            )
             valid_data = train_data
             valid_features = train_features
 
         self.fit_params = fit_params
-        pred = super().fit_predict(train_data, roles, train_features, cv_iter, valid_data, valid_features)
+        pred = super().fit_predict(
+            train_data, roles, train_features, cv_iter, valid_data, valid_features
+        )
         return cast(NumpyDataset, pred)
 
     def predict(

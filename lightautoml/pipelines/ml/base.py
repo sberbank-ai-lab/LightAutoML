@@ -102,9 +102,15 @@ class MLPipeline:
             self._ml_algos.append(mod)
             self.params_tuners.append(tuner)
 
-        self.force_calc = [force_calc] * len(self._ml_algos) if type(force_calc) is bool else force_calc
+        self.force_calc = (
+            [force_calc] * len(self._ml_algos)
+            if type(force_calc) is bool
+            else force_calc
+        )
         # TODO: Do we need this assert?
-        assert any(self.force_calc), "At least single algo in pipe should be forced to calc"
+        assert any(
+            self.force_calc
+        ), "At least single algo in pipe should be forced to calc"
 
     def fit_predict(self, train_valid: TrainValidIterator) -> LAMLDataset:
         """Fit on train/valid iterator and transform on validation part.
@@ -128,8 +134,12 @@ class MLPipeline:
 
         predictions = []
 
-        for ml_algo, param_tuner, force_calc in zip(self._ml_algos, self.params_tuners, self.force_calc):
-            ml_algo, preds = tune_and_fit_predict(ml_algo, param_tuner, train_valid, force_calc)
+        for ml_algo, param_tuner, force_calc in zip(
+            self._ml_algos, self.params_tuners, self.force_calc
+        ):
+            ml_algo, preds = tune_and_fit_predict(
+                ml_algo, param_tuner, train_valid, force_calc
+            )
             if ml_algo is not None:
                 self.ml_algos.append(ml_algo)
 

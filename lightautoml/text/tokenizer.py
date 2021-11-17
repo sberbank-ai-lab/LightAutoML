@@ -218,7 +218,11 @@ class SimpleRuTokenizer(BaseTokenizer):
         else:
             self.stopwords = {}
 
-        self.stemmer = SnowballStemmer("russian", ignore_stopwords=len(self.stopwords) > 0) if is_stemmer else None
+        self.stemmer = (
+            SnowballStemmer("russian", ignore_stopwords=len(self.stopwords) > 0)
+            if is_stemmer
+            else None
+        )
 
     @staticmethod
     def _is_abbr(word: str) -> bool:
@@ -343,7 +347,11 @@ class SimpleEnTokenizer(BaseTokenizer):
         else:
             self.stopwords = {}
 
-        self.stemmer = SnowballStemmer("english", ignore_stopwords=len(self.stopwords) > 0) if is_stemmer else None
+        self.stemmer = (
+            SnowballStemmer("english", ignore_stopwords=len(self.stopwords) > 0)
+            if is_stemmer
+            else None
+        )
 
     def preprocess_sentence(self, snt: str) -> str:
         """Preprocess sentence string (lowercase, etc.).

@@ -59,7 +59,9 @@ class FeaturesPipeline:
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.pipes: List[Callable[[LAMLDataset], LAMLTransformer]] = [self.create_pipeline]
+        self.pipes: List[Callable[[LAMLDataset], LAMLTransformer]] = [
+            self.create_pipeline
+        ]
         self.sequential = False
 
     # TODO: visualize pipeline ?
@@ -113,7 +115,9 @@ class FeaturesPipeline:
         """
         # TODO: Think about input/output features attributes
         self._input_features = train.features
-        self._pipeline = self._merge_seq(train) if self.sequential else self._merge(train)
+        self._pipeline = (
+            self._merge_seq(train) if self.sequential else self._merge(train)
+        )
 
         return self._pipeline.fit_transform(train)
 
@@ -228,9 +232,9 @@ class TabularDataFeatures:
 
         """
         base_dates = get_columns_by_role(train, "Datetime", base_date=True)
-        datetimes = get_columns_by_role(train, "Datetime", base_date=False) + get_columns_by_role(
-            train, "Datetime", base_date=True, base_feats=True
-        )
+        datetimes = get_columns_by_role(
+            train, "Datetime", base_date=False
+        ) + get_columns_by_role(train, "Datetime", base_date=True, base_feats=True)
 
         return base_dates, datetimes
 
@@ -271,7 +275,10 @@ class TabularDataFeatures:
         """
         _, datetimes = self.get_cols_for_datetime(train)
         for col in copy(datetimes):
-            if len(train.roles[col].seasonality) == 0 and train.roles[col].country is None:
+            if (
+                len(train.roles[col].seasonality) == 0
+                and train.roles[col].country is None
+            ):
                 datetimes.remove(col)
 
         if len(datetimes) == 0:
@@ -339,7 +346,9 @@ class TabularDataFeatures:
 
         """
         if feats_to_select is None:
-            feats_to_select = get_columns_by_role(train, "Category", encoding_type="freq")
+            feats_to_select = get_columns_by_role(
+                train, "Category", encoding_type="freq"
+            )
 
         if len(feats_to_select) == 0:
             return
@@ -396,7 +405,9 @@ class TabularDataFeatures:
         if feats_to_select is None:
             feats_to_select = []
             for i in ["auto", "oof", "int", "ohe"]:
-                feats_to_select.extend(get_columns_by_role(train, "Category", encoding_type=i))
+                feats_to_select.extend(
+                    get_columns_by_role(train, "Category", encoding_type=i)
+                )
 
         if len(feats_to_select) == 0:
             return
@@ -549,7 +560,9 @@ class TabularDataFeatures:
         df = DataFrame({"importance": 0, "cardinality": 0}, index=cats)
         # importance if defined
         if self.feats_imp is not None:
-            feats_imp = Series(self.feats_imp.get_features_score()).sort_values(ascending=False)
+            feats_imp = Series(self.feats_imp.get_features_score()).sort_values(
+                ascending=False
+            )
             df["importance"] = feats_imp[feats_imp.index.isin(cats)]
             df["importance"].fillna(-np.inf)
 

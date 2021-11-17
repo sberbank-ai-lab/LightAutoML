@@ -38,7 +38,9 @@ class ImageDataFeatures:
         self.weights_path = None
         self.subs = 10000
         self.cache_dir = "../cache_CV"
-        self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        self.device = (
+            torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        )
         self.is_advprop = True
         self.batch_size = 128
         self.verbose = True
@@ -61,8 +63,12 @@ class ImageSimpleFeatures(FeaturesPipeline, ImageDataFeatures):
             imgs_processing = SequentialTransformer(
                 [
                     ColumnsSelector(keys=imgs),
-                    ImageFeaturesTransformer(self.hist_size, self.is_hsv, self.n_jobs, self.loader),
-                    SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
+                    ImageFeaturesTransformer(
+                        self.hist_size, self.is_hsv, self.n_jobs, self.loader
+                    ),
+                    SequentialTransformer(
+                        [FillInf(), FillnaMedian(), StandardScaler()]
+                    ),
                 ]
             )
             transformers_list.append(imgs_processing)
@@ -95,7 +101,9 @@ class ImageAutoFeatures(FeaturesPipeline, ImageDataFeatures):
                         self.batch_size,
                         self.verbose,
                     ),
-                    SequentialTransformer([FillInf(), FillnaMedian(), StandardScaler()]),
+                    SequentialTransformer(
+                        [FillInf(), FillnaMedian(), StandardScaler()]
+                    ),
                 ]
             )
             transformers_list.append(imgs_processing)

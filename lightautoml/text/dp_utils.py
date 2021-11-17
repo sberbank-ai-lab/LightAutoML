@@ -67,12 +67,16 @@ def parallel_apply_predict(modules, inputs, kwargs_tup=None, devices=None):
                 results[i] = output
         except Exception:
             with lock:
-                results[i] = ExceptionWrapper(where="in replica {} on device {}".format(i, device))
+                results[i] = ExceptionWrapper(
+                    where="in replica {} on device {}".format(i, device)
+                )
 
     if len(modules) > 1:
         threads = [
             threading.Thread(target=_worker, args=(i, module, input, kwargs, device))
-            for i, (module, input, kwargs, device) in enumerate(zip(modules, inputs, kwargs_tup, devices))
+            for i, (module, input, kwargs, device) in enumerate(
+                zip(modules, inputs, kwargs_tup, devices)
+            )
         ]
 
         for thread in threads:
@@ -127,4 +131,6 @@ class CustomDataParallel(nn.DataParallel):
         return self.gather(outputs, self.output_device)
 
     def parallel_apply_predict(self, replicas, inputs, kwargs):
-        return parallel_apply_predict(replicas, inputs, kwargs, self.device_ids[: len(replicas)])
+        return parallel_apply_predict(
+            replicas, inputs, kwargs, self.device_ids[: len(replicas)]
+        )

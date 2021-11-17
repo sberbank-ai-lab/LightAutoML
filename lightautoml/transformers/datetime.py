@@ -47,7 +47,9 @@ def datetime_check(dataset: LAMLDataset):
     roles = dataset.roles
     features = dataset.features
     for f in features:
-        assert roles[f].name == "Datetime", "Only datetimes accepted in this transformer"
+        assert (
+            roles[f].name == "Datetime"
+        ), "Only datetimes accepted in this transformer"
 
 
 class TimeToNum(LAMLTransformer):
@@ -83,9 +85,10 @@ class TimeToNum(LAMLTransformer):
         # transform
         roles = NumericRole(np.float32)
 
-        new_arr = ((data - np.datetime64(self.basic_time)) / np.timedelta64(1, self.basic_interval)).values.astype(
-            np.float32
-        )
+        new_arr = (
+            (data - np.datetime64(self.basic_time))
+            / np.timedelta64(1, self.basic_interval)
+        ).values.astype(np.float32)
 
         # create resulted
         output = dataset.empty().to_numpy()
@@ -142,7 +145,9 @@ class BaseDiff(LAMLTransformer):
         """
         self._features = []
         for col in self.base_names:
-            self._features.extend(["basediff_{0}__{1}".format(col, x) for x in self.diff_names])
+            self._features.extend(
+                ["basediff_{0}__{1}".format(col, x) for x in self.diff_names]
+            )
 
         for check_func in self._fit_checks:
             check_func(dataset)
@@ -169,7 +174,10 @@ class BaseDiff(LAMLTransformer):
 
         # transform
         for col in base_cols.columns:
-            new_arr = ((data - base_cols[[col]].values) / np.timedelta64(1, self.basic_interval)).astype(np.float32)
+            new_arr = (
+                (data - base_cols[[col]].values)
+                / np.timedelta64(1, self.basic_interval)
+            ).astype(np.float32)
             feats_block.append(new_arr)
 
         feats_block = np.concatenate(feats_block, axis=1)

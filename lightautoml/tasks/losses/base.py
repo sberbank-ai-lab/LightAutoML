@@ -154,8 +154,12 @@ class Loss:
 
         if type(metric) is str:
             metric_dict = _valid_str_metric_names[task_name]
-            self.metric_func = self.metric_wrapper(metric_dict[metric], greater_is_better, metric_params)
+            self.metric_func = self.metric_wrapper(
+                metric_dict[metric], greater_is_better, metric_params
+            )
             self.metric_name = metric
         else:
-            self.metric_func = self.metric_wrapper(metric, greater_is_better, metric_params)
+            self.metric_func = self.metric_wrapper(
+                metric, greater_is_better, metric_params
+            )
             self.metric_name = None

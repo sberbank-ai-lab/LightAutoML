@@ -16,10 +16,7 @@ from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.ml_algo.tuning.base import Distribution
 from lightautoml.ml_algo.tuning.base import ParamsTuner
-from lightautoml.validation.base import HoldoutIterator
 from lightautoml.validation.base import TrainValidIterator
-
-from optuna.pruners import MedianPruner
 
 
 logger = logging.getLogger(__name__)
@@ -102,7 +99,9 @@ class OptunaTuner(ParamsTuner):
         assert not ml_algo.is_fitted, "Fitted algo cannot be tuned."
         # optuna.logging.set_verbosity(logger.getEffectiveLevel())
         # upd timeout according to ml_algo timer
-        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(len(train_valid_iterator))
+        estimated_tuning_time = ml_algo.timer.estimate_tuner_time(
+            len(train_valid_iterator)
+        )
         if estimated_tuning_time:
             # TODO: Check for minimal runtime!
             estimated_tuning_time = max(estimated_tuning_time, 1)
@@ -116,13 +115,15 @@ class OptunaTuner(ParamsTuner):
         ml_algo = deepcopy(ml_algo)
 
         flg_new_iterator = False
-        
+
         # default_input_params init for nn
         default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
         ml_algo.params = {**default_input_params, **ml_algo.params}
 
         # TODO: Check if time estimation will be ok with multiprocessing
-        def update_trial_time(study: optuna.study.Study, trial: optuna.trial.FrozenTrial):
+        def update_trial_time(
+            study: optuna.study.Study, trial: optuna.trial.FrozenTrial
+        ):
             """Callback for number of iteration with time cut-off.
 
             Args:
@@ -130,8 +131,12 @@ class OptunaTuner(ParamsTuner):
                 trial: Optuna trial object.
 
             """
-            ml_algo.mean_trial_time = study.trials_dataframe()["duration"].mean().total_seconds()
-            self.estimated_n_trials = min(self.n_trials, self.timeout // ml_algo.mean_trial_time)
+            ml_algo.mean_trial_time = (
+                study.trials_dataframe()["duration"].mean().total_seconds()
+            )
+            self.estimated_n_trials = min(
+                self.n_trials, self.timeout // ml_algo.mean_trial_time
+            )
 
             logger.info3(
                 f"\x1b[1mTrial {len(study.trials)}\x1b[0m with hyperparameters {trial.params} scored {trial.value} in {trial.duration}"
@@ -141,7 +146,7 @@ class OptunaTuner(ParamsTuner):
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
             self.study = optuna.create_study(direction=self.direction, sampler=sampler)
-            
+
             # start with default params
             self.study.enqueue_trial(ml_algo.params)
 
@@ -156,12 +161,14 @@ class OptunaTuner(ParamsTuner):
                 callbacks=[update_trial_time],
                 # show_progress_bar=True,
             )
-            
+
             # need to update best params here
             self._best_params = self.study.best_params
             ml_algo.params = self._best_params
 
-            logger.info(f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed")
+            logger.info(
+                f"Hyperparameters optimization for \x1b[1m{ml_algo._name}\x1b[0m completed"
+            )
             logger.info2(
                 f"The set of hyperparameters \x1b[1m{self._best_params}\x1b[0m\n achieve {self.study.best_value:.4f} {metric_name}"
             )
@@ -202,7 +209,9 @@ class OptunaTuner(ParamsTuner):
 
             if not optimization_search_space:
                 optimization_search_space = _ml_algo._get_default_search_spaces(
-                    suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
                     estimated_n_trials=estimated_n_trials,
                 )
 
@@ -210,17 +219,23 @@ class OptunaTuner(ParamsTuner):
                 sampled_params = optimization_search_space(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
-                    suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
                 )
             else:
                 sampled_params = self._sample(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
-                    suggested_params=_ml_algo.init_params_on_input(train_valid_iterator),
+                    suggested_params=_ml_algo.init_params_on_input(
+                        train_valid_iterator
+                    ),
                 )
-            
+
             _ml_algo.params = sampled_params
-            output_dataset = _ml_algo.fit_predict(train_valid_iterator=train_valid_iterator)
+            output_dataset = _ml_algo.fit_predict(
+                train_valid_iterator=train_valid_iterator
+            )
             return _ml_algo.score(output_dataset)
 
         return objective
@@ -241,7 +256,8 @@ class OptunaTuner(ParamsTuner):
                 for subparameter, SubSearchSpace in SearchSpace.items():
                     if SubSearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
                         trial_values[subparameter] = getattr(
-                            trial, OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type]
+                            trial,
+                            OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type],
                         )(name=subparameter, **SubSearchSpace.params)
                         sub_dict[subparameter] = trial_values[subparameter]
                     else:
