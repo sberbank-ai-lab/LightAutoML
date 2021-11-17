@@ -13,6 +13,7 @@ import uuid
 
 from copy import copy
 from typing import Dict
+from typing import Optional
 
 import numpy as np
 import torch
@@ -24,7 +25,9 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.optim.lr_scheduler import StepLR
 from transformers import AutoTokenizer
 
+from lightautoml.dataset.np_pd_dataset import NumpyDataset
 from lightautoml.tasks.losses.torch import TorchLossWrapper
+from lightautoml.validation.base import TrainValidIterator
 
 from ..ml_algo.base import TabularDataset
 from ..ml_algo.base import TabularMLAlgo
@@ -42,14 +45,13 @@ from ..text.utils import inv_softmax
 from ..text.utils import is_shuffle
 from ..text.utils import parse_devices
 from ..text.utils import seed_everything
+from ..utils.timer import TaskTimer
 from .nn_models import MLP
 from .nn_models import SNN
 from .nn_models import DenseLightModel
 from .nn_models import DenseModel
 from .nn_models import LinearLayer
 from .nn_models import ResNetModel
-from .tuning.base import Distribution
-from .tuning.base import SearchSpace
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +161,6 @@ class TorchModel(TabularMLAlgo):
         "drop_rate_base_2": 0.2,
         "hidden_size": 512,
         "drop_rate": 0.1,
-        "freeze_defaults": False,
     }
 
     _task_to_loss = {
@@ -167,6 +168,38 @@ class TorchModel(TabularMLAlgo):
         "multiclass": TorchLossWrapper(nn.CrossEntropyLoss, True, False),
         "reg": nn.MSELoss(),
     }
+
+    def __init__(
+        self,
+        default_params: Optional[dict] = None,
+        timer: Optional[TaskTimer] = None,
+        optimization_search_space: Optional[dict] = {},
+    ):
+        super().__init__(default_params, False, timer, optimization_search_space)
+        if not self.optimization_search_space:
+            self.optimization_search_space = TorchModel._default_sample
+
+    def _default_sample(optimization_search_space, trial, suggested_params):
+        trial_values = copy(suggested_params)
+
+        trial_values["lr"] = trial.suggest_loguniform("lr", low=1e-5, high=1e-1)
+        trial_values["bs"] = trial.suggest_categorical(
+            "bs", [2 ** i for i in range(6, 11)]
+        )
+        weight_decay_bin = trial.suggest_categorical("weight_decay_bin", [0, 1])
+
+        if weight_decay_bin == 0:
+            trial_values["weight_decay"] = 0
+        else:
+            trial_values["weight_decay"] = trial.suggest_loguniform(
+                "weight_decay", low=1e-6, high=1e-2
+            )
+
+        trial_values["opt_params"] = {
+            "lr": trial_values["lr"],
+            "weight_decay": trial_values["weight_decay"],
+        }
+        return trial_values
 
     @property
     def params(self) -> dict:
@@ -220,7 +253,6 @@ class TorchModel(TabularMLAlgo):
         if isinstance(torch_model, str):
             assert torch_model in model_by_name, "Wrong model name"
             torch_model = model_by_name[torch_model]
-            self.use_custom_model = False
 
         assert issubclass(
             torch_model, nn.Module
@@ -260,18 +292,6 @@ class TorchModel(TabularMLAlgo):
                 "torch_model": torch_model,
                 **params,
             },
-            # opt=params["opt"],
-            # opt_params=params["opt_params"],
-            # n_epochs=params["n_epochs"],
-            # device=params["device"],
-            # device_ids=params["device_ids"],
-            # is_snap=params["is_snap"],
-            # snap_params=params["snap_params"],
-            # sch=lr_scheduler.ReduceLROnPlateau,
-            # scheduler_params=params["scheduler_params"],
-            # verbose=params["verbose"],
-            # verbose_inside=params["verbose_inside"],
-            # metric=params["metric"],
             apex=False,
             **params,
         )
@@ -413,6 +433,12 @@ class TorchModel(TabularMLAlgo):
         }
         return dataloaders
 
+    def fit_predict(self, train_valid_iterator: TrainValidIterator) -> NumpyDataset:
+        if "cont_features" not in self.params:
+            self.params = self.init_params_on_input(train_valid_iterator)
+
+        return super().fit_predict(train_valid_iterator)
+
     def fit_predict_single_fold(self, train, valid):
         """Implements training and prediction on single fold.
 
@@ -432,6 +458,7 @@ class TorchModel(TabularMLAlgo):
             if self.params["init_bias"]
             else None
         )
+
         model = self._infer_params()
 
         model_path = (
@@ -483,33 +510,6 @@ class TorchModel(TabularMLAlgo):
         torch.cuda.empty_cache()
 
         return pred
-
-    def _get_default_search_spaces(
-        self, suggested_params: Dict, estimated_n_trials: int
-    ) -> Dict:
-        """Sample hyperparameters from suggested.
-
-        Args:
-            trial: Optuna trial object.
-            suggested_params: Dict with parameters.
-            estimated_n_trials: Maximum number of hyperparameter estimations.
-
-        Returns:
-            dict with sampled hyperparameters.
-
-        """
-        op_search_space = {}
-
-        op_search_space["opt_params"] = {
-            "lr": SearchSpace(Distribution.LOGUNIFORM, low=1e-6, high=1e-1),
-            "weight_decay": SearchSpace(
-                Distribution.CHOICE, choices=[0, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
-            ),
-        }
-
-        op_search_space["bs"] = SearchSpace(Distribution.INTUNIFORM, low=64, high=1024)
-
-        return op_search_space
 
     def _construct_tune_params(self, params):
         new_params = {}

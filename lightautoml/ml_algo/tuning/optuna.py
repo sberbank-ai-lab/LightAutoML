@@ -16,6 +16,7 @@ from lightautoml.dataset.base import LAMLDataset
 from lightautoml.ml_algo.base import MLAlgo
 from lightautoml.ml_algo.tuning.base import Distribution
 from lightautoml.ml_algo.tuning.base import ParamsTuner
+from lightautoml.validation.base import HoldoutIterator
 from lightautoml.validation.base import TrainValidIterator
 
 
@@ -33,8 +34,6 @@ OPTUNA_DISTRIBUTIONS_MAP = {
     Distribution.INTUNIFORM: "suggest_int",
     Distribution.DISCRETEUNIFORM: "suggest_discrete_uniform",
 }
-
-BIG_INT = 999999999
 
 
 class OptunaTuner(ParamsTuner):
@@ -115,10 +114,9 @@ class OptunaTuner(ParamsTuner):
         ml_algo = deepcopy(ml_algo)
 
         flg_new_iterator = False
-
-        # default_input_params init for nn
-        default_input_params = ml_algo.init_params_on_input(train_valid_iterator)
-        ml_algo.params = {**default_input_params, **ml_algo.params}
+        if self._fit_on_holdout and type(train_valid_iterator) != HoldoutIterator:
+            train_valid_iterator = train_valid_iterator.convert_to_holdout_iterator()
+            flg_new_iterator = True
 
         # TODO: Check if time estimation will be ok with multiprocessing
         def update_trial_time(
@@ -146,9 +144,6 @@ class OptunaTuner(ParamsTuner):
 
             sampler = optuna.samplers.TPESampler(seed=self.random_state)
             self.study = optuna.create_study(direction=self.direction, sampler=sampler)
-
-            # start with default params
-            self.study.enqueue_trial(ml_algo.params)
 
             self.study.optimize(
                 func=self._get_objective(
@@ -216,7 +211,7 @@ class OptunaTuner(ParamsTuner):
                 )
 
             if callable(optimization_search_space):
-                sampled_params = optimization_search_space(
+                _ml_algo.params = optimization_search_space(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
                     suggested_params=_ml_algo.init_params_on_input(
@@ -224,7 +219,7 @@ class OptunaTuner(ParamsTuner):
                     ),
                 )
             else:
-                sampled_params = self._sample(
+                _ml_algo.params = self._sample(
                     trial=trial,
                     optimization_search_space=optimization_search_space,
                     suggested_params=_ml_algo.init_params_on_input(
@@ -232,10 +227,10 @@ class OptunaTuner(ParamsTuner):
                     ),
                 )
 
-            _ml_algo.params = sampled_params
             output_dataset = _ml_algo.fit_predict(
                 train_valid_iterator=train_valid_iterator
             )
+
             return _ml_algo.score(output_dataset)
 
         return objective
@@ -251,30 +246,14 @@ class OptunaTuner(ParamsTuner):
         trial_values = copy(suggested_params)
 
         for parameter, SearchSpace in optimization_search_space.items():
-            if isinstance(SearchSpace, dict):
-                sub_dict = {}
-                for subparameter, SubSearchSpace in SearchSpace.items():
-                    if SubSearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                        trial_values[subparameter] = getattr(
-                            trial,
-                            OPTUNA_DISTRIBUTIONS_MAP[SubSearchSpace.distribution_type],
-                        )(name=subparameter, **SubSearchSpace.params)
-                        sub_dict[subparameter] = trial_values[subparameter]
-                    else:
-                        raise ValueError(
-                            f"Optuna does not support distribution {SubSearchSpace.distribution_type}"
-                        )
-                trial_values[parameter] = sub_dict
-
+            if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
+                trial_values[parameter] = getattr(
+                    trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
+                )(name=parameter, **SearchSpace.params)
             else:
-                if SearchSpace.distribution_type in OPTUNA_DISTRIBUTIONS_MAP:
-                    trial_values[parameter] = getattr(
-                        trial, OPTUNA_DISTRIBUTIONS_MAP[SearchSpace.distribution_type]
-                    )(name=parameter, **SearchSpace.params)
-                else:
-                    raise ValueError(
-                        f"Optuna does not support distribution {SearchSpace.distribution_type}"
-                    )
+                raise ValueError(
+                    f"Optuna does not support distribution {SearchSpace.distribution_type}"
+                )
 
         return trial_values
 
