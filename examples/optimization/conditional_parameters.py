@@ -1,8 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-"""
-Simple example for conditional parameters with OptunaTuner.
-"""
+"""Simple example for conditional parameters with OptunaTuner."""
 
 import copy
 

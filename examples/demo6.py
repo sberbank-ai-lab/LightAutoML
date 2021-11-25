@@ -2,9 +2,7 @@
 # coding: utf-8
 
 
-"""
-AutoML with nested CV usage
-"""
+"""AutoML with nested CV usage."""
 
 import numpy as np
 import pandas as pd
