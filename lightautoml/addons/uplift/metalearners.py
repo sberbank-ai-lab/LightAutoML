@@ -1,10 +1,18 @@
 """Uplift meta-models."""
 import copy
 import logging
-from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+
+from abc import ABCMeta
+from abc import abstractmethod
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 import numpy as np
+
 from pandas import DataFrame
 
 from lightautoml.automl.base import AutoML
@@ -13,7 +21,10 @@ from lightautoml.tasks import Task
 from lightautoml.utils.timer import Timer
 from lightautoml.validation.np_iterators import UpliftIterator
 
-from .utils import _get_target_role, _get_treatment_role, create_linear_automl
+from .utils import _get_target_role
+from .utils import _get_treatment_role
+from .utils import create_linear_automl
+
 
 logger = logging.getLogger(__name__)
 
