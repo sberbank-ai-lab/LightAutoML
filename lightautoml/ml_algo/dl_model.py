@@ -112,6 +112,27 @@ class TorchModel(TabularMLAlgo):
     _name: str = "TorchNN"
     _params: Dict = None
 
+    _default_models_params = {
+        "use_noise": False,
+        "use_bn": True,
+        "use_dropout": True,
+        "act_fun": nn.ReLU,
+        "drop_rate_base": 0.1,
+        "num_layers": 3,
+        "hidden_size_base": 512,
+        "num_blocks": 2,
+        "block_size_base": 2,
+        "growth_size": 256,
+        "bn_factor": 2,
+        "compression": 0.5,
+        "efficient": False,
+        "hid_factor_base": 2,
+        "drop_rate_base_1": 0.1,
+        "drop_rate_base_2": 0.2,
+        "hidden_size": 512,
+        "drop_rate": 0.1,
+    }
+
     _default_params = {
         "num_workers": 4,
         "max_length": 256,
@@ -133,11 +154,7 @@ class TorchModel(TabularMLAlgo):
         "verbose_inside": None,
         "verbose": 1,
         "n_epochs": 20,
-        "num_init_features": 512,
         "snap_params": {"k": 3, "early_stopping": True, "patience": 16, "swa": True},
-        "use_noise": False,
-        "use_bn": True,
-        "use_dropout": True,
         "bs": 512,
         "emb_dropout": 0.1,
         "emb_ratio": 3,
@@ -145,22 +162,8 @@ class TorchModel(TabularMLAlgo):
         "opt_params": {"weight_decay": 0, "lr": 3e-4},
         "sch": ReduceLROnPlateau,
         "scheduler_params": {"patience": 10, "factor": 1e-2, "min_lr": 1e-5},
-        "act_fun": nn.ReLU,
-        "drop_rate_base": 0.1,
         "init_bias": True,
-        "num_layers": 3,
-        "hidden_size_base": 512,
-        "num_blocks": 2,
-        "block_size_base": 2,
-        "growth_size": 256,
-        "bn_factor": 2,
-        "compression": 0.5,
-        "efficient": False,
-        "hid_factor_base": 2,
-        "drop_rate_base_1": 0.1,
-        "drop_rate_base_2": 0.2,
-        "hidden_size": 512,
-        "drop_rate": 0.1,
+        **_default_models_params,
     }
 
     _task_to_loss = {
@@ -253,6 +256,10 @@ class TorchModel(TabularMLAlgo):
         if isinstance(torch_model, str):
             assert torch_model in model_by_name, "Wrong model name"
             torch_model = model_by_name[torch_model]
+        else:
+            for k in self._default_models_params.keys():
+                if k in params:
+                    del params[k]
 
         assert issubclass(
             torch_model, nn.Module

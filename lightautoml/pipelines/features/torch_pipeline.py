@@ -16,6 +16,7 @@ from ...transformers.categorical import LabelEncoder
 from ...transformers.datetime import TimeToNum
 from ...transformers.numeric import FillInf
 from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import NaNFlags
 from ...transformers.numeric import QuantileTransformer
 from ...transformers.numeric import StandardScaler
 from ..selection.base import ImportanceEstimator
