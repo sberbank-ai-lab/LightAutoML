@@ -104,13 +104,9 @@ class DenseLightModel(nn.Module):
         self.concat_input = concat_input
         num_features = n_in if num_init_features is None else num_init_features
 
-        self.features = nn.Sequential(
-            OrderedDict(
-                [
-                    ("dense0", nn.Linear(n_in, num_features)),
-                ]
-            )
-        )
+        self.features = nn.Sequential(OrderedDict([]))
+        if num_init_features is not None:
+            self.features.add_module("dense0", nn.Linear(n_in, num_features))
 
         for i, hid_size in enumerate(hidden_size):
             block = DenseLightBlock(
@@ -310,13 +306,9 @@ class DenseModel(nn.Module):
         assert 0 < compression <= 1, "compression of densenet should be between 0 and 1"
 
         num_features = n_in if num_init_features is None else num_init_features
-        self.features = nn.Sequential(
-            OrderedDict(
-                [
-                    ("dense0", nn.Linear(n_in, num_features)),
-                ]
-            )
-        )
+        self.features = nn.Sequential(OrderedDict([]))
+        if num_init_features is not None:
+            self.features.add_module("dense0", nn.Linear(n_in, num_features))
 
         for i, num_layers in enumerate(block_config):
             block = DenseBlock(
@@ -423,7 +415,11 @@ class ResNetModel(nn.Module):
     ):
         super(ResNetModel, self).__init__()
         num_features = n_in if num_init_features is None else num_init_features
-        self.dense0 = nn.Linear(n_in, num_features)
+        self.dense0 = (
+            nn.Linear(n_in, num_features)
+            if num_init_features is not None
+            else nn.Identity()
+        )
         self.features1 = nn.Sequential(OrderedDict([]))
 
         for i, hd_factor in enumerate(hid_factor):
@@ -484,7 +480,11 @@ class SNN(nn.Module):
         num_features = n_in if num_init_features is None else num_init_features
 
         layers = OrderedDict([])
-        self.dense0 = nn.Linear(n_in, num_features)
+        self.dense0 = (
+            nn.Linear(n_in, num_features)
+            if num_init_features is not None
+            else nn.Identity()
+        )
 
         i = 0
         while i != num_layers:
