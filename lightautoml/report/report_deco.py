@@ -1353,7 +1353,7 @@ class ReportDecoNLP(ReportDeco):
         roles = kwargs["roles"] if "roles" in kwargs else args[1]
 
         self._text_fields = self._get_text_fields(roles)
-        train_data[self._text_fields] = train_data[self._text_fields].fillna('')
+        train_data[self._text_fields] = train_data[self._text_fields].fillna("")
         for text_field in self._text_fields:
             content = {}
             content["title"] = "Text field: " + text_field
