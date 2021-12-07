@@ -131,7 +131,6 @@ class TorchModel(TabularMLAlgo):
 
         params["loss"] = self.task.losses["torch"].loss
         params["metric"] = self.task.losses["torch"].metric_func
-        params["higher_is_better"] = self.task.greater_is_better
 
         is_text = (len(params["text_features"]) > 0) and (params["use_text"]) and (params["device"].type == "cuda")
         is_cat = (len(params["cat_features"]) > 0) and (params["use_cat"])
@@ -180,7 +179,6 @@ class TorchModel(TabularMLAlgo):
             verbose=params["verbose"],
             verbose_inside=params["verbose_inside"],
             metric=params["metric"],
-            higher_is_better=params["higher_is_better"],
             stop_by_metric=params["stop_by_metric"],
             apex=False,
         )
