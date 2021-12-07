@@ -255,7 +255,6 @@ class Trainer:
         verbose_inside: Optional[int] = None,
         apex: bool = False,
         pretrained_path: Optional[str] = None,
-        higher_is_better: bool = True,
         stop_by_metric: bool = False,
     ):
         """Train, validation and test loops for NN models.
@@ -280,7 +279,6 @@ class Trainer:
               inside epoch or None.
             apex: Use apex (lead to GPU memory leak among folds).
             pretrained_path: Path to the pretrained model weights.
-            higher_is_better: whether higher metric is better.
             stop_by_metric: es and scheduler will stop by metric.
 
         """
@@ -300,7 +298,6 @@ class Trainer:
         self.verbose_inside = verbose_inside
         self.apex = apex
         self.pretrained_path = pretrained_path
-        self.higher_is_better = higher_is_better
         self.stop_by_metric = stop_by_metric
 
         self.dataloader = None
@@ -430,7 +427,7 @@ class Trainer:
             # test
             val_loss, val_data = self.test(dataloader=dataloaders["val"])
             if self.stop_by_metric:
-                cond = self.metric(*val_data) * (-1 if self.higher_is_better else 1)
+                cond = -1 * self.metric(*val_data)
             else:
                 cond = np.mean(val_loss)
             self.se.update(self.model, cond)
@@ -513,7 +510,7 @@ class Trainer:
                 if c % self.verbose_inside == 0:
                     val_loss, val_data = self.test(dataloader=dataloaders["val"])
                     if self.stop_by_metric:
-                        cond = self.metric(*val_data) * (-1 if self.higher_is_better else 1)
+                        cond = -1 * self.metric(*val_data)
                     else:
                         cond = np.mean(val_loss)
                     self.se.update(self.model, cond)
