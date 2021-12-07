@@ -114,7 +114,7 @@ class TorchModel(TabularMLAlgo):
         "path_to_save": os.path.join("./models/", "model"),
         "verbose_inside": None,
         "verbose": 1,
-        "stop_by_metric": False
+        "stop_by_metric": False,
     }
 
     def _infer_params(self):
