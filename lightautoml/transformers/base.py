@@ -365,7 +365,7 @@ class ColumnsSelector(LAMLTransformer):
 
         return self
 
-    def transform(self, dataset: LAMLTransformer) -> LAMLTransformer:
+    def transform(self, dataset: LAMLDataset) -> LAMLDataset:
         """Select given keys from dataset.
 
         Args:
