@@ -255,6 +255,8 @@ class Trainer:
         verbose_inside: Optional[int] = None,
         apex: bool = False,
         pretrained_path: Optional[str] = None,
+        higher_is_better: bool = True,
+        stop_by_metric: bool = False,
     ):
         """Train, validation and test loops for NN models.
 
@@ -278,6 +280,8 @@ class Trainer:
               inside epoch or None.
             apex: Use apex (lead to GPU memory leak among folds).
             pretrained_path: Path to the pretrained model weights.
+            higher_is_better: whether higher metric is better.
+            stop_by_metric: es and scheduler will stop by metric.
 
         """
         self.net = net
@@ -296,6 +300,8 @@ class Trainer:
         self.verbose_inside = verbose_inside
         self.apex = apex
         self.pretrained_path = pretrained_path
+        self.higher_is_better = higher_is_better
+        self.stop_by_metric = stop_by_metric
 
         self.dataloader = None
         self.model = None
@@ -423,10 +429,14 @@ class Trainer:
             train_log.extend(train_loss)
             # test
             val_loss, val_data = self.test(dataloader=dataloaders["val"])
-            self.se.update(self.model, np.mean(val_loss))
+            if self.stop_by_metric:
+                cond = self.metric(*val_data) * (-1 if self.higher_is_better else 1)
+            else:
+                cond = np.mean(val_loss)
+            self.se.update(self.model, cond)
 
             if self.sch is not None:
-                self.scheduler.step(np.mean(val_loss))
+                self.scheduler.step(cond)
 
             if (self.verbose is not None) and ((epoch + 1) % self.verbose == 0):
                 logger.info3(
@@ -502,7 +512,11 @@ class Trainer:
             if self.verbose_inside and logging_level <= logging.INFO:
                 if c % self.verbose_inside == 0:
                     val_loss, val_data = self.test(dataloader=dataloaders["val"])
-                    self.se.update(self.model, np.mean(val_loss))
+                    if self.stop_by_metric:
+                        cond = self.metric(*val_data) * (-1 if self.higher_is_better else 1)
+                    else:
+                        cond = np.mean(val_loss)
+                    self.se.update(self.model, cond)
                     if self.verbose is not None:
                         logger.info3(
                             "Epoch: {e}, iter: {c}, val loss: {vl}, val metric: {me}".format(
