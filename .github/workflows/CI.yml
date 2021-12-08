@@ -42,4 +42,4 @@ jobs:
 
     - name: test with tox
       run: |
-        tox -e pytest,notebooks
+        tox
