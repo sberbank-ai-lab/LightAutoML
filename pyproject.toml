@@ -172,7 +172,7 @@ exclude = '''
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py{38}
+envlist = py{36, 37, 38, 39}
 
 [gh-actions]
 python =
@@ -187,22 +187,9 @@ PLATFORM =
     macos-latest: macos
     windows-latest: windows
 
-[testenv:pytest]
-envdir = {toxworkdir}/.workdir
+[testenv]
 whitelist_externals = poetry
 commands =
+    poetry install
     poetry run pytest tests -v
-
-[testenv:notebooks]
-envdir = {toxworkdir}/.workdir
-whitelist_externals = poetry
-commands =
-    poetry install -E nlp
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_1_basics.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_2_WhiteBox_AutoWoE.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_3_sql_data_source.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_4_NLP_Interpretation.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_5_uplift.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_6_custom_pipeline.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_7_ICE_and_PDP_interpretation.ipynb
 """
