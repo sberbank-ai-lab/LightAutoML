@@ -98,6 +98,7 @@ notebook = "*"
 mypy = "^0.910"
 tox = "*"
 jupyter-contrib-nbextensions = "^0.5.1"
+flake8 = "^4.0.1"
 
 
 [tool.poetry.extras]

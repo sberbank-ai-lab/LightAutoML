@@ -1908,6 +1908,20 @@ class ReportDecoUplift(ReportDeco):
                 .to_html(index=False, justify="left")
             )
 
+    def _generate_train_set_section(self):
+        env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
+        train_set_section = env.get_template(self._train_set_section_path).render(
+            train_data_overview=self._train_data_overview,
+            numerical_features_table=self._numerical_features_table,
+            categorical_features_table=self._categorical_features_table,
+            datetime_features_table=self._datetime_features_table,
+            target=self._target,
+            max_nan_rate=self._max_nan_rate,
+            max_constant_rate=self._max_constant_rate,
+            dropped_features_table=self._dropped_features_table,
+        )
+        self._sections["train_set"] = train_set_section
+
     def _generate_uplift_subsection(self):
         env = Environment(loader=FileSystemLoader(searchpath=self.template_path))
         uplift_subsection = env.get_template(self._uplift_subsection_path).render(self._uplift_content)
