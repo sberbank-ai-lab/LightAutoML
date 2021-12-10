@@ -21,7 +21,7 @@ from ...reader.base import DictToNumpySeqReader
 from ...tasks import Task
 from ...automl.blend import WeightedBlender
 from ...ml_algo.random_forest import RandomForestSklearn
-
+from ...dataset.roles import DatetimeRole
 
 
 
@@ -92,6 +92,10 @@ class TrendModel:
         
         task_trend = Task('reg', greater_is_better=False, metric='mae', loss='mae')
         reader_trend = DictToNumpySeqReader(task=task_trend, cv=2, seq_params={})
+        reader_trend.fit_read({'plain': train_data, 'seq': None}, roles=roles)
+        timerole = [key for key, value in reader_trend._roles.items() if isinstance(value, DatetimeRole)][0]
+        
+        
         feats_trend = LinearTrendFeatures()
         model_trend = LinearLBFGS()
         pipeline_trend = MLPipeline([model_trend],
@@ -105,18 +109,18 @@ class TrendModel:
         if self.params['trend_type'] in ['decompose', 'decompose_STL', 'rolling']:
             trend = self._estimate_trend(train_data, roles)
             if self.params['train_on_trend']:
-                trend_data = train_data.copy()
+                trend_data = train_data[[roles['target'], timerole]].copy()
                 trend_data.drop(roles['target'], axis=1, inplace=True)
                 trend_data['trend'] = trend
                 roles = {'target': 'trend'}
                 _ = self.automl_trend.fit_predict({'plain': trend_data.iloc[-self.params['trend_size']:],
                                                'seq': None}, roles=roles)
             else:
-                _ = self.automl_trend.fit_predict({'plain': train_data.iloc[-self.params['trend_size']:],
+                _ = self.automl_trend.fit_predict({'plain': train_data[[roles['target'], timerole]].iloc[-self.params['trend_size']:],
                                                    'seq': None}, roles=roles)
             
         elif self.params['trend_type'] == 'linear':
-            _ = self.automl_trend.fit_predict({'plain': train_data, 'seq': None}, roles=roles)
+            _ = self.automl_trend.fit_predict({'plain': train_data[[roles['target'], timerole]], 'seq': None}, roles=roles)
             trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
         return trend
     
@@ -178,9 +182,10 @@ class AutoTS:
         self.task_trend = Task('reg', greater_is_better=False, metric='mae', loss='mae')
         if seq_params is None:
             self.seq_params = {'seq0': {'case': 'next_values',
-                                        'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True}}, }
+                                        'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True, 'test_last': True}}, }
         else:
             self.seq_params = seq_params
+        self.test_last = self.seq_params['seq0']['params']['test_last']   
         
         self.trend_params = deepcopy(self.default_trend_params)
         if trend_params is not None:
@@ -190,6 +195,7 @@ class AutoTS:
     def fit_predict(self, train_data, roles, verbose=0):
         self.roles = roles
         train_trend = self.TM.fit_predict(train_data, roles)
+        
         if hasattr(self.TM, 'automl_trend'):
             self.datetime_step = pd.to_datetime(train_data[self.datetime_key])[1] - \
                                  pd.to_datetime(train_data[self.datetime_key])[0]
@@ -216,10 +222,15 @@ class AutoTS:
         return oof_pred_seq, train_trend
 
     def predict(self, data, return_raw=False):
+        test_idx = None
         if self.trend_params['trend'] == True:
             last_datetime = pd.to_datetime(data[self.datetime_key]).values[-1]
-            test_data = pd.DataFrame([last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)], 
-                                     columns=[self.datetime_key])
+            vals = [last_datetime + (i+1)*self.datetime_step for i in range(self.n_target)]
+            if not self.test_last:
+                vals = data[self.datetime_key].tolist() + vals
+            test_data = pd.DataFrame(vals, columns=[self.datetime_key])
+            if not self.test_last:
+                test_idx = self.automl_seq.reader.ti['seq0'].create_target(test_data, plain_data=None)
             trend, test_pred_trend = self.TM.predict(data, test_data)
         else:
             test_pred_trend = np.zeros(self.n_target)
@@ -234,5 +245,7 @@ class AutoTS:
         if test_pred_detrend.data.shape[0] == 1:
             final_pred = test_pred_trend + test_pred_detrend.data.flatten()
         else:
+            if (test_idx is not None) and (not self.test_last):
+                test_pred_trend = test_pred_trend[test_idx]
             final_pred = test_pred_trend + test_pred_detrend.data
         return final_pred, test_pred_trend
