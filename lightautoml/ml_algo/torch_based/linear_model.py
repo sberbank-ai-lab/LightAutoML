@@ -303,7 +303,7 @@ class TorchBasedLinearEstimator:
             max_iter=self.max_iter,
             tolerance_change=self.tol,
             tolerance_grad=self.tol,
-            #line_search_fn="strong_wolfe",
+            line_search_fn="strong_wolfe",
         )
 
         # keep history
