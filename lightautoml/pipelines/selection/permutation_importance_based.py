@@ -224,6 +224,6 @@ class NpIterativeFeatureSelector(SelectionPipeline):
         imp = imp[imp.index.isin(selected_feats)]
         self.map_raw_feature_importances(imp)
 
-        selected_feats = list(self.mapped_importances.index)
+        selected_feats = sorted(list(self.mapped_importances.index))
         logger.info3("Finally selected feats = {}".format(selected_feats))
         self._selected_features = selected_feats

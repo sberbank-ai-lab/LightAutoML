@@ -160,7 +160,7 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
             max_features_cnt_in_result=None,
         )
 
-        self.seq_table_names = list(self.seq_params.keys())
+        self.seq_table_names = sorted(list(self.seq_params.keys()))
 
         self._ignore_columns = None
         self._ft_features = None
@@ -207,7 +207,7 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
                 ]
 
         # Create entities for seq tables
-        for seq_table_name in list(self.seq_params.keys()):
+        for seq_table_name in sorted(list(self.seq_params.keys())):
             self.es = self.es.add_dataframe(
                 dataframe_name=seq_table_name,
                 dataframe=dataset.seq_data[seq_table_name].data,
@@ -219,7 +219,7 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
         """Add in the defined relationships"""
 
         relationships = list()
-        for seq_table_name in list(self.seq_params.keys()):
+        for seq_table_name in sorted(list(self.seq_params.keys())):
             scheme = self.seq_params[seq_table_name]["scheme"]
             self.es.add_relationships(
                 [(scheme["to"], scheme["to_id"], seq_table_name, scheme["from_id"])]
@@ -228,10 +228,10 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
     def _set_interesting_values(self):
         """Add interesting values if any"""
 
-        for seq_table_name in self.seq_table_names and list(
+        for seq_table_name in self.seq_table_names and sorted(list(
             self.interesting_values.keys()
-        ):
-            columns = list(self.interesting_values[seq_table_name].keys())
+        )):
+            columns = sorted(list(self.interesting_values[seq_table_name].keys()))
             for column in columns:
                 values = self.interesting_values[seq_table_name][column]
                 self.es[seq_table_name][column].interesting_values = values
@@ -315,7 +315,7 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
         if self.sample_size is None:
             self.sample_size = dataset.shape[0]
 
-        df_sample = dataset.data.sample(self.sample_size)
+        df_sample = dataset.data.sample(self.sample_size, random_state=0)
 
         self.es.replace_dataframe("plain", df_sample)
 
