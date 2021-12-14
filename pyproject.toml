@@ -99,6 +99,8 @@ mypy = "^0.910"
 tox = "*"
 jupyter-contrib-nbextensions = "^0.5.1"
 flake8 = "^4.0.1"
+black = "20.8b1"
+click = "^8.0.3"
 
 
 [tool.poetry.extras]
@@ -172,7 +174,7 @@ exclude = '''
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py{38}
+envlist = py{36, 37, 38}
 
 [gh-actions]
 python =
@@ -198,11 +200,5 @@ envdir = {toxworkdir}/.workdir
 whitelist_externals = poetry
 commands =
     poetry install -E nlp
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_1_basics.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_2_WhiteBox_AutoWoE.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_3_sql_data_source.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_4_NLP_Interpretation.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_5_uplift.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_6_custom_pipeline.ipynb
-    poetry run jupyter nbconvert --execute --to notebook --inplace examples/tutorials/Tutorial_7_ICE_and_PDP_interpretation.ipynb
+    ./run_tutorials.py
 """
