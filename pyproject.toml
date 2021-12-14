@@ -200,5 +200,5 @@ envdir = {toxworkdir}/.workdir
 whitelist_externals = poetry
 commands =
     poetry install -E nlp
-    ./run_tutorials.py
+    ./scripts/run_tutorials.py
 """
