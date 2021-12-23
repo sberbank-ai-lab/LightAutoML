@@ -7,6 +7,7 @@ from typing import Sequence
 from typing import Union
 
 import holidays
+import calendar
 import numpy as np
 import pandas as pd
 
@@ -35,6 +36,21 @@ date_attrs = {
     "ms": "microsecond",
     "ns": "nanosecond",
 }
+
+def get_lwd(x):   
+    day = x.day
+    month = x.month
+    year = x.year
+    last_month_day = calendar.monthrange(year,month)[1]
+    if calendar.weekday(year, month,day)<5:
+        if day==last_month_day: 
+            return 1
+        if calendar.weekday(year, month,day)==4 and (last_month_day-day)<=2: 
+            return 1
+    return 0
+
+def check_last_day(day_index):
+    return int(day_index.days_in_month == day_index.day)
 
 
 def datetime_check(dataset: LAMLDataset):
@@ -243,6 +259,10 @@ class DateSeasons(LAMLTransformer):
                 self._features.append("season_{0}__{1}".format(s, col))
             if roles[col].country is not None:
                 self._features.append("season_hol__{0}".format(col))
+            if roles[col].last_work_day is not None:
+                self._features.append("season_lastworkday__{0}".format(col))
+            if roles[col].last_day is not None:
+                self._features.append("season_lastday__{0}".format(col))
 
         return self
 
@@ -280,7 +300,16 @@ class DateSeasons(LAMLTransformer):
                     prov=roles[col].prov,
                     state=roles[col].state,
                 )
+
                 new_arr[:, n] = df[col].isin(hol)
+                n += 1
+
+            if roles[col].last_work_day and roles[col].country is not None:
+                new_arr[:, n] = df[col].apply(lambda x: get_lwd(x))
+                n += 1
+
+            if roles[col].last_day:
+                new_arr[:, n] = df[col].apply(check_last_day)
                 n += 1
 
         # create resulted

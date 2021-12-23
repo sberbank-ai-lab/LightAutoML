@@ -1,4 +1,5 @@
 # Standard python libraries
+import datetime
 from copy import deepcopy
 import logging
 
@@ -190,9 +191,11 @@ class AutoTS:
     def fit_predict(self, train_data, roles, verbose=0):
         self.roles = roles
         train_trend = self.TM.fit_predict(train_data, roles)
+        # print(self.datetime_key)
         if hasattr(self.TM, 'automl_trend'):
             self.datetime_step = pd.to_datetime(train_data[self.datetime_key])[1] - \
                                  pd.to_datetime(train_data[self.datetime_key])[0]
+            print(self.datetime_step.isoformat(), dir(self.datetime_step.components))
         # fit main
         train_detrend = train_data.copy()
         train_detrend.loc[:, roles['target']] = train_detrend.loc[:, roles['target']] - train_trend
