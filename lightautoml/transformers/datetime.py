@@ -37,15 +37,15 @@ date_attrs = {
     "ns": "nanosecond",
 }
 
-def get_lwd(x):   
+def get_last_work_day(x):   
     day = x.day
     month = x.month
     year = x.year
-    last_month_day = calendar.monthrange(year,month)[1]
-    if calendar.weekday(year, month,day)<5:
+    last_month_day = calendar.monthrange(year, month)[1]
+    if calendar.weekday(year, month, day) < 5:
         if day==last_month_day: 
             return 1
-        if calendar.weekday(year, month,day)==4 and (last_month_day-day)<=2: 
+        if calendar.weekday(year, month, day) == 4 and (last_month_day - day) <= 2: 
             return 1
     return 0
 
@@ -305,7 +305,7 @@ class DateSeasons(LAMLTransformer):
                 n += 1
 
             if roles[col].last_work_day and roles[col].country is not None:
-                new_arr[:, n] = df[col].apply(lambda x: get_lwd(x))
+                new_arr[:, n] = df[col].apply(lambda x: get_last_work_day(x))
                 n += 1
 
             if roles[col].last_day:
