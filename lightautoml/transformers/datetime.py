@@ -37,7 +37,15 @@ date_attrs = {
     "ns": "nanosecond",
 }
 
-def get_last_work_day(x):   
+def get_last_work_day(x):
+    """Check if passed datetime are last working day in month.
+
+    Args:
+        day_index: Datetime to check.
+
+    Returns:
+        int value for day, if it is last working day in month - 1, otherwise 0.
+    """
     day = x.day
     month = x.month
     year = x.year
@@ -50,6 +58,14 @@ def get_last_work_day(x):
     return 0
 
 def check_last_day(day_index):
+    """Check if passed datetime are last day in month.
+
+    Args:
+        day_index: Datetime to check.
+
+    Returns:
+        int value for day, if it is last day in month - 1, otherwise 0.
+    """
     return int(day_index.days_in_month == day_index.day)
 
 
@@ -305,7 +321,7 @@ class DateSeasons(LAMLTransformer):
                 n += 1
 
             if roles[col].last_work_day and roles[col].country is not None:
-                new_arr[:, n] = df[col].apply(lambda x: get_last_work_day(x))
+                new_arr[:, n] = df[col].apply(get_last_work_day)
                 n += 1
 
             if roles[col].last_day:

@@ -241,6 +241,8 @@ class DatetimeRole(ColumnRole):
         country: Optional[str] = None,
         prov: Optional[str] = None,
         state: Optional[str] = None,
+        last_work_day: Optional[bool] = False,
+        last_day: Optional[bool] = False,
     ):
         """Create datetime role with specific dtype and attrs.
 
@@ -262,7 +264,10 @@ class DatetimeRole(ColumnRole):
             country: Datetime metadata to extract holidays.
             prov: Datetime metadata to extract holidays.
             state: Datetime metadata to extract holidays.
-
+            All available values for country, prov, state you can find on:
+            https://pypi.org/project/holidays
+            last_work_day: Datetime metadata to extract last working day in month.
+            last_day: Datetime metadata to extract last day of month.
         """
         self.dtype = dtype
         self.seasonality = []
@@ -281,6 +286,9 @@ class DatetimeRole(ColumnRole):
         self.country = country
         self.prov = prov
         self.state = state
+
+        self.last_day = last_day
+        self.last_work_day = last_work_day
 
 
 # class MixedRole(ColumnRole):
