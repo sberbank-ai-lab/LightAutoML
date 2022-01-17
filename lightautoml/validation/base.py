@@ -133,7 +133,7 @@ class DummyIterator(TrainValidIterator):
             Iterable object for dataset, where for validation also uses train.
 
         """
-        return [(None, self.train, self.train)]
+        return iter([(None, self.train, self.train)])
 
     def get_validation_data(self) -> Dataset:
         """Just get validation sample.

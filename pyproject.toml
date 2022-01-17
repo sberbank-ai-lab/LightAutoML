@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LightAutoML"
-version = "0.3.1"
+version = "0.3.2"
 description = "Fast and customizable framework for automatic ML model creation (AutoML)"
 authors = [
     "Alexander Ryzhkov <AMRyzhkov@sberbank.ru>",
@@ -101,6 +101,8 @@ darglint = "^1.8.1"
 black = "20.8b1"
 flake8-docstrings = "^1.6.0"
 isort = "5.7.0"
+jupyter-contrib-nbextensions = "^0.5.1"
+flake8 = "^4.0.1"
 
 
 [tool.poetry.extras]
