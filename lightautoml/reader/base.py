@@ -469,15 +469,21 @@ class PandasToPandasReader(Reader):
         # check if default format is defined
         date_format = self._get_default_role_from_str("datetime").format
         # check if it's datetime
+        dt_role = DatetimeRole(np.datetime64, date_format=date_format)
         try:
             # TODO: check all notnans and set coerce errors
-            _ = cast(
-                pd.Series,
-                pd.to_datetime(feature, infer_datetime_format=False, format=date_format),
-            ).dt.tz_localize("UTC")
-            return DatetimeRole(np.datetime64, date_format=date_format)
+            t = cast(pd.Series, pd.to_datetime(feature, infer_datetime_format=False, format=date_format))
         except (ValueError, AttributeError):
             # else category
+            return CategoryRole(object)
+
+        try:
+            _ = t.dt.tz_localize("UTC")
+            return dt_role
+        except TypeError:
+            # The exception is raised when TimeSeries is tz-aware and tz is not None
+            return dt_role
+        except:
             return CategoryRole(object)
 
     def _is_ok_feature(self, feature) -> bool:

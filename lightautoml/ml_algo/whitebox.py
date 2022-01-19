@@ -166,6 +166,7 @@ class WbMLAlgo(TabularMLAlgo):
         "regularized_refit": False,
         "p_val": 0.05,
         "report": False,
+        "verbose": 0,
     }
 
     _report_on_inference = False

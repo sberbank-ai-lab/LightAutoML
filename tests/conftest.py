@@ -21,6 +21,14 @@ np.random.seed(RANDOM_STATE)
 
 
 @pytest.fixture()
+def jobs_train_test(nrows=None):
+    data = pd.read_csv("./examples/data/jobs_train.csv", nrows=nrows)
+    train_data, test_data = train_test_split(data.drop("enrollee_id", axis=1), test_size=0.2, stratify=data["target"])
+
+    return train_data, test_data
+
+
+@pytest.fixture()
 def sampled_app_train_test(nrows=None):
     data = pd.read_csv(
         "./examples/data/sampled_app_train.csv",
