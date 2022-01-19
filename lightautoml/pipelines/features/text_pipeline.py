@@ -120,7 +120,9 @@ class TextAutoFeatures(FeaturesPipeline, NLPDataFeatures):
             if self.is_tokenize_autonlp:
                 transforms.append(
                     TokenizerTransformer(
-                        tokenizer=_tokenizer_by_lang[self.lang](n_jobs=self.n_jobs, is_stemmer=self.use_stem, stopwords=self.stopwords)
+                        tokenizer=_tokenizer_by_lang[self.lang](
+                            n_jobs=self.n_jobs, is_stemmer=self.use_stem, stopwords=self.stopwords
+                        )
                     )
                 )
             transforms.append(
@@ -174,7 +176,9 @@ class NLPTFiDFFeatures(FeaturesPipeline, NLPDataFeatures):
             transforms = [
                 ColumnsSelector(keys=texts),
                 TokenizerTransformer(
-                    tokenizer=_tokenizer_by_lang[self.lang](n_jobs=self.n_jobs, is_stemmer=self.use_stem, stopwords=self.stopwords)
+                    tokenizer=_tokenizer_by_lang[self.lang](
+                        n_jobs=self.n_jobs, is_stemmer=self.use_stem, stopwords=self.stopwords
+                    )
                 ),
                 TfidfTextTransformer(default_params=self.tfidf_params, subs=None, random_state=42),
             ]
