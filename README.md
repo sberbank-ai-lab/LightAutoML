@@ -191,7 +191,6 @@ poetry config virtualenvs.in-project true
 # For more information read poetry docs
 
 # Install LAMA
-poetry lock
 poetry install
 ```
 
