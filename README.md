@@ -34,7 +34,7 @@ Currently we work with datasets, where **each row is an object with its specific
 * [For developers](#developers)
 * [Support and feature requests](#support)
 
-<a name="installation"></a> 
+<a name="installation"></a>
 # Installation LightAutoML from PyPI
 To install LAMA framework on your machine:
 ```bash
