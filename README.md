@@ -8,16 +8,17 @@
 ![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 ![Tests](https://github.com/sberbank-ai-lab/LightAutoML/actions/workflows/CI.yml/badge.svg)
 
-LightAutoML (LAMA) - project from Sberbank AI Lab AutoML group is the framework for automatic classification and regression model creation.
+LightAutoML (LAMA) is an AutoML framework by Sber AI Lab.
 
-Current available tasks to solve:
+It provides automatic model creation for the following tasks:
 - binary classification
 - multiclass classification
 - regression
 
-Currently we work with datasets, where **each row is an object with its specific features and target**. Multitable datasets and sequences are work in progress :)
+Current version of the package handles datasets that have independent samples in each row. I.e. **each row is an object with its specific features and target**.
+Multitable datasets and sequences are a work in progress :)
 
-**Note**: for automatic creation of interpretable models we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library made by our group as well.
+**Note**: we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library to automatically create interpretable models.
 
 **Authors**: [Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Anton Vakhrushev](https://kaggle.com/btbpanda), [Dmitry Simakov](https://kaggle.com/simakov), Vasilii Bunakov, Rinchin Damdinov, Pavel Shvets, Alexander Kirilin.
 
@@ -35,23 +36,23 @@ Currently we work with datasets, where **each row is an object with its specific
 * [Support and feature requests](#support)
 
 <a name="installation"></a>
-# Installation LightAutoML from PyPI
-To install LAMA framework on your machine:
+# Installation
+To install LAMA framework on your machine from PyPI, execute following commands:
 ```bash
 
-# Installation base functionality:
+# Install base functionality:
 
 pip install -U lightautoml
 
-# Available partial installation
-# Use extra dependecies = ['nlp', 'cv', 'report']
-# Or may use 'all' for installation full functionality, example:
+# For partial installation use corresponding option.
+# Extra dependecies: [nlp, cv, report]
+# Or you can use 'all' to install everything
 
 pip install -U lightautoml[nlp]
 
 ```
 
-Additionaly, run following commands for generating report in pdf format:
+Additionaly, run following commands to enable pdf report generation:
 
 ```bash
 # MacOS
@@ -191,6 +192,7 @@ poetry config virtualenvs.in-project true
 # For more information read poetry docs
 
 # Install LAMA
+poetry lock
 poetry install
 ```
 
