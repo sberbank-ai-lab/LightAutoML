@@ -109,7 +109,6 @@ def main(config: str, tutorial: Tuple[int], exclude_tutorials: Tuple[int], ignor
 
     for filename in get_valid_tutorials_paths(tutorial, exclude_tutorials):
         cmd = JUPYTER_NBCONVERT_CMD_FMT.format(CONFIG=config, FILE=filename)
-        print(cmd)
         subprocess.run(cmd, shell=True, check=True)
 
     clean_tutorials_dir()
