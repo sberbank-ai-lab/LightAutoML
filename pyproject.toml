@@ -103,7 +103,6 @@ flake8-docstrings = "^1.6.0"
 isort = "5.7.0"
 jupyter-contrib-nbextensions = "^0.5.1"
 flake8 = "^4.0.1"
-click = "^8.0.3"
 
 
 [tool.poetry.extras]
@@ -205,5 +204,5 @@ platform = linux
 envdir = {toxworkdir}/.workdir
 whitelist_externals = poetry
 commands =
-    poetry run python3 ./scripts/run_tutorials.py
+    poetry run python ./scripts/run_tutorials.py
 """

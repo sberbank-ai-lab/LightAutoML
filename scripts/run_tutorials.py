@@ -94,11 +94,6 @@ def clean_tutorials_dir():
 @click.option("--clean", "-c", is_flag=True, help="Clean directory before execution.")
 def main(config: str, tutorial: Tuple[int], exclude_tutorials: Tuple[int], ignore_exclude: bool, clean: bool):
     """Run tutorials."""
-    print("config", config)
-    print("tutorial", tutorial)
-    print("exclude-tutorials", exclude_tutorials)
-    print("ignore-exclude", ignore_exclude)
-    print("clean", clean)
 
     if ignore_exclude:
         exclude_tutorials = tuple()
