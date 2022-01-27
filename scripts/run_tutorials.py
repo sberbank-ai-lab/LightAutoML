@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # -- Information --
 #  Command for running jupyter-notebook from cli:
 #    jupyter nbconvert --config .jupyter/jupyter_notebook_config.py --to notebook --execute --inplace $FILE_PATH

@@ -201,9 +201,9 @@ commands =
     poetry run pytest tests -v
 
 [testenv:notebooks]
+platform = linux
 envdir = {toxworkdir}/.workdir
 whitelist_externals = poetry
 commands =
-    poetry install -E nlp
-    poetry run ./scripts/run_tutorials.py
+    poetry run python3 ./scripts/run_tutorials.py
 """
