@@ -8,19 +8,68 @@
 ![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 ![Tests](https://github.com/sberbank-ai-lab/LightAutoML/actions/workflows/CI.yml/badge.svg)
 
-LightAutoML (LAMA) - project from Sberbank AI Lab AutoML group is the framework for automatic classification and regression model creation.
+LightAutoML (LAMA) is an AutoML framework by Sber AI Lab.
 
-Current available tasks to solve:
+It provides automatic model creation for the following tasks:
 - binary classification
 - multiclass classification
 - regression
 
-Currently we work with datasets, where **each row is an object with its specific features and target**. Multitable datasets and sequences are now under contruction :)
+Current version of the package handles datasets that have independent samples in each row. I.e. **each row is an object with its specific features and target**.
+Multitable datasets and sequences are a work in progress :)
 
-**Note**: for automatic creation of interpretable models we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library made by our group as well.
+**Note**: we use [`AutoWoE`](https://github.com/sberbank-ai-lab/AutoMLWhitebox) library to automatically create interpretable models.
 
 **Authors**: [Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Anton Vakhrushev](https://kaggle.com/btbpanda), [Dmitry Simakov](https://kaggle.com/simakov), Vasilii Bunakov, Rinchin Damdinov, Pavel Shvets, Alexander Kirilin.
 
+**Documentation** of LightAutoML is available [here](https://lightautoml.readthedocs.io/), you can also [generate](https://github.com/sberbank-ai-lab/LightAutoML/blob/master/.github/CONTRIBUTING.md#building-documentation) it.
+
+<a name="toc"></a>
+# Table of Contents
+
+* [Installation LightAutoML from PyPI](#installation)
+* [Quick tour](#quicktour)
+* [Resources](#examples)
+* [Contributing to LightAutoML](#contributing)
+* [License](#apache)
+* [For developers](#developers)
+* [Support and feature requests](#support)
+
+<a name="installation"></a>
+# Installation
+To install LAMA framework on your machine from PyPI, execute following commands:
+```bash
+
+# Install base functionality:
+
+pip install -U lightautoml
+
+# For partial installation use corresponding option.
+# Extra dependecies: [nlp, cv, report]
+# Or you can use 'all' to install everything
+
+pip install -U lightautoml[nlp]
+
+```
+
+Additionaly, run following commands to enable pdf report generation:
+
+```bash
+# MacOS
+brew install cairo pango gdk-pixbuf libffi
+
+# Debian / Ubuntu
+sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# Fedora
+sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
+
+# Windows
+# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
+```
+[Back to top](#toc)
+
+<a name="quicktour"></a>
 # Quick tour
 
 Let's solve the popular Kaggle Titanic competition below. There are two main ways to solve machine learning problems using LightAutoML:
@@ -52,8 +101,102 @@ pd.DataFrame({
 }).to_csv('submit.csv', index = False)
 ```
 
+LighAutoML framework has a lot of ready-to-use parts and extensive customization options, to learn more check out the [resources](#Resources) section.
 
-* Build your own custom pipeline:
+[Back to top](#toc)
+
+<a name="examples"></a>
+# Resources
+
+### Kaggle kernel examples of LightAutoML usage:
+
+- [Tabular Playground Series April 2021 competition solution](https://www.kaggle.com/alexryzhkov/n3-tps-april-21-lightautoml-starter)
+- [Titanic competition solution (80% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-titanic-love)
+- [Titanic **12-code-lines** competition solution (78% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-extreme-short-titanic-solution)
+- [House prices competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-houseprices-love)
+- [Natural Language Processing with Disaster Tweets solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-nlp)
+- [Tabular Playground Series March 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-for-tabulardatamarch)
+- [Tabular Playground Series February 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-tabulardata-love)
+- [Interpretable WhiteBox solution](https://www.kaggle.com/simakov/lama-whitebox-preset-example)
+- [Custom ML pipeline elements inside existing ones](https://www.kaggle.com/simakov/lama-custom-automl-pipeline-example)
+
+### Google Colab tutorials and [other examples](examples/):
+
+- `Tutorial_1_basics.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_1_basics.ipynb) - get started with LightAutoML on tabular data.
+- `Tutorial_2_WhiteBox_AutoWoE.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_2_WhiteBox_AutoWoE.ipynb) - creating interpretable models.
+- `Tutorial_3_sql_data_source.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_3_sql_data_source.ipynb) - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data from SQL data base instead of CSV.
+- `Tutorial_4_NLP_Interpretation.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_4_NLP_Interpretation.ipynb) - example of using TabularNLPAutoML preset, LimeTextExplainer.
+- `Tutorial_5_uplift.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_5_uplift.ipynb) - shows how to use LightAutoML for a uplift-modeling task.
+- `Tutorial_6_custom_pipeline.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_6_custom_pipeline.ipynb) - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
+- `Tutorial_7_ICE_and_PDP_interpretation.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_7_ICE_and_PDP_interpretation.ipynb) - shows how to obtain local and global interpretation of model results using ICE and PDP approaches.
+
+**Note 1**: for production you have no need to use profiler (which increase work time and memory consomption), so please do not turn it on - it is in off state by default
+
+**Note 2**: to take a look at this report after the run, please comment last line of demo with report deletion command.
+
+### Courses, videos and papers
+
+* **LightAutoML crash courses**:
+    - (Russian) [AutoML course for OpenDataScience community](https://ods.ai/tracks/automl-course-part1)
+
+* **Video guides**:
+    - (Russian) [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Dmitry Simakov](https://kaggle.com/simakov))
+    - (Russian) [LightAutoML hands-on tutorial in Kaggle Kernels](https://www.youtube.com/watch?v=TYu1UG-E9e8) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+    - (English) [Automated Machine Learning with LightAutoML: theory and practice](https://www.youtube.com/watch?v=4pbO673B9Oo) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+    - (English) [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
+    - (English) [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) ([Dmitry Simakov](https://kaggle.com/simakov))
+
+* **Papers**:
+    - Anton Vakhrushev, Alexander Ryzhkov, Dmitry Simakov, Rinchin Damdinov, Maxim Savchenko, Alexander Tuzhilin ["LightAutoML: AutoML Solution for a Large Financial Services Ecosystem"](https://arxiv.org/pdf/2109.01528.pdf). arXiv:2109.01528, 2021.
+
+* **Articles about LightAutoML**:
+    - (English) [LightAutoML vs Titanic: 80% accuracy in several lines of code (Medium)](https://alexmryzhkov.medium.com/lightautoml-preset-usage-tutorial-2cce7da6f936)
+    - (English) [Hands-On Python Guide to LightAutoML – An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
+
+[Back to top](#toc)
+
+<a name="contributing"></a>
+# Contributing to LightAutoML
+If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
+
+[Back to top](#toc)
+
+<a name="apache"></a>
+# License
+This project is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/dev-rinchin/LightAutoML/blob/master/LICENSE) file for more details.
+
+[Back to top](#toc)
+
+<a name="developers"></a>
+# For developers
+
+## Installation from source code
+
+First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation).
+
+```bash
+
+# Load LAMA source code
+git clone https://github.com/sberbank-ai-lab/LightAutoML.git
+
+cd LightAutoML/
+
+# !!!Choose only one item!!!
+
+# 1. Global installation: Don't create virtual environment
+poetry config virtualenvs.create false --local
+
+# 2. Recommended: Create virtual environment inside your project directory
+poetry config virtualenvs.in-project true
+
+# For more information read poetry docs
+
+# Install LAMA
+poetry lock
+poetry install
+```
+
+## Build your own custom pipeline:
 
 ```python
 import pandas as pd
@@ -121,126 +264,11 @@ pd.DataFrame({
     'Survived': (test_pred.data[:, 0] > 0.5)*1
 }).to_csv('submit.csv', index = False)
 ```
-LighAutoML framework has a lot of ready-to-use parts and extensive customization options, to learn more check out the [resources](#Resources) section.
 
-# Reference papers
-Anton Vakhrushev, Alexander Ryzhkov, Dmitry Simakov, Rinchin Damdinov, Maxim Savchenko, Alexander Tuzhilin ["LightAutoML: AutoML Solution for a Large Financial Services Ecosystem"](https://arxiv.org/pdf/2109.01528.pdf). arXiv:2109.01528, 2021.
+[Back to top](#toc)
 
-# Installation
-## Installation via pip from PyPI
-To install LAMA framework on your machine:
-```bash
-
-# Installation base functionality:
-
-pip install -U lightautoml
-
-# Available partial installation
-# Use extra dependecies = ['nlp', 'cv', 'report']
-# Or may use 'all' for installation full functionality, example:
-
-pip install -U lightautoml[nlp]
-
-```
-
-Additionaly, run following commands for generating report in pdf format:
-
-```bash
-# MacOS
-brew install cairo pango gdk-pixbuf libffi
-
-# Debian / Ubuntu
-sudo apt-get install build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
-# Fedora
-sudo yum install redhat-rpm-config libffi-devel cairo pango gdk-pixbuf2
-
-# Windows
-# follow this tutorial https://weasyprint.readthedocs.io/en/stable/install.html#windows
-```
-
-
-## Installation from source code
-
-First of all you need to install [git](https://git-scm.com/downloads) and [poetry](https://python-poetry.org/docs/#installation).
-
-```bash
-
-# Load LAMA source code
-git clone https://github.com/sberbank-ai-lab/LightAutoML.git
-
-cd LightAutoML/
-
-# !!!Choose only one item!!!
-
-# 1. Global installation: Don't create virtual environment
-poetry config virtualenvs.create false --local
-
-# 2. Recommended: Create virtual environment inside your project directory
-poetry config virtualenvs.in-project true
-
-# For more information read poetry docs
-
-# Install LAMA
-poetry lock
-poetry install
-
-```
-
-# Resources
-
-* Documentation of LightAutoML documentation is available [here](https://lightautoml.readthedocs.io/), you can also [generate](https://github.com/sberbank-ai-lab/LightAutoML/blob/master/.github/CONTRIBUTING.md#building-documentation) it.
-
-
-* Kaggle kernel examples of LightAutoML usage:
-    - [Tabular Playground Series April 2021 competition solution](https://www.kaggle.com/alexryzhkov/n3-tps-april-21-lightautoml-starter)
-    - [Titanic competition solution (80% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-titanic-love)
-    - [Titanic **12-code-lines** competition solution (78% accuracy)](https://www.kaggle.com/alexryzhkov/lightautoml-extreme-short-titanic-solution)
-    - [House prices competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-houseprices-love)
-    - [Natural Language Processing with Disaster Tweets solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-nlp)
-    - [Tabular Playground Series March 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-starter-for-tabulardatamarch)
-    - [Tabular Playground Series February 2021 competition solution](https://www.kaggle.com/alexryzhkov/lightautoml-tabulardata-love)
-    - [Interpretable WhiteBox solution](https://www.kaggle.com/simakov/lama-whitebox-preset-example)
-    - [Custom ML pipeline elements inside existing ones](https://www.kaggle.com/simakov/lama-custom-automl-pipeline-example)
-
-* To find out how to work with LightAutoML, we have several tutorials and examples [here](examples/). Some of them you can run in Google Colab:
-
-    - `Tutorial_1_Basics.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_1_Basics.ipynb) - get started with LightAutoML on tabular data.
-    - `Tutorial_2_WhiteBox_AutoWoE.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_2_WhiteBox_AutoWoE.ipynb) - creating interpretable models.
-    - `Tutorial_3_SQL_data_source.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_3_SQL_data_source.ipynb) - shows how to use LightAutoML presets (both standalone and time utilized variants) for solving ML tasks on tabular data from SQL data base instead of CSV.
-    - `Tutorial_4_NLP_Interpretation.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_4_NLP_Interpretation.ipynb) - example of using TabularNLPAutoML preset, LimeTextExplainer.
-    - `Tutorial_5_Uplift.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_5_Uplift.ipynb) - shows how to use LightAutoML for a uplift-modeling task.
-    - `Tutorial_6_Custom_pipeline.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_6_Custom_pipeline.ipynb) - shows how to create your own pipeline from specified blocks: pipelines for feature generation and feature selection, ML algorithms, hyperparameter optimization etc.
-    - `Tutorial_7_ICE_and_PDP_interpretation.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sberbank-ai-lab/LightAutoML/blob/master/examples/tutorials/Tutorial_7_ICE_and_PDP_interpretation.ipynb) - shows how to obtain local and global interpretation of model results using ICE and PDP approaches.
-
-**Important 1**: for production you have no need to use profiler (which increase work time and memory consomption), so please do not turn it on - it is in off state by default
-
-**Important 2**: to take a look at this report after the run, please comment last line of demo with report deletion command.
-
-* LightAutoML crash courses:
-    - (Russian) [AutoML course for OpenDataScience community](https://ods.ai/tracks/automl-course-part1)
-
-* Video guides
-    - (Russian) [LightAutoML webinar for Sberloga community](https://www.youtube.com/watch?v=ci8uqgWFJGg) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov), [Dmitry Simakov](https://kaggle.com/simakov))
-    - (Russian) [LightAutoML hands-on tutorial in Kaggle Kernels](https://www.youtube.com/watch?v=TYu1UG-E9e8) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
-    - (English) [Automated Machine Learning with LightAutoML: theory and practice](https://www.youtube.com/watch?v=4pbO673B9Oo) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
-    - (English) [LightAutoML framework general overview, benchmarks and advantages for business](https://vimeo.com/485383651) ([Alexander Ryzhkov](https://kaggle.com/alexryzhkov))
-    - (English) [LightAutoML practical guide - ML pipeline presets overview](https://vimeo.com/487166940) ([Dmitry Simakov](https://kaggle.com/simakov))
-
-* Articles about LightAutoML
-    - (English) [LightAutoML vs Titanic: 80% accuracy in several lines of code (Medium)](https://alexmryzhkov.medium.com/lightautoml-preset-usage-tutorial-2cce7da6f936)
-    - (English) [Hands-On Python Guide to LightAutoML – An Automatic ML Model Creation Framework (Analytic Indian Mag)](https://analyticsindiamag.com/hands-on-python-guide-to-lama-an-automatic-ml-model-creation-framework/?fbclid=IwAR0f0cVgQWaLI60m1IHMD6VZfmKce0ZXxw-O8VRTdRALsKtty8a-ouJex7g)
-
-
-# Contributing to LightAutoML
-If you are interested in contributing to LightAutoML, please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
-
-
-# Questions / Issues / Suggestions
+<a name="support"></a>
+# Support and feature requests
 Seek prompt advice at [Slack community](https://lightautoml-slack.herokuapp.com) or [Telegram group](https://t.me/lightautoml).
 
 Open bug reports and feature requests on GitHub [issues](https://github.com/sberbank-ai-lab/LightAutoML/issues).
-
-
-# Licence
-This project is licensed under the Apache Licence, Version 2.0. See [LICENSE](https://github.com/dev-rinchin/LightAutoML/blob/master/LICENSE) file for more details.
