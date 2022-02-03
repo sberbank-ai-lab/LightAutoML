@@ -1884,7 +1884,6 @@ class ReportDecoUplift(ReportDeco):
             self._datetime_features_table = None
         else:
             self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify="left")
-            
         # text roles
         text_features_df = []
         for feature_name in text_features:
