@@ -1883,6 +1883,17 @@ class ReportDecoUplift(ReportDeco):
             self._datetime_features_table = None
         else:
             self._datetime_features_table = pd.DataFrame(datetime_features_df).to_html(index=False, justify="left")
+            
+        # text roles
+        text_features_df = []
+        for feature_name in text_features:
+            item = {"Feature name": feature_name}
+            feature_length = train_data[feature_name].str.len()
+            item["Amount of empty records"] = (feature_length == 0).sum(axis=0)
+            item["Length of the shortest sentence"] = feature_length.min()
+            item["Length of the longest sentence"] = feature_length.max()
+            text_features_df.append(item)
+        self._text_features_table = list2table(text_features_df)
 
     def _describe_dropped_features(self, train_data):
         self._max_nan_rate = self.reader.max_nan_rate
