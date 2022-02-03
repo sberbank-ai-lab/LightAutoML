@@ -1829,6 +1829,7 @@ class ReportDecoUplift(ReportDeco):
         numerical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Numeric"]
         categorical_features = [feat_name for feat_name in roles if roles[feat_name].name == "Category"]
         datetime_features = [feat_name for feat_name in roles if roles[feat_name].name == "Datetime"]
+        text_features = [feat_name for feat_name in roles if roles[feat_name].name == "Text"]
 
         # numerical roles
         numerical_features_df = []
