@@ -231,6 +231,8 @@ text_params:
   # stopwords: if True use nltk stopwords for ru or en
   # if list, tuple or set - use this values as stopwords
   stopwords: False
+  # number of jobs used when tokenizing text
+  n_jobs: 1
 
 tfidf_params:
   # use svd for tfidf dim. reduction
