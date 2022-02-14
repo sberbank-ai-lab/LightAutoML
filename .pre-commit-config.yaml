@@ -22,6 +22,14 @@ repos:
     hooks:
       - id: flake8
 
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.11.0
+    hooks:
+      - id: check-jsonschema
+        files: ^\.github/workflows/
+        types: [yaml]
+        args: ["--schemafile", "https://json.schemastore.org/github-workflow"]
+
 #   - repo: https://github.com/pre-commit/mirrors-mypy
 #     rev: v0.761
 #     hooks:
