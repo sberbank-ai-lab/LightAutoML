@@ -77,7 +77,7 @@ class NLPDataFeatures:
         self.multigpu = False
         # number of jobs used in tokenizer
         self.n_jobs = 1
-        
+
         for k in kwargs:
             if kwargs[k] is not None:
                 self.__dict__[k] = kwargs[k]

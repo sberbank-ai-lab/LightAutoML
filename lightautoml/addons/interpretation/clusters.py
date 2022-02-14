@@ -35,6 +35,7 @@ class ClusterEmbedder:
 
 
     """
+
     def __init__(
         self,
         embedder_name: str = "cointegrated/LaBSE-en-ru",
@@ -48,7 +49,7 @@ class ClusterEmbedder:
         word_fetcher_params: Optional[dict] = None,
     ):
         """
-        
+
         Args:
             embedder_name: Model name from hugging face.
             device: Device that will be used for getting embeddings.
@@ -75,11 +76,11 @@ class ClusterEmbedder:
         if word_fetcher_params is None:
             word_fetcher_params = {
                 "lowercase": True,
-                "binary" : True,
+                "binary": True,
                 "ngram_range": (2, 4),
                 "max_df": 0.99,
                 "max_features": 70000,
-                "dtype": "float32"
+                "dtype": "float32",
             }
         self.word_fetcher = CountVectorizer(**{**word_fetcher_params, "stop_words": stop_words})
         self.word_fetcher_ = None
@@ -157,7 +158,7 @@ class ClusterEmbedder:
     def transform(self, text_data: pd.Series) -> np.array:
         """
         Transformer step.
-        
+
         Args:
             text_data: Column with texts.
 
@@ -170,12 +171,7 @@ class ClusterEmbedder:
         return encoded[:, : self.n_clusters]
 
     def get_cluster_weights(
-        self,
-        text_data: pd.Series, 
-        target: np.array, 
-        task: str = "binary", 
-        scaler: Optional[str] = None, 
-        **kwargs
+        self, text_data: pd.Series, target: np.array, task: str = "binary", scaler: Optional[str] = None, **kwargs
     ) -> np.array:
         """
         Linear/logisitc regression on clusters.
