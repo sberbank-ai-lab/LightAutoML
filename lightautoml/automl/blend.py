@@ -101,7 +101,7 @@ class Blender:
         Args:
             predictions: Sequence of predictions from pruned datasets.
 
-        Returns:  # noqaL DAR202
+        Returns:  # noqa: DAR201
             Dataset with predictions.
 
         """

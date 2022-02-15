@@ -66,11 +66,7 @@ def perfect_uplift_curve(y_true: np.ndarray, treatment: np.ndarray) -> np.ndarra
 
 
 def _get_uplift_curve(
-    y_treatment: np.ndarray,
-    y_control: np.ndarray,
-    n_treatment: np.ndarray,
-    n_control: np.ndarray,
-    mode: str,
+    y_treatment: np.ndarray, y_control: np.ndarray, n_treatment: np.ndarray, n_control: np.ndarray, mode: str
 ):
     """Calculate uplift curve.
 
@@ -104,10 +100,7 @@ def _get_uplift_curve(
 
 
 def calculate_graphic_uplift_curve(
-    y_true: np.ndarray,
-    uplift_pred: np.ndarray,
-    treatment: np.ndarray,
-    mode: str = "adj_qini",
+    y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, mode: str = "adj_qini"
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate uplift curve.
 
@@ -166,11 +159,7 @@ def calculate_graphic_uplift_curve(
 
 
 def calculate_uplift_auc(
-    y_true: np.ndarray,
-    uplift_pred: np.ndarray,
-    treatment: np.ndarray,
-    mode: str = "adj_qini",
-    normed: bool = False,
+    y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, mode: str = "adj_qini", normed: bool = False
 ):
     """Calculate area under uplift curve.
 
@@ -200,11 +189,7 @@ def calculate_uplift_auc(
     return uplift_auc
 
 
-def calculate_min_max_uplift_auc(
-    y_true: np.ndarray,
-    treatment: np.ndarray,
-    mode: str = "adj_qini",
-):
+def calculate_min_max_uplift_auc(y_true: np.ndarray, treatment: np.ndarray, mode: str = "adj_qini"):
     """Calculate AUC uplift curve for `base` and `perfect` models.
 
     Args:
@@ -229,12 +214,7 @@ def calculate_min_max_uplift_auc(
     return auc_base, auc_perfect
 
 
-def calculate_uplift_at_top(
-    y_true: np.ndarray,
-    uplift_pred: np.ndarray,
-    treatment: np.ndarray,
-    top: float = 30,
-):
+def calculate_uplift_at_top(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
     """Calculate Uplift metric at TOP.
 
     Calculate uplift metric at top
@@ -268,12 +248,7 @@ def calculate_uplift_at_top(
     return score
 
 
-def calculate_total_score(
-    y_true: np.ndarray,
-    uplift_pred: np.ndarray,
-    treatment: np.ndarray,
-    top: float = 30,
-):
+def calculate_total_score(y_true: np.ndarray, uplift_pred: np.ndarray, treatment: np.ndarray, top: float = 30):
     """Calculate total target.
 
     Args:
