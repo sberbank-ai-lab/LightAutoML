@@ -1,5 +1,4 @@
 """Tools to configure time utilization."""
-# flake8: noqa D102
 
 import logging
 

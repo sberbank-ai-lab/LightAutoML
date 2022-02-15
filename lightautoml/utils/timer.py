@@ -1,5 +1,4 @@
 """Timer."""
-# flake8: noqa D102
 
 import logging
 
@@ -208,7 +207,6 @@ class TaskTimer(Timer):
 
     def write_run_info(self):
         """Collect timer history."""
-
         if self.key in self.pipe_timer.run_info:
             self.pipe_timer.run_info[self.key].append(self.time_spent)
             self.pipe_timer.run_scores[self.key].append(self.score)

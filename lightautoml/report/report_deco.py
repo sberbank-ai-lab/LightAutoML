@@ -1,5 +1,4 @@
 """Classes for report generation and add-ons."""
-# flake8: noqa
 
 import logging
 import os

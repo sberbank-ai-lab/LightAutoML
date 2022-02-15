@@ -1,5 +1,4 @@
 """Utils for logging."""
-# flake8: noqa D102
 
 import io
 import logging
