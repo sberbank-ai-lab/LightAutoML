@@ -78,6 +78,7 @@ class ColumnRole:
 
         Args:
             name: Role name.
+            kwargs: Other parameters.
 
         Returns:
             Corresponding role object.
@@ -130,7 +131,16 @@ class ColumnRole:
 
 
 class NumericRole(ColumnRole):
-    """Numeric role."""
+    """Numeric role.
+
+    Args:
+        dtype: Variable type.
+        force_input: Select a feature for training,
+            regardless of the selector results.
+        prob: If input number is probability.
+        discretization: Flag of discretization.
+
+    """
 
     _name = "Numeric"
 
@@ -141,15 +151,6 @@ class NumericRole(ColumnRole):
         prob: bool = False,
         discretization: bool = False,
     ):
-        """Create numeric role with specific numeric dtype.
-
-        Args:
-            dtype: Variable type.
-            force_input: Select a feature for training,
-              regardless of the selector results.
-            prob: If input number is probability.
-
-        """
         self.dtype = dtype
         self.force_input = force_input
         self.prob = prob
@@ -157,7 +158,26 @@ class NumericRole(ColumnRole):
 
 
 class CategoryRole(ColumnRole):
-    """Category role."""
+    """Category role.
+
+    Args:
+        dtype: Variable type.
+        encoding_type: Encoding type.
+        unknown: Cut-off freq to process rare categories as unseen.
+        force_input: Select a feature for training,
+            regardless of the selector results.
+        ordinal: Ordinal category.
+
+    Note:
+        Valid encoding_type:
+
+            - `'auto'` - default processing
+            - `'int'` - encode with int
+            - `'oof'` - out-of-fold target encoding
+            - `'freq'` - frequency encoding
+            - `'ohe'` - one hot encoding
+
+    """
 
     _name = "Category"
 
@@ -170,25 +190,6 @@ class CategoryRole(ColumnRole):
         label_encoded: bool = False,
         ordinal: bool = False,
     ):
-        """Create category role with specific dtype and attrs.
-
-        Args:
-            dtype: Variable type.
-            encoding_type: Encoding type.
-            unknown: Cut-off freq to process rare categories as unseen.
-            force_input: Select a feature for training,
-              regardless of the selector results.
-
-        Note:
-            Valid encoding_type:
-
-                - `'auto'` - default processing
-                - `'int'` - encode with int
-                - `'oof'` - out-of-fold target encoding
-                - `'freq'` - frequency encoding
-                - `'ohe'` - one hot encoding
-
-        """
         # TODO: assert dtype is object, 'Dtype for category should be defined' ?
         # assert encoding_type == 'auto', 'For the moment only auto is supported'
         # TODO: support all encodings
@@ -201,25 +202,44 @@ class CategoryRole(ColumnRole):
 
 
 class TextRole(ColumnRole):
-    """Text role."""
+    """Text role.
+
+    Args:
+        dtype: Variable type.
+        force_input: Select a feature for training,
+            regardless of the selector results.
+
+    """
 
     _name = "Text"
 
     def __init__(self, dtype: Dtype = str, force_input: bool = True):
-        """Create text role with specific dtype and attrs.
-
-        Args:
-            dtype: Variable type.
-            force_input: Select a feature for training,
-              regardless of the selector results.
-
-        """
         self.dtype = dtype
         self.force_input = force_input
 
 
 class DatetimeRole(ColumnRole):
-    """Datetime role."""
+    """Datetime role.
+
+    Args:
+        dtype: Variable type.
+        seasonality: Seasons to extract from date.
+            Valid are: 'y', 'm', 'd', 'wd', 'hour', 'min', 'sec', 'ms', 'ns'.
+        base_date: Base date is used to calculate difference
+            with other dates, like `age = report_dt - birth_dt`.
+        date_format: Format to parse date.
+        unit: The unit of the arg denote the unit, pandas like, see more:
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
+        origin: Define the reference date, pandas like, see more:
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
+        force_input: Select a feature for training,
+            regardless of the selector results.
+        base_feats: To calculate feats on base date.
+        country: Datetime metadata to extract holidays.
+        prov: Datetime metadata to extract holidays.
+        state: Datetime metadata to extract holidays.
+
+    """
 
     _name = "Datetime"
 
@@ -237,28 +257,6 @@ class DatetimeRole(ColumnRole):
         prov: Optional[str] = None,
         state: Optional[str] = None,
     ):
-        """Create datetime role with specific dtype and attrs.
-
-        Args:
-            dtype: Variable type.
-            seasonality: Seasons to extract from date.
-              Valid are: 'y', 'm', 'd', 'wd', 'hour',
-              'min', 'sec', 'ms', 'ns'.
-            base_date: Base date is used to calculate difference
-              with other dates, like `age = report_dt - birth_dt`.
-            date_format: Format to parse date.
-            unit: The unit of the arg denote the unit, pandas like, see more:
-              https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
-            origin: Define the reference date, pandas like, see more:
-              https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html.
-            force_input: Select a feature for training,
-              regardless of the selector results.
-            base_feats: To calculate feats on base date.
-            country: Datetime metadata to extract holidays.
-            prov: Datetime metadata to extract holidays.
-            state: Datetime metadata to extract holidays.
-
-        """
         self.dtype = dtype
         self.seasonality = []
         if seasonality is not None:
@@ -285,17 +283,16 @@ class DatetimeRole(ColumnRole):
 
 
 class TargetRole(ColumnRole):
-    """Target role."""
+    """Target role.
+
+    Args:
+        dtype: Dtype of target.
+
+    """
 
     _name = "Target"
 
     def __init__(self, dtype: Dtype = np.float32):
-        """Create target role with specific numeric dtype.
-
-        Args:
-            dtype: Dtype of target.
-
-        """
         self.dtype = dtype
 
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-building ML pipeline from blocks and fit + predict the pipeline itself
-"""
+"""Building ML pipeline from blocks and fit + predict the pipeline itself."""
 
 import os
 import pickle

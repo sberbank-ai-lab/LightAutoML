@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-AutoML time utilization preset usage for tabular datasets
-(predefined structure of AutoML pipeline and simple interface for users without building from blocks)
+"""AutoML time utilization preset usage for tabular datasets.
+
+Predefined structure of AutoML pipeline and simple interface for users without building from blocks.
+
 """
 
 import numpy as np

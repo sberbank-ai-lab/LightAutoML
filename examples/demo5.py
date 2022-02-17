@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-2 level stacking using AutoML class with different algos on first level including LGBM, Linear and LinearL1
-"""
+"""2 level stacking using AutoML class with different algos on first level including LGBM, Linear and LinearL1."""
 
 import os
 import pickle

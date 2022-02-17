@@ -1,8 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-"""
-Simple example for binary classification on tabular data.
-"""
+"""Simple example for binary classification on tabular data."""
 
 import pandas as pd
 

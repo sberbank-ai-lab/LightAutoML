@@ -373,13 +373,15 @@ def plot_feature_importance(feat_imp, path, features_max=100):
 
 
 def list2table(feature_list: list, html_params: dict = {}) -> str:
-    """
-    Creates HTML table with feature description from list of
-    Converts list of items
+    """Creates HTML table with feature description from list of converts list of items.
 
-    :param feature_list: list of dictionaries with features' properties (e.g. name, length, stat. properties, etc.);
-    :param html_params: extra parameters for pandas.DataFrame().to_html() function;
-    :return: string representation of HTML table.
+    Args:
+        feature_list: list of dictionaries with features' properties (e.g. name, length, stat. properties, etc.);
+        html_params: extra parameters for pandas.DataFrame().to_html() function;
+
+    Returns:
+        String representation of HTML table.
+
     """
     default_html_params = {"index": False, "justify": "left"}
     default_html_params.update(html_params)
@@ -1410,11 +1412,14 @@ class ReportDecoNLP(ReportDeco):
 
     @staticmethod
     def _get_text_fields(roles: dict) -> list:
-        """
-        Returns all text fields, mentioned in roles.
+        """Returns all text fields, mentioned in roles.
 
-        :param roles:
-        :return: list of text fields
+        Args:
+            roles: Roles.
+
+        Returns:
+            List of text fields.
+
         """
         text_roles = roles.get("text", [])
         for role_type, role_name in roles.items():
@@ -1533,12 +1538,13 @@ class ReportDecoUplift(ReportDeco):
 
     def fit(self, *args, **kwargs):
         """Wrapped automl.fit_predict method.
+
         Valid args, kwargs are the same as wrapped automl.
+
         Args:
             *args: arguments.
             **kwargs: additional parameters.
-        Returns:
-            oof predictions.
+
         """
         train_data = kwargs["train_data"] if "train_data" in kwargs else args[0]
         input_roles = kwargs["roles"] if "roles" in kwargs else args[1]
@@ -1557,13 +1563,16 @@ class ReportDecoUplift(ReportDeco):
         self.generate_report()
 
     def predict(self, test_data):
-
         """Wrapped tlearner.predict method.
+
         Valid args, kwargs are the same as wrapped automl.
+
         Args:
             test_data: Dataset to perform inference.
+
         Returns:
             predictions.
+
         """
         self._n_test_sample += 1
 

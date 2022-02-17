@@ -7,6 +7,7 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lightautoml?color=green&label=PyPI%20downloads&logo=pypi&logoColor=orange&style=plastic)
 ![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 ![Tests](https://github.com/sberbank-ai-lab/LightAutoML/actions/workflows/CI.yml/badge.svg)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 LightAutoML (LAMA) is an AutoML framework by Sber AI Lab.
 

@@ -1,8 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-"""
-Simple example for sequetial parameter search with OptunaTuner.
-"""
+"""Simple example for sequetial parameter search with OptunaTuner."""
 
 import copy
 
