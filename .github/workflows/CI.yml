@@ -41,4 +41,4 @@ jobs:
           pip3 install tox-gh-actions==2.8.1
       - name: test with tox
         run: |
-          tox -e pytest,notebooks
+          tox -e pytest
