@@ -315,7 +315,7 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "cliff"
-version = "3.10.0"
+version = "3.10.1"
 description = "Command Line Interface Formulation Framework"
 category = "main"
 optional = false
@@ -2808,8 +2808,8 @@ click = [
     {file = "click-8.0.3.tar.gz", hash = "sha256:410e932b050f5eed773c4cda94de75971c89cdb3155a72a0831139a79e5ecb5b"},
 ]
 cliff = [
-    {file = "cliff-3.10.0-py3-none-any.whl", hash = "sha256:86ce931944c56a86094fef82c216d2342f42ee21e21bea376c1ece82fc6ae49a"},
-    {file = "cliff-3.10.0.tar.gz", hash = "sha256:c68aac08d0d25853234a38fdbf1f33503849af3d5d677a4d0aacd42b0be6a4a1"},
+    {file = "cliff-3.10.1-py3-none-any.whl", hash = "sha256:a21da482714b9f0b0e9bafaaf2f6a8b3b14161bb47f62e10e28d2fe4ff4b1626"},
+    {file = "cliff-3.10.1.tar.gz", hash = "sha256:045aee3f3c64471965d7ad507ce8474a4e2f20815fbb5405a770f8596a2a00a0"},
 ]
 cmaes = [
     {file = "cmaes-0.8.2-py3-none-any.whl", hash = "sha256:9c4127be8942da3ac6857a7564d18a4a655462d77aa2d551a8e88063b23e0699"},
