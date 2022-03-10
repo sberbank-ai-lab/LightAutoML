@@ -96,7 +96,7 @@ pandoc = "2.0.1"
 pre-commit = "2.15.0"
 notebook = "6.4.7"
 mypy = "0.910"
-tox = "3.24.5"
+tox = "3.24.4"
 darglint = "1.8.1"
 black = "20.8b1"
 flake8-docstrings = "1.6.0"
@@ -196,6 +196,5 @@ PLATFORM =
 [testenv]
 whitelist_externals = poetry
 commands =
-    poetry install
     poetry run pytest tests -v
 """
