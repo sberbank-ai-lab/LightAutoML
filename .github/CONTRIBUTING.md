@@ -147,7 +147,7 @@ cd LightAutoML
 
 2. Make environment and install requirements.
 ```bash
-poetry install
+poetry install -E cv -E nlp
 ```
 
 3. Remove existing html files:

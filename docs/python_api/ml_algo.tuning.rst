@@ -30,5 +30,4 @@ Tuning with Optuna
     :nosignatures:
     :template: classtemplate.rst
 
-    OptunaTunableMixin
     OptunaTuner

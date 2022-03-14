@@ -911,7 +911,7 @@ class RLearner(MetaLearner):
         propensity_learner: Optional[AutoML] = None,
         mean_outcome_learner: Optional[AutoML] = None,
         effect_learner: Optional[AutoML] = None,
-        base_task: Optional[Task] = Task("binary"),
+        base_task: Optional[Task] = None,
         timeout: Optional[int] = None,
         cpu_limit: int = 4,
         gpu_ids: Optional[str] = "all",

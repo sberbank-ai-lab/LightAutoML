@@ -16,26 +16,10 @@ LightAutoML provides easy-to-use pipeline creation, that enables:
 
 .. toctree::
     :maxdepth: 1
-    :caption: Python API
+    :caption: Contents:
 
-    automl
-    addons
-    dataset
-    image
-    ml_algo
-    ml_algo.tuning
-    pipelines
-    pipelines.selection
-    pipelines.features
-    pipelines.ml
-    reader
-    report
-    tasks
-    tasks.losses
-    text
-    transformers
-    utils
-    validation
+    Tutorials <Tutorials>
+    Python-API <Python-API>
 
 
 
