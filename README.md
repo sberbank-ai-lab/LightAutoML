@@ -2,8 +2,8 @@
 
 # LightAutoML - automatic model creation framework
 
-[![Slack](https://lightautoml-slack.herokuapp.com/badge.svg)](https://lightautoml-slack.herokuapp.com)
-[![Telegram](https://img.shields.io/badge/chat-on%20Telegram-2ba2d9.svg)](https://t.me/lightautoml)
+[![Slack](https://img.shields.io/badge/-Slack-4A154B?logo=Slack&logoColor=white)](https://lightautoml-slack.herokuapp.com)
+[![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?logo=Telegram&logoColor=white)](https://t.me/lightautoml)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lightautoml?color=green&label=PyPI%20downloads&logo=pypi&logoColor=orange&style=plastic)
 ![Read the Docs](https://img.shields.io/readthedocs/lightautoml?style=plastic)
 ![Tests](https://github.com/sberbank-ai-lab/LightAutoML/actions/workflows/CI.yml/badge.svg)
