@@ -4,7 +4,7 @@ Python-API
 
 .. toctree::
     :maxdepth: 1
-    :caption: pythonapi
+    :caption: Main modules
 
     modules/automl
     modules/addons
