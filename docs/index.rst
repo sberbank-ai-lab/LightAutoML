@@ -18,10 +18,9 @@ LightAutoML provides easy-to-use pipeline creation, that enables:
     :maxdepth: 1
     :caption: Contents:
 
-    Tutorials <Tutorials>
-    Python-API <Python-API>
-
-
+    Installation Guide <pages/Installation>
+    Tutorials <pages/Tutorials>
+    Python-API <pages/Python-API>
 
 
 
