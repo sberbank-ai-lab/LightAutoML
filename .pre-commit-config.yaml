@@ -28,3 +28,8 @@ repos:
     rev: v1.8.1
     hooks:
       - id: darglint
+
+  - repo: https://github.com/lorman/pre-commit-rstcheck
+    rev: v1.0.0
+    hooks:
+      - id: rstcheck
