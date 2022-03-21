@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.napoleon",  # structure
     "sphinx.ext.viewcode",  # for [source] button
     "nbsphinx",
-    # 'nbsphinx_link',
+    "nbsphinx_link",
     "sphinx_autodoc_typehints",
 ]
 
