@@ -455,7 +455,7 @@ class ReportDeco:
         self.interpretation_params = {
             "top_n_features": 5,
             "top_n_categories": 10,
-            "ton_n_classes": 10,
+            "top_n_classes": 10,
             "n_bins": 30,
             "datetime_level": "year",
             "n_sample": 100_000,
