@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master,  feature/publishing-docker-images]
     # tags: [ 'v*.*.*' ]
 
 jobs:
