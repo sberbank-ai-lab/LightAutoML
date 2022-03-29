@@ -1,4 +1,4 @@
-name: Build and push Docker image to the DockerHub 
+name: Build and push Docker image to the DockerHub
 
 on:
   release:
@@ -29,6 +29,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lightautoml:latest
           tag_with_sha: true
-          tag_with_ref: true 
+          tag_with_ref: true
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache,mode=max
