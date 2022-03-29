@@ -1,16 +1,15 @@
-name: Docker Image CI
+name: Build and push Docker image to the DockerHub 
 
 on:
-  push:
-    branches: [ master,  feature/publishing-docker-images]
-    # tags: [ 'v*.*.*' ]
+  release:
+    types: [published, edited]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v2
 
       - name: Login to Docker Hub
@@ -29,3 +28,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lightautoml:latest
+          tag_with_sha: true
+          tag_with_ref: true 
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache,mode=max
