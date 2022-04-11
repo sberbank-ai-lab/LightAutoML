@@ -48,9 +48,10 @@ _valid_loss_args = {"quantile": ["q"], "huber": ["a"], "fair": ["c"]}
 
 
 class LAMLMetric:
-    """
-    Abstract class for metric.
+    """Abstract class for metric.
+
     Metric should be called on dataset.
+
     """
 
     greater_is_better = True
@@ -62,30 +63,27 @@ class LAMLMetric:
             dataset: Table with data.
             dropna: To ignore NaN in metric calculation.
 
-        Returns:
+        Returns:  # noqa DAR202
             Metric value.
 
         Raises:
             AttributeError: If metric isn't defined.
 
         """
-        assert hasattr(
-            dataset, "target"
-        ), "Dataset should have target to calculate metric"
+        assert hasattr(dataset, "target"), "Dataset should have target to calculate metric"
         raise NotImplementedError
 
 
 class ArgsWrapper:
-    """Wrapper - ignore sample_weight if metric not accepts."""
+    """Wrapper - ignore sample_weight if metric not accepts.
+
+    Args:
+        func: Metric function.
+        metric_params: Additional metric parameters.
+
+    """
 
     def __init__(self, func: Callable, metric_params: dict):
-        """
-
-        Args:
-            func: Metric function.
-            metric_params: Additional metric parameters.
-
-        """
         keys = inspect.signature(func).parameters
         self.flg = "sample_weight" in keys
         self.func = partial(func, **metric_params)
@@ -100,6 +98,9 @@ class ArgsWrapper:
             y_pred: Estimated target values.
             sample_weight: Sample weights.
 
+        Returns:
+            Metric value.
+
         """
         if self.flg:
             return self.func(y_true, y_pred, sample_weight=sample_weight)
@@ -111,6 +112,16 @@ class SkMetric(LAMLMetric):
     """Abstract class for scikit-learn compatible metric.
 
     Implements metric calculation in sklearn format on numpy/pandas datasets.
+
+
+    Args:
+        metric: Specifies metric. Format:
+            ``func(y_true, y_false, Optional[sample_weight], **kwargs)`` -> `float`.
+        name: Name of metric.
+        greater_is_better: Whether or not higher metric value is better.
+        one_dim: `True` for single class, False for multiclass.
+        weighted: Weights of classes.
+        **kwargs: Other parameters for metric.
 
     """
 
@@ -136,18 +147,6 @@ class SkMetric(LAMLMetric):
         one_dim: bool = True,
         **kwargs: Any
     ):
-        """
-
-        Args:
-            metric: Specifies metric. Format:
-                ``func(y_true, y_false, Optional[sample_weight], **kwargs)`` -> `float`.
-            name: Name of metric.
-            greater_is_better: Whether or not higher metric value is better.
-            one_dim: `True` for single class, False for multiclass.
-            weighted: Weights of classes.
-            **kwargs: Other parameters for metric.
-
-        """
         self._metric = metric
         self._name = name
 
@@ -172,13 +171,9 @@ class SkMetric(LAMLMetric):
                 target specified as one-dimensioned, but it is not.
 
         """
-        assert hasattr(
-            dataset, "target"
-        ), "Dataset should have target to calculate metric"
+        assert hasattr(dataset, "target"), "Dataset should have target to calculate metric"
         if self.one_dim:
-            assert (
-                dataset.shape[1] == 1
-            ), "Dataset should have single column if metric is one_dim"
+            assert dataset.shape[1] == 1, "Dataset should have single column if metric is one_dim"
         # TODO: maybe refactor this part?
         dataset = dataset.to_numpy()
         y_true = dataset.target
@@ -201,13 +196,86 @@ class SkMetric(LAMLMetric):
 
 
 class Task:
-    """
-    Specify task (binary classification, multiclass classification, regression), metrics, losses.
+    """Specify task (binary classification, multiclass classification, regression), metrics, losses.
+
+    Args:
+        name: Task name.
+        loss: Objective function or dict of functions.
+        loss_params: Additional loss parameters,
+            if dict there is no presence check for loss_params.
+        metric: String name or callable.
+        metric_params: Additional metric parameters.
+        greater_is_better: Whether or not higher value is better.
+
+    Note:
+        There is 3 different task types:
+
+            - `'binary'` - for binary classification.
+            - `'reg'` - for regression.
+            - `'multiclass'` - for multiclass classification.
+
+        Avaliable losses for binary task:
+
+            - `'logloss'` - (uses by default) Standard logistic loss.
+
+        Avaliable losses for regression task:
+
+            - `'mse'` - (uses by default) Mean Squared Error.
+            - `'mae'` - Mean Absolute Error.
+            - `'mape'` - Mean Absolute Percentage Error.
+            - `'rmsle'` - Root Mean Squared Log Error.
+            - `'huber'` - Huber loss, reqired params:
+                ``a`` - threshold between MAE and MSE losses.
+            - `'fair'` - Fair loss, required params:
+                ``c`` - sets smoothness.
+            - `'quantile'` - Quantile loss, required params:
+                ``q`` - sets quantile.
+
+        Avaliable losses for multi-classification task:
+
+            - `'crossentropy'` - (uses by default) Standard crossentropy function.
+            - `'f1'` - Optimizes F1-Macro Score, now avaliable for
+                LightGBM and NN models. Here we implicitly assume
+                that the prediction lies not in the set ``{0, 1}``,
+                but in the interval ``[0, 1]``.
+
+        Available metrics for binary task:
+
+            - `'auc'` - (uses by default) ROC-AUC score.
+            - `'accuracy'` - Accuracy score (uses argmax prediction).
+            - `'logloss'` - Standard logistic loss.
+
+        Avaliable metrics for regression task:
+
+            - `'mse'` - (uses by default) Mean Squared Error.
+            - `'mae'` - Mean Absolute Error.
+            - `'mape'` - Mean Absolute Percentage Error.
+            - `'rmsle'` - Root Mean Squared Log Error.
+            - `'huber'` - Huber loss, reqired params:
+                ``a`` - threshold between MAE and MSE losses.
+            - `'fair'` - Fair loss, required params:
+                ``c`` - sets smoothness.
+            - `'quantile'` - Quantile loss, required params:
+                ``q`` - sets quantile.
+
+        Avaliable metrics for multi-classification task:
+
+            - `'crossentropy'` - (uses by default) Standard cross-entropy loss.
+            - `'auc'` - ROC-AUC of each class against the rest.
+            - `'auc_mu'` - AUC-Mu. Multi-class extension of standard AUC
+                for binary classification. In short,
+                mean of n_classes * (n_classes - 1) / 2 binary AUCs.
+                More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+
+
+    Example:
+        >>> task = Task('binary', metric='auc')
+
     """
 
     @property
     def name(self) -> str:
-        """ Name of task."""
+        """Name of task."""
         return self._name
 
     def __init__(
@@ -219,87 +287,8 @@ class Task:
         metric_params: Optional[Dict] = None,
         greater_is_better: Optional[bool] = None,
     ):
-        """
 
-        Args:
-            name: Task name.
-            loss: Objective function or dict of functions.
-            loss_params: Additional loss parameters,
-                if dict there is no presence check for loss_params.
-            metric: String name or callable.
-            metric_params: Additional metric parameters.
-            greater_is_better: Whether or not higher value is better.
-
-        Note:
-            There is 3 different task types:
-
-                - `'binary'` - for binary classification.
-                - `'reg'` - for regression.
-                - `'multiclass'` - for multiclass classification.
-
-            Avaliable losses for binary task:
-
-                - `'logloss'` - (uses by default) Standard logistic loss.
-
-            Avaliable losses for regression task:
-
-                - `'mse'` - (uses by default) Mean Squared Error.
-                - `'mae'` - Mean Absolute Error.
-                - `'mape'` - Mean Absolute Percentage Error.
-                - `'rmsle'` - Root Mean Squared Log Error.
-                - `'huber'` - Huber loss, reqired params:
-                  ``a`` - threshold between MAE and MSE losses.
-                - `'fair'` - Fair loss, required params:
-                  ``c`` - sets smoothness.
-                - `'quantile'` - Quantile loss, required params:
-                  ``q`` - sets quantile.
-
-            Avaliable losses for multi-classification task:
-
-                - `'crossentropy'` - (uses by default) Standard crossentropy function.
-                - `'f1'` - Optimizes F1-Macro Score, now avaliable for
-                  LightGBM and NN models. Here we implicitly assume
-                  that the prediction lies not in the set ``{0, 1}``,
-                  but in the interval ``[0, 1]``.
-
-            Available metrics for binary task:
-
-                - `'auc'` - (uses by default) ROC-AUC score.
-                - `'accuracy'` - Accuracy score (uses argmax prediction).
-                - `'logloss'` - Standard logistic loss.
-
-            Avaliable metrics for regression task:
-
-                - `'mse'` - (uses by default) Mean Squared Error.
-                - `'mae'` - Mean Absolute Error.
-                - `'mape'` - Mean Absolute Percentage Error.
-                - `'rmsle'` - Root Mean Squared Log Error.
-                - `'huber'` - Huber loss, reqired params:
-                  ``a`` - threshold between MAE and MSE losses.
-                - `'fair'` - Fair loss, required params:
-                  ``c`` - sets smoothness.
-                - `'quantile'` - Quantile loss, required params:
-                  ``q`` - sets quantile.
-
-            Avaliable metrics for multi-classification task:
-
-                - `'crossentropy'` - (uses by default) Standard cross-entropy loss.
-                - `'auc'` - ROC-AUC of each class against the rest.
-                - `'auc_mu'` - AUC-Mu. Multi-class extension of standard AUC
-                  for binary classification. In short,
-                  mean of n_classes * (n_classes - 1) / 2 binary AUCs.
-                  More info on http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
-
-
-        Example:
-
-            >>> task = Task('binary', metric='auc')
-
-        """
-
-        assert (
-            name in _valid_task_names
-        ), "Invalid task name: {}, allowed task names: {}".format(
+        assert name in _valid_task_names, "Invalid task name: {}, allowed task names: {}".format(
             name, _valid_task_names
         )
         self._name = name
@@ -323,9 +312,7 @@ class Task:
                 # ??? "rewrite METRIC params" ???
                 if loss == metric:
                     metric_params = loss_params
-                    logger.info2(
-                        "As loss and metric are equal, metric params are ignored."
-                    )
+                    logger.info2("As loss and metric are equal, metric params are ignored.")
 
             else:
                 assert (
@@ -333,36 +320,26 @@ class Task:
                 ), "Loss should be defined with arguments. Ex. loss='quantile', loss_params={'q': 0.7}."
                 loss_params = None
 
-            assert (
-                loss in _valid_str_loss_names[self.name]
-            ), "Invalid loss name: {} for task {}.".format(loss, self.name)
+            assert loss in _valid_str_loss_names[self.name], "Invalid loss name: {} for task {}.".format(
+                loss, self.name
+            )
 
-            for loss_key, loss_factory in zip(
-                ["lgb", "sklearn", "torch", "cb"], [LGBLoss, SKLoss, TORCHLoss, CBLoss]
-            ):
+            for loss_key, loss_factory in zip(["lgb", "sklearn", "torch", "cb"], [LGBLoss, SKLoss, TORCHLoss, CBLoss]):
                 try:
                     self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
                 except (AssertionError, TypeError, ValueError):
-                    logger.info2(
-                        "{0} doesn't support in general case {1} and will not be used.".format(
-                            loss_key, loss
-                        )
-                    )
+                    logger.info2("{0} doesn't support in general case {1} and will not be used.".format(loss_key, loss))
 
                 # self.losses[loss_key] = loss_factory(loss, loss_params=loss_params)
 
-            assert len(self.losses) > 0, "None of frameworks supports {0} loss.".format(
-                loss
-            )
+            assert len(self.losses) > 0, "None of frameworks supports {0} loss.".format(loss)
 
         elif type(loss) is dict:
             # case - dict passed directly
             # TODO: check loss parameters?
             #  Or it there will be assert when use functools.partial
             # assert all(map(lambda x: x in _valid_loss_types, loss)), 'Invalid loss key.'
-            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(
-                loss
-            ), "Invalid loss key."
+            assert len([key for key in loss.keys() if key in _valid_loss_types]) != len(loss), "Invalid loss key."
             self.losses = loss
 
         else:
@@ -432,13 +409,9 @@ class Task:
             required_params = set()
         given_params = set(loss_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0, "For loss {0} given extra params {1}".format(
-            loss_name, extra_params
-        )
+        assert len(extra_params) == 0, "For loss {0} given extra params {1}".format(loss_name, extra_params)
         needed_params = required_params - given_params
-        assert (
-            len(needed_params) == 0
-        ), "For loss {0} required params {1} are not defined".format(
+        assert len(needed_params) == 0, "For loss {0} required params {1} are not defined".format(
             loss_name, needed_params
         )
 
@@ -450,12 +423,8 @@ class Task:
             required_params = set()
         given_params = set(metric_params)
         extra_params = given_params - required_params
-        assert len(extra_params) == 0, "For metric {0} given extra params {1}".format(
-            metric_name, extra_params
-        )
+        assert len(extra_params) == 0, "For metric {0} given extra params {1}".format(metric_name, extra_params)
         needed_params = required_params - given_params
-        assert (
-            len(needed_params) == 0
-        ), "For metric {0} required params {1} are not defined".format(
+        assert len(needed_params) == 0, "For metric {0} required params {1} are not defined".format(
             metric_name, needed_params
         )

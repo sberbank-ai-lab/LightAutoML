@@ -8,16 +8,35 @@ from typing import Optional
 from typing import Sequence
 from typing import Union
 
-import cv2
+
+try:
+    import cv2
+except:
+    import warnings
+
+    warnings.warn("'cv2' - package isn't installed")
+
 import numpy as np
 import torch
 import torch.nn as nn
 
-from albumentations import Compose
-from albumentations import Normalize
-from albumentations import Resize
-from albumentations.pytorch import ToTensorV2
-from efficientnet_pytorch import EfficientNet
+
+try:
+    from albumentations import Compose
+    from albumentations import Normalize
+    from albumentations import Resize
+    from albumentations.pytorch import ToTensorV2
+except:
+    import warnings
+
+    warnings.warn("'albumentations' - package isn't installed")
+try:
+    from efficientnet_pytorch import EfficientNet
+except:
+    import warnings
+
+    warnings.warn("'efficientnet_pytorch' - package isn't installed")
+
 from joblib import Parallel
 from joblib import delayed
 from sklearn.base import TransformerMixin
@@ -60,9 +79,7 @@ class ColorFeatures:
 
         """
         # TODO: add value range check
-        hist = cv2.calcHist(
-            [img], [0], mask=None, histSize=[self.hist_size], ranges=(0, 255)
-        )[:, 0]
+        hist = cv2.calcHist([img], [0], mask=None, histSize=[self.hist_size], ranges=(0, 255))[:, 0]
 
         return list(hist / hist.sum())
 
@@ -75,10 +92,7 @@ class ColorFeatures:
         """
         return [
             j
-            for i in [
-                ["color_" + j + "_" + str(i) for i in np.arange(self.hist_size)]
-                for j in self._f_names
-            ]
+            for i in [["color_" + j + "_" + str(i) for i in np.arange(self.hist_size)] for j in self._f_names]
             for j in i
         ]
 
@@ -153,9 +167,7 @@ class CreateImageFeatures:
             Array of histograms.
 
         """
-        res = Parallel(self.n_jobs)(
-            delayed(self.process)(im_path_i) for im_path_i in samples
-        )
+        res = Parallel(self.n_jobs)(delayed(self.process)(im_path_i) for im_path_i in samples)
         return np.vstack(res)
 
 
@@ -175,7 +187,7 @@ class EffNetImageEmbedder(nn.Module):
             model_name: Name of effnet model.
             weights_path: Path to saved weights.
             is_advprop: Use adversarial training.
-            devices: Device to use.
+            device: Device to use.
 
         """
         super(EffNetImageEmbedder, self).__init__()
@@ -202,11 +214,10 @@ class EffNetImageEmbedder(nn.Module):
             Shape of embedding.
 
         """
-        return (
-            self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
-        )
+        return self.model(torch.randn(1, 3, 224, 224).to(self.device)).squeeze().shape[0]
 
     def forward(self, x) -> torch.Tensor:
+        """Forward pass."""
         out = self.model(x)
         return out[:, :, 0, 0]
 
@@ -286,11 +297,10 @@ class DeepImageEmbedder(TransformerMixin):
         self.verbose = verbose
         seed_everything(random_state)
 
-        self.model = EffNetImageEmbedder(
-            model_name, weights_path, self.is_advprop, self.device
-        )
+        self.model = EffNetImageEmbedder(model_name, weights_path, self.is_advprop, self.device)
 
     def fit(self, data: Any = None):
+        """Train model."""
         return self
 
     @torch.no_grad()
@@ -304,11 +314,8 @@ class DeepImageEmbedder(TransformerMixin):
             Array of embeddings.
 
         """
-
         data = ImageDataset(data, self.is_advprop)
-        loader = DataLoader(
-            data, batch_size=self.batch_size, shuffle=False, num_workers=self.n_jobs
-        )
+        loader = DataLoader(data, batch_size=self.batch_size, shuffle=False, num_workers=self.n_jobs)
 
         result = []
         if self.verbose:

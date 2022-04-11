@@ -62,42 +62,65 @@ We recommend you install an [Anaconda](https://www.anaconda.com/products/individ
 to work with environments.
 
 
-1. Once you install Anaconda, you need to set your own environment. For example:
-```bash
-conda create -n Pyth36 python=3.6
-conda activate Pyth36
-```
+1. Install poetry using [the poetry installation guide](https://python-poetry.org/docs/#installation).
 
-2. To clone the project to your own local machine:
+2. Clone the project to your own local machine:
 ```bash
-git clone https://github.com/sberbank-ai-lab/LightAutoML
+git clone git@github.com:sberbank-ai-lab/LightAutoML.git
 cd LightAutoML
 ```
 
-3. Install LightAutoML in develop mode:
+3. Install LightAutoML:
 ```bash
-./build_package.sh
-source ./lama_venv/bin/activate
 poetry install
 ```
 
-After that, there is `lama_venv` environment, where you can test and implement your own code.
+After that, there is virtual environment, where you can test and implement your own code.
 So, you don't need to rebuild the full project every time.
 Each change in the code will be reflected in the library inside the environment.
 
+
+### Style Guide
+
+We follow [the standard python PEP8](https://www.python.org/dev/peps/pep-0008/) conventions for style.
+
+#### Automated code checking
+
+In order to automate checking of the code quality, we use
+[pre-commit](https://pre-commit.com/). For more details, see the documentation,
+here we will give a quick-start guide:
+1. Install and configure:
+```console
+poetry run pre-commit install
+```
+2. Now, when you run `$ git commit`, there will be a pre-commit check.
+   This is going to search for issues in your code: spelling, formatting, etc.
+   In some cases, it will automatically fix the code, in other cases, it will
+   print a warning. If it automatically fixed the code, you'll need to add the
+   changes to the index (`$ git add FILE.py`) and run `$ git commit` again. If
+   it didn't automatically fix the code, but still failed, it will have printed
+   a message as to why the commit failed. Read the message, fix the issues,
+   then recommit.
+3. The pre-commit checks are done to avoid pushing and then failing. But, you
+   can skip them by running `$ git commit --no-verify`, but note that the C.I.
+   still does the check so you won't be able to merge until the issues are
+   resolved.
+If you experience any issues with pre-commit, please ask for support on the
+usual help channels.
+
 ### Testing
 
-Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests.
-For this purpose we have script, that takes all `demo*` files from [tests](tests) and run `pytest` on them.
-To run it:
+Before making a pull request (despite changing only the documentation or writing new code), please check your code on tests:
 ```bash
-./test_package.sh
+poetry run pytest tests
+```
+
+To run tests with different Python versions, run tox
+```bash
+poetry run tox
 ```
 Also if you develop new functionality, please add your own tests.
 
-## Style Guide
-
-We try to stick to the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 
 ## Documentation
 
@@ -123,21 +146,20 @@ cd LightAutoML
 
 
 2. Make environment and install requirements.
-
 ```bash
-python3 -m venv docs_venv
-source docs_venv/bin/activate
-cd docs
-pip install -r requirements.txt
-pip install sphinx-rtd-theme
+poetry install -E cv -E nlp
 ```
-It creates an environment like on [Read-The-Docs](https://readthedocs.org/) without any additional requirements,
-like PyTorch, CatBoost, because they are unnecessary for building documentation.
 
-3. Generate HTML documentation files. The generated files will be in `docs/_build/html`.
+3. Remove existing html files:
 ```bash
 cd docs
-make clean html
+poetry run make clean html
+cd ..
+```
+
+4. Generate HTML documentation files. The generated files will be in `docs/_build/html`.
+```bash
+poetry run python check_docs.py
 ```
 
 

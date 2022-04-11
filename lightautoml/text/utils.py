@@ -139,7 +139,6 @@ def parse_devices(dvs, is_dp: bool = False) -> tuple:
 
 def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
     """Puts each data field into a tensor with outer dimension batch size."""
-
     elem = batch[0]
     if isinstance(elem, torch.Tensor):
         out = None
@@ -154,9 +153,7 @@ def custom_collate(batch: List[np.ndarray]) -> torch.Tensor:
 def collate_dict(batch: List[Dict[str, np.ndarray]]) -> Dict[str, torch.Tensor]:
     """custom_collate for dicts."""
     keys = list(batch[0].keys())
-    transposed_data = list(
-        map(list, zip(*[tuple([i[name] for name in i.keys()]) for i in batch]))
-    )
+    transposed_data = list(map(list, zip(*[tuple([i[name] for name in i.keys()]) for i in batch])))
     return {key: custom_collate(transposed_data[n]) for n, key in enumerate(keys)}
 
 

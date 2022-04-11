@@ -31,7 +31,6 @@ LinearEstimator = Union[LogisticRegression, ElasticNet, Lasso]
 class LinearLBFGS(TabularMLAlgo):
     """LBFGS L2 regression based on torch.
 
-
     default_params:
 
         - cs: List of regularization coefficients.
@@ -95,23 +94,18 @@ class LinearLBFGS(TabularMLAlgo):
 
         return model
 
-    def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:
+    def init_params_on_input(self, train_valid_iterator: TrainValidIterator) -> dict:  # noqa: D102
 
         suggested_params = copy(self.default_params)
         train = train_valid_iterator.train
         suggested_params["categorical_idx"] = [
-            n
-            for (n, x) in enumerate(train.features)
-            if train.roles[x].name == "Category"
+            n for (n, x) in enumerate(train.features) if train.roles[x].name == "Category"
         ]
 
         suggested_params["embed_sizes"] = ()
         if len(suggested_params["categorical_idx"]) > 0:
             suggested_params["embed_sizes"] = (
-                train.data[:, suggested_params["categorical_idx"]]
-                .max(axis=0)
-                .astype(np.int32)
-                + 1
+                train.data[:, suggested_params["categorical_idx"]].max(axis=0).astype(np.int32) + 1
             )
 
         suggested_params["data_size"] = train.shape[1]
@@ -150,9 +144,7 @@ class LinearLBFGS(TabularMLAlgo):
 
         return model, val_pred
 
-    def predict_single_fold(
-        self, model: TorchBasedLinearEstimator, dataset: TabularDataset
-    ) -> np.ndarray:
+    def predict_single_fold(self, model: TorchBasedLinearEstimator, dataset: TabularDataset) -> np.ndarray:
         """Implements prediction on single fold.
 
         Args:
@@ -163,8 +155,6 @@ class LinearLBFGS(TabularMLAlgo):
             Predictions for input dataset.
 
         """
-        if type(dataset) is PandasDataset:
-            dataset = dataset.to_numpy()
         pred = model.predict(dataset.data)
 
         return pred
@@ -198,9 +188,7 @@ class LinearL1CD(TabularMLAlgo):
             if l1_ratios == (1,):
                 model = LogisticRegression(warm_start=True, penalty="l1", **params)
             else:
-                model = LogisticRegression(
-                    warm_start=True, penalty="elasticnet", **params
-                )
+                model = LogisticRegression(warm_start=True, penalty="elasticnet", **params)
 
         elif self.task.name == "reg":
             params.pop("solver")
@@ -224,7 +212,6 @@ class LinearL1CD(TabularMLAlgo):
             Parameters of model.
 
         """
-
         suggested_params = copy(self.default_params)
         task = train_valid_iterator.train.task
 
@@ -271,12 +258,8 @@ class LinearL1CD(TabularMLAlgo):
 
         _model, cs, l1_ratios, early_stopping = self._infer_params()
 
-        train_target, train_weight = self.task.losses["sklearn"].fw_func(
-            train.target, train.weights
-        )
-        valid_target, valid_weight = self.task.losses["sklearn"].fw_func(
-            valid.target, valid.weights
-        )
+        train_target, train_weight = self.task.losses["sklearn"].fw_func(train.target, train.weights)
+        valid_target, valid_weight = self.task.losses["sklearn"].fw_func(valid.target, valid.weights)
 
         model = deepcopy(_model)
 
@@ -312,9 +295,7 @@ class LinearL1CD(TabularMLAlgo):
                 if np.allclose(model.coef_, 0):
                     if n == (len(cs) - 1):
                         logger.info2(
-                            "All model coefs are 0. Model with l1_ratio {0} is dummy".format(
-                                l1_ratio
-                            ),
+                            "All model coefs are 0. Model with l1_ratio {0} is dummy".format(l1_ratio),
                             UserWarning,
                         )
                     else:
@@ -361,9 +342,7 @@ class LinearL1CD(TabularMLAlgo):
 
         return best_model, val_pred
 
-    def predict_single_fold(
-        self, model: LinearEstimator, dataset: TabularDataset
-    ) -> np.ndarray:
+    def predict_single_fold(self, model: LinearEstimator, dataset: TabularDataset) -> np.ndarray:
         """Implements prediction on single fold.
 
         Args:
@@ -374,8 +353,6 @@ class LinearL1CD(TabularMLAlgo):
             Predictions for input dataset.
 
         """
-        pred = self.task.losses["sklearn"].bw_func(
-            self._predict_w_model_type(model, dataset.data)
-        )
+        pred = self.task.losses["sklearn"].bw_func(self._predict_w_model_type(model, dataset.data))
 
         return pred

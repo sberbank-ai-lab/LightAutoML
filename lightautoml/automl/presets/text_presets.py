@@ -1,9 +1,14 @@
 """AutoML presets for data with texts."""
 
+from lightautoml.utils.installation import __validate_extra_deps
+
+
+__validate_extra_deps("nlp", error=True)
+
+
 import logging
 import os
 
-from typing import TYPE_CHECKING
 from typing import Optional
 from typing import Sequence
 
@@ -57,6 +62,46 @@ class TabularNLPAutoML(TabularAutoML):
 
     GPU support in catboost/lightgbm (if installed for GPU),
     NN models training.
+
+    Commonly _params kwargs (ex. timing_params) set via
+    config file (config_path argument).
+    If you need to change just few params, it's possible to pass
+    it as dict of dicts, like json.
+    To get available params please look on default config template.
+    Also you can find there param description.
+    To generate config template call
+    :meth:`TabularNLPAutoML.get_config('config_path.yml')`.
+
+
+    Args:
+        task: Task to solve.
+        timeout: Timeout in seconds.
+        memory_limit: Memory limit that are passed to each automl.
+        cpu_limit: CPU limit that that are passed to each automl.
+        gpu_ids: GPU IDs that are passed to each automl.
+        timing_params: Timing param dict.
+        config_path: Path to config file.
+        general_params: General param dict.
+        reader_params: Reader param dict.
+        read_csv_params: Params to pass :func:`pandas.read_csv`
+            (case of train/predict from file).
+        nested_cv_params: Param dict for nested cross-validation.
+        tuning_params: Params of Optuna tuner.
+        selection_params: Params of feature selection.
+        nn_params: Params of neural network model.
+        lgb_params: Params of lightgbm model.
+        cb_params: Params of catboost model.
+        linear_l2_params: Params of linear model.
+        nn_pipeline_params: Params of feature generation
+            for neural network models.
+        gbm_pipeline_params: Params of feature generation
+            for boosting models.
+        linear_pipeline_params: Params of feature generation
+            for linear models.
+        text_params: General params of text features.
+        tfidf_params: Params of tfidf features.
+        autonlp_params: Params of text embeddings features.
+
     """
 
     _default_config_path = "text_config.yml"
@@ -96,49 +141,6 @@ class TabularNLPAutoML(TabularAutoML):
         tfidf_params: Optional[dict] = None,
         autonlp_params: Optional[dict] = None,
     ):
-
-        """
-
-        Commonly _params kwargs (ex. timing_params) set via
-        config file (config_path argument).
-        If you need to change just few params, it's possible to pass
-        it as dict of dicts, like json.
-        To get available params please look on default config template.
-        Also you can find there param description.
-        To generate config template call
-        :meth:`TabularNLPAutoML.get_config('config_path.yml')`.
-
-
-        Args:
-            task: Task to solve.
-            timeout: Timeout in seconds.
-            memory_limit: Memory limit that are passed to each automl.
-            cpu_limit: CPU limit that that are passed to each automl.
-            gpu_ids: GPU IDs that are passed to each automl.
-            timing_params: Timing param dict.
-            config_path: Path to config file.
-            general_params: General param dict.
-            reader_params: Reader param dict.
-            read_csv_params: Params to pass :func:`pandas.read_csv`
-              (case of train/predict from file).
-            nested_cv_params: Param dict for nested cross-validation.
-            tuning_params: Params of Optuna tuner.
-            selection_params: Params of feature selection.
-            nn_params: Params of neural network model.
-            lgb_params: Params of lightgbm model.
-            cb_params: Params of catboost model.
-            linear_l2_params: Params of linear model.
-            nn_pipeline_params: Params of feature generation
-              for neural network models.
-            gbm_pipeline_params: Params of feature generation
-              for boosting models.
-            linear_pipeline_params: Params of feature generation
-              for linear models.
-            text_params: General params of text features.
-            tfidf_params: Params of tfidf features.
-            autonlp_params: Params of text embeddings features.
-
-        """
         super().__init__(
             task,
             timeout,
@@ -220,26 +222,18 @@ class TabularNLPAutoML(TabularAutoML):
 
         self.nn_params["num_workers"] = min(self.nn_params["num_workers"], cpu_cnt)
         self.nn_params["lang"] = self.nn_params["lang"] or self.text_params["lang"]
-        self.nn_params["bert_name"] = (
-            self.nn_params["bert_name"] or self.text_params["bert_model"]
-        )
+        self.nn_params["bert_name"] = self.nn_params["bert_name"] or self.text_params["bert_model"]
 
         logger.info3("Model language mode: {}".format(self.nn_params["lang"]))
 
         if isinstance(self.autonlp_params["transformer_params"], dict):
             if "loader_params" in self.autonlp_params["transformer_params"]:
-                self.autonlp_params["transformer_params"]["loader_params"][
-                    "num_workers"
-                ] = min(
-                    self.autonlp_params["transformer_params"]["loader_params"][
-                        "num_workers"
-                    ],
+                self.autonlp_params["transformer_params"]["loader_params"]["num_workers"] = min(
+                    self.autonlp_params["transformer_params"]["loader_params"]["num_workers"],
                     cpu_cnt,
                 )
             else:
-                self.autonlp_params["transformer_params"]["loader_params"] = {
-                    "num_workers": cpu_cnt
-                }
+                self.autonlp_params["transformer_params"]["loader_params"] = {"num_workers": cpu_cnt}
 
         # other params as tabular
         super().infer_auto_params(train_data, multilevel_avail)
@@ -254,9 +248,7 @@ class TabularNLPAutoML(TabularAutoML):
         else:
             return None
 
-    def get_nn(
-        self, n_level: int = 1, pre_selector: Optional[SelectionPipeline] = None
-    ) -> NestedTabularMLPipeline:
+    def get_nn(self, n_level: int = 1, pre_selector: Optional[SelectionPipeline] = None) -> NestedTabularMLPipeline:
 
         # nn model
         time_score = self.get_time_score(n_level, "nn")
@@ -269,16 +261,11 @@ class TabularNLPAutoML(TabularAutoML):
             nn_feats.append(text_nn_feats)
 
         nn_pipe = NestedTabularMLPipeline(
-            [nn_model],
-            pre_selection=None,
-            features_pipeline=nn_feats,
-            **self.nested_cv_params
+            [nn_model], pre_selection=None, features_pipeline=nn_feats, **self.nested_cv_params
         )
         return nn_pipe
 
-    def get_linear(
-        self, n_level: int = 1, pre_selector: Optional[SelectionPipeline] = None
-    ) -> NestedTabularMLPipeline:
+    def get_linear(self, n_level: int = 1, pre_selector: Optional[SelectionPipeline] = None) -> NestedTabularMLPipeline:
 
         # linear model with l2
         time_score = self.get_time_score(n_level, "linear_l2")
@@ -286,9 +273,7 @@ class TabularNLPAutoML(TabularAutoML):
         linear_l2_model = LinearLBFGS(timer=linear_l2_timer, **self.linear_l2_params)
 
         text_l2_feats = self.get_nlp_pipe(self.linear_pipeline_params["text_features"])
-        linear_l2_feats = LinearFeatures(
-            output_categories=True, **self.linear_pipeline_params
-        )
+        linear_l2_feats = LinearFeatures(output_categories=True, **self.linear_pipeline_params)
         if text_l2_feats is not None:
             linear_l2_feats.append(text_l2_feats)
 
@@ -309,9 +294,7 @@ class TabularNLPAutoML(TabularAutoML):
     ):
 
         text_gbm_feats = self.get_nlp_pipe(self.gbm_pipeline_params["text_features"])
-        gbm_feats = LGBAdvancedPipeline(
-            output_categories=False, **self.gbm_pipeline_params
-        )
+        gbm_feats = LGBAdvancedPipeline(output_categories=False, **self.gbm_pipeline_params)
         if text_gbm_feats is not None:
             gbm_feats.append(text_gbm_feats)
 
@@ -340,11 +323,7 @@ class TabularNLPAutoML(TabularAutoML):
             force_calc.append(force)
 
         gbm_pipe = NestedTabularMLPipeline(
-            ml_algos,
-            force_calc,
-            pre_selection=pre_selector,
-            features_pipeline=gbm_feats,
-            **self.nested_cv_params
+            ml_algos, force_calc, pre_selection=pre_selector, features_pipeline=gbm_feats, **self.nested_cv_params
         )
 
         return gbm_pipe
@@ -356,7 +335,6 @@ class TabularNLPAutoML(TabularAutoML):
             **fit_args: Contain all information needed for creating automl.
 
         """
-
         train_data = fit_args["train_data"]
         self.infer_auto_params(train_data)
         reader = PandasToPandasReader(task=self.task, **self.reader_params)
@@ -377,16 +355,12 @@ class TabularNLPAutoML(TabularAutoML):
                 lvl.append(self.get_linear(n + 1, selector))
 
             gbm_models = [
-                x
-                for x in ["lgb", "lgb_tuned", "cb", "cb_tuned"]
-                if x in names and x.split("_")[0] in self.task.losses
+                x for x in ["lgb", "lgb_tuned", "cb", "cb_tuned"] if x in names and x.split("_")[0] in self.task.losses
             ]
 
             if len(gbm_models) > 0:
                 selector = None
-                if "gbm" in self.selection_params["select_algos"] and (
-                    self.general_params["skip_conn"] or n == 0
-                ):
+                if "gbm" in self.selection_params["select_algos"] and (self.general_params["skip_conn"] or n == 0):
                     selector = pre_selector
                 lvl.append(self.get_gbms(gbm_models, n + 1, selector))
 
@@ -437,7 +411,7 @@ class TabularNLPAutoML(TabularAutoML):
         Args:
             data: Dataset to perform inference.
             features_names: Optional features names,
-              if cannot be inferred from `train_data`.
+                if cannot be inferred from `train_data`.
             batch_size: Batch size or ``None``.
             n_jobs: Number of jobs.
 

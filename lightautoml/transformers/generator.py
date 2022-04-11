@@ -3,7 +3,12 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-import featuretools as ft
+try:
+    import featuretools as ft
+except:
+    import warnings
+
+    warnings.warn("'featuretools' - package isn't installed")
 import pandas as pd
 
 from ..dataset.base import LAMLDataset

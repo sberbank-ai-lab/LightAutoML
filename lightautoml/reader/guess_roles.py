@@ -70,9 +70,7 @@ def gini_normalizedc(a: np.ndarray, p: np.ndarray) -> float:
     return ginic(a, p) / ginic(a, a)
 
 
-def gini_normalized(
-    y_true: np.ndarray, y_pred: np.ndarray, empty_slice: Optional[np.ndarray] = None
-):
+def gini_normalized(y_true: np.ndarray, y_pred: np.ndarray, empty_slice: Optional[np.ndarray] = None):
     """Calculate normalized gini index.
 
     Args:
@@ -136,7 +134,7 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
         target = target[:, np.newaxis] == np.arange(n_out)[np.newaxis, :]
         target = cast(np.ndarray, target).astype(np.float32)
         encoder = MultiClassTargetEncoder
-        
+
     elif (train.task.name == "multi:reg") or (train.task.name == "multilabel"):
         target = cast(np.ndarray, target).astype(np.float32)
         encoder = MultioutputTargetEncoder
@@ -146,10 +144,8 @@ def get_target_and_encoder(train: NumpyOrPandas) -> Tuple[Any, type]:
     return target, encoder
 
 
-def calc_ginis(
-    data: np.ndarray, target: np.ndarray, empty_slice: Optional[np.ndarray] = None
-):
-    """
+def calc_ginis(data: np.ndarray, target: np.ndarray, empty_slice: Optional[np.ndarray] = None):
+    """Calculate ginis for array of preditions.
 
     Args:
         data: np.ndarray.
@@ -160,7 +156,6 @@ def calc_ginis(
         gini.
 
     """
-
     scores = np.zeros(data.shape[1])
     for n in range(data.shape[1]):
         sl = None
@@ -190,7 +185,6 @@ def _get_score_from_pipe(
         np.ndarray.
 
     """
-
     shape = train.shape
 
     if pipe is not None:
@@ -222,7 +216,6 @@ def get_score_from_pipe(
         np.ndarray.
 
     """
-
     shape = train.shape
     if n_jobs == 1:
         return _get_score_from_pipe(train, target, pipe, empty_slice)
@@ -237,12 +230,9 @@ def get_score_from_pipe(
     else:
         empty_slice = [empty_slice[:, x] for x in idx]
 
-    with Parallel(
-        n_jobs=n_jobs, prefer="processes", backend="loky", max_nbytes=None
-    ) as p:
+    with Parallel(n_jobs=n_jobs, prefer="processes", backend="loky", max_nbytes=None) as p:
         res = p(
-            delayed(_get_score_from_pipe)(train[:, name], target, pipe, sl)
-            for (name, sl) in zip(names, empty_slice)
+            delayed(_get_score_from_pipe)(train[:, name], target, pipe, sl) for (name, sl) in zip(names, empty_slice)
         )
     return np.concatenate(list(map(np.array, res)))
 
@@ -304,14 +294,10 @@ def get_numeric_roles_stat(
     train = train[:, roles_to_identify].to_numpy()
 
     if train.folds is None:
-        train.folds = set_sklearn_folds(
-            train.task, train.target, cv=5, random_state=42, group=train.group
-        )
+        train.folds = set_sklearn_folds(train.task, train.target, cv=5, random_state=42, group=train.group)
 
     if subsample is not None:
-        idx = np.random.RandomState(random_state).permutation(train.shape[0])[
-            :subsample
-        ]
+        idx = np.random.RandomState(random_state).permutation(train.shape[0])[:subsample]
         train = train[idx]
 
     data, target = train.data, train.target
@@ -323,15 +309,10 @@ def get_numeric_roles_stat(
     empty_slice = np.isnan(data)
 
     # check scores as is
-    res["raw_scores"] = get_score_from_pipe(
-        train, target, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["raw_scores"] = get_score_from_pipe(train, target, empty_slice=empty_slice, n_jobs=n_jobs)
 
     # check unique values
-    unique_values = [
-        np.unique(data[:, x][~np.isnan(data[:, x])], return_counts=True)
-        for x in range(data.shape[1])
-    ]
+    unique_values = [np.unique(data[:, x][~np.isnan(data[:, x])], return_counts=True) for x in range(data.shape[1])]
     top_freq_values = np.array([max(x[1]) for x in unique_values])
     unique_values = np.array([len(x[0]) for x in unique_values])
     res["unique"] = unique_values
@@ -340,23 +321,15 @@ def get_numeric_roles_stat(
 
     # check binned categorical score
     trf = SequentialTransformer([QuantileBinning(), encoder()])
-    res["binned_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["binned_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     # check label encoded scores
-    trf = SequentialTransformer(
-        [ChangeRoles(CategoryRole(np.float32)), LabelEncoder(), encoder()]
-    )
-    res["encoded_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    trf = SequentialTransformer([ChangeRoles(CategoryRole(np.float32)), LabelEncoder(), encoder()])
+    res["encoded_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     # check frequency encoding
     trf = SequentialTransformer([ChangeRoles(CategoryRole(np.float32)), FreqEncoder()])
-    res["freq_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["freq_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     res["nan_rate"] = empty_slice.mean(axis=0)
 
@@ -387,9 +360,7 @@ def calc_encoding_rules(
         DataFrame.
 
     """
-    scores_stat = stat[
-        ["raw_scores", "binned_scores", "encoded_scores", "freq_scores"]
-    ].values
+    scores_stat = stat[["raw_scores", "binned_scores", "encoded_scores", "freq_scores"]].values
 
     top_encodings = scores_stat.argsort(axis=1)[:, ::-1]
     sorted_scores = np.take_along_axis(scores_stat, top_encodings, axis=1)
@@ -417,15 +388,9 @@ def calc_encoding_rules(
     stat["rule_2"] = stat["unique"] <= 2
     stat["rule_3"] = stat["unique_rate"] > numeric_unique_rate
     stat["rule_4"] = stat["max_to_3rd_rate"] < max_to_3rd_rate
-    stat["rule_5"] = (top_encodings[:, 0] == 1) & (
-        stat["max_to_3rd_rate"] > binning_enc_rate
-    )
-    stat["rule_6"] = (top_encodings[:, 1] == 0) & (
-        stat["max_to_2rd_rate"] < raw_decr_rate
-    )
-    stat["rule_7"] = (stat["max_score_rate"] < max_score_rate) | (
-        stat["max_score"] < abs_score_val
-    )
+    stat["rule_5"] = (top_encodings[:, 0] == 1) & (stat["max_to_3rd_rate"] > binning_enc_rate)
+    stat["rule_6"] = (top_encodings[:, 1] == 0) & (stat["max_to_2rd_rate"] < raw_decr_rate)
+    stat["rule_7"] = (stat["max_score_rate"] < max_score_rate) | (stat["max_score"] < abs_score_val)
     stat["rule_8"] = stat["flg_manual"]
 
     return stat
@@ -448,13 +413,9 @@ def rule_based_roles_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     roles_dict = {}
 
     # rules to determinate handling type
-    numbers["discrete_rule"] = (~numbers["rule_7"]) & (
-        (numbers["binned_scores"] / numbers["raw_scores"]) > 2
-    )
+    numbers["discrete_rule"] = (~numbers["rule_7"]) & ((numbers["binned_scores"] / numbers["raw_scores"]) > 2)
     categories["int_rule"] = categories["unique"] < 10
-    categories["freq_rule"] = (
-        categories["freq_scores"] / categories["encoded_scores"]
-    ) > 1.3
+    categories["freq_rule"] = (categories["freq_scores"] / categories["encoded_scores"]) > 1.3
     categories["ord_rule"] = categories["unique_rate"] > 0.01
 
     # numbers with discrete features
@@ -473,10 +434,7 @@ def rule_based_roles_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     ordinal = categories["ord_rule"][categories["int_rule"]].values
     roles_dict = {
         **roles_dict,
-        **{
-            x: CategoryRole(np.float32, encoding_type="int", ordinal=y)
-            for (x, y) in zip(feats, ordinal)
-        },
+        **{x: CategoryRole(np.float32, encoding_type="int", ordinal=y) for (x, y) in zip(feats, ordinal)},
     }
 
     # frequency encoded feats
@@ -485,24 +443,16 @@ def rule_based_roles_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
     ordinal = categories["ord_rule"][categories["freq_rule"]].values
     roles_dict = {
         **roles_dict,
-        **{
-            x: CategoryRole(np.float32, encoding_type="freq", ordinal=y)
-            for (x, y) in zip(feats, ordinal)
-        },
+        **{x: CategoryRole(np.float32, encoding_type="freq", ordinal=y) for (x, y) in zip(feats, ordinal)},
     }
 
     # categories left
     # role = CategoryRole(np.float32)
     feats = categories[(~categories["freq_rule"]) & (~categories["int_rule"])].index
-    ordinal = categories["ord_rule"][
-        (~categories["freq_rule"]) & (~categories["int_rule"])
-    ].values
+    ordinal = categories["ord_rule"][(~categories["freq_rule"]) & (~categories["int_rule"])].values
     roles_dict = {
         **roles_dict,
-        **{
-            x: CategoryRole(np.float32, encoding_type="auto", ordinal=y)
-            for (x, y) in zip(feats, ordinal)
-        },
+        **{x: CategoryRole(np.float32, encoding_type="auto", ordinal=y) for (x, y) in zip(feats, ordinal)},
     }
 
     return roles_dict
@@ -528,7 +478,6 @@ def get_category_roles_stat(
         result.
 
     """
-
     roles_to_identify = []
 
     dtypes = []
@@ -560,14 +509,10 @@ def get_category_roles_stat(
     train = train[:, roles_to_identify].to_pandas()
 
     if train.folds is None:
-        train.folds = set_sklearn_folds(
-            train.task, train.target.values, cv=5, random_state=42, group=train.group
-        )
+        train.folds = set_sklearn_folds(train.task, train.target.values, cv=5, random_state=42, group=train.group)
 
     if subsample is not None:
-        idx = np.random.RandomState(random_state).permutation(train.shape[0])[
-            :subsample
-        ]
+        idx = np.random.RandomState(random_state).permutation(train.shape[0])[:subsample]
         train = train[idx]
 
     # check task specific
@@ -577,21 +522,15 @@ def get_category_roles_stat(
 
     # check label encoded scores
     trf = SequentialTransformer([LabelEncoder(), encoder()])
-    res["encoded_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["encoded_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     # check frequency encoding
     trf = FreqEncoder()
-    res["freq_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["freq_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     # check ordinal encoding
     trf = OrdinalEncoder()
-    res["ord_scores"] = get_score_from_pipe(
-        train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs
-    )
+    res["ord_scores"] = get_score_from_pipe(train, target, pipe=trf, empty_slice=empty_slice, n_jobs=n_jobs)
 
     return res
 
@@ -658,10 +597,7 @@ def rule_based_cat_handler_guess(stat: DataFrame) -> Dict[str, ColumnRole]:
         dtypes = list(st["dtype"])
         roles_dict = {
             **roles_dict,
-            **{
-                x: CategoryRole(dtype=d, encoding_type=enc_type, ordinal=ordinal)
-                for x, d in zip(feats, dtypes)
-            },
+            **{x: CategoryRole(dtype=d, encoding_type=enc_type, ordinal=ordinal) for x, d in zip(feats, dtypes)},
         }
 
     return roles_dict
@@ -689,9 +625,7 @@ def get_null_scores(
         train = train[:, feats].to_pandas()
 
     if subsample is not None:
-        idx = np.random.RandomState(random_state).permutation(train.shape[0])[
-            :subsample
-        ]
+        idx = np.random.RandomState(random_state).permutation(train.shape[0])[:subsample]
         train = train[idx]
 
     # check task specific

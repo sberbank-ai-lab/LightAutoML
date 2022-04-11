@@ -166,6 +166,7 @@ class WbMLAlgo(TabularMLAlgo):
         "regularized_refit": False,
         "p_val": 0.05,
         "report": False,
+        "verbose": 0,
     }
 
     _report_on_inference = False
@@ -178,37 +179,27 @@ class WbMLAlgo(TabularMLAlgo):
         self._report_on_inference = report
         return params, report, fit_params
 
-    def fit_predict(
-        self, train_valid_iterator: TrainValidIterator, **kwargs
-    ) -> NumpyDataset:
+    def fit_predict(self, train_valid_iterator: TrainValidIterator, **kwargs) -> NumpyDataset:  # noqa: D102
 
         self._dataset_fit_params = kwargs
 
         return super().fit_predict(train_valid_iterator)
 
-    def _include_target(
-        self, dataset: PandasDataset, include_group: bool = False
-    ) -> Tuple[DataFrame, Optional[str]]:
+    def _include_target(self, dataset: PandasDataset, include_group: bool = False) -> Tuple[DataFrame, Optional[str]]:
 
         df = dataset.data.copy()
         if dataset.target is not None:
-            df["__TARGET__"], _ = self.task.losses["lgb"].fw_func(
-                dataset.target.values, None
-            )
+            df["__TARGET__"], _ = self.task.losses["lgb"].fw_func(dataset.target.values, None)
         group_kf = None
 
         if include_group and dataset.group is not None:
-            assert (
-                "__GROUP__" not in dataset.features
-            ), "__GROUP__ is not valid column name for WhiteBox"
+            assert "__GROUP__" not in dataset.features, "__GROUP__ is not valid column name for WhiteBox"
             df["__GROUP__"] = dataset.group.values
             group_kf = "__GROUP__"
 
         return df, group_kf
 
-    def fit_predict_single_fold(
-        self, train: PandasDataset, valid: PandasDataset
-    ) -> Tuple[WbModel, np.ndarray]:
+    def fit_predict_single_fold(self, train: PandasDataset, valid: PandasDataset) -> Tuple[WbModel, np.ndarray]:
         """Implements training and prediction on single fold.
 
         Args:
@@ -222,13 +213,9 @@ class WbMLAlgo(TabularMLAlgo):
         params, report, fit_params = self._infer_params()
 
         assert train.task.name == "binary", "Only binary task is supported"
-        assert (
-            "__TARGET__" not in train.features
-        ), "__TARGET__ is not valid column name for WhiteBox"
+        assert "__TARGET__" not in train.features, "__TARGET__ is not valid column name for WhiteBox"
         if train.weights is not None:
-            warnings.warn(
-                "Weights are ignored at the moment", UserWarning, stacklevel=2
-            )
+            warnings.warn("Weights are ignored at the moment", UserWarning, stacklevel=2)
 
         train_df, group_kf = self._include_target(train, True)
 
@@ -249,13 +236,7 @@ class WbMLAlgo(TabularMLAlgo):
         kwargs["validation"] = valid_df
         kwargs = {**kwargs, **fit_params}
 
-        model.fit(
-            train_df,
-            target_name="__TARGET__",
-            group_kf=group_kf,
-            features_type=features_type,
-            **kwargs
-        )
+        model.fit(train_df, target_name="__TARGET__", group_kf=group_kf, features_type=features_type, **kwargs)
 
         if train is valid:
             valid_df = train_df
@@ -272,7 +253,7 @@ class WbMLAlgo(TabularMLAlgo):
             model: WhiteBox model
             dataset: Test dataset.
 
-        Return:
+        Returns:
             Predicted target values.
 
         """

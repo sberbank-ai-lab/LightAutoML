@@ -122,9 +122,7 @@ def mean_absolute_percentage_error(
     return err.mean()
 
 
-def roc_auc_ovr(
-    y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None
-):
+def roc_auc_ovr(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None):
     """ROC-AUC One-Versus-Rest.
 
     Args:
@@ -136,13 +134,10 @@ def roc_auc_ovr(
         Metric values.
 
     """
-
     return roc_auc_score(y_true, y_pred, sample_weight=sample_weight, multi_class="ovr")
 
 
-def rmsle(
-    y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None
-):
+def rmsle(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None):
     """Root mean squared log error.
 
     Args:
@@ -187,17 +182,12 @@ def auc_mu(
         Code was refactored from https://github.com/kleimanr/auc_mu/blob/master/auc_mu.py
 
     """
-
     if not isinstance(y_pred, np.ndarray):
-        raise TypeError(
-            "Expected y_pred to be np.ndarray, got: {}".format(type(y_pred))
-        )
+        raise TypeError("Expected y_pred to be np.ndarray, got: {}".format(type(y_pred)))
     if not y_pred.ndim == 2:
         raise ValueError("Expected array with predictions be a 2-dimentional array")
     if not isinstance(y_true, np.ndarray):
-        raise TypeError(
-            "Expected y_true to be np.ndarray, got: {}".format(type(y_true))
-        )
+        raise TypeError("Expected y_true to be np.ndarray, got: {}".format(type(y_true)))
     if not y_true.ndim == 1:
         raise ValueError("Expected array with ground truths be a 1-dimentional array")
     if y_true.shape[0] != y_pred.shape[0]:
@@ -217,19 +207,11 @@ def auc_mu(
         class_weights /= class_weights.sum()
 
     if not isinstance(class_weights, np.ndarray):
-        raise TypeError(
-            "Expected class_weights to be np.ndarray, got: {}".format(
-                type(class_weights)
-            )
-        )
+        raise TypeError("Expected class_weights to be np.ndarray, got: {}".format(type(class_weights)))
     if not class_weights.ndim == 2:
         raise ValueError("Expected class_weights to be a 2-dimentional array")
     if not class_weights.shape == (n_classes, n_classes):
-        raise ValueError(
-            "Expected class_weights size: {}, got: {}".format(
-                (n_classes, n_classes), class_weights.shape
-            )
-        )
+        raise ValueError("Expected class_weights size: {}, got: {}".format((n_classes, n_classes), class_weights.shape))
     # check sum?
     confusion_matrix = np.ones((n_classes, n_classes)) - np.eye(n_classes)
     auc_full = 0.0
@@ -253,17 +235,14 @@ def auc_mu(
 
 
 class F1Factory:
-    """
-    Wrapper for :func:`~sklearn.metrics.f1_score` function.
+    """Wrapper for :func:`~sklearn.metrics.f1_score` function.
+
+    Args:
+        average: Averaging type ('micro', 'macro', 'weighted').
+
     """
 
     def __init__(self, average: str = "micro"):
-        """
-
-        Args:
-            average: Averaging type ('micro', 'macro', 'weighted').
-
-        """
         self.average = average
 
     def __call__(
@@ -285,64 +264,46 @@ class F1Factory:
             for the multiclass task.
 
         """
-        return f1_score(
-            y_true, y_pred, sample_weight=sample_weight, average=self.average
-        )
+        return f1_score(y_true, y_pred, sample_weight=sample_weight, average=self.average)
 
 
 class BestClassBinaryWrapper:
-    """Metric wrapper to get best class prediction instead of probs.
+    r"""Metric wrapper to get best class prediction instead of probs.
 
     There is cut-off for prediction by ``0.5``.
+
+    Args:
+        func: Metric function. Function format:
+            func(y_pred, y_true, weights, \*\*kwargs).
 
     """
 
     def __init__(self, func: Callable):
-        """
-
-        Args:
-            func: Metric function. Function format:
-               func(y_pred, y_true, weights, \*\*kwargs).
-
-        """
         self.func = func
 
-    def __call__(
-        self,
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
-        **kwargs
-    ):
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
+        """Calculate metric."""
         y_pred = (y_pred > 0.5).astype(np.float32)
 
         return self.func(y_true, y_pred, sample_weight=sample_weight, **kwargs)
 
 
 class BestClassMulticlassWrapper:
-    """Metric wrapper to get best class prediction instead of probs for multiclass.
+    r"""Metric wrapper to get best class prediction instead of probs for multiclass.
 
     Prediction provides by argmax.
+
+    Args:
+        func: Metric function. Function format:
+            func(y_pred, y_true, weights, \*\*kwargs)
 
     """
 
     def __init__(self, func):
-        """
-
-        Args:
-            func: Metric function. Function format:
-               func(y_pred, y_true, weights, \*\*kwargs)
-
-        """
         self.func = func
 
-    def __call__(
-        self,
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
-        **kwargs
-    ):
+    def __call__(self, y_true: np.ndarray, y_pred: np.ndarray, sample_weight: Optional[np.ndarray] = None, **kwargs):
+        """Calculate metric."""
         y_pred = (y_pred.argmax(axis=1)).astype(np.float32)
 
         return self.func(y_true, y_pred, sample_weight=sample_weight, **kwargs)

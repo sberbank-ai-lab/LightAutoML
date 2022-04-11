@@ -2,7 +2,6 @@
 
 import logging
 
-from copy import copy
 from copy import deepcopy
 from typing import Any
 from typing import Dict
@@ -59,24 +58,22 @@ attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
 
 
 class Reader:
-    """
+    """Abstract Reader class.
+
     Abstract class for analyzing input data and creating inner
     :class:`~lightautoml.dataset.base.LAMLDataset` from raw data.
     Takes data in different formats as input,
     drop obviously useless features,
     estimates avaliable size and returns dataset.
 
+    Args:
+        task: Task object
+        *args: Not used.
+        *kwargs: Not used.
+
     """
 
     def __init__(self, task: Task, *args: Any, **kwargs: Any):
-        """
-
-        Args:
-            task: Task object
-            *args: Not used.
-            *kwargs: Not used.
-
-        """
         self.task = task
         self._roles = {}
         self._dropped_features = []
@@ -104,11 +101,11 @@ class Reader:
         return self._used_array_attrs
 
     def fit_read(
-            self,
-            train_data: Any,
-            features_names: Optional[List[str]] = None,
-            roles: UserRolesDefinition = None,
-            **kwargs: Any
+        self,
+        train_data: Any,
+        features_names: Optional[List[str]] = None,
+        roles: UserRolesDefinition = None,
+        **kwargs: Any
     ):
         """Abstract function to get dataset with initial feature selection."""
         raise NotImplementedError
@@ -118,9 +115,9 @@ class Reader:
         raise NotImplementedError
 
     def upd_used_features(
-            self,
-            add: Optional[Sequence[str]] = None,
-            remove: Optional[Sequence[str]] = None,
+        self,
+        add: Optional[Sequence[str]] = None,
+        remove: Optional[Sequence[str]] = None,
     ):
         """Updates the list of used features.
 
@@ -177,7 +174,8 @@ class Reader:
 
 
 class PandasToPandasReader(Reader):
-    """
+    """Pandas Reader.
+
     Reader to convert :class:`~pandas.DataFrame` to AutoML's :class:`~lightautoml.dataset.np_pd_dataset.PandasDataset`.
     Stages:
 
@@ -188,53 +186,51 @@ class PandasToPandasReader(Reader):
         - Create initial PandasDataset.
         - Optional: advanced guessing of role and handling types.
 
+
+    Args:
+        task: Task object.
+        samples: Number of elements used when checking role type.
+        max_nan_rate: Maximum nan-rate.
+        max_constant_rate: Maximum constant rate.
+        cv: CV Folds.
+        random_state: Random seed.
+        roles_params: dict of params of features roles. \
+            Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
+            It's optional and commonly comes from config
+        n_jobs: Int number of processes.
+        advanced_roles: Param of roles guess (experimental, do not change).
+        numeric_unique_rate: Param of roles guess (experimental, do not change).
+        max_to_3rd_rate: Param of roles guess (experimental, do not change).
+        binning_enc_rate: Param of roles guess (experimental, do not change).
+        raw_decr_rate: Param of roles guess (experimental, do not change).
+        max_score_rate: Param of roles guess (experimental, do not change).
+        abs_score_val: Param of roles guess (experimental, do not change).
+        drop_score_co: Param of roles guess (experimental, do not change).
+        **kwargs: For now not used.
+
     """
 
     def __init__(
-            self,
-            task: Task,
-            samples: Optional[int] = 100000,
-            max_nan_rate: float = 0.999,
-            max_constant_rate: float = 0.999,
-            cv: int = 5,
-            random_state: int = 42,
-            roles_params: Optional[dict] = None,
-            n_jobs: int = 4,
-            # params for advanced roles guess
-            advanced_roles: bool = True,
-            numeric_unique_rate: float = 0.999,
-            max_to_3rd_rate: float = 1.1,
-            binning_enc_rate: float = 2,
-            raw_decr_rate: float = 1.1,
-            max_score_rate: float = 0.2,
-            abs_score_val: float = 0.04,
-            drop_score_co: float = 0.01,
-            **kwargs: Any
+        self,
+        task: Task,
+        samples: Optional[int] = 100000,
+        max_nan_rate: float = 0.999,
+        max_constant_rate: float = 0.999,
+        cv: int = 5,
+        random_state: int = 42,
+        roles_params: Optional[dict] = None,
+        n_jobs: int = 4,
+        # params for advanced roles guess
+        advanced_roles: bool = True,
+        numeric_unique_rate: float = 0.999,
+        max_to_3rd_rate: float = 1.1,
+        binning_enc_rate: float = 2,
+        raw_decr_rate: float = 1.1,
+        max_score_rate: float = 0.2,
+        abs_score_val: float = 0.04,
+        drop_score_co: float = 0.01,
+        **kwargs: Any
     ):
-        """
-
-        Args:
-            task: Task object.
-            samples: Number of elements used when checking role type.
-            max_nan_rate: Maximum nan-rate.
-            max_constant_rate: Maximum constant rate.
-            cv: CV Folds.
-            random_state: Random seed.
-            roles_params: dict of params of features roles. \
-                Ex. {'numeric': {'dtype': np.float32}, 'datetime': {'date_format': '%Y-%m-%d'}}
-                It's optional and commonly comes from config
-            n_jobs: Int number of processes.
-            advanced_roles: Param of roles guess (experimental, do not change).
-            numeric_unqiue_rate: Param of roles guess (experimental, do not change).
-            max_to_3rd_rate: Param of roles guess (experimental, do not change).
-            binning_enc_rate: Param of roles guess (experimental, do not change).
-            raw_decr_rate: Param of roles guess (experimental, do not change).
-            max_score_rate: Param of roles guess (experimental, do not change).
-            abs_score_val: Param of roles guess (experimental, do not change).
-            drop_score_co: Param of roles guess (experimental, do not change).
-            **kwargs: For now not used.
-
-        """
         super().__init__(task)
         self.samples = samples
         self.max_nan_rate = max_nan_rate
@@ -262,19 +258,14 @@ class PandasToPandasReader(Reader):
         self.params = kwargs
 
     def fit_read(
-            self,
-            train_data: DataFrame,
-            features_names: Any = None,
-            roles: UserDefinedRolesDict = None,
-            **kwargs: Any
+        self, train_data: DataFrame, features_names: Any = None, roles: UserDefinedRolesDict = None, **kwargs: Any
     ) -> PandasDataset:
         """Get dataset with initial feature selection.
 
         Args:
             train_data: Input data.
             features_names: Ignored. Just to keep signature.
-            roles: Dict of features roles in format
-              ``{RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}``.
+            roles: Dict of features roles in format ``{RoleX: ['feat0', 'feat1', ...], RoleY: 'TARGET', ....}``.
             **kwargs: Can be used for target/group/weights.
 
         Returns:
@@ -289,6 +280,7 @@ class PandasToPandasReader(Reader):
         # to automl format {'feat0': RoleX, 'feat1': RoleX, 'TARGET': RoleY, ...}
         parsed_roles = roles_parser(roles)
         # transform str role definition to automl ColumnRole
+        attrs_dict = dict(zip(array_attr_roles, valid_array_attributes))
 
         for feat in parsed_roles:
             r = parsed_roles[feat]
@@ -330,10 +322,9 @@ class PandasToPandasReader(Reader):
 
         # infer roles
         for feat in subsample.columns:
-            assert isinstance(feat, str), (
-                "Feature names must be string,"
-                " find feature name: {}, with type: {}".format(feat, type(feat))
-            )
+            assert isinstance(
+                feat, str
+            ), "Feature names must be string," " find feature name: {}, with type: {}".format(feat, type(feat))
             if feat in parsed_roles:
                 r = parsed_roles[feat]
                 # handle datetimes
@@ -347,9 +338,7 @@ class PandasToPandasReader(Reader):
                             unit=r.unit,
                         )
                     except ValueError:
-                        raise ValueError(
-                            "Looks like given datetime parsing params are not correctly defined"
-                        )
+                        raise ValueError("Looks like given datetime parsing params are not correctly defined")
 
                 # replace default category dtype for numeric roles dtype if cat col dtype is numeric
                 if r.name == "Category":
@@ -362,9 +351,9 @@ class PandasToPandasReader(Reader):
                         flg_default_params = False
 
                     if (
-                            flg_default_params
-                            and not np.issubdtype(cat_role.dtype, np.number)
-                            and np.issubdtype(subsample.dtypes[feat], np.number)
+                        flg_default_params
+                        and not np.issubdtype(cat_role.dtype, np.number)
+                        and np.issubdtype(subsample.dtypes[feat], np.number)
                     ):
                         r.dtype = self._get_default_role_from_str("numeric").dtype
 
@@ -398,26 +387,19 @@ class PandasToPandasReader(Reader):
             kwargs["folds"] = Series(folds, index=train_data.index)
 
         # get dataset
-        dataset = PandasDataset(
-            train_data[self.used_features], self.roles, task=self.task, **kwargs
-        )
+        dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
         if self.advanced_roles:
             new_roles = self.advanced_roles_guess(dataset, manual_roles=parsed_roles)
-            droplist = [
-                x
-                for x in new_roles
-                if new_roles[x].name == "Drop" and not self._roles[x].force_input
-            ]
+
+            droplist = [x for x in new_roles if new_roles[x].name == "Drop" and not self._roles[x].force_input]
             self.upd_used_features(remove=droplist)
             self._roles = {x: new_roles[x] for x in new_roles if x not in droplist}
-            dataset = PandasDataset(
-                train_data[self.used_features], self.roles, task=self.task, **kwargs
-            )
+            dataset = PandasDataset(train_data[self.used_features], self.roles, task=self.task, **kwargs)
 
         return dataset
 
-    def _create_target(self, target):
-        """Validate target column and create class mapping is needed
+    def _create_target(self, target: List[Series, DataFrame]):
+        """Validate target column and create class mapping is needed.
 
         Args:
             target: Column with target values.
@@ -507,17 +489,21 @@ class PandasToPandasReader(Reader):
         # check if default format is defined
         date_format = self._get_default_role_from_str("datetime").format
         # check if it's datetime
+        dt_role = DatetimeRole(np.datetime64, date_format=date_format)
         try:
             # TODO: check all notnans and set coerce errors
-            _ = cast(
-                pd.Series,
-                pd.to_datetime(
-                    feature, infer_datetime_format=False, format=date_format
-                ),
-            ).dt.tz_localize("UTC")
-            return DatetimeRole(np.datetime64, date_format=date_format)
+            t = cast(pd.Series, pd.to_datetime(feature, infer_datetime_format=False, format=date_format))
         except (ValueError, AttributeError):
             # else category
+            return CategoryRole(object)
+
+        try:
+            _ = t.dt.tz_localize("UTC")
+            return dt_role
+        except TypeError:
+            # The exception is raised when TimeSeries is tz-aware and tz is not None
+            return dt_role
+        except:
             return CategoryRole(object)
 
     def _is_ok_feature(self, feature) -> bool:
@@ -532,22 +518,18 @@ class PandasToPandasReader(Reader):
         """
         if feature.isnull().mean() >= self.max_nan_rate:
             return False
-        if (
-                feature.value_counts().values[0] / feature.shape[0]
-        ) >= self.max_constant_rate:
+        if (feature.value_counts().values[0] / feature.shape[0]) >= self.max_constant_rate:
             return False
         return True
 
-    def read(
-            self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False
-    ) -> PandasDataset:
+    def read(self, data: DataFrame, features_names: Any = None, add_array_attrs: bool = False) -> PandasDataset:
         """Read dataset with fitted metadata.
 
         Args:
             data: Data.
             features_names: Not used.
             add_array_attrs: Additional attributes, like
-              target/group/weights/folds.
+                target/group/weights/folds.
 
         Returns:
             Dataset with new columns.
@@ -570,15 +552,11 @@ class PandasToPandasReader(Reader):
                     )
                 kwargs[array_attr] = val
 
-        dataset = PandasDataset(
-            data[self.used_features], roles=self.roles, task=self.task, **kwargs
-        )
+        dataset = PandasDataset(data[self.used_features], roles=self.roles, task=self.task, **kwargs)
 
         return dataset
 
-    def advanced_roles_guess(
-            self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None
-    ) -> RolesDict:
+    def advanced_roles_guess(self, dataset: PandasDataset, manual_roles: Optional[RolesDict] = None) -> RolesDict:
         """Advanced roles guess over user's definition and reader's simple guessing.
 
         Strategy - compute feature's NormalizedGini
@@ -646,9 +624,7 @@ class PandasToPandasReader(Reader):
             )
             top_scores = pd.concat([null_scores, top_scores], axis=1).max(axis=1)
             rejected = list(top_scores[top_scores < drop_co].index)
-            logger.info3(
-                "Feats was rejected during automatic roles guess: {0}".format(rejected)
-            )
+            logger.info3("Feats was rejected during automatic roles guess: {0}".format(rejected))
             new_roles_dict = {**new_roles_dict, **{x: DropRole() for x in rejected}}
 
         return new_roles_dict

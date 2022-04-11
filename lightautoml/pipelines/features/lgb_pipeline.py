@@ -40,7 +40,6 @@ class LGBSimpleFeatures(FeaturesPipeline):
 
     """
 
-
     def create_pipeline(self, train: NumpyOrPandas) -> LAMLTransformer:
         """Create tree pipeline.
 
@@ -69,9 +68,7 @@ class LGBSimpleFeatures(FeaturesPipeline):
         # process datetimes
         datetimes = get_columns_by_role(train, "Datetime")
         if len(datetimes) > 0:
-            dt_processing = SequentialTransformer(
-                [ColumnsSelector(keys=datetimes), TimeToNum()]
-            )
+            dt_processing = SequentialTransformer([ColumnsSelector(keys=datetimes), TimeToNum()])
             transformers_list.append(dt_processing)
 
         # process numbers
@@ -397,6 +394,17 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         - Dates handling - extracting seasons and create datediffs.
         - Create categorical intersections.
 
+
+    Args:
+        feats_imp: Features importances mapping.
+        top_intersections: Max number of categories
+            to generate intersections.
+        max_intersection_depth: Max depth of cat intersection.
+        subsample: Subsample to calc data statistics.
+        multiclass_te_co: Cutoff if use target encoding in cat
+            handling on multiclass task if number of classes is high.
+        auto_unique_co: Switch to target encoding if high cardinality.
+
     """
 
     def __init__(
@@ -411,19 +419,6 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         fill_na = False,
         **kwargs
     ):
-        """
-
-        Args:
-            feats_imp: Features importances mapping.
-            top_intersections: Max number of categories
-              to generate intersections.
-            max_intersection_depth: Max depth of cat intersection.
-            subsample: Subsample to calc data statistics.
-            multiclass_te_co: Cutoff if use target encoding in cat
-              handling on multiclass task if number of classes is high.
-            auto_unique_co: Switch to target encoding if high cardinality.
-
-        """
         super().__init__(
             multiclass_te_co=multiclass_te_co,
             top_intersections=top_intersections,
@@ -446,14 +441,11 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
             Transformer.
 
         """
-
         transformer_list = []
         target_encoder = self.get_target_encoder(train)
 
         output_category_role = (
-            CategoryRole(np.float32, label_encoded=True)
-            if self.output_categories
-            else NumericRole(np.float32)
+            CategoryRole(np.float32, label_encoded=True) if self.output_categories else NumericRole(np.float32)
         )
 
         # handle categorical feats
@@ -462,9 +454,9 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         transformer_list.append(self.get_freq_encoding(train))
 
         # 2 - check different target encoding parts and split (ohe is the same as auto - no ohe in gbm)
-        auto = get_columns_by_role(
-            train, "Category", encoding_type="auto"
-        ) + get_columns_by_role(train, "Category", encoding_type="ohe")
+        auto = get_columns_by_role(train, "Category", encoding_type="auto") + get_columns_by_role(
+            train, "Category", encoding_type="ohe"
+        )
 
         if self.output_categories:
             le = (
@@ -483,27 +475,19 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
                 te = get_columns_by_role(train, "Category", encoding_type="oof")
                 # split auto categories by unique values cnt
                 un_values = self.get_uniques_cnt(train, auto)
-                te = te + [
-                    x for x in un_values.index if un_values[x] > self.auto_unique_co
-                ]
+                te = te + [x for x in un_values.index if un_values[x] > self.auto_unique_co]
                 ordinal = ordinal + list(set(auto) - set(te))
 
             else:
                 te = []
-                ordinal = (
-                    ordinal
-                    + auto
-                    + get_columns_by_role(train, "Category", encoding_type="oof")
-                )
+                ordinal = ordinal + auto + get_columns_by_role(train, "Category", encoding_type="oof")
 
             ordinal = sorted(list(set(ordinal)))
 
         # get label encoded categories
         le_part = self.get_categorical_raw(train, le)
         if le_part is not None:
-            le_part = SequentialTransformer(
-                [le_part, ChangeRoles(output_category_role)]
-            )
+            le_part = SequentialTransformer([le_part, ChangeRoles(output_category_role)])
             transformer_list.append(le_part)
 
         # get target encoded part
@@ -518,9 +502,7 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
             if target_encoder is not None:
                 ints_part = SequentialTransformer([intersections, target_encoder()])
             else:
-                ints_part = SequentialTransformer(
-                    [intersections, ChangeRoles(output_category_role)]
-                )
+                ints_part = SequentialTransformer([intersections, ChangeRoles(output_category_role)])
 
             transformer_list.append(ints_part)
 
@@ -530,9 +512,7 @@ class LGBAdvancedPipeline(FeaturesPipeline, TabularDataFeatures):
         # add difference with base date
         transformer_list.append(self.get_datetime_diffs(train))
         # add datetime seasonality
-        transformer_list.append(
-            self.get_datetime_seasons(train, NumericRole(np.float32))
-        )
+        transformer_list.append(self.get_datetime_seasons(train, NumericRole(np.float32)))
 
         # final pipeline
         union_all = UnionTransformer([x for x in transformer_list if x is not None])
