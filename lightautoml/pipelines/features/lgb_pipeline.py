@@ -12,15 +12,22 @@ from ...dataset.roles import NumericRole
 from ...transformers.base import ChangeRoles
 from ...transformers.base import ColumnsSelector
 from ...transformers.base import ConvertDataset
+from ...transformers.base import EmptyTransformer
 from ...transformers.base import LAMLTransformer
 from ...transformers.base import SequentialTransformer
-from ...transformers.base import UnionTransformer, SetAttribute, EmptyTransformer
-from ...transformers.categorical import OrdinalEncoder, LabelEncoder
+from ...transformers.base import SetAttribute
+from ...transformers.base import UnionTransformer
+from ...transformers.categorical import LabelEncoder
+from ...transformers.categorical import OrdinalEncoder
 from ...transformers.datetime import TimeToNum
-from ...transformers.seq import GetSeqTransformer, SeqLagTransformer, SeqStatisticsTransformer, SeqNumCountsTransformer
 from ...transformers.numeric import FillInf
-from ...transformers.numeric import FillnaMedian, NaNFlags, StandardScaler
-
+from ...transformers.numeric import FillnaMedian
+from ...transformers.numeric import NaNFlags
+from ...transformers.numeric import StandardScaler
+from ...transformers.seq import GetSeqTransformer
+from ...transformers.seq import SeqLagTransformer
+from ...transformers.seq import SeqNumCountsTransformer
+from ...transformers.seq import SeqStatisticsTransformer
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
 from .base import FeaturesPipeline

@@ -1,18 +1,38 @@
 """Internal representation of dataset in numpy, pandas and csr formats."""
 
-from copy import copy, deepcopy
-from typing import Union, Sequence, List, Tuple, Any, Optional, TypeVar, Callable
+import warnings
+
+from copy import copy
+from copy import deepcopy
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from pandas import Series, DataFrame
-from scipy import sparse
-import warnings
 
-from .base import LAMLDataset, RolesDict, IntIdx, valid_array_attributes, array_attr_roles, LAMLColumn
-from .np_pd_dataset import NumpyDataset, PandasDataset
-from .roles import ColumnRole, NumericRole, DropRole
+from pandas import DataFrame
+from pandas import Series
+from scipy import sparse
+
 from ..tasks.base import Task
+from .base import IntIdx
+from .base import LAMLColumn
+from .base import LAMLDataset
+from .base import RolesDict
+from .base import array_attr_roles
+from .base import valid_array_attributes
+from .np_pd_dataset import NumpyDataset
+from .np_pd_dataset import PandasDataset
+from .roles import ColumnRole
+from .roles import DropRole
+from .roles import NumericRole
+
 
 NpFeatures = Union[Sequence[str], str, None]
 NpRoles = Union[Sequence[ColumnRole], ColumnRole, RolesDict, None]

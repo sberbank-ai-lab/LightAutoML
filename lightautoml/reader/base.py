@@ -21,12 +21,12 @@ from pandas import Series
 from ..dataset.base import array_attr_roles
 from ..dataset.base import valid_array_attributes
 from ..dataset.np_pd_dataset import PandasDataset
-from ..dataset.seq_np_pd_dataset import SeqNumpyPandasDataset
 from ..dataset.roles import CategoryRole
 from ..dataset.roles import ColumnRole
 from ..dataset.roles import DatetimeRole
 from ..dataset.roles import DropRole
 from ..dataset.roles import NumericRole
+from ..dataset.seq_np_pd_dataset import SeqNumpyPandasDataset
 from ..dataset.utils import roles_parser
 from ..tasks import Task
 from .guess_roles import calc_category_rules
@@ -36,8 +36,10 @@ from .guess_roles import get_null_scores
 from .guess_roles import get_numeric_roles_stat
 from .guess_roles import rule_based_cat_handler_guess
 from .guess_roles import rule_based_roles_guess
+from .seq import IDSInd
+from .seq import TopInd
 from .utils import set_sklearn_folds
-from .seq import TopInd, IDSInd
+
 
 logger = logging.getLogger(__name__)
 

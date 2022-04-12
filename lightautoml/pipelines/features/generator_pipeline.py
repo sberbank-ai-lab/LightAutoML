@@ -1,13 +1,19 @@
 import logging
-from typing import Any, Dict, List, Optional
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import featuretools as ft
 
 from ...dataset.base import LAMLDataset
-from ...transformers.base import SequentialTransformer, UnionTransformer
+from ...transformers.base import SequentialTransformer
+from ...transformers.base import UnionTransformer
 from ...transformers.generator import FeatureGeneratorTransformer
 from ..selection.importance_based import ImportanceCutoffSelector
 from .base import FeaturesPipeline
+
 
 logger = logging.getLogger(__name__)
 

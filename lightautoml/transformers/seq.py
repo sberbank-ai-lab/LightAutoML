@@ -1,12 +1,17 @@
-from typing import Union, List, Optional
+from typing import List
+from typing import Optional
+from typing import Union
 
 import numpy as np
 
-from ..transformers.base import LAMLTransformer
 from ..dataset.base import LAMLDataset
-from ..dataset.np_pd_dataset import PandasDataset, NumpyDataset, CSRSparseDataset
-from ..dataset.seq_np_pd_dataset import SeqNumpyPandasDataset
+from ..dataset.np_pd_dataset import CSRSparseDataset
+from ..dataset.np_pd_dataset import NumpyDataset
+from ..dataset.np_pd_dataset import PandasDataset
 from ..dataset.roles import NumericRole
+from ..dataset.seq_np_pd_dataset import SeqNumpyPandasDataset
+from ..transformers.base import LAMLTransformer
+
 
 # type - something that can be converted to pandas dataset
 NumpyTransformable = Union[NumpyDataset, PandasDataset]

@@ -13,9 +13,15 @@ from typing import Union
 
 import numpy as np
 
-from .losses import LGBLoss, SKLoss, TORCHLoss, CBLoss
-from .common_metric import _valid_str_metric_names, _valid_metric_args
-from .utils import infer_gib, infer_gib_multiclass
+from .common_metric import _valid_metric_args
+from .common_metric import _valid_str_metric_names
+from .losses import CBLoss
+from .losses import LGBLoss
+from .losses import SKLoss
+from .losses import TORCHLoss
+from .utils import infer_gib
+from .utils import infer_gib_multiclass
+
 
 if TYPE_CHECKING:
     from ..dataset.base import LAMLDataset

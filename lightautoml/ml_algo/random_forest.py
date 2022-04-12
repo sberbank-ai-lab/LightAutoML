@@ -1,20 +1,29 @@
 """Wrapped RandomForest for tabular datasets."""
 
 import logging
-from copy import copy
-from typing import Optional, Callable, Tuple, Dict, Union
 
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from copy import copy
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 import numpy as np
+
 from optuna.trial import Trial
 from pandas import Series
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 
-from .base import TabularMLAlgo, TabularDataset
+from ..pipelines.selection.base import ImportanceEstimator
+from ..validation.base import TrainValidIterator
+from .base import TabularDataset
+from .base import TabularMLAlgo
 from .tuning.base import Distribution
 from .tuning.base import SearchSpace
 from .tuning.optuna import OptunaTunableMixin
-from ..pipelines.selection.base import ImportanceEstimator
-from ..validation.base import TrainValidIterator
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +91,7 @@ class RandomForestSklearn(OptunaTunableMixin, TabularMLAlgo, ImportanceEstimator
         features_num = len(train_valid_iterator.features)
         task = train_valid_iterator.train.task.name
         suggested_params = copy(self.default_params)
-        
+
         if 'criterion' not in suggested_params:
             suggested_params['criterion'] = 'mse' if ((task == 'reg') or (task == 'multi:reg')) else 'gini'
 

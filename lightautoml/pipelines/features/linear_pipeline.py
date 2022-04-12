@@ -8,20 +8,19 @@ import numpy as np
 from ...dataset.np_pd_dataset import NumpyDataset
 from ...dataset.np_pd_dataset import PandasDataset
 from ...dataset.roles import CategoryRole
-from ...transformers.base import ChangeRoles, ColumnsSelector
+from ...transformers.base import ChangeRoles
+from ...transformers.base import ColumnsSelector
 from ...transformers.base import LAMLTransformer
 from ...transformers.base import SequentialTransformer
 from ...transformers.base import UnionTransformer
 from ...transformers.categorical import LabelEncoder
 from ...transformers.categorical import OHEEncoder
+from ...transformers.datetime import TimeToNum
 from ...transformers.numeric import FillInf
 from ...transformers.numeric import FillnaMedian
 from ...transformers.numeric import LogOdds
 from ...transformers.numeric import NaNFlags
 from ...transformers.numeric import StandardScaler
-from ...transformers.datetime import TimeToNum
-
-
 from ..selection.base import ImportanceEstimator
 from ..utils import get_columns_by_role
 from .base import FeaturesPipeline

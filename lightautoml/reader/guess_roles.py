@@ -26,7 +26,8 @@ from ..transformers.base import LAMLTransformer
 from ..transformers.base import SequentialTransformer
 from ..transformers.categorical import FreqEncoder
 from ..transformers.categorical import LabelEncoder
-from ..transformers.categorical import MultiClassTargetEncoder, MultioutputTargetEncoder
+from ..transformers.categorical import MultiClassTargetEncoder
+from ..transformers.categorical import MultioutputTargetEncoder
 from ..transformers.categorical import OrdinalEncoder
 from ..transformers.categorical import TargetEncoder
 from ..transformers.numeric import QuantileBinning

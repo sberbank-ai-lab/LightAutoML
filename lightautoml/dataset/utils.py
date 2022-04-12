@@ -11,8 +11,8 @@ from .base import LAMLDataset
 from .np_pd_dataset import CSRSparseDataset
 from .np_pd_dataset import NumpyDataset
 from .np_pd_dataset import PandasDataset
-from .seq_np_pd_dataset import SeqNumpyPandasDataset
 from .roles import ColumnRole
+from .seq_np_pd_dataset import SeqNumpyPandasDataset
 
 
 # RoleType = TypeVar("RoleType", bound=ColumnRole)

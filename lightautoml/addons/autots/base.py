@@ -1,28 +1,30 @@
 # Standard python libraries
-from copy import deepcopy
 import logging
+
+from copy import deepcopy
+
 
 logging.basicConfig(format='[%(asctime)s] (%(levelname)s): %(message)s', level=logging.INFO)
 
 # Installed libraries
 import numpy as np
 import pandas as pd
-from statsmodels.tsa.seasonal import seasonal_decompose, STL
+
+from statsmodels.tsa.seasonal import STL
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 # Imports from our package
 from ...automl.base import AutoML
+from ...automl.blend import WeightedBlender
+from ...dataset.roles import DatetimeRole
 from ...ml_algo.boost_cb import BoostCB
-
 from ...ml_algo.linear_sklearn import LinearLBFGS
+from ...ml_algo.random_forest import RandomForestSklearn
 from ...pipelines.features.lgb_pipeline import LGBSeqSimpleFeatures
 from ...pipelines.features.linear_pipeline import LinearTrendFeatures
 from ...pipelines.ml.base import MLPipeline
 from ...reader.base import DictToNumpySeqReader
 from ...tasks import Task
-from ...automl.blend import WeightedBlender
-from ...ml_algo.random_forest import RandomForestSklearn
-from ...dataset.roles import DatetimeRole
-
 
 
 class TrendModel:
@@ -38,16 +40,16 @@ class TrendModel:
                       'detect_step_threshold': 0.7,
                       'rolling_size': 7,
                       'verbose': 0}
-    
+
     def __init__(self, params=None):
         self.params = deepcopy(self.default_params)
         if params is not None:
             self.params.update(params)
         assert self.params['trend_type'] in self._available_trend_types
-            
-    
+
+
     def _detect_step(self, x):
-        x_min, x_max = tuple(np.quantile(x, [self.params['detect_step_quantile'], 
+        x_min, x_max = tuple(np.quantile(x, [self.params['detect_step_quantile'],
                                              1-self.params['detect_step_quantile']]))
         x_range = x_max - x_min
         window = self.params['detect_step_window']
@@ -55,30 +57,30 @@ class TrendModel:
         for i in range(len(x)-2*window):
             diff[i] = np.median(x[i+window:i+2*window]) - np.median(x[i:i+window])
         diff = np.abs(diff) / x_range
-        diff = np.concatenate((diff[0]*np.ones(window), diff, diff[-1]*np.ones(window))) 
+        diff = np.concatenate((diff[0]*np.ones(window), diff, diff[-1]*np.ones(window)))
         return np.any(diff > self.params['detect_step_threshold'])
-    
+
     def _get_rolling_median(self, train_data, roles):
         median = train_data[roles['target']].rolling(self.params['rolling_size']).apply(np.median)
         return median.fillna(median[~median.isna()].values[0]).values
-    
+
     def _detect_no_trend(self, x):
         pass
-    
-    
+
+
     def _estimate_trend(self, train_data, roles):
         if self.params['trend_type'] == 'decompose':
-            return seasonal_decompose(train_data[roles['target']].values, 
-                                      model='additive', 
-                                      period=self.params['decompose_period'], 
+            return seasonal_decompose(train_data[roles['target']].values,
+                                      model='additive',
+                                      period=self.params['decompose_period'],
                                       extrapolate_trend='freq').trend
         elif self.params['trend_type'] == 'decompose_STL':
-            return STL(train_data[roles['target']].values, 
+            return STL(train_data[roles['target']].values,
                         period=self.params['decompose_period']).fit().trend
         elif self.params['trend_type'] == 'rolling':
             return self._get_rolling_median(train_data, roles)
 
-    
+
     def fit_predict(self, train_data, roles):
         """
         if self._detect_no_trend(train_data[roles['target']]):
@@ -89,13 +91,13 @@ class TrendModel:
             return np.zeros(len(train_data))
         if self._detect_step(train_data[roles['target']]):
             self.params['trend_type'] = 'rolling'
-        
+
         task_trend = Task('reg', greater_is_better=False, metric='mae', loss='mae')
         reader_trend = DictToNumpySeqReader(task=task_trend, cv=2, seq_params={})
         reader_trend.fit_read({'plain': train_data, 'seq': None}, roles=roles)
         timerole = [key for key, value in reader_trend._roles.items() if isinstance(value, DatetimeRole)][0]
-        
-        
+
+
         feats_trend = LinearTrendFeatures()
         model_trend = LinearLBFGS()
         pipeline_trend = MLPipeline([model_trend],
@@ -105,7 +107,7 @@ class TrendModel:
         self.automl_trend = AutoML(reader_trend,
                                    [[pipeline_trend]],
                                    skip_conn=False)
-        
+
         if self.params['trend_type'] in ['decompose', 'decompose_STL', 'rolling']:
             trend = self._estimate_trend(train_data, roles)
             if self.params['train_on_trend']:
@@ -118,12 +120,12 @@ class TrendModel:
             else:
                 _ = self.automl_trend.fit_predict({'plain': train_data[[roles['target'], timerole]].iloc[-self.params['trend_size']:],
                                                    'seq': None}, roles=roles)
-            
+
         elif self.params['trend_type'] == 'linear':
             _ = self.automl_trend.fit_predict({'plain': train_data[[roles['target'], timerole]], 'seq': None}, roles=roles)
             trend = self.automl_trend.predict({'plain': train_data, 'seq': None}).data[:, 0]
         return trend
-    
+
     def predict(self, data, future_time):
         MIN_PREDICT_HISTORY = 5 * self.params['trend_size']
         if not self.params['trend']:
@@ -134,11 +136,11 @@ class TrendModel:
             trend = self._estimate_trend(data, self.roles)
         pred_trend = self.automl_trend.predict({'plain': future_time, 'seq': None}).data[:, 0]
         return trend, pred_trend
-    
+
 
 
 class AutoTS:
-    
+
     default_trend_params = {'trend': True,
                           'train_on_trend': True,
                           'trend_type': 'decompose', # 'decompose', 'decompose_STL', 'linear' or 'rolling'
@@ -149,34 +151,34 @@ class AutoTS:
                           'detect_step_threshold': 0.7,
                           'rolling_size': 7,
                           'verbose': 0}
-    
+
     @property
     def n_target(self):
         """Get length of future prediction.
-        
+
         Returns:
             length
         """
         return self.seq_params['seq0']['params']['n_target']
-    
+
     @property
     def n_history(self):
         """Get length of history used for feature generation.
-        
+
         Returns:
             length
         """
         return self.seq_params['seq0']['params']['history']
-    
+
     @property
     def datetime_key(self):
-        """Get name of datetime index column 
-        
+        """Get name of datetime index column
+
         Returns:
             column name
         """
         return self.TM.automl_trend.levels[0][0].features_pipeline._pipeline.transformer_list[0].transformer_list[0].keys[0]
-    
+
     def __init__(self, task, seq_params=None, trend_params=None):
         self.task = task
         self.task_trend = Task('reg', greater_is_better=False, metric='mae', loss='mae')
@@ -185,8 +187,8 @@ class AutoTS:
                                         'params': {'n_target': 7, 'history': 7, 'step': 1, 'from_last': True, 'test_last': True}}, }
         else:
             self.seq_params = seq_params
-        self.test_last = self.seq_params['seq0']['params']['test_last']   
-        
+        self.test_last = self.seq_params['seq0']['params']['test_last']
+
         self.trend_params = deepcopy(self.default_trend_params)
         if trend_params is not None:
             self.trend_params.update(trend_params)
@@ -195,7 +197,7 @@ class AutoTS:
     def fit_predict(self, train_data, roles, verbose=0):
         self.roles = roles
         train_trend = self.TM.fit_predict(train_data, roles)
-        
+
         if hasattr(self.TM, 'automl_trend'):
             self.datetime_step = pd.to_datetime(train_data[self.datetime_key])[1] - \
                                  pd.to_datetime(train_data[self.datetime_key])[0]

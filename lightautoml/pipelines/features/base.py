@@ -28,7 +28,8 @@ from ...transformers.base import UnionTransformer
 from ...transformers.categorical import CatIntersectstions
 from ...transformers.categorical import FreqEncoder
 from ...transformers.categorical import LabelEncoder
-from ...transformers.categorical import MultiClassTargetEncoder, MultioutputTargetEncoder
+from ...transformers.categorical import MultiClassTargetEncoder
+from ...transformers.categorical import MultioutputTargetEncoder
 from ...transformers.categorical import OrdinalEncoder
 from ...transformers.categorical import TargetEncoder
 from ...transformers.datetime import BaseDiff

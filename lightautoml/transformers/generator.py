@@ -1,7 +1,12 @@
 import logging
 import re
+
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+
 
 try:
     import featuretools as ft
@@ -16,9 +21,7 @@ from ..dataset.roles import NumericRole
 from ..ml_algo.boost_lgbm import BoostLGBM
 from ..pipelines.features.base import TabularDataFeatures
 from ..pipelines.features.lgb_pipeline import LGBSimpleFeatures
-from ..pipelines.selection.importance_based import (
-    ModelBasedImportanceEstimator,
-)
+from ..pipelines.selection.importance_based import ModelBasedImportanceEstimator
 from ..pipelines.selection.permutation_importance_based import (
     NpIterativeFeatureSelector,
 )
@@ -27,6 +30,7 @@ from ..reader.utils import set_sklearn_folds
 from ..validation.np_iterators import get_numpy_iterator
 from ..validation.utils import create_validation_iterator
 from .base import LAMLTransformer
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -286,10 +290,10 @@ class FeatureGeneratorTransformer(LAMLTransformer, TabularDataFeatures):
                 new_interesting_values[seq_table_name] = get_interesting_values(
                     seq_table, self.per_top_categories
                 )
-                
+
             if self.interesting_values is None:
                 self.interesting_values = dict()
-                
+
             self.interesting_values.update(new_interesting_values)
             logger.info(f"Interesting values have been generated")
 
