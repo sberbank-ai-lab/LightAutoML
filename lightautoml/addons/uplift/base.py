@@ -646,9 +646,7 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": self.timeout_metalearner
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(),
                         },
                     ),
                 },
@@ -663,9 +661,7 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": int(self.timeout_metalearner / 2)
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(2),
                         },
                     ),
                     "control_learner": BaseLearnerWrapper(
@@ -673,9 +669,7 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": int(self.timeout_metalearner / 2)
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(2),
                         },
                     ),
                 },
@@ -690,9 +684,7 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": int(self.timeout_metalearner / 2)
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(2),
                         },
                     ),
                     "control_learner": BaseLearnerWrapper(
@@ -700,9 +692,7 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": self.base_task,
-                            "timeout": int(self.timeout_metalearner / 2)
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(2),
                         },
                     ),
                 },
@@ -718,9 +708,7 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": self.base_task,
-                                "timeout": int(self.timeout_metalearner / 4)
-                                if self._tabular_timeout is None
-                                else self._tabular_timeout,
+                                "timeout": self._default_tabular_timeout(4),
                             },
                         )
                     ],
@@ -730,9 +718,7 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": Task("reg"),
-                                "timeout": int(self.timeout_metalearner / 4)
-                                if self._tabular_timeout is None
-                                else self._tabular_timeout,
+                                "timeout": self._default_tabular_timeout(4),
                             },
                         )
                     ],
@@ -754,9 +740,7 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": self.base_task,
-                                "timeout": int(self.timeout_metalearner / 5)
-                                if self._tabular_timeout is None
-                                else self._tabular_timeout,
+                                "timeout": self._default_tabular_timeout(5),
                             },
                         )
                     ],
@@ -766,9 +750,7 @@ class AutoUplift(BaseAutoUplift):
                             klass=TabularAutoML,
                             params={
                                 "task": Task("reg"),
-                                "timeout": int(self.timeout_metalearner / 5)
-                                if self._tabular_timeout is None
-                                else self._tabular_timeout,
+                                "timeout": self._default_tabular_timeout(5),
                             },
                         )
                     ],
@@ -777,14 +759,23 @@ class AutoUplift(BaseAutoUplift):
                         klass=TabularAutoML,
                         params={
                             "task": Task("binary"),
-                            "timeout": int(self.timeout_metalearner / 5)
-                            if self._tabular_timeout is None
-                            else self._tabular_timeout,
+                            "timeout": self._default_tabular_timeout(5),
                         },
                     ),
                 },
             ),
         ]
+
+    def _default_tabular_timeout(self, div_by: Optional[int] = None) -> Optional[int]:
+        if self._tabular_timeout is not None:
+            return self._tabular_timeout
+        elif self.timeout_metalearner is not None:
+            if div_by is None:
+                return self.timeout_metalearner
+
+            return int(self.timeout_metalearner / div_by)
+        else:
+            return None
 
     def _generate_data_depend_uplift_candidates(self, data: DataFrame, roles: dict) -> List[MetaLearnerWrapper]:
         """Generate uplift candidates.

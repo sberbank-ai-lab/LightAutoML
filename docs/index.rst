@@ -9,7 +9,6 @@ LightAutoML provides easy-to-use pipeline creation, that enables:
 - Automatic typing, feature selection.
 - Automatic time utilization.
 - Automatic report creation.
-- Graphical profiling system.
 - Easy-to-use modular scheme to create your own pipelines.
 
 
@@ -18,10 +17,9 @@ LightAutoML provides easy-to-use pipeline creation, that enables:
     :maxdepth: 1
     :caption: Contents:
 
-    Tutorials <Tutorials>
-    Python-API <Python-API>
-
-
+    Installation Guide <pages/Installation>
+    Tutorials <pages/Tutorials>
+    Python-API <pages/Python-API>
 
 
 
